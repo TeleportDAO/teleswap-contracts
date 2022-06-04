@@ -8,17 +8,4 @@ typechain
 cache
 artifacts
 
-contracts.json
-deployments/*/solcInputs/*.json
-dist
-test/*/
-.vscode
-.node*
-*.bin
-*.abi
-/out
-build
-.env
-.venv
-/export
-vendor
+
