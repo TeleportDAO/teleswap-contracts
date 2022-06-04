@@ -1,0 +1,24 @@
+node_modules
+.env
+coverage
+coverage.json
+typechain
+
+#Hardhat files
+cache
+artifacts
+
+contracts.json
+deployments/*/solcInputs/*.json
+dist
+test/*/
+.vscode
+.node*
+*.bin
+*.abi
+/out
+build
+.env
+.venv
+/export
+vendor
