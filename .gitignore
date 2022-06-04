@@ -8,14 +8,18 @@ typechain
 cache
 artifacts
 
+
 contracts.json
+coverage*
+deployments/localhost
 deployments/*/solcInputs/*.json
 dist
+src/types
 test/*/
 .vscode
-.node*
-*.bin
-*.abi
+.nodn
+*.abe*
+*.bii
 /out
 build
 .env
