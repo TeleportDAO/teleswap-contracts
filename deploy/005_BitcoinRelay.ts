@@ -1,15 +1,37 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
+// import {BitcoinRESTAPI} from 'bitcoin_rest_api';
+// import {baseURLMainnet} from 'bitcoin_rest_api';
+// import {baseURLTestnet} from 'bitcoin_rest_api';
+// import {networkMainnet} from 'bitcoin_rest_api';
+// import {networkTestnet} from 'bitcoin_rest_api';
+const {BitcoinRESTAPI} = require('bitcoin_rest_api');
+const {baseURLMainnet} = require('bitcoin_rest_api');
+const {baseURLTestnet} = require('bitcoin_rest_api');
+const {networkMainnet} = require('bitcoin_rest_api');
+const {networkTestnet} = require('bitcoin_rest_api');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts} = hre;
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
+    let bitcoinRESTAPI = new BitcoinRESTAPI(networkTestnet, baseURLTestnet, 2);
+
+    // deploy BitcoinRelay
+    // NEVER START WITH 0! IT MAKES PROBLEM
+    let blockCount = await bitcoinRESTAPI.getBlockCount();
+    let height;
+    if (blockCount > 5) {
+        height = blockCount - 5;
+    } else {
+        height = blockCount;
+    }
+
     // FIXME: setting the following parameters
-    const genesisHeader // bytes
-    const height // uint256
-    const periodStart // bytes32
+    let genesisHeader = await bitcoinRESTAPI.getHexBlockHeader(height);
+    let periodStartHeight = height - height%2016;
+    let periodStart = await bitcoinRESTAPI.getHexBlockHash(periodStartHeight);
 
     const tbtToken = await deployments.get("ERC20")
     const exchangeRouter = await deployments.get("ExchangeRouter")
@@ -19,9 +41,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            genesisHeader,
+            '0x' + genesisHeader,
             height,
-            periodStart,
+            '0x' + periodStart,
             tbtToken.address,
             exchangeRouter.address
         ],
