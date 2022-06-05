@@ -15,6 +15,7 @@ dotenv.config();
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
+
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   const accounts = await hre.ethers.getSigners();
 
@@ -26,14 +27,90 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
 
+const infuraNetwork = (
+  accounts: any, 
+  network: string,
+  chainId?: number,
+  gas?: number
+): HttpNetworkUserConfig => {
+  return {
+      url: `https://${network}.infura.io/v3/${process.env.PROJECT_ID}`,
+      chainId,
+      gas,
+      accounts,
+      gasPrice: 200000000000,
+  }
+}
+
 const config: HardhatUserConfig = {
-  solidity: "0.8.4",
+  solidity: {
+    compilers: [
+        {
+            version: "0.8.4",
+            settings: {
+                optimizer: {
+                    enabled: true,
+                },
+            },
+        }
+    ],
+  },
   networks: {
-    ropsten: {
-      url: process.env.ROPSTEN_URL || "",
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-    },
+    mainnet: infuraNetwork(
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
+        "mainnet", 
+        1, 
+        6283185,
+    ),
+    ropsten: infuraNetwork(
+      process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
+      "ropsten", 
+      3, 
+      6283185
+    ),
+    rinkeby: infuraNetwork(
+      process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
+      "rinkeby", 
+      4, 
+      6283185
+    ),
+    kovan: infuraNetwork(
+      process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
+      "kovan", 
+      42, 
+      6283185
+    ),
+    goerli: infuraNetwork(process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
+      "goerli", 
+      5, 
+      6283185
+    ),
+    // ropsten: {
+    //   url: process.env.ROPSTEN_URL || "",
+    //   accounts:
+    //     process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    // },
+    matic: {
+      url: "https://rpc-mainnet.maticvigil.com/",
+      chainId: 137,
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+  },
+  matic_testnet: {
+      url: "https://rpc-mumbai.matic.today",
+      chainId: 80001,
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+  },
+  bsc: {
+      url: "https://bsc-dataseed.binance.org/",
+      chainId: 56,
+      gasPrice: 20000000000,
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+  },
+  bsc_testnet: {
+      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+      chainId: 97,
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+  },
   },
   paths: {
     artifacts: "artifacts",

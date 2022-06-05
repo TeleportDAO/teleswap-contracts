@@ -3,7 +3,7 @@
   "chainId": "3",
   "contracts": {
     "Greeter": {
-      "address": "0x3Fb981bA127EAD24CF80fAa92E7E2D21D12f131d",
+      "address": "0xf43E3f832658d791e6AB944323A58895B707aBD4",
       "abi": [
         {
           "inputs": [
