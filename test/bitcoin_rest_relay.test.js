@@ -60,7 +60,6 @@ describe("Bitcoin Relay (js)", async () => {
   });
 
   describe('Submitting block headers with retarget', async () => {
-    console.log("the js")
 
     // it('submit old block headers', async function () {
     //   this.timeout(0);

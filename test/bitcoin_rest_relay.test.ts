@@ -12,7 +12,9 @@ var jsonPath = path.join(__dirname, './test_fixtures', 'testBlockHeaders.json');
 // require('chai').use(require('chai-as-promised')).should();
 require('dotenv').config({path:"../../.env"});
 
+import { deployments, ethers } from "hardhat";
 import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
+import { isBytesLike } from "ethers/lib/utils";
 import {BitcoinRelay} from "../src/types/BitcoinRelay";
 import {BitcoinRelay__factory} from "../src/types/factories/BitcoinRelay__factory";
 
@@ -20,11 +22,15 @@ describe("Bitcoin Relay (ts)", async () => {
 
     let bitcoinRelay: BitcoinRelay;
     let deployer: Signer;
+    let signer1: Signer;
+
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     let bitcoinRESTAPI: any;
     let blockHeaders: any;
 
     before(async () => {
+
+        [deployer, signer1] = await ethers.getSigners();
 
         bitcoinRESTAPI = new BitcoinRESTAPI(networkMainnet, baseURLMainnet, 2);
 
@@ -65,12 +71,13 @@ describe("Bitcoin Relay (ts)", async () => {
 
         let _height = 199584; // 99*2016
         let _heightBigNumber = BigNumber.from(199584)
-        let _genesisHeader: BytesLike = await bitcoinRESTAPI.getHexBlockHeader(_height);
-        let _periodStart: BytesLike = await bitcoinRESTAPI.getHexBlockHash(_height);
+        let _genesisHeader = await bitcoinRESTAPI.getHexBlockHeader(_height);
+        let _periodStart = await bitcoinRESTAPI.getHexBlockHash(_height);
         _genesisHeader = '0x' + _genesisHeader;
         _periodStart = '0x' + _periodStart;
 
         console.log("before deploying the bitcoin relay")
+
         const bitcoinRelay = await bitcoinRelayFactory.deploy(
             _genesisHeader,
             _heightBigNumber,
@@ -83,53 +90,74 @@ describe("Bitcoin Relay (ts)", async () => {
     };
 
     describe('Submitting block headers with retarget', async () => {
-        console.log("the ts")
+
+        it('check the owner', async function () {
+            let theOwnerAddress = await bitcoinRelay.owner()
+
+            let theDeplyerAddress = await deployer.getAddress();
+
+            expect(theOwnerAddress).to.equal(theDeplyerAddress);
+        })
 
         it('submit old block headers', async function () {
-          this.timeout(0);
-          // submit block headers up to 100*2016
-          for (let i = 0; i < 16; i++) {
+            this.timeout(0);
+            // submit block headers up to 100*2016
+            for (let i = 0; i < 32; i++) {
 
-            let blockHeadersNew = '0x';
+                let blockHeadersNew = '0x';
 
-            let blockHeaderOld;
+                let blockHeaderOld;
 
-            if (i == 0) {
-              blockHeaderOld = '0x' + blockHeaders[0];
-              for (let j = 1; j < 126; j++) {
-                blockHeadersNew = blockHeadersNew + blockHeaders[j + i*126];
-              }
-            } else {
-              blockHeaderOld = '0x' + blockHeaders[i*126 - 1];
-              for (let j = 0; j < 126; j++) {
-                blockHeadersNew = blockHeadersNew + blockHeaders[j + i*126];
-              }
-            }
+                if (i == 0) {
+                    blockHeaderOld = '0x' + blockHeaders[0];
+                    for (let j = 1; j < 63; j++) {
+                        blockHeadersNew = blockHeadersNew + blockHeaders[j + i*63];
+                    }
+                } else {
+                    blockHeaderOld = '0x' + blockHeaders[i*63 - 1];
+                    for (let j = 0; j < 63; j++) {
+                        blockHeadersNew = blockHeadersNew + blockHeaders[j + i*63];
+                    }
+                }
 
-            await expect(
-                bitcoinRelay.addHeaders(
+                let addHeadersResult = await bitcoinRelay.addHeaders(
                     blockHeaderOld, // anchor header
-                    blockHeadersNew // new header
-                )
-            ).to.equal(true);
+                    blockHeadersNew // new header;
+                );
 
-          }
+                await expect(
+                    addHeadersResult
+                ).to.equal(true);
+
+            }
 
         });
 
         it('submit a block header with new target', async () => {
-          let blockHeaderNew = await bitcoinRESTAPI.getHexBlockHeader(100*2016); // this is the new block header
-          blockHeaderNew = '0x' + blockHeaderNew;
-          let oldPeriodStartHeader = '0x' + blockHeaders[0];
-          let oldPeriodEndHeader = '0x' + blockHeaders[2015];
-          await expect(
-              bitcoinRelay.addHeadersWithRetarget(
-                  oldPeriodStartHeader,
-                  oldPeriodEndHeader,
-                  blockHeaderNew
-            )
-          ).to.equal(true);
+            let blockHeaderNew = await bitcoinRESTAPI.getHexBlockHeader(100*2016); // this is the new block header
+            blockHeaderNew = '0x' + blockHeaderNew;
+            let oldPeriodStartHeader = '0x' + blockHeaders[0];
+            let oldPeriodEndHeader = '0x' + blockHeaders[2015];
+
+            let addHeadersWithRetargetResult = await bitcoinRelay.addHeadersWithRetarget(
+                oldPeriodStartHeader,
+                oldPeriodEndHeader,
+                blockHeaderNew
+            );
+
+            expect(
+                addHeadersWithRetargetResult
+            ).to.equal(true);
+
         });
+
+        it('change the owner', async function () {
+            await bitcoinRelay.changeOwner(await signer1.getAddress())
+
+            let theSigner1Address = await signer1.getAddress();
+
+            expect(await bitcoinRelay.owner()).to.equal(theSigner1Address);
+        })
 
     });
 
