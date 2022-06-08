@@ -250,17 +250,12 @@ contract BitcoinRelay is IBitcoinRelay {
     /// @param  _headers    A tightly-packed list of 80-byte Bitcoin headers
     /// @return             True if successfully written, error otherwise
     function addHeaders(bytes calldata _anchor, bytes calldata _headers) external override returns (bool) {
-        console.log("the add header is called");
 
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
         bytes29 _anchorView = _anchor.ref(0).tryAsHeader();
 
-        console.log("headers and anchor are prepared");
-
         require(_headersView.notNull(), "Header array length must be divisible by 80");
         require(_anchorView.notNull(), "Anchor must be 80 bytes");
-
-        console.log("after first requires");
 
         return _addHeaders(_anchorView, _headersView, false);
     }
@@ -318,15 +313,10 @@ contract BitcoinRelay is IBitcoinRelay {
     /// @return             True if successfully written, error otherwise
     function _addHeaders(bytes29 _anchor, bytes29 _headers, bool _internal) internal returns (bool) {
 
-        console.log("in internal _addHeaders function");
-
-
         // Extract basic info
         bytes32 _previousDigest = _anchor.hash256();
         uint256 _anchorHeight = _findHeight(_previousDigest);  /* NB: errors if unknown */
         uint256 _target = _headers.indexHeaderArray(0).target();
-
-        console.log("headers are targeted");
 
         // TODO: uncomment it
         // require(
@@ -344,7 +334,6 @@ contract BitcoinRelay is IBitcoinRelay {
         uint256 _height;
         bytes32 _currentDigest;
         for (uint256 i = 0; i < _headers.len() / 80; i += 1) {
-            console.log(i);
 
             bytes29 _header = _headers.indexHeaderArray(i);
             _height = _anchorHeight.add(i + 1);
@@ -376,20 +365,12 @@ contract BitcoinRelay is IBitcoinRelay {
             _previousDigest = _currentDigest;
         }
 
-        console.log("after the for");
-
         uint rewardAmount;
         bool isTDT;
 
-        console.log("isTDT: ", isTDT);
-
         (rewardAmount, isTDT) = sendReward(msg.sender, _headers.len());
 
-        console.log("after sending reward");
-
         emit BlockAdded(_height - _headers.len()/80 + 1, _height, msg.sender, rewardAmount, isTDT);
-
-        console.log("even the block is added and must return true");
 
         return true;
     }
