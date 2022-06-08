@@ -161,48 +161,62 @@ describe("Bitcoin Relay (ts)", async () => {
 
     describe('Check tx inclusion', async () => {
 
-        // it('check the inclusion of a transaction having txid',async() => {
-        //   blockNumber = 100*2016 - 10;
-        //   let transactionIds = await bitcoinRESTAPI.getBlockTransactionIds(blockNumber);
-        //   let block = await bitcoinRESTAPI.getBlock(blockNumber);
-        //   _index = 10;
-        //   _txid = transactionIds[_index];
-        //   let proof = await bitcoinRESTAPI.getMerkleProof(_txid);
-        //   _merkleRoot = '0x' + block.merkle_root;
-        //   _blockNumber = blockNumber;
-        //   _intermediateNodes = proof.intermediateNodes;
-        //   _txid = '0x' + _txid;
-        //   payWithTDT = false;
-        //   _neededConfirmations = 0;
-        //   await truffleAssert.passes(bitcoinRelay.checkTxProof(
-        //       _txid,
-        //       _blockNumber,
-        //       _intermediateNodes,
-        //       _index,
-        //       payWithTDT,
-        //       _neededConfirmations,
-        //       {from: deployer})
-        //   );
-        // });
+        it('check the inclusion of a transaction having txid',async() => {
+            let blockNumber = 100*2016 - 10;
+            let transactionIds = await bitcoinRESTAPI.getBlockTransactionIds(blockNumber);
+            let block = await bitcoinRESTAPI.getBlock(blockNumber);
+            let _index = 10;
+            let _txid = transactionIds[_index];
+            let proof = await bitcoinRESTAPI.getMerkleProof(_txid);
+            let _merkleRoot = '0x' + block.merkle_root;
+            let _blockNumber = blockNumber;
+            let _intermediateNodes = proof.intermediateNodes;
+            _txid = '0x' + _txid;
+            let payWithTDT = false;
+            let _neededConfirmations = 0;
 
-        // it('check txid',async() => {
-        //   let blockNumber = 100*2016 - 10;
-        //   let transactionIds = await bitcoinRESTAPI.getBlockTransactionIds(blockNumber);
-        //   _index = 0;
-        //   _txid = transactionIds[_index];
-        //   let parsedTx = await bitcoinRESTAPI.parseTransaction(_txid);
-        //   let _version = parsedTx.version;
-        //   let _vin = parsedTx.vin;
-        //   let _vout = parsedTx.vout;
-        //   let _locktime = parsedTx.locktime;
-        //   await truffleAssert.passes(bitcoinRelay.calculateTxId(
-        //       _version,
-        //       _vin,
-        //       _vout,
-        //       _locktime,
-        //       {from: deployer})
-        //   );
-        // });
+            // let checkTxProofResult =
+
+            // console.log("checkTxProofResult: ", checkTxProofResult)
+
+            expect(
+                await bitcoinRelay.checkTxProof(
+                    _txid,
+                    _blockNumber,
+                    _intermediateNodes,
+                    _index,
+                    payWithTDT,
+                    _neededConfirmations
+                )
+            ).to.equal(true);
+
+        });
+
+        it('check txid',async() => {
+            let blockNumber = 100*2016 - 10;
+            let transactionIds = await bitcoinRESTAPI.getBlockTransactionIds(blockNumber);
+            let _index = 0;
+            let _txid = transactionIds[_index];
+            let parsedTx = await bitcoinRESTAPI.parseTransaction(_txid);
+            let _version = parsedTx.version;
+            let _vin = parsedTx.vin;
+            let _vout = parsedTx.vout;
+            let _locktime = parsedTx.locktime;
+
+            // let calculateTxIdResult =
+
+            // console.log("calculateTxIdResult: ", calculateTxIdResult)
+
+            expect(
+                await bitcoinRelay.calculateTxId(
+                    _version,
+                    _vin,
+                    _vout,
+                    _locktime
+                )
+            ).to.equal("0xb2e944205992eec82c5076eb62146d52acccc1700a5428922a04d2bfea581e89")
+
+        });
 
     });
 

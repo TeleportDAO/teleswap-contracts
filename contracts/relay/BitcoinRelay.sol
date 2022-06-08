@@ -10,6 +10,7 @@ import "../libraries/ViewSPV.sol";
 import "./interfaces/IBitcoinRelay.sol";
 import "../routers/interfaces/IExchangeRouter.sol";
 import "../erc20/interfaces/IERC20.sol";
+import "hardhat/console.sol";
 
 contract BitcoinRelay is IBitcoinRelay {
     using SafeMath for uint256;
@@ -43,9 +44,9 @@ contract BitcoinRelay is IBitcoinRelay {
 
     // reward parameters
     address public override TeleportDAOToken;
-    uint public override feeRatio; // multiplied by 100 
+    uint public override feeRatio; // multiplied by 100
     uint public override submissionGasUsed;
-    uint public override epochLength; 
+    uint public override epochLength;
     uint public override lastEpochQueries;
     uint public override baseQueries;
     uint public override lastBuyBack;
@@ -65,10 +66,10 @@ contract BitcoinRelay is IBitcoinRelay {
     /// @param  _height           The starting height
     /// @param  _periodStart      The hash of the first header in the genesis epoch
     constructor(
-        bytes memory _genesisHeader, 
-        uint256 _height, 
-        bytes32 _periodStart, 
-        address _TeleportDAOToken, 
+        bytes memory _genesisHeader,
+        uint256 _height,
+        bytes32 _periodStart,
+        address _TeleportDAOToken,
         address _exchangeRouter
     ) public {
         bytes29 _genesisView = _genesisHeader.ref(0).tryAsHeader();
@@ -249,11 +250,17 @@ contract BitcoinRelay is IBitcoinRelay {
     /// @param  _headers    A tightly-packed list of 80-byte Bitcoin headers
     /// @return             True if successfully written, error otherwise
     function addHeaders(bytes calldata _anchor, bytes calldata _headers) external override returns (bool) {
+        console.log("the add header is called");
+
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
         bytes29 _anchorView = _anchor.ref(0).tryAsHeader();
 
+        console.log("headers and anchor are prepared");
+
         require(_headersView.notNull(), "Header array length must be divisible by 80");
         require(_anchorView.notNull(), "Anchor must be 80 bytes");
+
+        console.log("after first requires");
 
         return _addHeaders(_anchorView, _headersView, false);
     }
@@ -310,10 +317,17 @@ contract BitcoinRelay is IBitcoinRelay {
     /// @param  _internal   True if called internally from addHeadersWithRetarget, false otherwise
     /// @return             True if successfully written, error otherwise
     function _addHeaders(bytes29 _anchor, bytes29 _headers, bool _internal) internal returns (bool) {
+
+        console.log("in internal _addHeaders function");
+
+
         // Extract basic info
         bytes32 _previousDigest = _anchor.hash256();
         uint256 _anchorHeight = _findHeight(_previousDigest);  /* NB: errors if unknown */
         uint256 _target = _headers.indexHeaderArray(0).target();
+
+        console.log("headers are targeted");
+
         // TODO: uncomment it
         // require(
         //     _internal || _anchor.target() == _target,
@@ -330,6 +344,8 @@ contract BitcoinRelay is IBitcoinRelay {
         uint256 _height;
         bytes32 _currentDigest;
         for (uint256 i = 0; i < _headers.len() / 80; i += 1) {
+            console.log(i);
+
             bytes29 _header = _headers.indexHeaderArray(i);
             _height = _anchorHeight.add(i + 1);
             _currentDigest = _header.hash256();
@@ -359,10 +375,22 @@ contract BitcoinRelay is IBitcoinRelay {
             }
             _previousDigest = _currentDigest;
         }
+
+        console.log("after the for");
+
         uint rewardAmount;
         bool isTDT;
-        (rewardAmount, isTDT) = sendReward(msg.sender, _headers.len()); 
+
+        console.log("isTDT: ", isTDT);
+
+        (rewardAmount, isTDT) = sendReward(msg.sender, _headers.len());
+
+        console.log("after sending reward");
+
         emit BlockAdded(_height - _headers.len()/80 + 1, _height, msg.sender, rewardAmount, isTDT);
+
+        console.log("even the block is added and must return true");
+
         return true;
     }
 
@@ -381,20 +409,20 @@ contract BitcoinRelay is IBitcoinRelay {
             IERC20(TeleportDAOToken).transfer(relayer, rewardAmountInTDT);
             return (rewardAmountInTDT, true);
         } else if (rewardAmountInTNT <= contractTNTBalance && rewardAmountInTNT > 0) {
-            // transfer TNT from relay to relayer 
+            // transfer TNT from relay to relayer
             msg.sender.transfer(rewardAmountInTNT);
             return (rewardAmountInTNT, false);
         }
     }
 
-    function getRewardAmountInTDT(uint rewardAmountInTNT) internal returns(uint) { 
+    function getRewardAmountInTDT(uint rewardAmountInTNT) internal returns(uint) {
         // TODO: calculate the reward using the swap rate between the token and TDT
-        return 0; 
+        return 0;
     }
-    
-    function getFeeAmountInTDT(uint feeAmount) internal returns(uint) { 
+
+    function getFeeAmountInTDT(uint feeAmount) internal returns(uint) {
         // TODO: calculate the fee using the swap rate between the token and TDT
-        return 0; 
+        return 0;
     }
 
     function addToChain(bytes29 _header, uint _height) internal {
@@ -697,13 +725,13 @@ contract BitcoinRelay is IBitcoinRelay {
         }
         return result;
     }
-    
+
     function calculateTxId (
         bytes4 _version,
         bytes memory _vin,
         bytes memory _vout,
         bytes4 _locktime
-    ) external override returns(bytes32) {
+    ) external view override returns(bytes32) {
         bytes32 inputHash1 = sha256(abi.encodePacked(_version, _vin, _vout, _locktime));
         bytes32 inputHash2 = sha256(abi.encodePacked(inputHash1));
         console.log("inputHash2");
@@ -715,7 +743,7 @@ contract BitcoinRelay is IBitcoinRelay {
         return revertBytes32(chain[height][index].selfHash);
     }
 
-	function getNumberOfSubmittedHeaders (uint height) external view override returns (uint) {
+    function getNumberOfSubmittedHeaders (uint height) external view override returns (uint) {
         return chain[height].length;
     }
 }
