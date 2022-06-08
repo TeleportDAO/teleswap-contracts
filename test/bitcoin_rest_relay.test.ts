@@ -106,7 +106,9 @@ describe("Bitcoin Relay (ts)", async () => {
 
                 let blockHeadersNew = '0x';
 
-                let blockHeaderOld;
+                let blockHeaderOld = '';
+
+                console.log("the block header: ", blockHeaders[i])
 
                 if (i == 0) {
                     blockHeaderOld = '0x' + blockHeaders[0];
@@ -120,14 +122,12 @@ describe("Bitcoin Relay (ts)", async () => {
                     }
                 }
 
-                let addHeadersResult = await bitcoinRelay.addHeaders(
-                    blockHeaderOld, // anchor header
-                    blockHeadersNew // new header;
-                );
-
                 await expect(
-                    addHeadersResult
-                ).to.equal(true);
+                    bitcoinRelay.addHeaders(
+                        blockHeaderOld, // anchor header
+                        blockHeadersNew // new header;
+                    )
+                ).to.emit(bitcoinRelay, "BlockAdded")
 
             }
 
@@ -139,15 +139,13 @@ describe("Bitcoin Relay (ts)", async () => {
             let oldPeriodStartHeader = '0x' + blockHeaders[0];
             let oldPeriodEndHeader = '0x' + blockHeaders[2015];
 
-            let addHeadersWithRetargetResult = await bitcoinRelay.addHeadersWithRetarget(
-                oldPeriodStartHeader,
-                oldPeriodEndHeader,
-                blockHeaderNew
-            );
-
-            expect(
-                addHeadersWithRetargetResult
-            ).to.equal(true);
+            await expect(
+                bitcoinRelay.addHeadersWithRetarget(
+                    oldPeriodStartHeader,
+                    oldPeriodEndHeader,
+                    blockHeaderNew
+                )
+            ).to.emit(bitcoinRelay, "BlockAdded")
 
         });
 
