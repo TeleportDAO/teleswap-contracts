@@ -171,16 +171,16 @@ describe("Bitcoin Relay (ts)", async () => {
             let payWithTDT = false;
             let _neededConfirmations = 0;
 
-            // expect(
-            //     await bitcoinRelay.checkTxProof(
-            //         _txid,
-            //         _blockNumber,
-            //         _intermediateNodes,
-            //         _index,
-            //         payWithTDT,
-            //         _neededConfirmations
-            //     )
-            // ).to.equal(true);
+            expect(
+                await bitcoinRelay.checkTxProof(
+                    _txid,
+                    _blockNumber,
+                    _intermediateNodes,
+                    _index,
+                    payWithTDT,
+                    _neededConfirmations
+                )
+            ).to.equal(true);
 
         });
 

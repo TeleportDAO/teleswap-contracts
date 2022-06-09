@@ -518,7 +518,7 @@ library ViewBTC {
         bytes29 _proof, // _proof nodes are LE
         bytes32 _root, // _root is BE (same as the merkle root that is stored in the block header)
         uint256 _index
-    ) internal returns (bool) {
+    ) internal view returns (bool) {
         uint256 nodes = _proof.len() / 32;
         if (nodes == 0) {
             return _leaf == _root;
@@ -540,7 +540,7 @@ library ViewBTC {
         return revertBytes32(_current) == _root;
     }
 
-    function revertBytes32 (bytes32 input) internal returns(bytes32) {
+    function revertBytes32 (bytes32 input) internal view returns(bytes32) {
         bytes memory temp;
         bytes32 result;
         for (uint i = 0; i < 32; i++) {

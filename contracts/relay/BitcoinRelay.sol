@@ -210,7 +210,7 @@ contract BitcoinRelay is IBitcoinRelay {
         uint index,
         bool payWithTDT,
         uint neededConfirmations
-    ) public override returns (bool) {
+    ) public view override returns (bool) {
         if (blockHeight + neededConfirmations < lastSubmittedHeight + 1) {
             for (uint i = 0; i < chain[blockHeight].length; i ++) {
                 bytes32 _merkleRoot = revertBytes32(chain[blockHeight][i].merkleRoot);
@@ -686,7 +686,7 @@ contract BitcoinRelay is IBitcoinRelay {
         }
     }
 
-    function revertBytes32 (bytes32 input) internal returns(bytes32) {
+    function revertBytes32 (bytes32 input) internal view returns(bytes32) {
         bytes memory temp;
         bytes32 result;
         for (uint i = 0; i < 32; i++) {

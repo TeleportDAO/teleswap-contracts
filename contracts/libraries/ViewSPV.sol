@@ -64,7 +64,7 @@ library ViewSPV {
         bytes32 _merkleRoot,
         bytes29 _intermediateNodes,
         uint _index
-    ) internal returns (bool) {
+    ) internal view returns (bool) {
         // Shortcut the empty-block case
         if (revertBytes32(_txid) == _merkleRoot && _index == 0 && _intermediateNodes.len() == 0) {
             return true;
@@ -73,7 +73,7 @@ library ViewSPV {
         return ViewBTC.checkMerkle(_txid, _intermediateNodes, _merkleRoot, _index);
     }
 
-    function revertBytes32 (bytes32 input) internal returns(bytes32) {
+    function revertBytes32 (bytes32 input) internal view returns(bytes32) {
         bytes memory temp;
         bytes32 result;
         for (uint i = 0; i < 32; i++) {
