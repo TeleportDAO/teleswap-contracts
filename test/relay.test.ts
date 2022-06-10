@@ -164,14 +164,6 @@ describe('Relay', async () => {
                     badHeaders
                 )
             ).to.revertedWith("Headers do not form a consistent chain")
-
-            // try {
-            //   const badHeaders = '0x0000002073bd2184edd9c4fc76642ea6754ee40136970efc10c4190000000000000000000296ef123ea96da5cf695f22bf7d94be87d49db1ad7ac371ac43c4da4161c8c216349c5ba11928170d38782b0000002073bd2184edd9c4fc76642ea6754ee40136970efc10c4190000000000000000005af53b865c27c6e9b5e5db4c3ea8e024f8329178a79ddb39f7727ea2fe6e6825d1349c5ba1192817e2d951590000002073bd2184edd9c4fc76642ea6754ee40136970efc10c419000000000000000000c63a8848a448a43c9e4402bd893f701cd11856e14cbbe026699e8fdc445b35a8d93c9c5ba1192817b945dc6c00000020f402c0b551b944665332466753f1eebb846a64ef24c71700000000000000000033fc68e070964e908d961cd11033896fa6c9b8b76f64a2db7ea928afa7e304257d3f9c5ba11928176164145d0000ff3f63d40efa46403afd71a254b54f2b495b7b0164991c2d22000000000000000000f046dc1b71560b7d0786cfbdb25ae320bd9644c98d5c7c77bf9df05cbe96212758419c5ba1192817a2bb2caa00000020e2d4f0edd5edd80bdcb880535443747c6b22b48fb6200d0000000000000000001d3799aa3eb8d18916f46bf2cf807cb89a9b1b4c56c3f2693711bf1064d9a32435429c5ba1192817752e49ae0000002022dba41dff28b337ee3463bf1ab1acf0e57443e0f7ab1d000000000000000000c3aadcc8def003ecbd1ba514592a18baddddcd3a287ccf74f584b04c5c10044e97479c5ba1192817c341f595';
-            //   await instance.addHeaders(genesis.hex, badHeaders);
-            //   assert(false, 'expected an error');
-            // } catch (e) {
-            //   assert.include(e.message, 'Unexpected retarget on external call');
-            // }
         });
 
         it('errors if the header array is not a multiple of 80 bytes', async () => {
@@ -183,15 +175,6 @@ describe('Relay', async () => {
                     badHeaders
                 )
             ).to.revertedWith("Header array length must be divisible by 80")
-
-            // try {
-            //   // 3 extra bytes on the end
-            //   const badHeaders = headers.substring(0, 8 + 5 * 160);
-            //   await instance.addHeaders(genesis.hex, badHeaders);
-            //   assert(false, 'expected an error');
-            // } catch (e) {
-            //   assert.include(e.message, 'Header array length must be divisible by 80');
-            // }
         });
 
         it('errors if a header work is too low', async () => {
@@ -205,13 +188,6 @@ describe('Relay', async () => {
                 )
             ).to.revertedWith("Headers do not form a consistent chain")
 
-            // try {
-            //   const badHeaders = `${headers}${'00'.repeat(80)}`;
-            //   await instance.addHeaders(genesis.hex, badHeaders);
-            //   assert(false, 'expected an error');
-            // } catch (e) {
-            //   assert.include(e.message, 'Header work is insufficient');
-            // }
         });
 
         it('errors if the target changes mid-chain', async () => {
@@ -225,13 +201,6 @@ describe('Relay', async () => {
                 )
             ).to.revertedWith("Headers do not form a consistent chain")
 
-            // try {
-            //   const badHeaders = utils.concatenateHexStrings([headers, REGULAR_CHAIN.badHeader.hex]);
-            //   await instance.addHeaders(genesis.hex, badHeaders);
-            //   assert(false, 'expected an error');
-            // } catch (e) {
-            //   assert.include(e.message, 'Target changed unexpectedly');
-            // }
         });
 
         it('errors if a prevhash link is broken', async () => {
@@ -245,13 +214,6 @@ describe('Relay', async () => {
                 )
             ).to.revertedWith("Headers do not form a consistent chain")
 
-            // try {
-            //   const badHeaders = utils.concatenateHexStrings([headers, chain[15].hex]);
-            //   await instance.addHeaders(genesis.hex, badHeaders);
-            //   assert(false, 'expected an error');
-            // } catch (e) {
-            //   assert.include(e.message, 'Headers do not form a consistent chain');
-            // }
         });
 
         it('appends new links to the chain and fires an event', async () => {
@@ -262,19 +224,6 @@ describe('Relay', async () => {
                     headers
                 )
             ).to.emit(instance, "BlockAdded")
-            // const blockNumber = await web3.eth.getBlock('latest').number;
-
-            // await instance.addHeaders(genesis.hex, headers);
-
-            // const res = await instance.findHeight.call(chain[0].digest_le);
-            // assert(res.eqn(genesis.height + 1));
-
-            // const eventList = await instance.getPastEvents(
-            //   'Extension',
-            //   { fromBlock: blockNumber, toBlock: 'latest' }
-            // );
-            // /* eslint-disable-next-line no-underscore-dangle */
-            // assert.equal(eventList[0].returnValues._last, chain[5].digest_le);
         });
 
         it('skips some validation steps for known blocks', async () => {
@@ -283,89 +232,154 @@ describe('Relay', async () => {
         });
     });
 
-    // describe('#addHeadersWithRetarget', async () => {
-    //   const { chain } = RETARGET_CHAIN;
-    //   const headerHex = chain.map(header => header.hex);
-    //   const genesis = chain[1];
+    describe('#addHeadersWithRetarget', async () => {
+        const { chain, chain_header_hex } = RETARGET_CHAIN;
+        const headerHex = chain_header_hex;
+        const genesis = chain[1];
 
-    //   const firstHeader = RETARGET_CHAIN.oldPeriodStart;
-    //   const lastHeader = chain[8];
-    //   const preChange = utils.concatenateHexStrings(headerHex.slice(2, 9));
-    //   const headers = utils.concatenateHexStrings(headerHex.slice(9, 15));
+        const firstHeader = RETARGET_CHAIN.oldPeriodStart;
+        const lastHeader = chain[8];
+        const preChange = utils.concatenateHexStrings(headerHex.slice(2, 9));
+        const headers = utils.concatenateHexStrings(headerHex.slice(9, 15));
 
-    //   // let btcutils
+        // let btcutils
 
-    //   before(async () => {
-    //     // btcutils = await BTCUtils.new()
-    //     instance = await Relay.new(
-    //       genesis.hex,
-    //       genesis.height,
-    //       firstHeader.digest_le
-    //     );
-    //     await instance.addHeaders(genesis.hex, preChange);
-    //   });
+        before(async () => {
 
-    //   it('errors if the old period start header is unknown', async () => {
-    //     try {
-    //       await instance.addHeadersWithRetarget('0x00', lastHeader.hex, headers);
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'Bad args. Check header and array byte lengths.');
-    //     }
-    //   });
+            [deployer, signer1] = await ethers.getSigners();
 
-    //   it('errors if the old period end header is unknown', async () => {
-    //     try {
-    //       await instance.addHeadersWithRetarget(firstHeader.hex, chain[15].hex, headers);
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'Unknown block');
-    //     }
-    //   });
+            const bitcoinRelayFactory = new BitcoinRelay__factory(
+                deployer
+            );
 
-    //   it('errors if the provided last header does not match records', async () => {
-    //     try {
-    //       await instance.addHeadersWithRetarget(firstHeader.hex, firstHeader.hex, headers);
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'Must provide the last header of the closing difficulty period');
-    //     }
-    //   });
+            // btcutils = await BTCUtils.new()
+            instance = await bitcoinRelayFactory.deploy(
+                genesis.hex,
+                genesis.height,
+                firstHeader.digest_le,
+                ZERO_ADDRESS,
+                ZERO_ADDRESS
+            );
 
-    //   it('errors if the start and end headers are not exactly 2015 blocks apart', async () => {
-    //     try {
-    //       await instance.addHeadersWithRetarget(lastHeader.hex, lastHeader.hex, headers);
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'Must provide exactly 1 difficulty period');
-    //     }
-    //   });
+            await instance.addHeaders(genesis.hex, preChange);
 
-    //   it('errors if the retarget is performed incorrectly', async () => {
-    //     const tmpInstance = await Relay.new(
-    //       genesis.hex,
-    //       lastHeader.height, // This is a lie
-    //       firstHeader.digest_le
-    //     );
-    //     try {
-    //       await tmpInstance.addHeadersWithRetarget(firstHeader.hex, genesis.hex, headers);
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'Invalid retarget provided');
-    //     }
-    //   });
+        });
 
-    //   it('appends new links to the chain', async () => {
-    //     await instance.addHeadersWithRetarget(
-    //       firstHeader.hex,
-    //       lastHeader.hex,
-    //       headers
-    //     );
+        it('errors if the old period start header is unknown', async () => {
 
-    //     const res = await instance.findHeight.call(chain[10].digest_le);
-    //     assert(res.eqn(lastHeader.height + 2));
-    //   });
-    // });
+            await expect(
+                instance.addHeadersWithRetarget(
+                    '0x00',
+                    lastHeader.hex,
+                    headers
+                )
+            ).to.revertedWith("Bad args. Check header and array byte lengths.")
+
+            // try {
+            //   await instance.addHeadersWithRetarget('0x00', lastHeader.hex, headers);
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Bad args. Check header and array byte lengths.');
+            // }
+        });
+
+        it('errors if the old period end header is unknown', async () => {
+
+            await expect(
+                instance.addHeadersWithRetarget(
+                    firstHeader.hex,
+                    chain[15].hex,
+                    headers
+                )
+            ).to.revertedWith("Unknown block")
+
+            // try {
+            //   await instance.addHeadersWithRetarget(firstHeader.hex, chain[15].hex, headers);
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Unknown block');
+            // }
+        });
+
+        it('errors if the provided last header does not match records', async () => {
+
+            await expect(
+                instance.addHeadersWithRetarget(
+                    firstHeader.hex,
+                    firstHeader.hex,
+                    headers)
+            ).to.revertedWith("Must provide the last header of the closing difficulty period")
+
+            // try {
+            //   await instance.addHeadersWithRetarget(firstHeader.hex, firstHeader.hex, headers);
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Must provide the last header of the closing difficulty period');
+            // }
+        });
+
+        it('errors if the start and end headers are not exactly 2015 blocks apart', async () => {
+
+            await expect(
+                instance.addHeadersWithRetarget(
+                    lastHeader.hex,
+                    lastHeader.hex,
+                    headers
+                )
+            ).to.revertedWith("Must provide exactly 1 difficulty period")
+
+            // try {
+            //   await instance.addHeadersWithRetarget(lastHeader.hex, lastHeader.hex, headers);
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Must provide exactly 1 difficulty period');
+            // }
+        });
+
+        it('errors if the retarget is performed incorrectly', async () => {
+            const bitcoinRelayFactory = new BitcoinRelay__factory(
+                deployer
+            );
+
+            const tmpInstance = await bitcoinRelayFactory.deploy(
+                genesis.hex,
+                lastHeader.height, // This is a lie
+                firstHeader.digest_le,
+                ZERO_ADDRESS,
+                ZERO_ADDRESS
+            );
+
+            await expect(
+                tmpInstance.addHeadersWithRetarget(
+                    firstHeader.hex,
+                    genesis.hex,
+                    headers
+                )
+            ).to.revertedWith("Invalid retarget provided")
+
+            // try {
+            //   await tmpInstance.addHeadersWithRetarget(firstHeader.hex, genesis.hex, headers);
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Invalid retarget provided');
+            // }
+        });
+
+        it('appends new links to the chain', async () => {
+            await instance.addHeadersWithRetarget(
+                firstHeader.hex,
+                lastHeader.hex,
+                headers
+            );
+
+            expect(
+                await instance.findHeight(chain[10].digest_le)
+            ).to.equal(lastHeader.height + 2)
+
+            // const res = await instance.findHeight.call(chain[10].digest_le);
+            // assert(res.eqn(lastHeader.height + 2));
+        });
+    });
 
     // describe('#findHeight', async () => {
     //   const { chain, genesis } = REGULAR_CHAIN;
