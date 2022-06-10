@@ -18,21 +18,12 @@ describe('Relay', async () => {
     let bitcoinRelay: BitcoinRelay;
     let deployer: Signer;
     let signer1: Signer;
-    // let bitcoinRelay;
-    // let deployer;
-    // let signer1;
 
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     let bitcoinRESTAPI: any;
     let blockHeaders: any;
 
     let instance: BitcoinRelay;
-
-    // let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-    // let bitcoinRESTAPI;
-    // let blockHeaders;
-
-    // let instance;
 
     describe('#constructor', async () => {
         /* eslint-disable-next-line camelcase */
@@ -129,120 +120,168 @@ describe('Relay', async () => {
         });
     });
 
-    // describe('#addHeaders', async () => {
-    //     /* eslint-disable-next-line camelcase */
-    //     const { chain, genesis, orphan_562630 } = REGULAR_CHAIN;
-    //     // const headerHex = chain.map(header=> header.hex);
-    //     const headerHex = chain.map(header => header.hex);
-    //
-    //     const headers = utils.concatenateHexStrings(headerHex.slice(0, 6));
-    //
-    //     before(async () => {
-    //         [deployer, signer1] = await ethers.getSigners();
-    //
-    //         const bitcoinRelayFactory = new BitcoinRelay__factory(
-    //             deployer
-    //         );
-    //
-    //         instance = await bitcoinRelayFactory.deploy(
-    //             genesis.hex,
-    //             genesis.height,
-    //             orphan_562630.digest_le,
-    //             ZERO_ADDRESS,
-    //             ZERO_ADDRESS
-    //         );
-    //
-    //     });
-    //
-    //     it('errors if the anchor is unknown', async () => {
-    //
-    //         await expect(
-    //             instance.addHeaders(
-    //                 '0x00',
-    //                 headers
-    //             )
-    //         ).to.revertedWith("Anchor must be 80 bytes")
-    //
-    //         // try {
-    //         //   await instance.addHeaders('0x00', headers);
-    //         //   assert(false, 'expected an error');
-    //         // } catch (e) {
-    //         //   assert.include(e.message, 'Anchor must be 80 bytes');
-    //         // }
-    //     });
-    //
-    //     // it('errors if it encounters a retarget on an external call', async () => {
-    //     //   try {
-    //     //     const badHeaders = '0x0000002073bd2184edd9c4fc76642ea6754ee40136970efc10c4190000000000000000000296ef123ea96da5cf695f22bf7d94be87d49db1ad7ac371ac43c4da4161c8c216349c5ba11928170d38782b0000002073bd2184edd9c4fc76642ea6754ee40136970efc10c4190000000000000000005af53b865c27c6e9b5e5db4c3ea8e024f8329178a79ddb39f7727ea2fe6e6825d1349c5ba1192817e2d951590000002073bd2184edd9c4fc76642ea6754ee40136970efc10c419000000000000000000c63a8848a448a43c9e4402bd893f701cd11856e14cbbe026699e8fdc445b35a8d93c9c5ba1192817b945dc6c00000020f402c0b551b944665332466753f1eebb846a64ef24c71700000000000000000033fc68e070964e908d961cd11033896fa6c9b8b76f64a2db7ea928afa7e304257d3f9c5ba11928176164145d0000ff3f63d40efa46403afd71a254b54f2b495b7b0164991c2d22000000000000000000f046dc1b71560b7d0786cfbdb25ae320bd9644c98d5c7c77bf9df05cbe96212758419c5ba1192817a2bb2caa00000020e2d4f0edd5edd80bdcb880535443747c6b22b48fb6200d0000000000000000001d3799aa3eb8d18916f46bf2cf807cb89a9b1b4c56c3f2693711bf1064d9a32435429c5ba1192817752e49ae0000002022dba41dff28b337ee3463bf1ab1acf0e57443e0f7ab1d000000000000000000c3aadcc8def003ecbd1ba514592a18baddddcd3a287ccf74f584b04c5c10044e97479c5ba1192817c341f595';
-    //     //     await instance.addHeaders(genesis.hex, badHeaders);
-    //     //     assert(false, 'expected an error');
-    //     //   } catch (e) {
-    //     //     assert.include(e.message, 'Unexpected retarget on external call');
-    //     //   }
-    //     // });
-    //
-    //     // it('errors if the header array is not a multiple of 80 bytes', async () => {
-    //     //   try {
-    //     //     // 3 extra bytes on the end
-    //     //     const badHeaders = headers.substring(0, 8 + 5 * 160);
-    //     //     await instance.addHeaders(genesis.hex, badHeaders);
-    //     //     assert(false, 'expected an error');
-    //     //   } catch (e) {
-    //     //     assert.include(e.message, 'Header array length must be divisible by 80');
-    //     //   }
-    //     // });
-    //
-    //     // it('errors if a header work is too low', async () => {
-    //     //   try {
-    //     //     const badHeaders = `${headers}${'00'.repeat(80)}`;
-    //     //     await instance.addHeaders(genesis.hex, badHeaders);
-    //     //     assert(false, 'expected an error');
-    //     //   } catch (e) {
-    //     //     assert.include(e.message, 'Header work is insufficient');
-    //     //   }
-    //     // });
-    //
-    //     // it('errors if the target changes mid-chain', async () => {
-    //     //   try {
-    //     //     const badHeaders = utils.concatenateHexStrings([headers, REGULAR_CHAIN.badHeader.hex]);
-    //     //     await instance.addHeaders(genesis.hex, badHeaders);
-    //     //     assert(false, 'expected an error');
-    //     //   } catch (e) {
-    //     //     assert.include(e.message, 'Target changed unexpectedly');
-    //     //   }
-    //     // });
-    //
-    //     // it('errors if a prevhash link is broken', async () => {
-    //     //   try {
-    //     //     const badHeaders = utils.concatenateHexStrings([headers, chain[15].hex]);
-    //     //     await instance.addHeaders(genesis.hex, badHeaders);
-    //     //     assert(false, 'expected an error');
-    //     //   } catch (e) {
-    //     //     assert.include(e.message, 'Headers do not form a consistent chain');
-    //     //   }
-    //     // });
-    //
-    //     // it('appends new links to the chain and fires an event', async () => {
-    //     //   const blockNumber = await web3.eth.getBlock('latest').number;
-    //
-    //     //   await instance.addHeaders(genesis.hex, headers);
-    //
-    //     //   const res = await instance.findHeight.call(chain[0].digest_le);
-    //     //   assert(res.eqn(genesis.height + 1));
-    //
-    //     //   const eventList = await instance.getPastEvents(
-    //     //     'Extension',
-    //     //     { fromBlock: blockNumber, toBlock: 'latest' }
-    //     //   );
-    //     //   /* eslint-disable-next-line no-underscore-dangle */
-    //     //   assert.equal(eventList[0].returnValues._last, chain[5].digest_le);
-    //     // });
-    //
-    //     // it('skips some validation steps for known blocks', async () => {
-    //     //   const oneMoreHeader = utils.concatenateHexStrings([headers, headerHex[6]]);
-    //     //   await instance.addHeaders(genesis.hex, oneMoreHeader);
-    //     // });
-    // });
+    describe('#addHeaders', async () => {
+        /* eslint-disable-next-line camelcase */
+        const { chain_header_hex, chain, genesis, orphan_562630 } = REGULAR_CHAIN;
+        // const headerHex = chain.map(header=> header.hex);
+        const headerHex = chain_header_hex;
+
+        const headers = utils.concatenateHexStrings(headerHex.slice(0, 6));
+
+        before(async () => {
+            [deployer, signer1] = await ethers.getSigners();
+
+            const bitcoinRelayFactory = new BitcoinRelay__factory(
+                deployer
+            );
+
+            instance = await bitcoinRelayFactory.deploy(
+                genesis.hex,
+                genesis.height,
+                orphan_562630.digest_le,
+                ZERO_ADDRESS,
+                ZERO_ADDRESS
+            );
+
+        });
+
+        it('errors if the anchor is unknown', async () => {
+
+            await expect(
+                instance.addHeaders(
+                    '0x00',
+                    headers
+                )
+            ).to.revertedWith("Anchor must be 80 bytes")
+        });
+
+        it('errors if it encounters a retarget on an external call', async () => {
+            let badHeaders = '0x0000002073bd2184edd9c4fc76642ea6754ee40136970efc10c4190000000000000000000296ef123ea96da5cf695f22bf7d94be87d49db1ad7ac371ac43c4da4161c8c216349c5ba11928170d38782b0000002073bd2184edd9c4fc76642ea6754ee40136970efc10c4190000000000000000005af53b865c27c6e9b5e5db4c3ea8e024f8329178a79ddb39f7727ea2fe6e6825d1349c5ba1192817e2d951590000002073bd2184edd9c4fc76642ea6754ee40136970efc10c419000000000000000000c63a8848a448a43c9e4402bd893f701cd11856e14cbbe026699e8fdc445b35a8d93c9c5ba1192817b945dc6c00000020f402c0b551b944665332466753f1eebb846a64ef24c71700000000000000000033fc68e070964e908d961cd11033896fa6c9b8b76f64a2db7ea928afa7e304257d3f9c5ba11928176164145d0000ff3f63d40efa46403afd71a254b54f2b495b7b0164991c2d22000000000000000000f046dc1b71560b7d0786cfbdb25ae320bd9644c98d5c7c77bf9df05cbe96212758419c5ba1192817a2bb2caa00000020e2d4f0edd5edd80bdcb880535443747c6b22b48fb6200d0000000000000000001d3799aa3eb8d18916f46bf2cf807cb89a9b1b4c56c3f2693711bf1064d9a32435429c5ba1192817752e49ae0000002022dba41dff28b337ee3463bf1ab1acf0e57443e0f7ab1d000000000000000000c3aadcc8def003ecbd1ba514592a18baddddcd3a287ccf74f584b04c5c10044e97479c5ba1192817c341f595';
+
+            await expect(
+                instance.addHeaders(
+                    genesis.hex,
+                    badHeaders
+                )
+            ).to.revertedWith("Headers do not form a consistent chain")
+
+            // try {
+            //   const badHeaders = '0x0000002073bd2184edd9c4fc76642ea6754ee40136970efc10c4190000000000000000000296ef123ea96da5cf695f22bf7d94be87d49db1ad7ac371ac43c4da4161c8c216349c5ba11928170d38782b0000002073bd2184edd9c4fc76642ea6754ee40136970efc10c4190000000000000000005af53b865c27c6e9b5e5db4c3ea8e024f8329178a79ddb39f7727ea2fe6e6825d1349c5ba1192817e2d951590000002073bd2184edd9c4fc76642ea6754ee40136970efc10c419000000000000000000c63a8848a448a43c9e4402bd893f701cd11856e14cbbe026699e8fdc445b35a8d93c9c5ba1192817b945dc6c00000020f402c0b551b944665332466753f1eebb846a64ef24c71700000000000000000033fc68e070964e908d961cd11033896fa6c9b8b76f64a2db7ea928afa7e304257d3f9c5ba11928176164145d0000ff3f63d40efa46403afd71a254b54f2b495b7b0164991c2d22000000000000000000f046dc1b71560b7d0786cfbdb25ae320bd9644c98d5c7c77bf9df05cbe96212758419c5ba1192817a2bb2caa00000020e2d4f0edd5edd80bdcb880535443747c6b22b48fb6200d0000000000000000001d3799aa3eb8d18916f46bf2cf807cb89a9b1b4c56c3f2693711bf1064d9a32435429c5ba1192817752e49ae0000002022dba41dff28b337ee3463bf1ab1acf0e57443e0f7ab1d000000000000000000c3aadcc8def003ecbd1ba514592a18baddddcd3a287ccf74f584b04c5c10044e97479c5ba1192817c341f595';
+            //   await instance.addHeaders(genesis.hex, badHeaders);
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Unexpected retarget on external call');
+            // }
+        });
+
+        it('errors if the header array is not a multiple of 80 bytes', async () => {
+            let badHeaders = headers.substring(0, 8 + 5 * 160)
+
+            await expect(
+                instance.addHeaders(
+                    genesis.hex,
+                    badHeaders
+                )
+            ).to.revertedWith("Header array length must be divisible by 80")
+
+            // try {
+            //   // 3 extra bytes on the end
+            //   const badHeaders = headers.substring(0, 8 + 5 * 160);
+            //   await instance.addHeaders(genesis.hex, badHeaders);
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Header array length must be divisible by 80');
+            // }
+        });
+
+        it('errors if a header work is too low', async () => {
+
+            let badHeaders = `${headers}${'00'.repeat(80)}`
+
+            await expect(
+                instance.addHeaders(
+                    genesis.hex,
+                    badHeaders
+                )
+            ).to.revertedWith("Headers do not form a consistent chain")
+
+            // try {
+            //   const badHeaders = `${headers}${'00'.repeat(80)}`;
+            //   await instance.addHeaders(genesis.hex, badHeaders);
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Header work is insufficient');
+            // }
+        });
+
+        it('errors if the target changes mid-chain', async () => {
+
+            let badHeaders = utils.concatenateHexStrings([headers, REGULAR_CHAIN.badHeader.hex]);
+
+            await expect(
+                instance.addHeaders(
+                    genesis.hex,
+                    badHeaders
+                )
+            ).to.revertedWith("Headers do not form a consistent chain")
+
+            // try {
+            //   const badHeaders = utils.concatenateHexStrings([headers, REGULAR_CHAIN.badHeader.hex]);
+            //   await instance.addHeaders(genesis.hex, badHeaders);
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Target changed unexpectedly');
+            // }
+        });
+
+        it('errors if a prevhash link is broken', async () => {
+
+            let badHeaders = utils.concatenateHexStrings([headers, chain[15].hex]);
+
+            await expect(
+                instance.addHeaders(
+                    genesis.hex,
+                    badHeaders
+                )
+            ).to.revertedWith("Headers do not form a consistent chain")
+
+            // try {
+            //   const badHeaders = utils.concatenateHexStrings([headers, chain[15].hex]);
+            //   await instance.addHeaders(genesis.hex, badHeaders);
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Headers do not form a consistent chain');
+            // }
+        });
+
+        it('appends new links to the chain and fires an event', async () => {
+
+            expect(
+                await instance.addHeaders(
+                    genesis.hex,
+                    headers
+                )
+            ).to.emit(instance, "BlockAdded")
+            // const blockNumber = await web3.eth.getBlock('latest').number;
+
+            // await instance.addHeaders(genesis.hex, headers);
+
+            // const res = await instance.findHeight.call(chain[0].digest_le);
+            // assert(res.eqn(genesis.height + 1));
+
+            // const eventList = await instance.getPastEvents(
+            //   'Extension',
+            //   { fromBlock: blockNumber, toBlock: 'latest' }
+            // );
+            // /* eslint-disable-next-line no-underscore-dangle */
+            // assert.equal(eventList[0].returnValues._last, chain[5].digest_le);
+        });
+
+        it('skips some validation steps for known blocks', async () => {
+            const oneMoreHeader = utils.concatenateHexStrings([headers, headerHex[6]]);
+            await instance.addHeaders(genesis.hex, oneMoreHeader);
+        });
+    });
 
     // describe('#addHeadersWithRetarget', async () => {
     //   const { chain } = RETARGET_CHAIN;
