@@ -38,27 +38,7 @@ describe("Bitcoin Relay (ts)", async () => {
         let data = fs.readFileSync(jsonPath, 'utf-8');
         blockHeaders = data.split('\n');
 
-        // submit the first block header
-        // var _height = 199584; // 99*2016
-        // var _genesisHeader = await bitcoinRESTAPI.getHexBlockHeader(_height);
-        // var _periodStart = await bitcoinRESTAPI.getHexBlockHash(_height);
-        // _genesisHeader = '0x' + _genesisHeader;
-        // _periodStart = '0x' + _periodStart;
         bitcoinRelay = await deployBitcoinRelay();
-
-        // var _height = 199584; // 99*2016
-        // var _genesisHeader = await bitcoinRESTAPI.getHexBlockHeader(_height);
-        // var _periodStart = await bitcoinRESTAPI.getHexBlockHash(_height);
-        // _genesisHeader = '0x' + _genesisHeader;
-        // _periodStart = '0x' + _periodStart;
-        // bitcoinRelay = await BitcoinRelay.new(
-        //     _genesisHeader,
-        //     _height,
-        //     _periodStart,
-        //     ZERO_ADDRESS,
-        //     ZERO_ADDRESS,
-        //     {from: deployer}
-        // );
 
     });
 
@@ -74,6 +54,8 @@ describe("Bitcoin Relay (ts)", async () => {
         let _genesisHeader = await bitcoinRESTAPI.getHexBlockHeader(_height);
         let _periodStart = await bitcoinRESTAPI.getHexBlockHash(_height);
         _genesisHeader = '0x' + _genesisHeader;
+
+        console.log("the genesis header: ", _genesisHeader)
         _periodStart = '0x' + _periodStart;
 
         const bitcoinRelay = await bitcoinRelayFactory.deploy(
@@ -87,15 +69,59 @@ describe("Bitcoin Relay (ts)", async () => {
         return bitcoinRelay;
     };
 
+    describe("checking read functions", async () => {
+        // it("getCurrentEpochDifficulty", async function () {
+        //     expect(
+        //         await bitcoinRelay.getRelayGenesis()
+        //     ).to.equal("7f489b2f16d5179ab106c54ae909ded9f13d8fd3f86ea38a2d017c02c8e0b2e4")
+        // })
+
+        // it("getPrevEpochDifficulty", async function () {
+        //     expect(
+        //         await bitcoinRelay.getRelayGenesis()
+        //     ).to.equal("7f489b2f16d5179ab106c54ae909ded9f13d8fd3f86ea38a2d017c02c8e0b2e4")
+        // })
+
+        // it("getRelayGenesis", async function () {
+        //     expect(
+        //         await bitcoinRelay.getRelayGenesis()
+        //     ).to.equal("7f489b2f16d5179ab106c54ae909ded9f13d8fd3f86ea38a2d017c02c8e0b2e4")
+        // })
+
+        // it("getBestKnownDigest", async function () {
+        //     expect(
+        //         await bitcoinRelay.getRelayGenesis()
+        //     ).to.equal("7f489b2f16d5179ab106c54ae909ded9f13d8fd3f86ea38a2d017c02c8e0b2e4")
+        // })
+
+        // it("getLastReorgCommonAncestor", async function () {
+        //     expect(
+        //         await bitcoinRelay.getRelayGenesis()
+        //     ).to.equal("7f489b2f16d5179ab106c54ae909ded9f13d8fd3f86ea38a2d017c02c8e0b2e4")
+        // })
+
+        // it("findHeight", async function () {
+        //     expect(
+        //         await bitcoinRelay.getRelayGenesis()
+        //     ).to.equal("7f489b2f16d5179ab106c54ae909ded9f13d8fd3f86ea38a2d017c02c8e0b2e4")
+        // })
+
+        // it("findAncestor", async function () {
+        //     expect(
+        //         await bitcoinRelay.getRelayGenesis()
+        //     ).to.equal("7f489b2f16d5179ab106c54ae909ded9f13d8fd3f86ea38a2d017c02c8e0b2e4")
+        // })
+    })
+
     describe('Submitting block headers with retarget', async () => {
 
-        it('check the owner', async function () {
-            let theOwnerAddress = await bitcoinRelay.owner()
+        // it('check the owner', async function () {
+        //     let theOwnerAddress = await bitcoinRelay.owner()
 
-            let theDeplyerAddress = await deployer.getAddress();
+        //     let theDeplyerAddress = await deployer.getAddress();
 
-            expect(theOwnerAddress).to.equal(theDeplyerAddress);
-        })
+        //     expect(theOwnerAddress).to.equal(theDeplyerAddress);
+        // })
 
         it('submit old block headers', async function () {
             this.timeout(0);
@@ -145,14 +171,6 @@ describe("Bitcoin Relay (ts)", async () => {
 
         });
 
-        it('change the owner', async function () {
-            await bitcoinRelay.changeOwner(await signer1.getAddress())
-
-            let theSigner1Address = await signer1.getAddress();
-
-            expect(await bitcoinRelay.owner()).to.equal(theSigner1Address);
-        })
-
     });
 
     describe('Check tx inclusion', async () => {
@@ -189,6 +207,8 @@ describe("Bitcoin Relay (ts)", async () => {
             let transactionIds = await bitcoinRESTAPI.getBlockTransactionIds(blockNumber);
             let _index = 0;
             let _txid = transactionIds[_index];
+            console.log("type of txid: ", typeof(_txid))
+            console.log("txid: ", _txid)
             let parsedTx = await bitcoinRESTAPI.parseTransaction(_txid);
             let _version = parsedTx.version;
             let _vin = parsedTx.vin;
@@ -202,8 +222,9 @@ describe("Bitcoin Relay (ts)", async () => {
                     _vout,
                     _locktime
                 )
+                // TODO: why the txid is different?!
             ).to.equal("0xb2e944205992eec82c5076eb62146d52acccc1700a5428922a04d2bfea581e89")
-
+            // ).to.equal(_txid)
         });
 
     });
