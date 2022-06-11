@@ -381,74 +381,119 @@ describe('Relay', async () => {
         });
     });
 
-    // describe('#findHeight', async () => {
-    //   const { chain, genesis } = REGULAR_CHAIN;
-    //   const headerHex = chain.map(header => header.hex);
-    //   const headers = utils.concatenateHexStrings(headerHex.slice(0, 6));
+    describe('#findHeight', async () => {
+        const { chain, genesis, chain_header_hex } = REGULAR_CHAIN;
+        const headerHex = chain_header_hex;
+        const headers = utils.concatenateHexStrings(headerHex.slice(0, 6));
 
-    //   before(async () => {
-    //     instance = await Relay.new(
-    //       genesis.hex,
-    //       genesis.height,
-    //       genesis.digest_le
-    //     );
-    //     await instance.addHeaders(genesis.hex, headers);
-    //   });
+        before(async () => {
 
-    //   it('errors on unknown blocks', async () => {
-    //     try {
-    //       await instance.findHeight(`0x${'00'.repeat(32)}`);
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'Unknown block');
-    //     }
-    //   });
+            [deployer, signer1] = await ethers.getSigners();
 
-    //   it('Finds height of known blocks', async () => {
-    //     for (let i; i < chain.length; i += 1) {
-    //       /* eslint-disable-next-line camelcase */
-    //       const { digest_le, height } = chain[i];
-    //       /* eslint-disable-next-line no-await-in-loop */
-    //       const res = await instance.findHeight(digest_le);
-    //       assert(res.eqn(height), `incorrect height returned ${height}`);
-    //     }
-    //   });
-    // });
+            const bitcoinRelayFactory = new BitcoinRelay__factory(
+                deployer
+            );
+
+
+            instance = await bitcoinRelayFactory.deploy(
+                genesis.hex,
+                genesis.height,
+                genesis.digest_le,
+                ZERO_ADDRESS,
+                ZERO_ADDRESS
+            );
+
+            await instance.addHeaders(genesis.hex, headers);
+        });
+
+        it('errors on unknown blocks', async () => {
+
+            await expect(
+                instance.findHeight(`0x${'00'.repeat(32)}`)
+            ).to.revertedWith("Unknown block")
+
+            // try {
+            //   await instance.findHeight(`0x${'00'.repeat(32)}`);
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Unknown block');
+            // }
+        });
+
+        it('Finds height of known blocks', async () => {
+
+            for (let i = 0; i < chain.length; i += 1) {
+                /* eslint-disable-next-line camelcase */
+                const { digest_le, height } = chain[i];
+
+                /* eslint-disable-next-line no-await-in-loop */
+                expect(
+                    await instance.findHeight(digest_le)
+                ).to.equal(height)
+
+
+                // const res = await instance.findHeight(digest_le);
+                // assert(res.eqn(height), `incorrect height returned ${height}`);
+            }
+        });
+    });
 
     // describe('#findAncestor', async () => {
-    //   const { chain, genesis } = REGULAR_CHAIN;
-    //   const headerHex = chain.map(header => header.hex);
+    //   const { chain, genesis, chain_header_hex } = REGULAR_CHAIN;
+    //   const headerHex = chain_header_hex;
     //   const headers = utils.concatenateHexStrings(headerHex.slice(0, 6));
 
     //   before(async () => {
-    //     instance = await Relay.new(
+    //     [deployer, signer1] = await ethers.getSigners();
+
+    //     const bitcoinRelayFactory = new BitcoinRelay__factory(
+    //       deployer
+    //     );
+
+    //     instance = await bitcoinRelayFactory.deploy(
     //       genesis.hex,
     //       genesis.height,
-    //       genesis.digest_le
+    //       genesis.digest_le,
+    //       ZERO_ADDRESS,
+    //       ZERO_ADDRESS
     //     );
     //     await instance.addHeaders(genesis.hex, headers);
     //   });
 
     //   it('errors on unknown blocks', async () => {
-    //     try {
-    //       await instance.findAncestor(`0x${'00'.repeat(32)}`, 3);
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'Unknown ancestor');
-    //     }
+
+    //     await expect(
+    //       instance.findAncestor(`0x${'00'.repeat(32)}`, 3)
+    //     ).to.revertedWith("Unknown ancestor")
+
+    //     // try {
+    //     //   await instance.findAncestor(`0x${'00'.repeat(32)}`, 3);
+    //     //   assert(false, 'expected an error');
+    //     // } catch (e) {
+    //     //   assert.include(e.message, 'Unknown ancestor');
+    //     // }
     //   });
 
     //   it('Finds known ancestors based on on offsets', async () => {
-    //     for (let i; i < chain.length; i += 1) {
+    //     for (let i = 0; i < chain.length; i += 1) {
     //       /* eslint-disable-next-line camelcase */
     //       const { digest_le } = chain[i];
     //       /* eslint-disable-next-line no-await-in-loop */
     //       let res = await instance.findAncestor(digest_le, 0);
-    //       assert.equal(res, digest_le);
+    //       expect(
+    //         res
+    //       ).to.equal(digest_le)
+
+    //       // assert.equal(res, digest_le);
+
     //       if (i > 0) {
     //         /* eslint-disable-next-line no-await-in-loop */
     //         res = await instance.findAncestor(digest_le, 1);
-    //         assert.equal(res, chain[i - 1].digest_le);
+    //         expect(
+    //           res
+    //         ).to.equal(chain[i - 1].digest_le)
+
+    //         // assert.equal(res, chain[i - 1].digest_le);
     //       }
     //     }
     //   });
