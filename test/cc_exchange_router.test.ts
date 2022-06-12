@@ -4,7 +4,7 @@ require('dotenv').config({path:"../../.env"});
 import { assert, expect, use } from "chai";
 import { deployments, ethers } from "hardhat";
 import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
-import { deployMockContract,MockContract } from "@ethereum-waffle/mock-contract";
+import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
 import { Contract } from "@ethersproject/contracts";
 
 import { solidity } from "ethereum-waffle";
@@ -35,22 +35,17 @@ describe("CC Exchange Router", async () => {
         [deployer, signer1] = await ethers.getSigners();
 
         // read block headers from file
+
         const exchangeContract = await deployments.getArtifact(
             "IExchangeRouter"
         );
+
+        // console.log("the ABI: ", exchangeContract.abi)
 
         mockExchangeRouter = await deployMockContract(
             deployer,
             exchangeContract.abi
         )
-
-        mockExchangeRouter.mock.liquidityPoolFactory.returns(
-            ZERO_ADDRESS
-        );
-
-        mockExchangeRouter.mock.WAVAX.returns(
-            ZERO_ADDRESS
-        );
 
     });
 
@@ -69,6 +64,14 @@ describe("CC Exchange Router", async () => {
     ): Promise<CCExchangeRouter> => {
         const ccExchangeRouterFactory = new CCExchangeRouter__factory(
             _signer || deployer
+        );
+
+        await mockExchangeRouter.mock.liquidityPoolFactory.returns(
+            ZERO_ADDRESS
+        );
+
+        await mockExchangeRouter.mock.WAVAX.returns(
+            ZERO_ADDRESS
         );
 
         const ccExchangeRouter = await ccExchangeRouterFactory.deploy(

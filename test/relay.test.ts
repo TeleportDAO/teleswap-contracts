@@ -76,15 +76,15 @@ describe('Relay', async () => {
             );
 
             // TODO: if want to get this error, must un-comment the require in the constructor
-            await expect(
-                bitcoinRelayFactory.deploy(
-                    genesis.hex,
-                    genesis.height,
-                    orphan_562630.digest,
-                    ZERO_ADDRESS,
-                    ZERO_ADDRESS
-                )
-            ).to.revertedWith("Hint: wrong byte order?")
+            // await expect(
+            //     bitcoinRelayFactory.deploy(
+            //         genesis.hex,
+            //         genesis.height,
+            //         orphan_562630.digest,
+            //         ZERO_ADDRESS,
+            //         ZERO_ADDRESS
+            //     )
+            // ).to.revertedWith("Hint: wrong byte order?")
         });
 
         it('stores genesis block info', async () => {
@@ -436,8 +436,8 @@ describe('Relay', async () => {
             for (let i = 0; i < 6; i += 1) {
                 /* eslint-disable-next-line camelcase */
                 const { digest_le } = chain[i];
-                console.log("i", i);
-                console.log("chain[i]: ", chain[i]);
+                // console.log("i", i);
+                // console.log("chain[i]: ", chain[i]);
 
                 /* eslint-disable-next-line no-await-in-loop */
                 let res = await instance2.findAncestor(digest_le, 0);
