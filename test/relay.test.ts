@@ -10,7 +10,7 @@ import { deployments, ethers } from "hardhat";
 import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
 import { solidity } from "ethereum-waffle";
 
-import { isBytesLike } from "ethers/lib/utils";
+import { isBytesLike, zeroPad } from "ethers/lib/utils";
 import {BitcoinRelay} from "../src/types/BitcoinRelay";
 import {BitcoinRelay__factory} from "../src/types/factories/BitcoinRelay__factory";
 
@@ -384,69 +384,61 @@ describe('Relay', async () => {
         });
     });
 
-    // describe('#findHeight', async () => {
-    //     const { chain, chain_header_hex } = REGULAR_CHAIN;
-    //     const genesis = chain[0]
-    //     const headerHex = chain_header_hex;
-    //     const headers = utils.concatenateHexStrings(headerHex.slice(1, 7));
+    describe('#findHeight', async () => {
+        const { genesis, chain, chain_header_hex, oldPeriodStart } = REGULAR_CHAIN;
+        const headerHex = chain_header_hex;
+        const headers = utils.concatenateHexStrings(headerHex.slice(0, 6));
+
+        beforeEach(async () => {
+
+            [deployer, signer1] = await ethers.getSigners();
+
+            const bitcoinRelayFactory = new BitcoinRelay__factory(
+                deployer
+            );
+
+            instance2 = await bitcoinRelayFactory.deploy(
+                genesis.hex,
+                genesis.height,
+                oldPeriodStart.digest_le,
+                ZERO_ADDRESS,
+                ZERO_ADDRESS
+            );
+
+            await instance2.addHeaders(genesis.hex, headers);
+        });
+
+        it('errors on unknown blocks', async () => {
+
+            await expect(
+                instance2.findHeight(`0x${'00'.repeat(32)}`)
+            ).to.revertedWith("Unknown block")
+
+            // try {
+            //   await instance.findHeight(`0x${'00'.repeat(32)}`);
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Unknown block');
+            // }
+        });
+
+        it('Finds height of known blocks', async () => {
+            //  since there's only 6 blocks added
+            for (let i = 1; i < 6; i += 1) {
+                /* eslint-disable-next-line camelcase */
+                const { digest_le, height } = chain[i];
+
+                /* eslint-disable-next-line no-await-in-loop */
+                expect(
+                    await instance2.findHeight(digest_le)
+                ).to.equal(height)
 
 
-    //     beforeEach(async () => {
-
-    //         [deployer, signer1] = await ethers.getSigners();
-
-    //         const bitcoinRelayFactory = new BitcoinRelay__factory(
-    //             deployer
-    //         );
-
-    //         console.log("#findHeight")
-
-    //         instance2 = await bitcoinRelayFactory.deploy(
-    //             genesis.hex,
-    //             genesis.height,
-    //             genesis.digest_le,
-    //             ZERO_ADDRESS,
-    //             ZERO_ADDRESS
-    //         );
-
-    //         console.log("#findHeight")
-    //         console.log("the headers: ", headerHex.slice(1, 7))
-    //         console.log("the headers: ", headers)
-
-    //         await instance2.addHeaders(genesis.hex, headers);
-    //     });
-
-    //     it('errors on unknown blocks', async () => {
-
-    //         await expect(
-    //             instance2.findHeight(`0x${'00'.repeat(32)}`)
-    //         ).to.revertedWith("Unknown block")
-
-    //         // try {
-    //         //   await instance.findHeight(`0x${'00'.repeat(32)}`);
-    //         //   assert(false, 'expected an error');
-    //         // } catch (e) {
-    //         //   assert.include(e.message, 'Unknown block');
-    //         // }
-    //     });
-
-    //     it('Finds height of known blocks', async () => {
-
-    //         for (let i = 1; i < chain.length; i += 1) {
-    //             /* eslint-disable-next-line camelcase */
-    //             const { digest_le, height } = chain[i];
-
-    //             /* eslint-disable-next-line no-await-in-loop */
-    //             expect(
-    //                 await instance2.findHeight(digest_le)
-    //             ).to.equal(height)
-
-
-    //             // const res = await instance.findHeight(digest_le);
-    //             // assert(res.eqn(height), `incorrect height returned ${height}`);
-    //         }
-    //     });
-    // });
+                // const res = await instance.findHeight(digest_le);
+                // assert(res.eqn(height), `incorrect height returned ${height}`);
+            }
+        });
+    });
 
     describe('#findAncestor', async () => {
         const { chain, genesis, chain_header_hex, oldPeriodStart } = REGULAR_CHAIN;
@@ -516,405 +508,606 @@ describe('Relay', async () => {
 
     });
 
-    // describe('#isAncestor', async () => {
-    //   const { chain, genesis } = REGULAR_CHAIN;
-    //   const headerHex = chain.map(header => header.hex);
-    //   const headers = utils.concatenateHexStrings(headerHex.slice(0, 6));
+    describe('#isAncestor', async () => {
+        const { chain, genesis, chain_header_hex, oldPeriodStart } = REGULAR_CHAIN;
+        const headerHex = chain_header_hex;
+        const headers = utils.concatenateHexStrings(headerHex.slice(0, 6));
 
-    //   before(async () => {
-    //     instance = await Relay.new(
-    //       genesis.hex,
-    //       genesis.height,
-    //       genesis.digest_le
-    //     );
-    //     await instance.addHeaders(genesis.hex, headers);
-    //   });
+        before(async () => {
+            [deployer, signer1] = await ethers.getSigners();
 
-    //   it('returns false if it exceeds the limit', async () => {
-    //     const res = await instance.isAncestor.call(genesis.digest_le, chain[3].digest_le, 1);
-    //     assert.isFalse(res);
-    //   });
+            const bitcoinRelayFactory = new BitcoinRelay__factory(
+                deployer
+            );
 
-    //   it('finds the ancestor if within the limit', async () => {
-    //     const res = await instance.isAncestor.call(genesis.digest_le, chain[3].digest_le, 5);
-    //     assert.isTrue(res);
-    //   });
-    // });
+            instance = await bitcoinRelayFactory.deploy(
+                genesis.hex,
+                genesis.height,
+                oldPeriodStart.digest_le,
+                ZERO_ADDRESS,
+                ZERO_ADDRESS
+            );
+            await instance.addHeaders(genesis.hex, headers);
+        });
 
-    // describe('#heaviestFromAncestor', async () => {
-    //   const { chain, genesis } = REGULAR_CHAIN;
-    //   const headerHex = chain.map(header => header.hex);
-    //   const headers = utils.concatenateHexStrings(headerHex.slice(0, 8));
-    //   const headersWithMain = utils.concatenateHexStrings([headers, chain[8].hex]);
-    //   const headersWithOrphan = utils.concatenateHexStrings(
-    //     [headers, REGULAR_CHAIN.orphan_562630.hex]
-    //   );
+        it('returns false if it exceeds the limit', async () => {
 
-    //   before(async () => {
-    //     instance = await Relay.new(
-    //       genesis.hex,
-    //       genesis.height,
-    //       genesis.digest_le
-    //     );
-    //     await instance.addHeaders(genesis.hex, headersWithMain);
-    //     await instance.addHeaders(genesis.hex, headersWithOrphan);
-    //   });
+            expect(
+                await instance.isAncestor(
+                    genesis.digest_le, chain[3].digest_le, 1
+                )
+            ).to.equal(false);
 
-    //   it('errors if ancestor is unknown', async () => {
-    //     try {
-    //       await instance.heaviestFromAncestor(
-    //         chain[10].digest_le,
-    //         headerHex[3],
-    //         headerHex[4]
-    //       );
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'Unknown block');
-    //     }
-    //   });
+            // const res = await instance.isAncestor.call(genesis.digest_le, chain[3].digest_le, 1);
+            // assert.isFalse(res);
+        });
 
-    //   it('errors if left is unknown', async () => {
-    //     try {
-    //       await instance.heaviestFromAncestor(
-    //         chain[3].digest_le,
-    //         chain[10].hex,
-    //         headerHex[4]
-    //       );
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'Unknown block');
-    //     }
-    //   });
+        it('finds the ancestor if within the limit', async () => {
 
-    //   it('errors if right is unknown', async () => {
-    //     try {
-    //       await instance.heaviestFromAncestor(
-    //         chain[3].digest_le,
-    //         headerHex[4],
-    //         chain[10].hex
-    //       );
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'Unknown block');
-    //     }
-    //   });
+            expect(
+                await instance.isAncestor(
+                    genesis.digest_le, chain[3].digest_le, 5
+                )
+            ).to.equal(true);
 
-    //   it('errors if either block is below the ancestor', async () => {
-    //     try {
-    //       await instance.heaviestFromAncestor(
-    //         chain[3].digest_le,
-    //         headerHex[2],
-    //         headerHex[4]
-    //       );
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'A descendant height is below the ancestor height');
-    //     }
+            // const res = await instance.isAncestor.call(genesis.digest_le, chain[3].digest_le, 5);
+            // assert.isTrue(res);
+        });
+    });
 
-    //     try {
-    //       await instance.heaviestFromAncestor(
-    //         chain[3].digest_le,
-    //         headerHex[4],
-    //         headerHex[2]
-    //       );
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'A descendant height is below the ancestor height');
-    //     }
-    //   });
+    describe('#heaviestFromAncestor', async () => {
+        const { chain, genesis, chain_header_hex, oldPeriodStart } = REGULAR_CHAIN;
+        const headerHex = chain_header_hex;
+        const headers = utils.concatenateHexStrings(headerHex.slice(0, 8));
+        const headersWithMain = utils.concatenateHexStrings([headers, chain[8].hex]);
+        const headersWithOrphan = utils.concatenateHexStrings(
+            [headers, REGULAR_CHAIN.orphan_562630.hex]
+        );
 
-    //   it('returns left if left is heavier', async () => {
-    //     const res = await instance.heaviestFromAncestor(
-    //       chain[3].digest_le,
-    //       headerHex[5],
-    //       headerHex[4]
-    //     );
-    //     assert.equal(res, chain[5].digest_le);
-    //   });
+        beforeEach(async () => {
 
-    //   it('returns right if right is heavier', async () => {
-    //     const res = await instance.heaviestFromAncestor(
-    //       chain[3].digest_le,
-    //       headerHex[4],
-    //       headerHex[5]
-    //     );
-    //     assert.equal(res, chain[5].digest_le);
-    //   });
+            [deployer, signer1] = await ethers.getSigners();
 
-    //   it('returns left if the weights are equal', async () => {
-    //     let res = await instance.heaviestFromAncestor(
-    //       chain[3].digest_le,
-    //       chain[8].hex,
-    //       REGULAR_CHAIN.orphan_562630.hex
-    //     );
-    //     assert.equal(res, chain[8].digest_le);
+            const bitcoinRelayFactory = new BitcoinRelay__factory(
+                deployer
+            );
 
-    //     res = await instance.heaviestFromAncestor(
-    //       chain[3].digest_le,
-    //       REGULAR_CHAIN.orphan_562630.hex,
-    //       chain[8].hex
-    //     );
-    //     assert.equal(res, REGULAR_CHAIN.orphan_562630.digest_le);
-    //   });
-    // });
+            instance = await bitcoinRelayFactory.deploy(
+                genesis.hex,
+                genesis.height,
+                oldPeriodStart.digest_le,
+                ZERO_ADDRESS,
+                ZERO_ADDRESS
+            );
 
-    // describe('#heaviestFromAncestor (with retarget)', async () => {
-    //   const PRE_CHAIN = REORG_AND_RETARGET_CHAIN.preRetargetChain;
-    //   const POST_CHAIN = REORG_AND_RETARGET_CHAIN.postRetargetChain;
+            await instance.addHeaders(genesis.hex, headersWithMain);
+            await instance.addHeaders(genesis.hex, headersWithOrphan);
+        });
 
-    //   const orphan = REORG_AND_RETARGET_CHAIN.orphan_437478;
-    //   const pre = utils.concatenateHeadersHexes(PRE_CHAIN);
-    //   const post = utils.concatenateHeadersHexes(POST_CHAIN);
-    //   const shortPost = utils.concatenateHeadersHexes(POST_CHAIN.slice(0, POST_CHAIN.length - 2));
-    //   const postWithOrphan = utils.concatenateHexStrings([shortPost, orphan.hex]);
+        it('errors if ancestor is unknown', async () => {
 
-    //   before(async () => {
-    //     instance = await Relay.new(
-    //       REORG_AND_RETARGET_CHAIN.genesis.hex,
-    //       REORG_AND_RETARGET_CHAIN.genesis.height,
-    //       REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le
-    //     );
-    //     await instance.addHeaders(
-    //       REORG_AND_RETARGET_CHAIN.genesis.hex,
-    //       pre
-    //     );
-    //     await instance.addHeadersWithRetarget(
-    //       REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
-    //       PRE_CHAIN[PRE_CHAIN.length - 1].hex,
-    //       post
-    //     );
-    //     await instance.addHeadersWithRetarget(
-    //       REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
-    //       PRE_CHAIN[PRE_CHAIN.length - 1].hex,
-    //       postWithOrphan
-    //     );
-    //   });
+            // FIXME: the testing function is deprecated
+            // await expect(
+            //     instance.heaviestFromAncestor(
+            //         chain[10].digest_le,
+            //         headerHex[3],
+            //         headerHex[4]
+            //     )
+            // ).to.revertedWith("Unknown block")
 
-    //   it('handles descendants in different difficulty periods', async () => {
-    //     let res = await instance.heaviestFromAncestor.call(
-    //       REORG_AND_RETARGET_CHAIN.genesis.digest_le,
-    //       orphan.hex,
-    //       PRE_CHAIN[3].hex
-    //     );
-    //     assert.equal(res, orphan.digest_le);
+            // try {
+            //   await instance.heaviestFromAncestor(
+            //     chain[10].digest_le,
+            //     headerHex[3],
+            //     headerHex[4]
+            //   );
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Unknown block');
+            // }
+        });
 
-    //     res = await instance.heaviestFromAncestor.call(
-    //       REORG_AND_RETARGET_CHAIN.genesis.digest_le,
-    //       PRE_CHAIN[3].hex,
-    //       orphan.hex
-    //     );
-    //     assert.equal(res, orphan.digest_le);
-    //   });
+        it('errors if left is unknown', async () => {
+            // try {
+            //   await instance.heaviestFromAncestor(
+            //     chain[3].digest_le,
+            //     chain[10].hex,
+            //     headerHex[4]
+            //   );
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Unknown block');
+            // }
+        });
 
-    //   it('handles descendants when both are in a new difficulty period', async () => {
-    //     let res = await instance.heaviestFromAncestor.call(
-    //       REORG_AND_RETARGET_CHAIN.genesis.digest_le,
-    //       orphan.hex,
-    //       POST_CHAIN[3].hex
-    //     );
-    //     assert.equal(res, orphan.digest_le);
+        it('errors if right is unknown', async () => {
+            // try {
+            //   await instance.heaviestFromAncestor(
+            //     chain[3].digest_le,
+            //     headerHex[4],
+            //     chain[10].hex
+            //   );
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Unknown block');
+            // }
+        });
 
-    //     res = await instance.heaviestFromAncestor.call(
-    //       REORG_AND_RETARGET_CHAIN.genesis.digest_le,
-    //       POST_CHAIN[3].hex,
-    //       orphan.hex
-    //     );
-    //     assert.equal(res, orphan.digest_le);
-    //   });
-    // });
+        it('errors if either block is below the ancestor', async () => {
+            // try {
+            //   await instance.heaviestFromAncestor(
+            //     chain[3].digest_le,
+            //     headerHex[2],
+            //     headerHex[4]
+            //   );
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'A descendant height is below the ancestor height');
+            // }
 
-    // describe('#isMostRecentAncestor', async () => {
-    //   const PRE_CHAIN = REORG_AND_RETARGET_CHAIN.preRetargetChain;
-    //   const POST_CHAIN = REORG_AND_RETARGET_CHAIN.postRetargetChain;
+            // try {
+            //   await instance.heaviestFromAncestor(
+            //     chain[3].digest_le,
+            //     headerHex[4],
+            //     headerHex[2]
+            //   );
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'A descendant height is below the ancestor height');
+            // }
+        });
 
-    //   const orphan = REORG_AND_RETARGET_CHAIN.orphan_437478;
-    //   const pre = utils.concatenateHeadersHexes(PRE_CHAIN);
-    //   const post = utils.concatenateHeadersHexes(POST_CHAIN);
-    //   const shortPost = utils.concatenateHeadersHexes(POST_CHAIN.slice(0, POST_CHAIN.length - 2));
-    //   const postWithOrphan = utils.concatenateHexStrings([shortPost, orphan.hex]);
+        it('returns left if left is heavier', async () => {
+            // const res = await instance.heaviestFromAncestor(
+            //   chain[3].digest_le,
+            //   headerHex[5],
+            //   headerHex[4]
+            // );
+            // assert.equal(res, chain[5].digest_le);
+        });
 
-    //   before(async () => {
-    //     instance = await Relay.new(
-    //       REORG_AND_RETARGET_CHAIN.genesis.hex,
-    //       REORG_AND_RETARGET_CHAIN.genesis.height,
-    //       REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le
-    //     );
-    //     await instance.addHeaders(
-    //       REORG_AND_RETARGET_CHAIN.genesis.hex,
-    //       pre
-    //     );
-    //     await instance.addHeadersWithRetarget(
-    //       REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
-    //       PRE_CHAIN[PRE_CHAIN.length - 1].hex,
-    //       post
-    //     );
-    //     await instance.addHeadersWithRetarget(
-    //       REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
-    //       PRE_CHAIN[PRE_CHAIN.length - 1].hex,
-    //       postWithOrphan
-    //     );
-    //   });
+        it('returns right if right is heavier', async () => {
+            // const res = await instance.heaviestFromAncestor(
+            //   chain[3].digest_le,
+            //   headerHex[4],
+            //   headerHex[5]
+            // );
+            // assert.equal(res, chain[5].digest_le);
+        });
 
-    //   it('returns false if it found a more recent ancestor', async () => {
-    //     const res = await instance.isMostRecentAncestor(
-    //       POST_CHAIN[0].digest_le,
-    //       POST_CHAIN[3].digest_le,
-    //       POST_CHAIN[2].digest_le,
-    //       5
-    //     );
-    //     assert.isFalse(res);
-    //   });
+        it('returns left if the weights are equal', async () => {
+            // let res = await instance.heaviestFromAncestor(
+            //   chain[3].digest_le,
+            //   chain[8].hex,
+            //   REGULAR_CHAIN.orphan_562630.hex
+            // );
+            // assert.equal(res, chain[8].digest_le);
 
-    //   it('returns false if it did not find the specified common ancestor within the limit', async () => {
-    //     const res = await instance.isMostRecentAncestor(
-    //       POST_CHAIN[1].digest_le,
-    //       POST_CHAIN[3].digest_le,
-    //       POST_CHAIN[2].digest_le,
-    //       1
-    //     );
-    //     assert.isFalse(res);
-    //   });
+            // res = await instance.heaviestFromAncestor(
+            //   chain[3].digest_le,
+            //   REGULAR_CHAIN.orphan_562630.hex,
+            //   chain[8].hex
+            // );
+            // assert.equal(res, REGULAR_CHAIN.orphan_562630.digest_le);
+        });
+    });
 
-    //   it('returns true if the provided digest is the most recent common ancestor', async () => {
-    //     let res = await instance.isMostRecentAncestor(
-    //       POST_CHAIN[2].digest_le,
-    //       POST_CHAIN[3].digest_le,
-    //       POST_CHAIN[2].digest_le,
-    //       5
-    //     );
-    //     assert.isTrue(res);
+    describe('#heaviestFromAncestor (with retarget)', async () => {
+        const PRE_CHAIN = REORG_AND_RETARGET_CHAIN.preRetargetChain;
+        const POST_CHAIN = REORG_AND_RETARGET_CHAIN.postRetargetChain;
 
-    //     res = await instance.isMostRecentAncestor(
-    //       POST_CHAIN[5].digest_le,
-    //       POST_CHAIN[6].digest_le,
-    //       orphan.digest_le,
-    //       5
-    //     );
-    //     assert.isTrue(res);
-    //   });
+        const orphan = REORG_AND_RETARGET_CHAIN.orphan_437478;
+        const pre = utils.concatenateHeadersHexes(PRE_CHAIN);
+        const post = utils.concatenateHeadersHexes(POST_CHAIN);
+        const shortPost = utils.concatenateHeadersHexes(POST_CHAIN.slice(0, POST_CHAIN.length - 2));
+        const postWithOrphan = utils.concatenateHexStrings([shortPost, orphan.hex]);
 
-    //   it('shortcuts the trivial case (ancestor is left is right)', async () => {
-    //     const res = await instance.isMostRecentAncestor(
-    //       POST_CHAIN[3].digest_le,
-    //       POST_CHAIN[3].digest_le,
-    //       POST_CHAIN[3].digest_le,
-    //       5
-    //     );
-    //     assert.isTrue(res);
-    //   });
-    // });
+        beforeEach(async () => {
 
-    // describe('#markNewHeaviest', async () => {
-    //   const PRE_CHAIN = REORG_AND_RETARGET_CHAIN.preRetargetChain;
-    //   const POST_CHAIN = REORG_AND_RETARGET_CHAIN.postRetargetChain;
+            [deployer, signer1] = await ethers.getSigners();
 
-    //   const orphan = REORG_AND_RETARGET_CHAIN.orphan_437478;
-    //   const pre = utils.concatenateHeadersHexes(PRE_CHAIN);
-    //   const post = utils.concatenateHeadersHexes(POST_CHAIN);
-    //   const shortPost = utils.concatenateHeadersHexes(POST_CHAIN.slice(0, POST_CHAIN.length - 2));
-    //   const postWithOrphan = utils.concatenateHexStrings([shortPost, orphan.hex]);
+            const bitcoinRelayFactory = new BitcoinRelay__factory(
+                deployer
+            );
 
-    //   before(async () => {
-    //     instance = await Relay.new(
-    //       REORG_AND_RETARGET_CHAIN.genesis.hex,
-    //       REORG_AND_RETARGET_CHAIN.genesis.height,
-    //       REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le
-    //     );
-    //     await instance.addHeaders(
-    //       REORG_AND_RETARGET_CHAIN.genesis.hex,
-    //       pre
-    //     );
-    //     await instance.addHeadersWithRetarget(
-    //       REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
-    //       PRE_CHAIN[PRE_CHAIN.length - 1].hex,
-    //       post
-    //     );
-    //     await instance.addHeadersWithRetarget(
-    //       REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
-    //       PRE_CHAIN[PRE_CHAIN.length - 1].hex,
-    //       postWithOrphan
-    //     );
-    //   });
+            instance = await bitcoinRelayFactory.deploy(
+                REORG_AND_RETARGET_CHAIN.genesis.hex,
+                REORG_AND_RETARGET_CHAIN.genesis.height,
+                REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le,
+                ZERO_ADDRESS,
+                ZERO_ADDRESS
+            );
+            await instance.addHeaders(
+                REORG_AND_RETARGET_CHAIN.genesis.hex,
+                pre
+            );
+            await instance.addHeadersWithRetarget(
+                REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
+                PRE_CHAIN[PRE_CHAIN.length - 1].hex,
+                post
+            );
+            await instance.addHeadersWithRetarget(
+                REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
+                PRE_CHAIN[PRE_CHAIN.length - 1].hex,
+                postWithOrphan
+            );
+        });
 
-    //   it('errors if the passed in best is not the best known', async () => {
-    //     try {
-    //       await instance.markNewHeaviest(
-    //         REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le,
-    //         REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
-    //         REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
-    //         10
-    //       );
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'Passed in best is not best known');
-    //     }
-    //   });
+        it('handles descendants in different difficulty periods', async () => {
 
-    //   it('errors if the new best is not already known', async () => {
-    //     try {
-    //       await instance.markNewHeaviest(
-    //         REORG_AND_RETARGET_CHAIN.genesis.digest_le,
-    //         REORG_AND_RETARGET_CHAIN.genesis.hex,
-    //         `0x${'99'.repeat(80)}`,
-    //         10
-    //       );
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'New best is unknown');
-    //     }
-    //   });
+            expect(
+                await instance.heaviestFromAncestor(
+                    REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+                    orphan.hex,
+                    PRE_CHAIN[3].hex
+                )
+            ).to.equal(orphan.digest_le)
 
-    //   it('errors if the ancestor is not the heaviest common ancestor', async () => {
-    //     await instance.markNewHeaviest(
-    //       REORG_AND_RETARGET_CHAIN.genesis.digest_le,
-    //       REORG_AND_RETARGET_CHAIN.genesis.hex,
-    //       PRE_CHAIN[0].hex,
-    //       10
-    //     );
-    //     try {
-    //       await instance.markNewHeaviest(
-    //         REORG_AND_RETARGET_CHAIN.genesis.digest_le,
-    //         PRE_CHAIN[0].hex,
-    //         PRE_CHAIN[1].hex,
-    //         10
-    //       );
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'Ancestor must be heaviest common ancestor');
-    //     }
-    //   });
+            // let res = await instance.heaviestFromAncestor.call(
+            //   REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+            //   orphan.hex,
+            //   PRE_CHAIN[3].hex
+            // );
+            // assert.equal(res, orphan.digest_le);
 
-    //   it('updates the best known and emits a reorg event', async () => {
-    //     const blockNumber = await web3.eth.getBlock('latest').number;
-    //     await instance.markNewHeaviest(
-    //       PRE_CHAIN[0].digest_le,
-    //       PRE_CHAIN[0].hex,
-    //       orphan.hex,
-    //       20
-    //     );
-    //     const eventList = await instance.getPastEvents(
-    //       'NewTip',
-    //       { fromBlock: blockNumber, toBlock: 'latest' }
-    //     );
-    //     /* eslint-disable no-underscore-dangle */
-    //     assert.equal(eventList[0].returnValues._to, orphan.digest_le);
-    //     assert.equal(eventList[0].returnValues._from, PRE_CHAIN[0].digest_le);
-    //     assert.equal(eventList[0].returnValues._gcd, PRE_CHAIN[0].digest_le);
-    //     /* eslint-enable no-underscore-dangle */
-    //   });
+            expect(
+                await instance.heaviestFromAncestor(
+                    REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+                    PRE_CHAIN[3].hex,
+                    orphan.hex
+                )
+            ).to.equal(orphan.digest_le)
 
-    //   it('errors if the new best hash is not better', async () => {
-    //     try {
-    //       await instance.markNewHeaviest(
-    //         POST_CHAIN.slice(-3)[0].digest_le, // the main chain before the split
-    //         orphan.hex,
-    //         POST_CHAIN.slice(-2)[0].hex, // the main chain competing with the split
-    //         10
-    //       );
-    //       assert(false, 'expected an error');
-    //     } catch (e) {
-    //       assert.include(e.message, 'New best hash does not have more work than previous');
-    //     }
-    //   });
-    // });
+            // res = await instance.heaviestFromAncestor.call(
+            //   REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+            //   PRE_CHAIN[3].hex,
+            //   orphan.hex
+            // );
+            // assert.equal(res, orphan.digest_le);
+        });
+
+        it('handles descendants when both are in a new difficulty period', async () => {
+            expect(
+                await instance.heaviestFromAncestor(
+                    REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+                    orphan.hex,
+                    POST_CHAIN[3].hex
+                )
+            ).to.equal(orphan.digest_le)
+
+            // let res = await instance.heaviestFromAncestor.call(
+            //   REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+            //   orphan.hex,
+            //   POST_CHAIN[3].hex
+            // );
+            // assert.equal(res, orphan.digest_le);
+
+            expect(
+                await instance.heaviestFromAncestor(
+                    REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+                    POST_CHAIN[3].hex,
+                    orphan.hex
+                )
+            ).to.equal(orphan.digest_le)
+
+            // res = await instance.heaviestFromAncestor.call(
+            //   REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+            //   POST_CHAIN[3].hex,
+            //   orphan.hex
+            // );
+            // assert.equal(res, orphan.digest_le);
+        });
+    });
+
+    describe('#isMostRecentAncestor', async () => {
+        const PRE_CHAIN = REORG_AND_RETARGET_CHAIN.preRetargetChain;
+        const POST_CHAIN = REORG_AND_RETARGET_CHAIN.postRetargetChain;
+
+        const orphan = REORG_AND_RETARGET_CHAIN.orphan_437478;
+        const pre = utils.concatenateHeadersHexes(PRE_CHAIN);
+        const post = utils.concatenateHeadersHexes(POST_CHAIN);
+        const shortPost = utils.concatenateHeadersHexes(POST_CHAIN.slice(0, POST_CHAIN.length - 2));
+        const postWithOrphan = utils.concatenateHexStrings([shortPost, orphan.hex]);
+
+        beforeEach(async () => {
+            [deployer, signer1] = await ethers.getSigners();
+
+            const bitcoinRelayFactory = new BitcoinRelay__factory(
+                deployer
+            );
+
+            instance = await bitcoinRelayFactory.deploy(
+                REORG_AND_RETARGET_CHAIN.genesis.hex,
+                REORG_AND_RETARGET_CHAIN.genesis.height,
+                REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le,
+                ZERO_ADDRESS,
+                ZERO_ADDRESS
+            );
+            await instance.addHeaders(
+                REORG_AND_RETARGET_CHAIN.genesis.hex,
+                pre
+            );
+            await instance.addHeadersWithRetarget(
+                REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
+                PRE_CHAIN[PRE_CHAIN.length - 1].hex,
+                post
+            );
+            await instance.addHeadersWithRetarget(
+                REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
+                PRE_CHAIN[PRE_CHAIN.length - 1].hex,
+                postWithOrphan
+            );
+        });
+
+        it('returns false if it found a more recent ancestor', async () => {
+
+            expect(
+                await instance.isMostRecentAncestor(
+                    POST_CHAIN[0].digest_le,
+                    POST_CHAIN[3].digest_le,
+                    POST_CHAIN[2].digest_le,
+                    5
+                )
+            ).to.equal(false)
+
+            // const res = await instance.isMostRecentAncestor(
+            //   POST_CHAIN[0].digest_le,
+            //   POST_CHAIN[3].digest_le,
+            //   POST_CHAIN[2].digest_le,
+            //   5
+            // );
+            // assert.isFalse(res);
+        });
+
+        it('returns false if it did not find the specified common ancestor within the limit', async () => {
+
+            expect(
+                await instance.isMostRecentAncestor(
+                    POST_CHAIN[1].digest_le,
+                    POST_CHAIN[3].digest_le,
+                    POST_CHAIN[2].digest_le,
+                    1
+                )
+            ).to.equal(false)
+
+            // const res = await instance.isMostRecentAncestor(
+            //   POST_CHAIN[1].digest_le,
+            //   POST_CHAIN[3].digest_le,
+            //   POST_CHAIN[2].digest_le,
+            //   1
+            // );
+            // assert.isFalse(res);
+        });
+
+        it('returns true if the provided digest is the most recent common ancestor', async () => {
+
+            expect(
+                await instance.isMostRecentAncestor(
+                    POST_CHAIN[2].digest_le,
+                    POST_CHAIN[3].digest_le,
+                    POST_CHAIN[2].digest_le,
+                    5
+                )
+            ).to.equal(true)
+
+            // let res = await instance.isMostRecentAncestor(
+            //   POST_CHAIN[2].digest_le,
+            //   POST_CHAIN[3].digest_le,
+            //   POST_CHAIN[2].digest_le,
+            //   5
+            // );
+            // assert.isTrue(res);
+
+            expect(
+                await instance.isMostRecentAncestor(
+                    POST_CHAIN[5].digest_le,
+                    POST_CHAIN[6].digest_le,
+                    orphan.digest_le,
+                    5
+                )
+            ).to.equal(true)
+
+            // res = await instance.isMostRecentAncestor(
+            //   POST_CHAIN[5].digest_le,
+            //   POST_CHAIN[6].digest_le,
+            //   orphan.digest_le,
+            //   5
+            // );
+            // assert.isTrue(res);
+        });
+
+        it('shortcuts the trivial case (ancestor is left is right)', async () => {
+
+            expect(
+                await instance.isMostRecentAncestor(
+                    POST_CHAIN[3].digest_le,
+                    POST_CHAIN[3].digest_le,
+                    POST_CHAIN[3].digest_le,
+                    5
+                )
+            ).to.equal(true)
+
+            // const res = await instance.isMostRecentAncestor(
+            //   POST_CHAIN[3].digest_le,
+            //   POST_CHAIN[3].digest_le,
+            //   POST_CHAIN[3].digest_le,
+            //   5
+            // );
+            // assert.isTrue(res);
+        });
+    });
+
+    describe('#markNewHeaviest', async () => {
+        const PRE_CHAIN = REORG_AND_RETARGET_CHAIN.preRetargetChain;
+        const POST_CHAIN = REORG_AND_RETARGET_CHAIN.postRetargetChain;
+
+        const orphan = REORG_AND_RETARGET_CHAIN.orphan_437478;
+        const pre = utils.concatenateHeadersHexes(PRE_CHAIN);
+        const post = utils.concatenateHeadersHexes(POST_CHAIN);
+        const shortPost = utils.concatenateHeadersHexes(POST_CHAIN.slice(0, POST_CHAIN.length - 2));
+        const postWithOrphan = utils.concatenateHexStrings([shortPost, orphan.hex]);
+
+        before(async () => {
+
+            [deployer, signer1] = await ethers.getSigners();
+
+            const bitcoinRelayFactory = new BitcoinRelay__factory(
+                deployer
+            );
+
+            instance = await bitcoinRelayFactory.deploy(
+                REORG_AND_RETARGET_CHAIN.genesis.hex,
+                REORG_AND_RETARGET_CHAIN.genesis.height,
+                REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le,
+                ZERO_ADDRESS,
+                ZERO_ADDRESS
+            );
+            await instance.addHeaders(
+                REORG_AND_RETARGET_CHAIN.genesis.hex,
+                pre
+            );
+            await instance.addHeadersWithRetarget(
+                REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
+                PRE_CHAIN[PRE_CHAIN.length - 1].hex,
+                post
+            );
+            await instance.addHeadersWithRetarget(
+                REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
+                PRE_CHAIN[PRE_CHAIN.length - 1].hex,
+                postWithOrphan
+            );
+        });
+
+        it('errors if the passed in best is not the best known', async () => {
+
+            await expect(
+                instance.markNewHeaviest(
+                    REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le,
+                    REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
+                    REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
+                    10
+                )
+            ).to.revertedWith("Passed in best is not best known")
+
+            // try {
+            //   await instance.markNewHeaviest(
+            //     REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le,
+            //     REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
+            //     REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
+            //     10
+            //   );
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Passed in best is not best known');
+            // }
+        });
+
+        it('errors if the new best is not already known', async () => {
+
+            await expect(
+                instance.markNewHeaviest(
+                    REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+                    REORG_AND_RETARGET_CHAIN.genesis.hex,
+                    `0x${'99'.repeat(80)}`,
+                    10
+                )
+            ).to.revertedWith("New best is unknown")
+
+            // try {
+            //   await instance.markNewHeaviest(
+            //     REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+            //     REORG_AND_RETARGET_CHAIN.genesis.hex,
+            //     `0x${'99'.repeat(80)}`,
+            //     10
+            //   );
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'New best is unknown');
+            // }
+        });
+
+        it('errors if the ancestor is not the heaviest common ancestor', async () => {
+            await instance.markNewHeaviest(
+                REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+                REORG_AND_RETARGET_CHAIN.genesis.hex,
+                PRE_CHAIN[0].hex,
+                10
+            );
+
+            await expect(
+                instance.markNewHeaviest(
+                    REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+                    PRE_CHAIN[0].hex,
+                    PRE_CHAIN[1].hex,
+                    10
+                )
+            ).to.revertedWith("Ancestor must be heaviest common ancestor")
+
+            // try {
+            //   await instance.markNewHeaviest(
+            //     REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+            //     PRE_CHAIN[0].hex,
+            //     PRE_CHAIN[1].hex,
+            //     10
+            //   );
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'Ancestor must be heaviest common ancestor');
+            // }
+        });
+
+        it('updates the best known and emits a reorg event', async () => {
+
+            expect(
+                await instance.markNewHeaviest(
+                    PRE_CHAIN[0].digest_le,
+                    PRE_CHAIN[0].hex,
+                    orphan.hex,
+                    20
+                )
+            ).to.emit(instance, "NewTip")
+
+            // const blockNumber = await web3.eth.getBlock('latest').number;
+            // await instance.markNewHeaviest(
+            //   PRE_CHAIN[0].digest_le,
+            //   PRE_CHAIN[0].hex,
+            //   orphan.hex,
+            //   20
+            // );
+            // const eventList = await instance.getPastEvents(
+            //   'NewTip',
+            //   { fromBlock: blockNumber, toBlock: 'latest' }
+            // );
+
+            /* eslint-disable no-underscore-dangle */
+            // assert.equal(eventList[0].returnValues._to, orphan.digest_le);
+            // assert.equal(eventList[0].returnValues._from, PRE_CHAIN[0].digest_le);
+            // assert.equal(eventList[0].returnValues._gcd, PRE_CHAIN[0].digest_le);
+            /* eslint-enable no-underscore-dangle */
+        });
+
+        it('errors if the new best hash is not better', async () => {
+
+            await expect(
+                instance.markNewHeaviest(
+                    POST_CHAIN.slice(-3)[0].digest_le, // the main chain before the split
+                    orphan.hex,
+                    POST_CHAIN.slice(-2)[0].hex, // the main chain competing with the split
+                    10
+                )
+            ).to.revertedWith("New best hash does not have more work than previous")
+
+            // try {
+            //   await instance.markNewHeaviest(
+            //     POST_CHAIN.slice(-3)[0].digest_le, // the main chain before the split
+            //     orphan.hex,
+            //     POST_CHAIN.slice(-2)[0].hex, // the main chain competing with the split
+            //     10
+            //   );
+            //   assert(false, 'expected an error');
+            // } catch (e) {
+            //   assert.include(e.message, 'New best hash does not have more work than previous');
+            // }
+        });
+    });
 });

@@ -627,6 +627,15 @@ contract BitcoinRelay is IBitcoinRelay {
         return true;
     }
 
+    function isMostRecentAncestor(
+        bytes32 _ancestor,
+        bytes32 _left,
+        bytes32 _right,
+        uint256 _limit
+    ) external view returns (bool) {
+        return _isMostRecentAncestor(_ancestor, _left, _right, _limit);
+    }
+
     /// @notice             Checks if a digest is an ancestor of the current one
     /// @dev                Limit the amount of lookups (and thus gas usage) with _limit
     /// @param _ancestor    The prospective shared ancestor
@@ -663,6 +672,18 @@ contract BitcoinRelay is IBitcoinRelay {
         if (_leftCurrent == _rightCurrent) {return false;} /* NB: If the same, they're a nearer ancestor */
         if (_leftPrev != _rightPrev) {return false;} /* NB: Both must be ancestor */
         return true;
+    }
+
+    function heaviestFromAncestor(
+        bytes32 _ancestor,
+        bytes calldata _left,
+        bytes calldata _right
+    ) external view returns (bytes32) {
+        return _heaviestFromAncestor(
+            _ancestor,
+            _left.ref(0).tryAsHeader(),
+            _right.ref(0).tryAsHeader()
+        );
     }
 
     /// @notice             Decides which header is heaviest from the ancestor
