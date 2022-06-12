@@ -72,59 +72,15 @@ describe("Bitcoin Relay (ts)", async () => {
         return bitcoinRelay;
     };
 
-    describe("checking read functions", async () => {
-        // it("getCurrentEpochDifficulty", async function () {
-        //     expect(
-        //         await bitcoinRelay.getRelayGenesis()
-        //     ).to.equal("7f489b2f16d5179ab106c54ae909ded9f13d8fd3f86ea38a2d017c02c8e0b2e4")
-        // })
-
-        // it("getPrevEpochDifficulty", async function () {
-        //     expect(
-        //         await bitcoinRelay.getRelayGenesis()
-        //     ).to.equal("7f489b2f16d5179ab106c54ae909ded9f13d8fd3f86ea38a2d017c02c8e0b2e4")
-        // })
-
-        // it("getRelayGenesis", async function () {
-        //     expect(
-        //         await bitcoinRelay.getRelayGenesis()
-        //     ).to.equal("7f489b2f16d5179ab106c54ae909ded9f13d8fd3f86ea38a2d017c02c8e0b2e4")
-        // })
-
-        // it("getBestKnownDigest", async function () {
-        //     expect(
-        //         await bitcoinRelay.getRelayGenesis()
-        //     ).to.equal("7f489b2f16d5179ab106c54ae909ded9f13d8fd3f86ea38a2d017c02c8e0b2e4")
-        // })
-
-        // it("getLastReorgCommonAncestor", async function () {
-        //     expect(
-        //         await bitcoinRelay.getRelayGenesis()
-        //     ).to.equal("7f489b2f16d5179ab106c54ae909ded9f13d8fd3f86ea38a2d017c02c8e0b2e4")
-        // })
-
-        // it("findHeight", async function () {
-        //     expect(
-        //         await bitcoinRelay.getRelayGenesis()
-        //     ).to.equal("7f489b2f16d5179ab106c54ae909ded9f13d8fd3f86ea38a2d017c02c8e0b2e4")
-        // })
-
-        // it("findAncestor", async function () {
-        //     expect(
-        //         await bitcoinRelay.getRelayGenesis()
-        //     ).to.equal("7f489b2f16d5179ab106c54ae909ded9f13d8fd3f86ea38a2d017c02c8e0b2e4")
-        // })
-    })
-
     describe('Submitting block headers with retarget', async () => {
 
-        // it('check the owner', async function () {
-        //     let theOwnerAddress = await bitcoinRelay.owner()
+        it('check the owner', async function () {
+            let theOwnerAddress = await bitcoinRelay.owner()
 
-        //     let theDeplyerAddress = await deployer.getAddress();
+            let theDeplyerAddress = await deployer.getAddress();
 
-        //     expect(theOwnerAddress).to.equal(theDeplyerAddress);
-        // })
+            expect(theOwnerAddress).to.equal(theDeplyerAddress);
+        })
 
         it('submit old block headers', async function () {
             this.timeout(0);
