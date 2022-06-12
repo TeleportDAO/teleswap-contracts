@@ -80,6 +80,7 @@ contract BitcoinRelay is IBitcoinRelay {
         newBlockHeader.selfHash = _genesisDigest;
         newBlockHeader.merkleRoot = _genesisView.merkleRoot();
         chain[_height].push(newBlockHeader);
+
         // require(
         //     _periodStart & bytes32(0x0000000000000000000000000000000000000000000000000000000000ffffff) == bytes32(0),
         //     "Period start hash does not have work. Hint: wrong byte order?");
@@ -87,8 +88,13 @@ contract BitcoinRelay is IBitcoinRelay {
         bestKnownDigest = _genesisDigest;
         lastReorgCommonAncestor = _genesisDigest;
         blockHeight[_genesisDigest] = _height;
+        console.log("_genesisDigest");
+        console.logBytes32(_genesisDigest);
+        console.log("_height", _height);
+
         blockHeight[_periodStart] = _height.sub(_height % 2016);
         currentEpochDiff = _genesisView.diff();
+
         // added parameters
         finalizationParameter = 1; // TODO: edit it
         lastSubmittedHeight = _height;
@@ -102,6 +108,7 @@ contract BitcoinRelay is IBitcoinRelay {
         buyBackPeriod = 2; // TODO: edit it
         submissionGasUsed = 100000; // TODO: edit it
         exchangeRouter = _exchangeRouter;
+
         if (exchangeRouter != address(0)) {
             WAVAX = IExchangeRouter(exchangeRouter).WAVAX(); // call exchangeRouter to get WAVAX address
         }
@@ -315,7 +322,11 @@ contract BitcoinRelay is IBitcoinRelay {
 
         // Extract basic info
         bytes32 _previousDigest = _anchor.hash256();
+        console.log("_previousDigest");
+        console.logBytes32(_previousDigest);
+
         uint256 _anchorHeight = _findHeight(_previousDigest);  /* NB: errors if unknown */
+        console.log("_anchorHeight", _anchorHeight);
         uint256 _target = _headers.indexHeaderArray(0).target();
 
         // TODO: uncomment it
@@ -409,6 +420,10 @@ contract BitcoinRelay is IBitcoinRelay {
     function addToChain(bytes29 _header, uint _height) internal {
         // prevent relayers to submit too old block headers
         // TODO: replace 6 with a correct number
+
+        console.log("lastSubmittedHeight: ", lastSubmittedHeight);
+        console.log("_height: ", _height);
+
         require(_height + 2*finalizationParameter >= lastSubmittedHeight, "block header is too old");
         blockHeader memory newBlockHeader;
         newBlockHeader.selfHash = _header.hash256();
@@ -532,10 +547,19 @@ contract BitcoinRelay is IBitcoinRelay {
     /// @param _digest  The header digest to search for
     /// @return         The height of the header, or error if unknown
     function _findAncestor(bytes32 _digest, uint256 _offset) internal view returns (bytes32) {
+        console.log("_findAncestor");
+        console.logBytes32(_digest);
+
         bytes32 _current = _digest;
+
+        console.logBytes32(_current);
+
         for (uint256 i = 0; i < _offset; i = i.add(1)) {
             _current = previousBlock[_current];
         }
+
+        console.logBytes32(_current);
+
         require(_current != bytes32(0), "Unknown ancestor");
         return _current;
     }
@@ -715,6 +739,9 @@ contract BitcoinRelay is IBitcoinRelay {
     ) external view override returns(bytes32) {
         bytes32 inputHash1 = sha256(abi.encodePacked(_version, _vin, _vout, _locktime));
         bytes32 inputHash2 = sha256(abi.encodePacked(inputHash1));
+        console.log("inputHash1");
+        console.logBytes32(inputHash1);
+
         console.log("inputHash2");
         console.logBytes32(inputHash2);
         return inputHash2;

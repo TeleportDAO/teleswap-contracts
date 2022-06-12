@@ -8,6 +8,8 @@ const REORG_AND_RETARGET_CHAIN = require('./test_fixtures/headersReorgAndRetarge
 import { assert, expect, use } from "chai";
 import { deployments, ethers } from "hardhat";
 import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
+import { solidity } from "ethereum-waffle";
+
 import { isBytesLike } from "ethers/lib/utils";
 import {BitcoinRelay} from "../src/types/BitcoinRelay";
 import {BitcoinRelay__factory} from "../src/types/factories/BitcoinRelay__factory";
@@ -24,12 +26,13 @@ describe('Relay', async () => {
     let blockHeaders: any;
 
     let instance: BitcoinRelay;
+    let instance2: BitcoinRelay;
 
     describe('#constructor', async () => {
         /* eslint-disable-next-line camelcase */
         const { genesis, orphan_562630 } = REGULAR_CHAIN;
 
-        before(async () => {
+        beforeEach(async () => {
             [deployer, signer1] = await ethers.getSigners();
 
             const bitcoinRelayFactory = new BitcoinRelay__factory(
@@ -128,7 +131,7 @@ describe('Relay', async () => {
 
         const headers = utils.concatenateHexStrings(headerHex.slice(0, 6));
 
-        before(async () => {
+        beforeEach(async () => {
             [deployer, signer1] = await ethers.getSigners();
 
             const bitcoinRelayFactory = new BitcoinRelay__factory(
@@ -244,7 +247,7 @@ describe('Relay', async () => {
 
         // let btcutils
 
-        before(async () => {
+        beforeEach(async () => {
 
             [deployer, signer1] = await ethers.getSigners();
 
@@ -381,123 +384,137 @@ describe('Relay', async () => {
         });
     });
 
-    describe('#findHeight', async () => {
-        const { chain, genesis, chain_header_hex } = REGULAR_CHAIN;
+    // describe('#findHeight', async () => {
+    //     const { chain, chain_header_hex } = REGULAR_CHAIN;
+    //     const genesis = chain[0]
+    //     const headerHex = chain_header_hex;
+    //     const headers = utils.concatenateHexStrings(headerHex.slice(1, 7));
+
+
+    //     beforeEach(async () => {
+
+    //         [deployer, signer1] = await ethers.getSigners();
+
+    //         const bitcoinRelayFactory = new BitcoinRelay__factory(
+    //             deployer
+    //         );
+
+    //         console.log("#findHeight")
+
+    //         instance2 = await bitcoinRelayFactory.deploy(
+    //             genesis.hex,
+    //             genesis.height,
+    //             genesis.digest_le,
+    //             ZERO_ADDRESS,
+    //             ZERO_ADDRESS
+    //         );
+
+    //         console.log("#findHeight")
+    //         console.log("the headers: ", headerHex.slice(1, 7))
+    //         console.log("the headers: ", headers)
+
+    //         await instance2.addHeaders(genesis.hex, headers);
+    //     });
+
+    //     it('errors on unknown blocks', async () => {
+
+    //         await expect(
+    //             instance2.findHeight(`0x${'00'.repeat(32)}`)
+    //         ).to.revertedWith("Unknown block")
+
+    //         // try {
+    //         //   await instance.findHeight(`0x${'00'.repeat(32)}`);
+    //         //   assert(false, 'expected an error');
+    //         // } catch (e) {
+    //         //   assert.include(e.message, 'Unknown block');
+    //         // }
+    //     });
+
+    //     it('Finds height of known blocks', async () => {
+
+    //         for (let i = 1; i < chain.length; i += 1) {
+    //             /* eslint-disable-next-line camelcase */
+    //             const { digest_le, height } = chain[i];
+
+    //             /* eslint-disable-next-line no-await-in-loop */
+    //             expect(
+    //                 await instance2.findHeight(digest_le)
+    //             ).to.equal(height)
+
+
+    //             // const res = await instance.findHeight(digest_le);
+    //             // assert(res.eqn(height), `incorrect height returned ${height}`);
+    //         }
+    //     });
+    // });
+
+    describe('#findAncestor', async () => {
+        const { chain, genesis, chain_header_hex, oldPeriodStart } = REGULAR_CHAIN;
         const headerHex = chain_header_hex;
         const headers = utils.concatenateHexStrings(headerHex.slice(0, 6));
 
-        before(async () => {
-
+        beforeEach(async () => {
             [deployer, signer1] = await ethers.getSigners();
 
             const bitcoinRelayFactory = new BitcoinRelay__factory(
                 deployer
             );
 
-
-            instance = await bitcoinRelayFactory.deploy(
+            instance2 = await bitcoinRelayFactory.deploy(
                 genesis.hex,
                 genesis.height,
-                genesis.digest_le,
+                // FIXME: must pass the first block of the block period (2016)
+                oldPeriodStart.digest_le,
                 ZERO_ADDRESS,
                 ZERO_ADDRESS
             );
 
-            await instance.addHeaders(genesis.hex, headers);
+            await instance2.addHeaders(genesis.hex, headers);
         });
 
         it('errors on unknown blocks', async () => {
 
             await expect(
-                instance.findHeight(`0x${'00'.repeat(32)}`)
-            ).to.revertedWith("Unknown block")
+                instance2.findAncestor(`0x${'00'.repeat(32)}`, 3)
+            ).to.revertedWith("Unknown ancestor")
 
             // try {
-            //   await instance.findHeight(`0x${'00'.repeat(32)}`);
+            //   await instance.findAncestor(`0x${'00'.repeat(32)}`, 3);
             //   assert(false, 'expected an error');
             // } catch (e) {
-            //   assert.include(e.message, 'Unknown block');
+            //   assert.include(e.message, 'Unknown ancestor');
             // }
         });
 
-        it('Finds height of known blocks', async () => {
-
-            for (let i = 0; i < chain.length; i += 1) {
+        it('Finds known ancestors based on on offsets', async () => {
+            //  since there's only 6 blocks added
+            for (let i = 0; i < 6; i += 1) {
                 /* eslint-disable-next-line camelcase */
-                const { digest_le, height } = chain[i];
+                const { digest_le } = chain[i];
+                console.log("i", i);
+                console.log("chain[i]: ", chain[i]);
 
                 /* eslint-disable-next-line no-await-in-loop */
+                let res = await instance2.findAncestor(digest_le, 0);
                 expect(
-                    await instance.findHeight(digest_le)
-                ).to.equal(height)
+                    res
+                ).to.equal(digest_le)
 
+                // assert.equal(res, digest_le);
 
-                // const res = await instance.findHeight(digest_le);
-                // assert(res.eqn(height), `incorrect height returned ${height}`);
+                if (i > 0) {
+                    /* eslint-disable-next-line no-await-in-loop */
+                    res = await instance2.findAncestor(digest_le, 1);
+                    expect(
+                        res
+                    ).to.equal(chain[i - 1].digest_le)
+
+                    // assert.equal(res, chain[i - 1].digest_le);
+                }
             }
         });
+
     });
-
-    // describe('#findAncestor', async () => {
-    //   const { chain, genesis, chain_header_hex } = REGULAR_CHAIN;
-    //   const headerHex = chain_header_hex;
-    //   const headers = utils.concatenateHexStrings(headerHex.slice(0, 6));
-
-    //   before(async () => {
-    //     [deployer, signer1] = await ethers.getSigners();
-
-    //     const bitcoinRelayFactory = new BitcoinRelay__factory(
-    //       deployer
-    //     );
-
-    //     instance = await bitcoinRelayFactory.deploy(
-    //       genesis.hex,
-    //       genesis.height,
-    //       genesis.digest_le,
-    //       ZERO_ADDRESS,
-    //       ZERO_ADDRESS
-    //     );
-    //     await instance.addHeaders(genesis.hex, headers);
-    //   });
-
-    //   it('errors on unknown blocks', async () => {
-
-    //     await expect(
-    //       instance.findAncestor(`0x${'00'.repeat(32)}`, 3)
-    //     ).to.revertedWith("Unknown ancestor")
-
-    //     // try {
-    //     //   await instance.findAncestor(`0x${'00'.repeat(32)}`, 3);
-    //     //   assert(false, 'expected an error');
-    //     // } catch (e) {
-    //     //   assert.include(e.message, 'Unknown ancestor');
-    //     // }
-    //   });
-
-    //   it('Finds known ancestors based on on offsets', async () => {
-    //     for (let i = 0; i < chain.length; i += 1) {
-    //       /* eslint-disable-next-line camelcase */
-    //       const { digest_le } = chain[i];
-    //       /* eslint-disable-next-line no-await-in-loop */
-    //       let res = await instance.findAncestor(digest_le, 0);
-    //       expect(
-    //         res
-    //       ).to.equal(digest_le)
-
-    //       // assert.equal(res, digest_le);
-
-    //       if (i > 0) {
-    //         /* eslint-disable-next-line no-await-in-loop */
-    //         res = await instance.findAncestor(digest_le, 1);
-    //         expect(
-    //           res
-    //         ).to.equal(chain[i - 1].digest_le)
-
-    //         // assert.equal(res, chain[i - 1].digest_le);
-    //       }
-    //     }
-    //   });
-    // });
 
     // describe('#isAncestor', async () => {
     //   const { chain, genesis } = REGULAR_CHAIN;

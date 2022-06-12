@@ -14,9 +14,12 @@ require('dotenv').config({path:"../../.env"});
 
 import { deployments, ethers } from "hardhat";
 import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
+import { solidity } from "ethereum-waffle";
+
 import { isBytesLike } from "ethers/lib/utils";
 import {BitcoinRelay} from "../src/types/BitcoinRelay";
 import {BitcoinRelay__factory} from "../src/types/factories/BitcoinRelay__factory";
+
 
 describe("Bitcoin Relay (ts)", async () => {
 
