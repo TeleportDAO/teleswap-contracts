@@ -18,6 +18,9 @@ import {WrappedToken} from "../src/types/WrappedToken";
 import {WrappedToken__factory} from "../src/types/factories/WrappedToken__factory";
 import {InstantRouter} from "../src/types/InstantRouter";
 import {InstantRouter__factory} from "../src/types/factories/InstantRouter__factory";
+import {InstantPool} from "../src/types/InstantPool";
+import {InstantPool__factory} from "../src/types/factories/InstantPool__factory";
+import { Address } from "hardhat-deploy/types";
 
 const {
     advanceBlockWithTime,
@@ -34,6 +37,8 @@ describe("CC Exchange Router", async () => {
     let TeleportDAOToken: ERC20;
     let WrappedBTC: WrappedToken;
     let wavax: WAVAX;
+    let bitcoinInstantPool: Contract;
+    let bitcoinInstantPoolAddress: Address;
 
     let mockCCTransferRouter: MockContract;
     let mockExchangeRouter: MockContract;
@@ -185,6 +190,15 @@ describe("CC Exchange Router", async () => {
             0
         );
 
+        bitcoinInstantPoolAddress = await instantRouter.bitcoinInstantPool()
+
+        let bitcoinInstantPoolFactory = new InstantPool__factory(
+            deployer
+        )
+        bitcoinInstantPool = await bitcoinInstantPoolFactory.attach(
+            bitcoinInstantPoolAddress
+        )
+
         return instantRouter;
     };
 
@@ -200,6 +214,12 @@ describe("CC Exchange Router", async () => {
             expect(
                 await instantRouter.exchangeRouter()
             ).to.equal(mockExchangeRouter.address)
+        })
+
+        it("third scenario", async function () {
+            expect(
+                await bitcoinInstantPool.owner()
+            ).to.equal(await deployer.getAddress())
         })
 
     });
