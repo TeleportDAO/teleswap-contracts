@@ -6,6 +6,7 @@ import { deployments, ethers } from "hardhat";
 import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
 import { Contract } from "@ethersproject/contracts";
+import { Address } from "hardhat-deploy/types";
 
 import { solidity } from "ethereum-waffle";
 
@@ -20,7 +21,6 @@ import {InstantRouter} from "../src/types/InstantRouter";
 import {InstantRouter__factory} from "../src/types/factories/InstantRouter__factory";
 import {InstantPool} from "../src/types/InstantPool";
 import {InstantPool__factory} from "../src/types/factories/InstantPool__factory";
-import { Address } from "hardhat-deploy/types";
 
 const {
     advanceBlockWithTime,
@@ -33,11 +33,13 @@ describe("CC Exchange Router", async () => {
 
     let deployer: Signer;
     let signer1: Signer;
+    let deployerAddress: Address;
+    let signer1Address: Address;
 
     let TeleportDAOToken: ERC20;
     let WrappedBTC: WrappedToken;
     let wavax: WAVAX;
-    let bitcoinInstantPool: Contract;
+    let bitcoinInstantPool: InstantPool;
     let bitcoinInstantPoolAddress: Address;
 
     let mockCCTransferRouter: MockContract;
@@ -50,10 +52,14 @@ describe("CC Exchange Router", async () => {
 
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     let telePortTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000)
+    let ten = BigNumber.from(10).pow(18).mul(10)
+    let oneHundred = BigNumber.from(10).pow(18).mul(100)
 
     before(async () => {
 
         [deployer, signer1] = await ethers.getSigners();
+        deployerAddress = await deployer.getAddress()
+        signer1Address = await signer1.getAddress()
 
         // read block headers from file
 
@@ -202,6 +208,135 @@ describe("CC Exchange Router", async () => {
         return instantRouter;
     };
 
+    describe("#addLiquidity", async () => {
+
+        let theTestMintedAmount = 10000000000
+
+        it("minting wrapped BTC for the user", async function () {
+
+            let WrappedBTCSigner1 = await WrappedBTC.connect(signer1)
+
+            await WrappedBTCSigner1.mintTestToken()
+
+            expect(
+                await WrappedBTC.balanceOf(signer1Address)
+            ).to.equal(theTestMintedAmount)
+        })
+
+        it("approving wrapped BTC for the instant pool", async function () {
+
+            let WrappedBTCSigner1 = await WrappedBTC.connect(signer1)
+
+            await WrappedBTCSigner1.mintTestToken()
+
+            await WrappedBTCSigner1.approve(
+                instantRouter.address,
+                theTestMintedAmount
+            )
+
+            expect(
+                await WrappedBTC.allowance(signer1Address, instantRouter.address)
+            ).to.equal(theTestMintedAmount)
+        })
+
+        it("adding liquidity to the instant pool and getting instant pool token", async function () {
+
+            let WrappedBTCSigner1 = await WrappedBTC.connect(signer1)
+
+            await WrappedBTCSigner1.mintTestToken()
+
+            await WrappedBTCSigner1.approve(
+                instantRouter.address,
+                theTestMintedAmount
+            )
+
+            let instantRouterSigner1 = await instantRouter.connect(signer1)
+
+            await instantRouterSigner1.addLiquidity(
+                signer1Address,
+                theTestMintedAmount
+            )
+
+            expect(
+                await bitcoinInstantPool.balanceOf(signer1Address)
+            ).to.equal(theTestMintedAmount)
+        })
+
+    });
+
+
+    describe("#removeLiquidity", async () => {
+
+        let theTestMintedAmount = 10000000000
+
+        it("insufficient funds to remove", async function () {
+
+            let instantRouterSigner1 = await instantRouter.connect(signer1)
+
+            await expect(
+                instantRouterSigner1.removeLiquidity(
+                    signer1Address,
+                    theTestMintedAmount
+                )
+            ).to.revertedWith("instant pool token is not enough")
+        })
+
+        it("removing liquidity from the instant pool and get back wrapped BTC", async function () {
+
+            let WrappedBTCSigner1 = await WrappedBTC.connect(signer1)
+
+            await WrappedBTCSigner1.mintTestToken()
+
+            await WrappedBTCSigner1.approve(
+                instantRouter.address,
+                theTestMintedAmount
+            )
+
+            let instantRouterSigner1 = await instantRouter.connect(signer1)
+
+            await instantRouterSigner1.addLiquidity(
+                signer1Address,
+                theTestMintedAmount
+            )
+
+            expect(
+                await WrappedBTC.balanceOf(bitcoinInstantPool.address)
+            ).to.equal(theTestMintedAmount)
+
+            expect(
+                await WrappedBTC.balanceOf(signer1Address)
+            ).to.equal(0)
+
+            expect(
+                await bitcoinInstantPool.balanceOf(signer1Address)
+            ).to.equal(theTestMintedAmount)
+
+            let bitcoinInstantPoolSigner1 = await bitcoinInstantPool.connect(signer1)
+
+            await bitcoinInstantPoolSigner1.approve(
+                instantRouter.address,
+                theTestMintedAmount
+            )
+
+            expect(
+                await instantRouterSigner1.removeLiquidity(
+                    signer1Address,
+                    theTestMintedAmount
+                )
+            ).to.emit(bitcoinInstantPool, "RemoveLiquidity")
+
+            expect(
+                await WrappedBTC.balanceOf(bitcoinInstantPool.address)
+            ).to.equal(0)
+
+            expect(
+                await WrappedBTC.balanceOf(instantRouter.address)
+            ).to.equal(theTestMintedAmount)
+
+        })
+
+    });
+
     describe("a sample function", async () => {
 
         it("first scenario", async function () {
@@ -219,8 +354,7 @@ describe("CC Exchange Router", async () => {
         it("third scenario", async function () {
             expect(
                 await bitcoinInstantPool.owner()
-            ).to.equal(await deployer.getAddress())
+            ).to.equal(deployerAddress)
         })
-
     });
 });
