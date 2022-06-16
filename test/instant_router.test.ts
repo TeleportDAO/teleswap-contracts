@@ -444,11 +444,138 @@ describe("CC Exchange Router", async () => {
                 1234567
             )
 
-
-
             await instantRouterSigner1.instantCCTransfer(
                 signer1Address,
                 ten,
+                theBlockNumber
+            )
+        });
+
+    });
+
+    describe("#instantCCExchange", async () => {
+
+        let reserve1 = oneHundred
+        let reserve2 = oneHundred
+
+        let theTestMintedAmount = oneHundred
+
+        // it("low deadline", async function () {
+
+        //     let thisBlockNumber = await signer1.provider?.getBlockNumber()
+        //     let theBlockNumber = BigNumber.from(thisBlockNumber).sub(2)
+
+        //     let instantRouterSigner1 = instantRouter.connect(signer1)
+
+        //     let thePath = [
+        //         WrappedBTC.address,
+        //         wavax.address
+        //     ]
+
+        //     await expect(
+        //         instantRouterSigner1.instantCCExchange(
+        //             0,
+        //             0,
+        //             thePath,
+        //             signer1Address,
+        //             theBlockNumber
+        //         )
+        //     ).to.revertedWith("deadline has passed")
+        // });
+
+
+        it("proper deadline", async function () {
+
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).add(10)
+
+            let instantRouterSigner1 = instantRouter.connect(signer1)
+
+            // console.log("mockLiquidityPoolFactory address: ", mockLiquidityPoolFactory.address)
+
+            await mockLiquidityPoolFactory.mock.getLiquidityPool.withArgs(
+                WrappedBTC.address,
+                TeleportDAOToken.address
+            ).returns(
+                mockLiquidityPool.address
+            )
+
+            await mockLiquidityPool.mock.getReserves.returns(
+                reserve1,
+                reserve2,
+                thisBlockNumber
+            )
+
+            // simulation of getAmountIn function in TeleportDAOLibrary
+            let numerator = reserve1.mul(ten).mul(1000);
+            let  denominator = (reserve2.sub(ten)).mul(997);
+
+            console.log("numerator: ", numerator)
+            console.log("denominator: ", denominator)
+
+            let amountIn = (numerator.div(denominator)).add(1);
+            // FIXME: why must multiple by 2
+            amountIn = amountIn.mul(2)
+
+            console.log("amountIn in test.ts: ", amountIn)
+
+            await mockStaking.mock.equivalentStakingShare.withArgs(
+                amountIn
+            ).returns(
+                amountIn
+            )
+
+            await mockStaking.mock.stakingShare.withArgs(
+                signer1Address
+            ).returns(
+                ten.mul(3)
+            )
+
+            await mockStaking.mock.unstake.withArgs(
+                signer1Address,
+                amountIn
+            ).returns()
+
+            let bitcoinInstantPoolAddress = await instantRouter.bitcoinInstantPool()
+
+            await WrappedBTC.mintTestToken()
+            await WrappedBTC.transfer(bitcoinInstantPoolAddress, theTestMintedAmount)
+
+            expect(
+                await WrappedBTC.balanceOf(bitcoinInstantPoolAddress)
+            ).to.equal(theTestMintedAmount)
+
+
+            await mockBitcoinRelay.mock.lastSubmittedHeight.returns(
+                1234567
+            )
+
+            let thePath = [
+                WrappedBTC.address,
+                wavax.address
+            ]
+
+            let theAmounts = [
+                ten,
+                ten
+            ]
+
+            let modifiedAmountIn = ten.mul(100 - instantFee).div(100)
+
+            await mockExchangeRouter.mock.swapExactTokensForAVAX.withArgs(
+                modifiedAmountIn,
+                ten,
+                thePath,
+                signer1Address,
+                theBlockNumber
+            ).returns(theAmounts, true)
+
+
+            await instantRouterSigner1.instantCCExchange(
+                ten,
+                ten,
+                thePath,
+                signer1Address,
                 theBlockNumber
             )
         });
