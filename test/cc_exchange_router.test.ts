@@ -66,6 +66,10 @@ describe("CCExchangeRouter", async () => {
             deployer,
             bitcoinRelayContract.abi
         );
+    
+        // Mocks checkTxProof of bitcoinRelay 
+        // We don't pass arguments since the request was modified and the txId is not valid
+        await mockBitcoinRelay.mock.checkTxProof.returns(true);
 
         // Mocks teleporters contract
         const bitcoinTeleporterContract = await deployments.getArtifact(
@@ -118,12 +122,14 @@ describe("CCExchangeRouter", async () => {
         );
 
         // Deploys exchange token
+        // We replace the exchangeToken address in ccExchangeRequests
         const erc20Factory = new ERC20__factory(deployer);
         exchangeToken = await erc20Factory.deploy(
             "exchangeToken", 
             "TDT", 
             100000
         );
+        // console.log(exchangeToken.address);
 
         // Deploys ccExchangeRouter contract
         const ccExchangeRouterFactory = new CCExchangeRouter__factory(deployer);
@@ -135,6 +141,9 @@ describe("CCExchangeRouter", async () => {
 
         // Sets teleBTC address in ccExchangeRouter
         await ccExchangeRouter.setWrappedBitcoin(teleBTC.address);
+
+        // Sets ccExchangeRouter address in ccTransferRouter
+        await ccTransferRouter.setCCExchangeRouter(ccExchangeRouter.address);
 
     });
 
@@ -165,8 +174,6 @@ describe("CCExchangeRouter", async () => {
         });
 
         it("mints and exchanges teleBTC for desired exchange token (normal cc exchange request)", async function () {
-            // Mocks checkTxProof of bitcoinRelay
-            await mockBitcoinRelay.mock.checkTxProof.returns(true);
             // Mocks reedemScriptHash of bitcoinTeleporter
             await mockBitcoinTeleporter.mock.redeemScriptHash.returns(
                 CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient
@@ -202,6 +209,22 @@ describe("CCExchangeRouter", async () => {
         })
 
         it("mints teleBTC since deadline has passed (normal cc exchange request)", async function () {
+            // Mocks reedemScriptHash of bitcoinTeleporter
+            await mockBitcoinTeleporter.mock.redeemScriptHash.returns(
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.desiredRecipient
+            );
+            expect(
+                await ccExchangeRouter.ccExchange(
+                    CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.version,
+                    CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.vin,
+                    CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.vout,
+                    CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.locktime,
+                    CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.blockNumber,
+                    CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.intermediateNodes,
+                    CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.index,
+                    false // payWithTDT
+                )
+            ).to.emit(teleBTC, 'Transfer');
             // expects x teleBTC has been minted for instant pool
             // expects y teleBTC has been minted for teleporter
             // expects z teleBTC has been minted for user
@@ -210,16 +233,27 @@ describe("CCExchangeRouter", async () => {
         })
 
         it("mints teleBTC since output amount is less than minimum expected amount (normal cc exchange request)", async function () {
+            await mockBitcoinTeleporter.mock.redeemScriptHash.returns(
+                CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.desiredRecipient
+            );
+            expect(
+                await ccExchangeRouter.ccExchange(
+                    CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.version,
+                    CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.vin,
+                    CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.vout,
+                    CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.locktime,
+                    CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.blockNumber,
+                    CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.intermediateNodes,
+                    CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.index,
+                    false // payWithTDT
+                )
+            ).to.emit(teleBTC, 'Transfer');
             // expects x teleBTC has been minted for instant pool
             // expects y teleBTC has been minted for teleporter
             // expects z teleBTC has been minted for user
             // expects a teleBTC has been minted for protocol
             // expects b teleBTC has been minted for locker
         })
-
-        // it("checks if the request has been used before", async function () {
-
-        // })
 
         it("errors if teleBTC has been minted before for the request", async function () {
 
