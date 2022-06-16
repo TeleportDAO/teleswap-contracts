@@ -21,6 +21,9 @@ import {InstantRouter} from "../src/types/InstantRouter";
 import {InstantRouter__factory} from "../src/types/factories/InstantRouter__factory";
 import {InstantPool} from "../src/types/InstantPool";
 import {InstantPool__factory} from "../src/types/factories/InstantPool__factory";
+import {LiquidityPool} from "../src/types/LiquidityPool";
+import {LiquidityPool__factory} from "../src/types/factories/LiquidityPool__factory";
+
 
 const {
     advanceBlockWithTime,
@@ -47,6 +50,7 @@ describe("CC Exchange Router", async () => {
     let mockLiquidityPoolFactory: MockContract;
     let mockStaking: MockContract;
     let mockBitcoinRelay: MockContract;
+    let mockLiquidityPool: MockContract;
 
     let instantRouter: InstantRouter;
 
@@ -54,6 +58,11 @@ describe("CC Exchange Router", async () => {
     let telePortTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000)
     let ten = BigNumber.from(10).pow(18).mul(10)
     let oneHundred = BigNumber.from(10).pow(18).mul(100)
+
+    let punishReward = 5
+    let payBackDeadLine = 10
+    let collateralRatio = 200 // means 200%
+    let instantFee = 5 // means 5%
 
     before(async () => {
 
@@ -86,6 +95,14 @@ describe("CC Exchange Router", async () => {
         mockLiquidityPoolFactory = await deployMockContract(
             deployer,
             liquidityPoolFactory.abi
+        )
+
+        const liquidityPool = await deployments.getArtifact(
+            "LiquidityPool"
+        );
+        mockLiquidityPool = await deployMockContract(
+            deployer,
+            liquidityPool.abi
         )
 
         const staking = await deployments.getArtifact(
@@ -190,10 +207,10 @@ describe("CC Exchange Router", async () => {
             mockLiquidityPoolFactory.address,
             mockStaking.address,
             mockBitcoinRelay.address,
-            0,
-            0,
-            0,
-            0
+            punishReward,
+            payBackDeadLine,
+            collateralRatio,
+            instantFee
         );
 
         bitcoinInstantPoolAddress = await instantRouter.bitcoinInstantPool()
@@ -210,7 +227,7 @@ describe("CC Exchange Router", async () => {
 
     describe("#addLiquidity", async () => {
 
-        let theTestMintedAmount = 10000000000
+        let theTestMintedAmount = oneHundred
 
         it("minting wrapped BTC for the user", async function () {
 
@@ -267,7 +284,7 @@ describe("CC Exchange Router", async () => {
 
     describe("#removeLiquidity", async () => {
 
-        let theTestMintedAmount = 10000000000
+        let theTestMintedAmount = oneHundred
 
         it("insufficient funds to remove", async function () {
 
@@ -337,24 +354,104 @@ describe("CC Exchange Router", async () => {
 
     });
 
-    describe("a sample function", async () => {
+    describe("#instantCCTransfer", async () => {
 
-        it("first scenario", async function () {
-            expect(
-                await instantRouter.ccTransferRouter()
-            ).to.equal(mockCCTransferRouter.address)
-        })
+        let reserve1 = oneHundred
+        let reserve2 = oneHundred
 
-        it("second scenario", async function () {
-            expect(
-                await instantRouter.exchangeRouter()
-            ).to.equal(mockExchangeRouter.address)
-        })
+        let theTestMintedAmount = oneHundred
 
-        it("third scenario", async function () {
+        it("low deadline", async function () {
+
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(2)
+
+            let instantRouterSigner1 = instantRouter.connect(signer1)
+
+            await expect(
+                instantRouterSigner1.instantCCTransfer(
+                    signer1Address,
+                    0,
+                    theBlockNumber
+                )
+            ).to.revertedWith("deadline has passed")
+        });
+
+
+        it("proper deadline", async function () {
+
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).add(10)
+
+            let instantRouterSigner1 = instantRouter.connect(signer1)
+
+            // console.log("mockLiquidityPoolFactory address: ", mockLiquidityPoolFactory.address)
+
+            await mockLiquidityPoolFactory.mock.getLiquidityPool.withArgs(
+                WrappedBTC.address,
+                TeleportDAOToken.address
+            ).returns(
+                mockLiquidityPool.address
+            )
+
+            await mockLiquidityPool.mock.getReserves.returns(
+                reserve1,
+                reserve2,
+                thisBlockNumber
+            )
+
+            // simulation of getAmountIn function in TeleportDAOLibrary
+            let numerator = reserve1.mul(ten).mul(1000);
+            let  denominator = (reserve2.sub(ten)).mul(997);
+
+            console.log("numerator: ", numerator)
+            console.log("denominator: ", denominator)
+
+            let amountIn = (numerator.div(denominator)).add(1);
+            // FIXME: why must multiple by 2
+            amountIn = amountIn.mul(2)
+
+            console.log("amountIn in test.ts: ", amountIn)
+
+            await mockStaking.mock.equivalentStakingShare.withArgs(
+                amountIn
+            ).returns(
+                amountIn
+            )
+
+            await mockStaking.mock.stakingShare.withArgs(
+                signer1Address
+            ).returns(
+                ten.mul(3)
+            )
+
+            await mockStaking.mock.unstake.withArgs(
+                signer1Address,
+                amountIn
+            ).returns()
+
+            let bitcoinInstantPoolAddress = await instantRouter.bitcoinInstantPool()
+
+            await WrappedBTC.mintTestToken()
+            await WrappedBTC.transfer(bitcoinInstantPoolAddress, theTestMintedAmount)
+
             expect(
-                await bitcoinInstantPool.owner()
-            ).to.equal(deployerAddress)
-        })
+                await WrappedBTC.balanceOf(bitcoinInstantPoolAddress)
+            ).to.equal(theTestMintedAmount)
+
+
+            await mockBitcoinRelay.mock.lastSubmittedHeight.returns(
+                1234567
+            )
+
+
+
+            await instantRouterSigner1.instantCCTransfer(
+                signer1Address,
+                ten,
+                theBlockNumber
+            )
+        });
+
     });
 });
