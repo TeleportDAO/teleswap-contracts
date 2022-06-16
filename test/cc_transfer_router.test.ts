@@ -63,19 +63,11 @@ describe("CCTransferRouter", async () => {
 
         // Mocks instant router contract
         const instantRouterContract = await deployments.getArtifact(
-            "IInstantRouterContract"
+            "IInstantRouter"
         );
         mockInstantRouter = await deployMockContract(
             deployer,
             instantRouterContract.abi
-        );
-
-        // Deploys teleBTC contract
-        const teleBTCFactory = new WrappedToken__factory(deployer);
-        teleBTC = await teleBTCFactory.deploy(
-            mockBitcoinRelay.address,
-            mockBitcoinTeleporter.address, 
-            NORMAL_CONFIRMATION_PARAMETER
         );
 
         // Deploys ccTransferRouter contract
@@ -84,6 +76,14 @@ describe("CCTransferRouter", async () => {
             mockBitcoinRelay.address,
             mockBitcoinTeleporter.address, 
             NORMAL_CONFIRMATION_PARAMETER
+        );
+
+        // Deploys teleBTC contract
+        const teleBTCFactory = new WrappedToken__factory(deployer);
+        teleBTC = await teleBTCFactory.deploy(
+            "teleBTC",
+            "teleBTC", 
+            ccTransferRouter.address
         );
 
     });
@@ -104,13 +104,13 @@ describe("CCTransferRouter", async () => {
                 )
             ).to.equal(true);
             // Checks enough teleBTC has been minted for user
-            expect(
-                await teleBTC.balanceOf(CC_REQUESTS.normalCCTransfer.recipientAddress)
-            ).to.equal();
+            // expect(
+            //     await teleBTC.balanceOf(CC_REQUESTS.normalCCTransfer.recipientAddress)
+            // ).to.equal();
             // Checks enough teleBTC has been minted for teleporter
-            expect(
-                await teleBTC.balanceOf(deployer)
-            ).to.equal();
+            // expect(
+            //     await teleBTC.balanceOf(await deployer.getAddress())
+            // ).to.equal();
             // expects z teleBTC has been minted for protocol
             // expect(
             //     await teleBTC.balanceOf()
