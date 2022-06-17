@@ -36,8 +36,10 @@ describe("CC Exchange Router", async () => {
 
     let deployer: Signer;
     let signer1: Signer;
+    let signer2: Signer;
     let deployerAddress: Address;
     let signer1Address: Address;
+    let signer2Address: Address;
 
     let TeleportDAOToken: ERC20;
     let WrappedBTC: WrappedToken;
@@ -66,9 +68,10 @@ describe("CC Exchange Router", async () => {
 
     before(async () => {
 
-        [deployer, signer1] = await ethers.getSigners();
+        [deployer, signer1, signer2] = await ethers.getSigners();
         deployerAddress = await deployer.getAddress()
         signer1Address = await signer1.getAddress()
+        signer2Address = await signer2.getAddress()
 
         // read block headers from file
 
@@ -704,7 +707,225 @@ describe("CC Exchange Router", async () => {
                 )
             ).to.emit(instantRouter, "PaybackInstantLoan")
 
-            console.log("the end of the tests")
+        });
+
+    });
+
+    describe("#punishUser", async () => {
+
+        let reserve1 = oneHundred
+        let reserve2 = oneHundred
+        let theTestMintedAmount = oneHundred
+
+        it("deadline has not passed", async function () {
+
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).add(10)
+
+            let instantRouterSigner1 = instantRouter.connect(signer1)
+
+            // console.log("mockLiquidityPoolFactory address: ", mockLiquidityPoolFactory.address)
+
+            await mockLiquidityPoolFactory.mock.getLiquidityPool.withArgs(
+                WrappedBTC.address,
+                TeleportDAOToken.address
+            ).returns(
+                mockLiquidityPool.address
+            )
+
+            await mockLiquidityPool.mock.getReserves.returns(
+                reserve1,
+                reserve2,
+                thisBlockNumber
+            )
+
+            // simulation of getAmountIn function in TeleportDAOLibrary
+            let numerator = reserve1.mul(ten).mul(1000);
+            let  denominator = (reserve2.sub(ten)).mul(997);
+
+            console.log("numerator: ", numerator)
+            console.log("denominator: ", denominator)
+
+            let amountIn = (numerator.div(denominator)).add(1);
+            // FIXME: why must multiple by 2
+            amountIn = amountIn.mul(2)
+
+            console.log("amountIn in test.ts: ", amountIn)
+
+            await mockStaking.mock.equivalentStakingShare.withArgs(
+                amountIn
+            ).returns(
+                amountIn
+            )
+
+            await mockStaking.mock.stakingShare.withArgs(
+                signer1Address
+            ).returns(
+                ten.mul(3)
+            )
+
+            await mockStaking.mock.unstake.withArgs(
+                signer1Address,
+                amountIn
+            ).returns()
+
+            let bitcoinInstantPoolAddress = await instantRouter.bitcoinInstantPool()
+
+            await WrappedBTC.mintTestToken()
+            await WrappedBTC.transfer(bitcoinInstantPoolAddress, theTestMintedAmount)
+
+            expect(
+                await WrappedBTC.balanceOf(bitcoinInstantPoolAddress)
+            ).to.equal(theTestMintedAmount)
+
+
+            await mockBitcoinRelay.mock.lastSubmittedHeight.returns(
+                BigNumber.from(thisBlockNumber).sub(5)
+            )
+
+            await instantRouterSigner1.instantCCTransfer(
+                signer1Address,
+                ten,
+                theBlockNumber
+            )
+
+            // the above code adds a debt for the user
+
+            // the following code payback the user's debt
+
+            let instantRouterSigner2 = instantRouter.connect(signer2)
+
+            let theDebtIndexes = [
+                0
+            ]
+
+            await expect(
+                instantRouterSigner2.punishUser(
+                    signer1Address,
+                    theDebtIndexes
+                )
+            ).to.revertedWith("deadline has not passed")
+
+        });
+
+        it("payback one debt", async function () {
+
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).add(10)
+
+            let instantRouterSigner1 = instantRouter.connect(signer1)
+
+            // console.log("mockLiquidityPoolFactory address: ", mockLiquidityPoolFactory.address)
+
+            await mockLiquidityPoolFactory.mock.getLiquidityPool.withArgs(
+                WrappedBTC.address,
+                TeleportDAOToken.address
+            ).returns(
+                mockLiquidityPool.address
+            )
+
+            await mockLiquidityPool.mock.getReserves.returns(
+                reserve1,
+                reserve2,
+                thisBlockNumber
+            )
+
+            // simulation of getAmountIn function in TeleportDAOLibrary
+            let numerator = reserve1.mul(ten).mul(1000);
+            let  denominator = (reserve2.sub(ten)).mul(997);
+
+            console.log("numerator: ", numerator)
+            console.log("denominator: ", denominator)
+
+            let amountIn = (numerator.div(denominator)).add(1);
+            // FIXME: why must multiple by 2
+            amountIn = amountIn.mul(2)
+
+            console.log("amountIn in test.ts: ", amountIn)
+
+            await mockStaking.mock.equivalentStakingShare.withArgs(
+                amountIn
+            ).returns(
+                amountIn
+            )
+
+            await mockStaking.mock.stakingShare.withArgs(
+                signer1Address
+            ).returns(
+                ten.mul(3)
+            )
+
+            await mockStaking.mock.unstake.withArgs(
+                signer1Address,
+                amountIn
+            ).returns()
+
+            let bitcoinInstantPoolAddress = await instantRouter.bitcoinInstantPool()
+
+            await WrappedBTC.mintTestToken()
+            await WrappedBTC.transfer(bitcoinInstantPoolAddress, theTestMintedAmount)
+
+            expect(
+                await WrappedBTC.balanceOf(bitcoinInstantPoolAddress)
+            ).to.equal(theTestMintedAmount)
+
+
+            await mockBitcoinRelay.mock.lastSubmittedHeight.returns(
+                BigNumber.from(thisBlockNumber).sub(5)
+            )
+
+            await instantRouterSigner1.instantCCTransfer(
+                signer1Address,
+                ten,
+                theBlockNumber
+            )
+
+            // the above code adds a debt for the user
+
+            // the following code payback the user's debt
+
+            let instantRouterSigner2 = instantRouter.connect(signer2)
+
+            await mockBitcoinRelay.mock.lastSubmittedHeight.returns(
+                BigNumber.from(thisBlockNumber).add(15)
+            )
+
+
+            let thePaths = [
+                TeleportDAOToken.address,
+                WrappedBTC.address
+            ]
+
+            let theAmounts = [
+                ten,
+                ten
+            ]
+
+            //  adding 21 is because of the difference between time of test cases and the local blockchain
+            let thisBlockTimeStamp = await Math.round(new Date().getTime() / 1000) - 45;
+
+            console.log("thisBlockTimeStamp is: ", 2*thisBlockTimeStamp)
+
+
+            await mockExchangeRouter.mock.swapExactTokensForTokens.withArgs(
+                amountIn.div(2),
+                ten,
+                thePaths,
+                bitcoinInstantPoolAddress,
+                BigNumber.from(thisBlockTimeStamp).mul(2)
+            ).returns(theAmounts, true)
+
+
+            let theDebtIndexes = [
+                0
+            ]
+
+            await TeleportDAOToken.transfer(instantRouter.address, ten)
+
+            await instantRouterSigner2.punishUser(
+                signer1Address,
+                theDebtIndexes
+            )
 
         });
 

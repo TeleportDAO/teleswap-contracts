@@ -347,6 +347,10 @@ contract InstantRouter is IInstantRouter {
         address to,
         uint deadline
     ) internal {
+        console.log("buyWrappedBitcoinUsingTDT...");
+        console.log("deadline");
+        console.log(deadline);
+
         IERC20(TeleportDAOToken).approve(exchangeRouter, amountIn);
         IExchangeRouter(exchangeRouter).swapExactTokensForTokens(
             amountIn,
