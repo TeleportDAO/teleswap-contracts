@@ -39,6 +39,8 @@ describe("CCTransferRouter", async () => {
     let mockBitcoinTeleporter: MockContract;
     let mockInstantRouter: MockContract;
 
+    let beginning: any;
+
     before(async () => {
         // Sets accounts
         [deployer, signer1] = await ethers.getSigners();
@@ -88,25 +90,32 @@ describe("CCTransferRouter", async () => {
 
         // Set teleBTC address in ccTransferRouter
         await ccTransferRouter.setWrappedBitcoin(teleBTC.address);
-
     });
 
-    describe("ccTransfer", async () => {
+    async function setRelayReturn(request: any, isTrue: boolean): Promise<void> {
+        await mockBitcoinRelay.mock.checkTxProof.withArgs(
+            request.txId,
+            request.blockNumber,
+            request.intermediateNodes,
+            request.index,
+            false, // payWithTDT
+            NORMAL_CONFIRMATION_PARAMETER
+        ).returns(isTrue);
+    }
 
+    async function setBitcoinTeleporterReturn(request: any): Promise<void> {
+        await mockBitcoinTeleporter.mock.redeemScriptHash
+            .returns(request.desiredRecipient);
+    }
+
+    describe("ccTransfer", async () => {
         it("mints teleBTC for normal cc transfer request", async function () {
+            beginning = await takeSnapshot(signer1.provider);
             let prevSupply = await teleBTC.totalSupply();
             // Mocking that relay returns true for our request
-            await mockBitcoinRelay.mock.checkTxProof.withArgs(
-                CC_REQUESTS.normalCCTransfer.txId,
-                CC_REQUESTS.normalCCTransfer.blockNumber,
-                CC_REQUESTS.normalCCTransfer.intermediateNodes,
-                CC_REQUESTS.normalCCTransfer.index,
-                false, // payWithTDT
-                NORMAL_CONFIRMATION_PARAMETER
-            ).returns(true);
+            await setRelayReturn(CC_REQUESTS.normalCCTransfer, true);
             // Mocking that Locker returns the Lockers address on Bitcoin
-            await mockBitcoinTeleporter.mock.redeemScriptHash
-            .returns(CC_REQUESTS.normalCCTransfer.desiredRecipient);
+            await setBitcoinTeleporterReturn(CC_REQUESTS.normalCCTransfer);
             // Check that ccTransfer performs successfully when everything is valid
             expect(
                 await ccTransferRouter.ccTransfer(
@@ -132,27 +141,19 @@ describe("CCTransferRouter", async () => {
             expect(
                 await teleBTC.totalSupply()
             ).to.equal(prevSupply + CC_REQUESTS.normalCCTransfer.bitcoinAmount)
-            // expects z teleBTC has been minted for protocol
+            // TODO expects z teleBTC has been minted for protocol
             // expect(
             //     await teleBTC.balanceOf()
             // ).to.equal();
-            // expects a teleBTC has been minted for locker
+            // TODO expects a teleBTC has been minted for locker
             // expect(
             //     await teleBTC.balanceOf()
             // ).to.equal();
         })
 
-        // it("mints teleBTC for instant cc transfer request", async function () {
-            // expects x teleBTC has been minted for instant pool
-            // expects y teleBTC has been minted for teleporter
-            // expects z teleBTC has been minted for user
-            // expects a teleBTC has been minted for protocol
-            // expects b teleBTC has been minted for locker
-        // })
-
-        it("Reverts if the request has been used before for the request", async function () {
-            expect(
-                await ccTransferRouter.ccTransfer(
+        it("Reverts if the request has been used before", async function () {
+            await expect(
+                ccTransferRouter.ccTransfer(
                     CC_REQUESTS.normalCCTransfer.version,
                     CC_REQUESTS.normalCCTransfer.vin,
                     CC_REQUESTS.normalCCTransfer.vout,
@@ -162,43 +163,99 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer.index,
                     false // payWithTDT
                 )
-            ).to.revertedWith("Request has been used before");
+            ).to.revertedWith('Request has been used before');
         })
 
         it("Reverts if the request has not been finalized on the relay", async function () {
-
+            await revertProvider(signer1.provider, beginning);
+            // Mocking that relay returns false for our request
+            await setRelayReturn(CC_REQUESTS.normalCCTransfer, false);
+            // Mocking that Locker returns the Lockers address on Bitcoin
+            await setBitcoinTeleporterReturn(CC_REQUESTS.normalCCTransfer);
+            // Check that ccTransfer reverts when tx is not finalized on source chain
+            await expect(
+                ccTransferRouter.ccTransfer(
+                    CC_REQUESTS.normalCCTransfer.version,
+                    CC_REQUESTS.normalCCTransfer.vin,
+                    CC_REQUESTS.normalCCTransfer.vout,
+                    CC_REQUESTS.normalCCTransfer.locktime,
+                    CC_REQUESTS.normalCCTransfer.blockNumber,
+                    CC_REQUESTS.normalCCTransfer.intermediateNodes,
+                    CC_REQUESTS.normalCCTransfer.index,
+                    false // payWithTDT
+                )
+            ).to.revertedWith("Transaction has not finalized");
         })
 
         it("Reverts if the percentage fee is out of range [0,100)", async function () {
-
+            // TODO
         })
 
         it("Reverts if the request is an exchange request", async function () {
-
+            // TODO
         })
 
         it("Reverts if the request data size is not 80 bytes", async function () {
-
+            // TODO
         })
 
         it("Reverts if the request belongs to another chain", async function () {
-
+            // TODO
         })
 
         it("Reverts if user has not sent BTC to lockers", async function () {
-
+            // TODO
         })
 
         it("Reverts if the request speed is out of range {0,1}", async function () {
-
+            // TODO uncomment when it is added to the contract and put a correct revert msg
+            // await revertProvider(signer1.provider, beginning);
+            // // Mocking that relay returns true for our request
+            // await setRelayReturn(CC_REQUESTS.normalCCTransfer_invalidSpeed, true);
+            // // Mocking that Locker returns the Lockers address on Bitcoin
+            // await setBitcoinTeleporterReturn(CC_REQUESTS.normalCCTransfer_invalidSpeed);
+            // // Check that ccTransfer reverts when tx is not finalized on source chain
+            // await expect(
+            //     ccTransferRouter.ccTransfer(
+            //         CC_REQUESTS.normalCCTransfer_invalidSpeed.version,
+            //         CC_REQUESTS.normalCCTransfer_invalidSpeed.vin,
+            //         CC_REQUESTS.normalCCTransfer_invalidSpeed.vout,
+            //         CC_REQUESTS.normalCCTransfer_invalidSpeed.locktime,
+            //         CC_REQUESTS.normalCCTransfer_invalidSpeed.blockNumber,
+            //         CC_REQUESTS.normalCCTransfer_invalidSpeed.intermediateNodes,
+            //         CC_REQUESTS.normalCCTransfer_invalidSpeed.index,
+            //         false // payWithTDT
+            //     )
+            // ).to.revertedWith("TODO");
         })
 
     });
     
     describe("isRequestUsed", async () => {
-
-        // Checks a used transation
-        it("checks if the request has been used before", async function () {
+        it("checks if the request has been used before (unused)", async function () {
+            await revertProvider(signer1.provider, beginning);
+            expect(
+                await ccTransferRouter.isRequestUsed(CC_REQUESTS.normalCCTransfer.txId)
+            ).to.equal(false);
+        })
+        it("checks if the request has been used before (used)", async function () {
+            // Mocking that relay returns true for our request
+            await setRelayReturn(CC_REQUESTS.normalCCTransfer, true);
+            // Mocking that Locker returns the Lockers address on Bitcoin
+            await setBitcoinTeleporterReturn(CC_REQUESTS.normalCCTransfer);
+            // send ccTransfer request
+            await expect(
+                ccTransferRouter.ccTransfer(
+                    CC_REQUESTS.normalCCTransfer.version,
+                    CC_REQUESTS.normalCCTransfer.vin,
+                    CC_REQUESTS.normalCCTransfer.vout,
+                    CC_REQUESTS.normalCCTransfer.locktime,
+                    CC_REQUESTS.normalCCTransfer.blockNumber,
+                    CC_REQUESTS.normalCCTransfer.intermediateNodes,
+                    CC_REQUESTS.normalCCTransfer.index,
+                    false // payWithTDT
+                )
+            ).to.emit(ccTransferRouter, 'CCTransfer');
             expect(
                 await ccTransferRouter.isRequestUsed(CC_REQUESTS.normalCCTransfer.txId)
             ).to.equal(true);
