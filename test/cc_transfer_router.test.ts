@@ -1,4 +1,4 @@
-const CC_REQUESTS = require('./test_fixtures/ccRequests.json');
+const CC_REQUESTS = require('./test_fixtures/ccTransferRequests.json');
 require('dotenv').config({path:"../../.env"});
 
 import { assert, expect, use } from "chai";
