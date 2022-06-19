@@ -15,7 +15,7 @@ deployments/localhost
 deployments/*/solcInputs/*.json
 dist
 src/types
-test/*/
+# test/*/
 .vscode
 .nodn
 *.abe*
