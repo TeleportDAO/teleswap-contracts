@@ -37,6 +37,7 @@ describe("CCExchangeRouter", async () => {
 
     // Constants
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+    let DUMMY_ADDRESS = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
     let NORMAL_CONFIRMATION_PARAMETER = 6;
 
     // Accounts
@@ -268,7 +269,7 @@ describe("CCExchangeRouter", async () => {
             await mockBitcoinTeleporter.mock.redeemScriptHash.returns(
                 CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient
             );
-
+            
             // Finds expected output amount that user receives
             let expectedOutputAmount = await exchangeRouter.getAmountOut(
                 CC_EXCHANGE_REQUESTS.normalCCExchange.bitcoinAmount - 
@@ -276,13 +277,17 @@ describe("CCExchangeRouter", async () => {
                 oldReserveTeleBTC, 
                 oldReserveExchangeToken
             );
+            
+            // Replaces dummy address in vout with exchange token address
+            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange.vout;
+            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
             // Mints and exchanges teleBTC for TDT
             expect(
                 await ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchange.vin,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange.vout,
+                    vout,
                     CC_EXCHANGE_REQUESTS.normalCCExchange.locktime,
                     CC_EXCHANGE_REQUESTS.normalCCExchange.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange.intermediateNodes,
@@ -366,12 +371,16 @@ describe("CCExchangeRouter", async () => {
                 CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.desiredRecipient
             );
 
+            // Replaces dummy address in vout with exchange token address
+            let vout = CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.vout;
+            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+
             // Mints teleBTC
             expect(
                 await ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.vin,
-                    CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.vout,
+                    vout,
                     CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.locktime,
                     CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.intermediateNodes,
@@ -426,11 +435,15 @@ describe("CCExchangeRouter", async () => {
                 CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient
             );
             
+            // Replaces dummy address in vout with exchange token address
+            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange.vout;
+            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+
             // Mints and exchanges teleBTC for exchangeToken
             await ccExchangeRouter.ccExchange(
                 CC_EXCHANGE_REQUESTS.normalCCExchange.version,
                 CC_EXCHANGE_REQUESTS.normalCCExchange.vin,
-                CC_EXCHANGE_REQUESTS.normalCCExchange.vout,
+                vout,
                 CC_EXCHANGE_REQUESTS.normalCCExchange.locktime,
                 CC_EXCHANGE_REQUESTS.normalCCExchange.blockNumber,
                 CC_EXCHANGE_REQUESTS.normalCCExchange.intermediateNodes,
@@ -443,7 +456,7 @@ describe("CCExchangeRouter", async () => {
                 ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchange.vin,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange.vout,
+                    vout,
                     CC_EXCHANGE_REQUESTS.normalCCExchange.locktime,
                     CC_EXCHANGE_REQUESTS.normalCCExchange.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange.intermediateNodes,
