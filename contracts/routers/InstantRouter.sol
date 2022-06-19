@@ -15,14 +15,14 @@ import "../relay/interfaces/IBitcoinRelay.sol";
 import 'hardhat/console.sol';
 
 contract InstantRouter is IInstantRouter {
-    
+
     using SafeMath for uint;
     // mapping(address => uint) override public lockedTDT;
     mapping(bytes32 => InstantTransferRequest) public requests;
     mapping(bytes32 => bool) public isUsed;
     mapping(address => debt[]) public debts;
     uint punisherReward;
-    uint override public paybackDeadline; // this is the deadline for paying back the borrowed amount 
+    uint override public paybackDeadline; // this is the deadline for paying back the borrowed amount
     address public liquidityPoolFactory;
     address public override wrappedBitcoin;
     address public override ccTransferRouter;
@@ -33,8 +33,8 @@ contract InstantRouter is IInstantRouter {
     address public staking;
     address public bitcoinRelay;
     uint public override collateralRatio; // multplied by 100
-    address public override owner; 
-    
+    address public override owner;
+
     modifier onlyOwner {
         require(msg.sender == owner);
         _;
@@ -43,8 +43,8 @@ contract InstantRouter is IInstantRouter {
     constructor (
         address _ccTransferRouter,
         address _exchangeRouter,
-        address _TeleportDAOToken, 
-        address _liquidityPoolFactory, 
+        address _TeleportDAOToken,
+        address _liquidityPoolFactory,
         address _staking,
         address _bitcoinRelay,
         uint _punisherReward,
@@ -65,11 +65,11 @@ contract InstantRouter is IInstantRouter {
         collateralRatio = _collateralRatio;
         InstantPool _bitcoinInstantPool;
         _bitcoinInstantPool = new InstantPool(
-            address(this), 
-            wrappedBitcoin, 
-            "BitcoinInstantPoolToken", 
-            "BIPT", 
-            msg.sender, 
+            address(this),
+            wrappedBitcoin,
+            "BitcoinInstantPoolToken",
+            "BIPT",
+            msg.sender,
             _instantFee
         );
         bitcoinInstantPool = address(_bitcoinInstantPool);
@@ -79,7 +79,7 @@ contract InstantRouter is IInstantRouter {
     function changeOwner(address _owner) external override onlyOwner {
         owner = _owner;
     }
-    
+
     function setExchangeRouter (address _exchangeRouter) external override onlyOwner {
         exchangeRouter = _exchangeRouter;
         WAVAX = IExchangeRouter(exchangeRouter).WAVAX();
@@ -107,7 +107,7 @@ contract InstantRouter is IInstantRouter {
 
     function addLiquidity(address user, uint wrappedBitcoinAmount) public override returns(uint) {
         IERC20(wrappedBitcoin).transferFrom(msg.sender, address(this), wrappedBitcoinAmount);
-        // InstantRouter allows instantPool to transfer from it 
+        // InstantRouter allows instantPool to transfer from it
         IERC20(wrappedBitcoin).approve(bitcoinInstantPool, wrappedBitcoinAmount);
         return IInstantPool(bitcoinInstantPool).addLiquidity(user, wrappedBitcoinAmount);
     }
@@ -118,13 +118,13 @@ contract InstantRouter is IInstantRouter {
         // send ipToken to InstantRouter
         IInstantPool(bitcoinInstantPool).transferFrom(msg.sender, address(this), instantPoolTokenAmount);
         // remove liquidity from instant pool
-        return IInstantPool(bitcoinInstantPool).removeLiquidity(user, instantPoolTokenAmount); 
+        return IInstantPool(bitcoinInstantPool).removeLiquidity(user, instantPoolTokenAmount);
     }
 
     function _instantTransfer (
-        address user, 
-        address receiver, 
-        uint amount, 
+        address user,
+        address receiver,
+        uint amount,
         uint deadline,
         bytes32 messageHash
     ) internal returns(bool) {
@@ -134,11 +134,11 @@ contract InstantRouter is IInstantRouter {
         uint userStakingShare = IStaking(staking).stakingShare(user);
         require(userStakingShare >= requiredStakingShare,"TDT staked amount is not sufficient");
         IStaking(staking).unstake(user, requiredStakingShare);
-        // transfer wrappedBitcoin to user 
+        // transfer wrappedBitcoin to user
         require(
-            IInstantPool(bitcoinInstantPool).instantTransfer(receiver, amount), 
+            IInstantPool(bitcoinInstantPool).instantTransfer(receiver, amount),
             "transfer was not succesfull"
-        ); 
+        );
         debt memory _debt;
         _debt.user = user;
         _debt.wrappedBitcoinAmount = amount;
@@ -150,9 +150,9 @@ contract InstantRouter is IInstantRouter {
     }
 
     function _instantExchange (
-        address user, 
-        address receiver, 
-        uint amountIn, 
+        address user,
+        address receiver,
+        uint amountIn,
         uint amountOutMin,
         address[] memory path,
         uint deadline,
@@ -168,9 +168,9 @@ contract InstantRouter is IInstantRouter {
         IStaking(staking).unstake(user, requiredStakingShare);
         // transfer wrappedBitcoin to the instant router
         require(
-            IInstantPool(bitcoinInstantPool).instantTransfer(address(this), amountIn), 
+            IInstantPool(bitcoinInstantPool).instantTransfer(address(this), amountIn),
             "transfer was not succesfull"
-        ); 
+        );
         debt memory _debt;
         _debt.user = user;
         _debt.wrappedBitcoinAmount = amountIn;
@@ -202,7 +202,7 @@ contract InstantRouter is IInstantRouter {
         }
 
     }
-    
+
     function instantCCTransfer (address receiver, uint amount, uint deadline) public override returns (bool) {
         bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, amount, deadline));
         _instantTransfer(msg.sender, receiver, amount, deadline, messageHash);
@@ -213,7 +213,7 @@ contract InstantRouter is IInstantRouter {
     function instantCCTransferWithPermit (
         address signer,
         bytes memory signature,
-        address receiver, 
+        address receiver,
         uint amount,
         uint deadline
     ) public override returns(bool) {
@@ -228,10 +228,10 @@ contract InstantRouter is IInstantRouter {
     }
 
     function instantCCExchange (
-        uint amountIn, 
-        uint amountOutMin, 
-        address[] memory path, 
-        address receiver, 
+        uint amountIn,
+        uint amountOutMin,
+        address[] memory path,
+        address receiver,
         uint deadline
     ) public override returns(uint[] memory amounts, bool result) {
         bytes32 messageHash = keccak256(
@@ -243,10 +243,10 @@ contract InstantRouter is IInstantRouter {
     function instantCCExchangeWithPermit(
         address signer,
         bytes memory signature,
-        uint amountIn, 
-        uint amountOutMin, 
-        address[] memory path, 
-        address receiver, 
+        uint amountIn,
+        uint amountOutMin,
+        address[] memory path,
+        address receiver,
         uint deadline
     ) public override returns(uint[] memory amounts, bool result) {
         bytes32 messageHash = keccak256(
@@ -281,7 +281,7 @@ contract InstantRouter is IInstantRouter {
                 break;
             }
         }
-        
+
         if (_bitcoinAmount > 0) {
             IERC20(wrappedBitcoin).transferFrom(msg.sender, user, _bitcoinAmount);
         }
@@ -299,20 +299,20 @@ contract InstantRouter is IInstantRouter {
 
     function requiredTDT (uint wrappedBitcoinAmount) private returns(uint){
         (uint wrappedBitcoinReserve, uint TeleportDAOTokenReserve) = TeleportDAOLibrary.getReserves(
-            liquidityPoolFactory, 
-            wrappedBitcoin, 
+            liquidityPoolFactory,
+            wrappedBitcoin,
             TeleportDAOToken);
         uint _requiredTDT = TeleportDAOLibrary.getAmountIn(wrappedBitcoinAmount, TeleportDAOTokenReserve, wrappedBitcoinReserve);
         return _requiredTDT;
     }
 
     function punishUser (address user, uint[] memory debtIndex) override external returns (bool) {
-        
+
         require(debts[user].length >= debtIndex.length, "too many indexes");
         uint wrappedBitcoinAmount;
         uint collateralAmount;
         uint lastSubmittedHeight = IBitcoinRelay(bitcoinRelay).lastSubmittedHeight();
-        
+
         for (uint i = 0; i < debtIndex.length; i++) {
             require(debts[user][debtIndex[i]].deadline < lastSubmittedHeight, "deadline has not passed");
             wrappedBitcoinAmount = wrappedBitcoinAmount + debts[user][debtIndex[i]].wrappedBitcoinAmount;
@@ -326,16 +326,16 @@ contract InstantRouter is IInstantRouter {
         path[0] = TeleportDAOToken;
         path[1] = wrappedBitcoin;
         buyWrappedBitcoinUsingTDT(
-            _requiredTDT, 
+            _requiredTDT,
             wrappedBitcoinAmount,
             path,
-            bitcoinInstantPool, 
+            bitcoinInstantPool,
             2*block.timestamp
         );
-       
-        // send rest of TDT to TeleportDAOTreasury and punisher 
+
+        // send rest of TDT to TeleportDAOTreasury and punisher
         uint remainedTDT = collateralAmount - _requiredTDT;
-        IERC20(TeleportDAOToken).transfer(msg.sender, punisherReward*remainedTDT/100); // send reward to punisher 
+        IERC20(TeleportDAOToken).transfer(msg.sender, punisherReward*remainedTDT/100); // send reward to punisher
         emit PunishUser(user, wrappedBitcoinAmount);
         return true;
     }
@@ -347,6 +347,10 @@ contract InstantRouter is IInstantRouter {
         address to,
         uint deadline
     ) internal {
+        console.log("buyWrappedBitcoinUsingTDT...");
+        console.log("deadline");
+        console.log(deadline);
+
         IERC20(TeleportDAOToken).approve(exchangeRouter, amountIn);
         IExchangeRouter(exchangeRouter).swapExactTokensForTokens(
             amountIn,
@@ -371,7 +375,7 @@ contract InstantRouter is IInstantRouter {
             path,
             to,
             deadline
-        ); 
+        );
     }
 
     function verifySignature(
@@ -386,7 +390,7 @@ contract InstantRouter is IInstantRouter {
     }
 
     function recoverSigner(
-        bytes32 ethSignedMessageHash, 
+        bytes32 ethSignedMessageHash,
         bytes memory signature
     ) internal pure returns (address) {
         (bytes32 r, bytes32 s, uint8 v) = splitSignature(signature);
