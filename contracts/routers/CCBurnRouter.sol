@@ -177,6 +177,10 @@ contract CCBurnRouter is ICCBurnRouter {
             parsedBitcoinAmount >= unWrapRequests[requestIndex].amount,
             "Pay back amount is not sufficient"
         );
+
+        // FIXME: somewhere the "isTransferred" must be changed to true
+        unWrapRequests[requestIndex].isTransferred = true;
+
         emit PaidCCBurn(unWrapRequests[requestIndex].pubKeyHash, parsedBitcoinAmount, requestIndex);
         return true;
     }

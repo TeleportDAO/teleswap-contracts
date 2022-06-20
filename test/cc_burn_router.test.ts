@@ -259,4 +259,103 @@ describe("CC Exchange Router", async () => {
         })
 
     });
+
+    describe("#disputeBurn", async () => {
+
+        let theTestMintedAmount = BigNumber.from(100000000)
+
+        it("couldn't disputeBurn since lockers have paid before hand", async function () {
+
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
+
+            let WrappedBTCSigner1 = await WrappedBTC.connect(signer1)
+
+            await WrappedBTCSigner1.mintTestToken()
+
+            await WrappedBTCSigner1.approve(
+                ccBurnRouter.address,
+                theTestMintedAmount
+            )
+
+            let ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1)
+
+            await mockBitcoinRelay.mock.lastSubmittedHeight.returns(
+                theBlockNumber
+            )
+
+            expect(
+                await ccBurnRouterSigner1.ccBurn(
+                    theTestMintedAmount,
+                    btcDecodedAddress
+                )
+            ).to.emit(ccBurnRouter, "CCBurn")
+
+
+            let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
+
+            await mockBitcoinRelay.mock.checkTxProof.returns(
+                true
+            )
+
+            expect(
+                await ccBurnRouterSigner2.burnProof(
+                    btcVersion,
+                    btcVin,
+                    btcVout,
+                    btcLocktime,
+                    theBlockNumber.add(5),
+                    btcInterMediateNodes,
+                    1,
+                    false,
+                    0
+                )
+            ).to.emit(ccBurnRouter, "PaidCCBurn")
+
+
+            await expect(
+                ccBurnRouterSigner1.disputeBurn(
+                    0,
+                    signer1Address
+                )
+            ).to.revertedWith("Request has been paid before")
+        })
+
+        it("deadline hasn't reached", async function () {
+
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
+
+            let WrappedBTCSigner1 = await WrappedBTC.connect(signer1)
+
+            await WrappedBTCSigner1.mintTestToken()
+
+            await WrappedBTCSigner1.approve(
+                ccBurnRouter.address,
+                theTestMintedAmount
+            )
+
+            let ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1)
+
+            await mockBitcoinRelay.mock.lastSubmittedHeight.returns(
+                theBlockNumber
+            )
+
+            expect(
+                await ccBurnRouterSigner1.ccBurn(
+                    theTestMintedAmount,
+                    btcDecodedAddress
+                )
+            ).to.emit(ccBurnRouter, "CCBurn")
+
+            await expect(
+                ccBurnRouterSigner1.disputeBurn(
+                    0,
+                    signer1Address
+                )
+            ).to.revertedWith("Pay back deadline has not passed yet")
+        })
+
+    });
+
 });
