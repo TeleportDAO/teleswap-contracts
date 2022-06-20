@@ -11,12 +11,6 @@ import { solidity } from "ethereum-waffle";
 import { isBytesLike } from "ethers/lib/utils";
 import { BitcoinTeleporter } from "../src/types/BitcoinTeleporter";
 import { BitcoinTeleporter__factory } from "../src/types/factories/BitcoinTeleporter__factory";
-import { LiquidityPool } from "../src/types/LiquidityPool";
-import { LiquidityPool__factory } from "../src/types/factories/LiquidityPool__factory";
-import { LiquidityPoolFactory } from "../src/types/LiquidityPoolFactory";
-import { LiquidityPoolFactory__factory } from "../src/types/factories/LiquidityPoolFactory__factory";
-import { ExchangeRouter } from "../src/types/ExchangeRouter";
-import { ExchangeRouter__factory } from "../src/types/factories/ExchangeRouter__factory";
 import { WrappedToken } from "../src/types/WrappedToken";
 import { WrappedToken__factory } from "../src/types/factories/WrappedToken__factory";
 import { ERC20 } from "../src/types/ERC20";
@@ -47,18 +41,12 @@ describe("BitcoinTeleporter", async () => {
     let deployerAddress: string;
 
     // Contracts
-    let exchangeRouter: ExchangeRouter;
-    let liquidityPool: LiquidityPool;
-    let liquidityPoolFactory: LiquidityPoolFactory;
     let bitcoinTeleporter: BitcoinTeleporter
     let teleBTC: WrappedToken;
     let teleportDAOToken: ERC20;
 
     // Mock contracts
-
-
-    //
-    let liquidityPool__factory: LiquidityPool__factory;
+    let mockExchangeRouter: MockContract;
 
     before(async () => {
         // Sets accounts
@@ -73,22 +61,6 @@ describe("BitcoinTeleporter", async () => {
             ZERO_ADDRESS // ccTransferRouter
         );
 
-        // Deploys liquidityPoolFactory
-        const liquidityPoolFactoryFactory = new LiquidityPoolFactory__factory(deployer);
-        liquidityPoolFactory = await liquidityPoolFactoryFactory.deploy(
-            deployerAddress
-        );
-        
-        // Creates liquidityPool__factory object
-        liquidityPool__factory = new LiquidityPool__factory(deployer);
-
-        // Deploys exchangeRouter contract
-        const exchangeRouterFactory = new ExchangeRouter__factory(deployer);
-        exchangeRouter = await exchangeRouterFactory.deploy(
-            liquidityPoolFactory.address,
-            ZERO_ADDRESS // WAVAX
-        );
-
         // Deploys teleportDAO token
         const erc20Factory = new ERC20__factory(deployer);
         teleportDAOToken = await erc20Factory.deploy(
@@ -97,15 +69,27 @@ describe("BitcoinTeleporter", async () => {
             100000
         );
 
+        // Mocks exchange router contract
+        const exchangeRouterContract = await deployments.getArtifact(
+            "IExchangeRouter"
+        );
+        mockExchangeRouter = await deployMockContract(
+            deployer,
+            exchangeRouterContract.abi
+        );
+
         // Deploys bitcoinTeleporter contract
         const bitcoinTeleporterFactory = new BitcoinTeleporter__factory(deployer);
         bitcoinTeleporter = await bitcoinTeleporterFactory.deploy(
             teleportDAOToken.address,
-            exchangeRouter.address,
+            mockExchangeRouter.address,
             UNLOCK_FEE, 
             UNLOCK_PERIOD, 
             REQUIRED_LOCKED_AMOUNT
         );
+
+        // Sets ccBurnRouter address 
+        await bitcoinTeleporter.setCCBurnRouter(deployerAddress);
 
     });
 
@@ -262,11 +246,19 @@ describe("BitcoinTeleporter", async () => {
     describe("slashTeleporters", async () => {
 
         it("slashes teleporters bond and buys teleBTC with slashed bond ", async function () {
-
+            // Mocks swapTokensForExactTokens of exchangeRouter
+            await mockExchangeRouter.mock.getAmountsIn.returns([100]);
+            await mockExchangeRouter.mock.swapTokensForExactTokens.returns([100, 100]);
+            // TODO: emit event when teleporters get slashed
+            await bitcoinTeleporter.slashTeleporters(100, deployerAddress);
         })
 
         it("reverts since msg.sender is not ccBurnRouter", async function () {
-
+            // Removes teleporter
+            let bitcoinTeleporterSigner1 = await bitcoinTeleporter.connect(signer1);
+            await expect(
+                bitcoinTeleporterSigner1.slashTeleporters(100, deployerAddress)
+            ).to.revertedWith('message sender is not correct');
         })
 
     });

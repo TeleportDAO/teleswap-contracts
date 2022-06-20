@@ -32,12 +32,14 @@ contract BitcoinTeleporter is IBitcoinTeleporter {
 
     constructor(
         address _TeleportDAOToken, 
-        address exchangeRouter, 
+        address _exchangeRouter, 
         uint _unlockFee, 
         uint _unlockPeriod, 
         uint _requiredLockedAmount
     ) public {
         TeleportDAOToken = _TeleportDAOToken;
+        // Fixed bug
+        exchangeRouter = _exchangeRouter;
         unlockFee = _unlockFee;
         unlockPeriod = _unlockPeriod;
         requiredLockedAmount = _requiredLockedAmount;
