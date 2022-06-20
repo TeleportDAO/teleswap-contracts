@@ -902,7 +902,7 @@ describe("CC Exchange Router", async () => {
             ]
 
             await mockExchangeRouter.mock.swapExactTokensForTokens.returns(theAmounts, true)
-            
+
             let theDebtIndexes = [
                 0
             ]
