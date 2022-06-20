@@ -341,6 +341,8 @@ describe("CC Exchange Router", async () => {
                 theBlockNumber
             )
 
+            console.log("theBlockNumber: ", theBlockNumber)
+
             expect(
                 await ccBurnRouterSigner1.ccBurn(
                     theTestMintedAmount,
@@ -348,12 +350,17 @@ describe("CC Exchange Router", async () => {
                 )
             ).to.emit(ccBurnRouter, "CCBurn")
 
-            await expect(
-                ccBurnRouterSigner1.disputeBurn(
-                    0,
-                    signer1Address
-                )
-            ).to.revertedWith("Pay back deadline has not passed yet")
+
+            await mockBitcoinRelay.mock.lastSubmittedHeight.returns(
+                theBlockNumber.add(15)
+            )
+
+            await mockBitcoinTeleporter.mock.slashTeleporters.returns()
+
+            await ccBurnRouterSigner1.disputeBurn(
+                0,
+                signer1Address
+            )
         })
 
     });

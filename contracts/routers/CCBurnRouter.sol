@@ -192,6 +192,10 @@ contract CCBurnRouter is ICCBurnRouter {
         );
         // get the latest submitted block on relay
         uint lastSubmittedHeight = IBitcoinRelay(bitcoinRelay).lastSubmittedHeight();
+
+        console.log("lastSubmittedHeight");
+        console.log(lastSubmittedHeight);
+
         require(
             unWrapRequests[requestIndex].transferDeadline < lastSubmittedHeight,
             "Pay back deadline has not passed yet"
