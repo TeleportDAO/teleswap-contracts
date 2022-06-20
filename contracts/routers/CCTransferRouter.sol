@@ -333,8 +333,8 @@ contract CCTransferRouter is ICCTransferRouter {
     function mintAfterFinalization(bytes32 txId) public override returns (bool) {
         wrapRequest memory request;
         request = wrapRequests[txId];
-        require(request.isUsed == true, "The reuqest has not been submitted before");
-        require(request.isMinted == false, "The reuqest has been minted before");
+        require(request.isUsed == true, "The request has not been submitted before");
+        require(request.isMinted == false, "The request has been minted before");
         // only mint wrapped token after finalization
         require(
             isConfirmed(

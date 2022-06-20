@@ -28,7 +28,8 @@ contract WrappedToken is IWrappedToken {
 
     // TODO: remove it (just for test)
     function mintTestToken () public override {
-        _mint(msg.sender, 10000000000); // mint 100 BTC
+        _mint(msg.sender, 100000000000000000000); // mint 100 BTC with 18 decimals
+        emit Mint(msg.sender, 100000000000000000000);
     }
 
     function burn(uint256 amount) external override {
