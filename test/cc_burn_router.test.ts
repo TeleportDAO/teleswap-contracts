@@ -18,12 +18,7 @@ import {WrappedToken__factory} from "../src/types/factories/WrappedToken__factor
 import {CCBurnRouter} from "../src/types/CCBurnRouter";
 import {CCBurnRouter__factory} from "../src/types/factories/CCBurnRouter__factory";
 
-
-const {
-    advanceBlockWithTime,
-    takeSnapshot,
-    revertProvider,
-} = require("./block_utils");
+import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
 
 describe("CC Exchange Router", async () => {
     let snapshotId: any;
