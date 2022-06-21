@@ -32,12 +32,14 @@ contract BitcoinTeleporter is IBitcoinTeleporter {
 
     constructor(
         address _TeleportDAOToken, 
-        address exchangeRouter, 
+        address _exchangeRouter, 
         uint _unlockFee, 
         uint _unlockPeriod, 
         uint _requiredLockedAmount
     ) public {
         TeleportDAOToken = _TeleportDAOToken;
+        // Fixed bug
+        exchangeRouter = _exchangeRouter;
         unlockFee = _unlockFee;
         unlockPeriod = _unlockPeriod;
         requiredLockedAmount = _requiredLockedAmount;
@@ -93,7 +95,8 @@ contract BitcoinTeleporter is IBitcoinTeleporter {
 
     function removeTeleporter (uint teleporterIndex) external override returns(bool) {
         require(teleportersList[teleporterIndex].teleporterAddress == msg.sender, "you are not allowed to remove teleporter");
-        require(block.number + unlockPeriod >= lastUnlock, "too soon for new unlock");
+        // Fixed bug
+        require(block.number >= lastUnlock + unlockPeriod, "too soon for new unlock");
         require(numberOfTeleporters > teleporterIndex, "the given index does not exist");
         // TODO: check that the caller has authority to delete the teleporter address
         bytes memory _teleporterBitcoinPubKey = teleportersList[teleporterIndex].teleporterBitcoinPubKey;
