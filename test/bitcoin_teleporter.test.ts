@@ -109,9 +109,6 @@ describe("BitcoinTeleporter", async () => {
 
         // Checks number of teleporters
         expect(await bitcoinTeleporter.numberOfTeleporters()).to.equal(teleporterNumber);
-
-        // Gives allowance to bitcoinTeleporter
-        await teleportDAOToken.approve(bitcoinTeleporter.address, REQUIRED_LOCKED_AMOUNT);
         
         return true;
     }
@@ -140,7 +137,7 @@ describe("BitcoinTeleporter", async () => {
             ).to.equal(true);
         })
 
-        it("reverts since TDT balance is not enough", async function () {
+        it("reverts since teleporter TDT balance is not enough", async function () {
             // Gives allowance to bitcoinTeleporter
             await teleportDAOToken.approve(bitcoinTeleporter.address, REQUIRED_LOCKED_AMOUNT/2);
 
