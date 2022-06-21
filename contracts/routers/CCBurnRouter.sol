@@ -67,10 +67,13 @@ contract CCBurnRouter is ICCBurnRouter {
     }
 
     function ccBurn (uint amount, bytes memory decodedAddress) external override returns(bool) {
+        console.log("ccBurn...");
         address pubKeyHash = bytesToAddress(decodedAddress, 1, 21);
         // TODO: check the correctness of bitcoinAddress
         IERC20(wrappedBitcoin).transferFrom(msg.sender, address(this), amount);
         IWrappedToken(wrappedBitcoin).burn(amount*(100-burningFee)/100);
+
+        console.log("just before saveUnwrapRequest");
         saveUnwrapRequest(amount, pubKeyHash);
         emit CCBurn(pubKeyHash, amount, unWrapRequests.length - 1);
         return true;
@@ -132,15 +135,22 @@ contract CCBurnRouter is ICCBurnRouter {
         bool payWithTDT,
         uint requestIndex
     ) external override returns(bool) {
+        console.log("burnProof...");
         require(
             !unWrapRequests[requestIndex].isTransferred,
             "Request has been paid before"
         );
         require(
-            unWrapRequests[requestIndex].transferDeadline >= block.number,
+        // FIXME: I think the following line is the correct one
+            unWrapRequests[requestIndex].transferDeadline >= IBitcoinRelay(bitcoinRelay).lastSubmittedHeight(),
+        // unWrapRequests[requestIndex].transferDeadline >= block.number,
             "Pay back deadline has passed"
         );
+
+        console.log("after requires in burnProof");
+
         bytes32 txId = calculateTxId(version, vin, vout, locktime);
+
         txId = revertBytes32(txId);
         require(
             isConfirmed(
@@ -155,13 +165,22 @@ contract CCBurnRouter is ICCBurnRouter {
         );
         uint parsedBitcoinAmount;
         (parsedBitcoinAmount,) = BitcoinTxParser.parseAmountForP2PK(
-            vout, 
+            vout,
             unWrapRequests[requestIndex].pubKeyHash
         );
+
+        console.log("parsedBitcoinAmount");
+        console.log(parsedBitcoinAmount);
+
+        console.log("after event emitting in burnProof");
         require(
-            parsedBitcoinAmount >= unWrapRequests[requestIndex].amount, 
+            parsedBitcoinAmount >= unWrapRequests[requestIndex].amount,
             "Pay back amount is not sufficient"
         );
+
+        // FIXME: somewhere the "isTransferred" must be changed to true
+        unWrapRequests[requestIndex].isTransferred = true;
+
         emit PaidCCBurn(unWrapRequests[requestIndex].pubKeyHash, parsedBitcoinAmount, requestIndex);
         return true;
     }
@@ -173,10 +192,16 @@ contract CCBurnRouter is ICCBurnRouter {
         );
         // get the latest submitted block on relay
         uint lastSubmittedHeight = IBitcoinRelay(bitcoinRelay).lastSubmittedHeight();
+
+        console.log("lastSubmittedHeight");
+        console.log(lastSubmittedHeight);
+
         require(
             unWrapRequests[requestIndex].transferDeadline < lastSubmittedHeight,
             "Pay back deadline has not passed yet"
         );
+
+        // FIXME: should remove the following line
         require(msg.sender == unWrapRequests[requestIndex].requestSender, "Sender is not allowed");
         // slash teleporters
         IBitcoinTeleporter(bitcoinTeleporter).slashTeleporters(unWrapRequests[requestIndex].amount, recipient);
@@ -186,6 +211,7 @@ contract CCBurnRouter is ICCBurnRouter {
         uint amount,
         address pubKeyHash
     ) internal {
+        console.log("saveUnwrapRequest...");
         uint lastSubmittedHeight = IBitcoinRelay(bitcoinRelay).lastSubmittedHeight();
         unWrapRequest memory request;
         request.amount = amount;
@@ -195,8 +221,9 @@ contract CCBurnRouter is ICCBurnRouter {
         request.transferDeadline = lastSubmittedHeight + transferDeadline;
         request.isTransferred = false;
         unWrapRequests.push(request);
+        console.log("end of saveUnwrapRequest");
     }
-    
+
     function isConfirmed(
         bytes32 txId,
         uint256 blockNumber,
@@ -205,17 +232,22 @@ contract CCBurnRouter is ICCBurnRouter {
         bool payWithTDT,
         uint neededConfirmations
     ) internal returns (bool) {
+
+        console.log("isConfirmed...");
+        console.log("the tx id");
+        console.logBytes32(txId);
+
         // TODO: uncomment it
         // uint feeAmount;
         // IERC20(feeTokenAddress).transferFrom(msg.sender, address(this), feeAmount);
         return IBitcoinRelay(bitcoinRelay).checkTxProof(
-                txId,
-                blockNumber,
-                intermediateNodes,
-                index,
-                payWithTDT,
-                neededConfirmations
-            );
+            txId,
+            blockNumber,
+            intermediateNodes,
+            index,
+            payWithTDT,
+            neededConfirmations
+        );
     }
 
     function revertBytes32 (bytes32 input) internal returns(bytes32) {
@@ -236,11 +268,13 @@ contract CCBurnRouter is ICCBurnRouter {
         bytes calldata _vout,
         bytes4 _locktime
     ) internal returns(bytes32) {
+
+        console.log("calculateTxId");
         bytes32 inputHash1 = sha256(abi.encodePacked(_version, _vin, _vout, _locktime));
         bytes32 inputHash2 = sha256(abi.encodePacked(inputHash1));
         return inputHash2;
     }
-    
+
     // bitcoin double hash function
     function doubleHash (bytes memory input) internal returns(bytes20) {
         bytes32 inputHash1 = sha256(input);

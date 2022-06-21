@@ -901,20 +901,7 @@ describe("CC Exchange Router", async () => {
                 ten
             ]
 
-            //  adding 21 is because of the difference between time of test cases and the local blockchain
-            let thisBlockTimeStamp = await Math.round(new Date().getTime() / 1000) - 45;
-
-            console.log("thisBlockTimeStamp is: ", 2*thisBlockTimeStamp)
-
-
-            await mockExchangeRouter.mock.swapExactTokensForTokens.withArgs(
-                amountIn.div(2),
-                ten,
-                thePaths,
-                bitcoinInstantPoolAddress,
-                BigNumber.from(thisBlockTimeStamp).mul(2)
-            ).returns(theAmounts, true)
-
+            await mockExchangeRouter.mock.swapExactTokensForTokens.returns(theAmounts, true)
 
             let theDebtIndexes = [
                 0
