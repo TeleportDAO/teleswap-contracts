@@ -16,11 +16,7 @@ import { WrappedToken__factory } from "../src/types/factories/WrappedToken__fact
 import { ERC20 } from "../src/types/ERC20";
 import { ERC20__factory } from "../src/types/factories/ERC20__factory";
 
-const {
-    advanceBlockWithTime,
-    takeSnapshot,
-    revertProvider,
-} = require("./block_utils");
+import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
 
 describe("BitcoinTeleporter", async () => {
 

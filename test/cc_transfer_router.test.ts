@@ -15,11 +15,7 @@ import { CCTransferRouter__factory } from "../src/types/factories/CCTransferRout
 import { WrappedToken } from "../src/types/WrappedToken";
 import { WrappedToken__factory } from "../src/types/factories/WrappedToken__factory";
 
-const {
-    advanceBlockWithTime,
-    takeSnapshot,
-    revertProvider,
-} = require("./block_utils");
+import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
 
 describe("CCTransferRouter", async () => {
     // Constants

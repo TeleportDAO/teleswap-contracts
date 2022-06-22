@@ -24,12 +24,7 @@ import {InstantPool__factory} from "../src/types/factories/InstantPool__factory"
 import {LiquidityPool} from "../src/types/LiquidityPool";
 import {LiquidityPool__factory} from "../src/types/factories/LiquidityPool__factory";
 
-
-const {
-    advanceBlockWithTime,
-    takeSnapshot,
-    revertProvider,
-} = require("./block_utils");
+import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
 
 describe("CC Exchange Router", async () => {
     let snapshotId: any;
