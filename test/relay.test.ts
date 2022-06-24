@@ -64,7 +64,7 @@ describe('Relay', async () => {
                     ZERO_ADDRESS,
                     ZERO_ADDRESS
                 )
-            ).to.revertedWith("Stop being dumb")
+            ).to.revertedWith("BitcoinRelay: stop being dumb")
         });
 
         it('errors if the period start is in wrong byte order', async () => {
@@ -90,17 +90,17 @@ describe('Relay', async () => {
         it('stores genesis block info', async () => {
 
             expect(
-                await instance.getRelayGenesis()
+                await instance.relayGenesisHash()
             ).to.equal(genesis.digest_le)
 
-            expect(
-                await instance.getBestKnownDigest()
-            ).to.equal(genesis.digest_le)
+            // expect(
+            //     await instance.getBestKnownDigest()
+            // ).to.equal(genesis.digest_le)
 
 
-            expect(
-                await instance.getLastReorgCommonAncestor()
-            ).to.equal(genesis.digest_le)
+            // expect(
+            //     await instance.getLastReorgCommonAncestor()
+            // ).to.equal(genesis.digest_le)
 
             expect(
                 await instance.findAncestor(
@@ -117,9 +117,9 @@ describe('Relay', async () => {
             // res = await instance.getCurrentEpochDifficulty();
             // assert(res.eq(genDiff));
 
-            expect(
-                await instance.getPrevEpochDifficulty()
-            ).to.equal(0)
+            // expect(
+            //     await instance.prevEpochDiff()
+            // ).to.equal(0)
         });
     });
 
@@ -155,7 +155,7 @@ describe('Relay', async () => {
                     '0x00',
                     headers
                 )
-            ).to.revertedWith("Anchor must be 80 bytes")
+            ).to.revertedWith("BitcoinRelay: anchor must be 80 bytes")
         });
 
         it('errors if it encounters a retarget on an external call', async () => {
@@ -166,7 +166,7 @@ describe('Relay', async () => {
                     genesis.hex,
                     badHeaders
                 )
-            ).to.revertedWith("Headers do not form a consistent chain")
+            ).to.revertedWith("BitcoinRelay: unexpected retarget on external call")
         });
 
         it('errors if the header array is not a multiple of 80 bytes', async () => {
@@ -177,7 +177,7 @@ describe('Relay', async () => {
                     genesis.hex,
                     badHeaders
                 )
-            ).to.revertedWith("Header array length must be divisible by 80")
+            ).to.revertedWith("BitcoinRelay: header array length must be divisible by 80")
         });
 
         it('errors if a header work is too low', async () => {
@@ -189,7 +189,7 @@ describe('Relay', async () => {
                     genesis.hex,
                     badHeaders
                 )
-            ).to.revertedWith("Headers do not form a consistent chain")
+            ).to.revertedWith("BitcoinRelay: headers do not form a consistent chain")
 
         });
 
@@ -202,7 +202,7 @@ describe('Relay', async () => {
                     genesis.hex,
                     badHeaders
                 )
-            ).to.revertedWith("Headers do not form a consistent chain")
+            ).to.revertedWith("BitcoinRelay: headers do not form a consistent chain")
 
         });
 
@@ -215,7 +215,7 @@ describe('Relay', async () => {
                     genesis.hex,
                     badHeaders
                 )
-            ).to.revertedWith("Headers do not form a consistent chain")
+            ).to.revertedWith("BitcoinRelay: headers do not form a consistent chain")
 
         });
 
@@ -427,7 +427,7 @@ describe('Relay', async () => {
 
             await expect(
                 instance2.findAncestor(`0x${'00'.repeat(32)}`, 3)
-            ).to.revertedWith("Unknown ancestor")
+            ).to.revertedWith("BitcoinRelay: unknown ancestor")
 
         });
 
@@ -533,103 +533,103 @@ describe('Relay', async () => {
             await instance.addHeaders(genesis.hex, headersWithOrphan);
         });
 
-        it('errors if ancestor is unknown', async () => {
-            await expect(
-                instance.heaviestFromAncestor(
-                    chain[10].digest_le,
-                    headerHex[3],
-                    headerHex[4]
-                )
-            ).to.revertedWith("Unknown block")
+        // it('errors if ancestor is unknown', async () => {
+        //     await expect(
+        //         instance.heaviestFromAncestor(
+        //             chain[10].digest_le,
+        //             headerHex[3],
+        //             headerHex[4]
+        //         )
+        //     ).to.revertedWith("Unknown block")
 
-        });
+        // });
 
-        it('errors if left is unknown', async () => {
+        // it('errors if left is unknown', async () => {
 
-            await expect(
-                instance.heaviestFromAncestor(
-                    chain[3].digest_le,
-                    chain[10].hex,
-                    headerHex[4]
-                )
-            ).to.revertedWith("Unknown block")
+        //     await expect(
+        //         instance.heaviestFromAncestor(
+        //             chain[3].digest_le,
+        //             chain[10].hex,
+        //             headerHex[4]
+        //         )
+        //     ).to.revertedWith("Unknown block")
 
-        });
+        // });
 
-        it('errors if right is unknown', async () => {
+        // it('errors if right is unknown', async () => {
 
-            await expect(
-                instance.heaviestFromAncestor(
-                    chain[3].digest_le,
-                    headerHex[4],
-                    chain[10].hex
-                )
-            ).to.revertedWith("Unknown block")
+        //     await expect(
+        //         instance.heaviestFromAncestor(
+        //             chain[3].digest_le,
+        //             headerHex[4],
+        //             chain[10].hex
+        //         )
+        //     ).to.revertedWith("Unknown block")
 
-        });
+        // });
 
-        it('errors if either block is below the ancestor', async () => {
+        // it('errors if either block is below the ancestor', async () => {
 
-            await expect(
-                instance.heaviestFromAncestor(
-                    chain[3].digest_le,
-                    headerHex[2],
-                    headerHex[4]
-                )
-            ).to.revertedWith("A descendant height is below the ancestor height")
+        //     await expect(
+        //         instance.heaviestFromAncestor(
+        //             chain[3].digest_le,
+        //             headerHex[2],
+        //             headerHex[4]
+        //         )
+        //     ).to.revertedWith("A descendant height is below the ancestor height")
 
 
-            await expect(
-                instance.heaviestFromAncestor(
-                    chain[3].digest_le,
-                    headerHex[4],
-                    headerHex[2]
-                )
-            ).to.revertedWith("A descendant height is below the ancestor height")
+        //     await expect(
+        //         instance.heaviestFromAncestor(
+        //             chain[3].digest_le,
+        //             headerHex[4],
+        //             headerHex[2]
+        //         )
+        //     ).to.revertedWith("A descendant height is below the ancestor height")
 
-        });
+        // });
 
-        it('returns left if left is heavier', async () => {
+        // it('returns left if left is heavier', async () => {
 
-            expect(
-                await instance.heaviestFromAncestor(
-                    chain[3].digest_le,
-                    headerHex[5],
-                    headerHex[4]
-                )
-            ).to.equal(chain[5].digest_le)
-        });
+        //     expect(
+        //         await instance.heaviestFromAncestor(
+        //             chain[3].digest_le,
+        //             headerHex[5],
+        //             headerHex[4]
+        //         )
+        //     ).to.equal(chain[5].digest_le)
+        // });
 
-        it('returns right if right is heavier', async () => {
-            expect(
-                await instance.heaviestFromAncestor(
-                    chain[3].digest_le,
-                    headerHex[4],
-                    headerHex[5]
-                )
-            ).to.equal(chain[5].digest_le)
+        // it('returns right if right is heavier', async () => {
+        //     expect(
+        //         await instance.heaviestFromAncestor(
+        //             chain[3].digest_le,
+        //             headerHex[4],
+        //             headerHex[5]
+        //         )
+        //     ).to.equal(chain[5].digest_le)
 
-        });
+        // });
 
-        it('returns left if the weights are equal', async () => {
+        // it('returns left if the weights are equal', async () => {
 
-            expect(
-                await instance.heaviestFromAncestor(
-                    chain[3].digest_le,
-                    chain[8].hex,
-                    REGULAR_CHAIN.orphan_562630.hex
-                )
-            ).to.equal(chain[8].digest_le)
+        //     expect(
+        //         await instance.heaviestFromAncestor(
+        //             chain[3].digest_le,
+        //             chain[8].hex,
+        //             REGULAR_CHAIN.orphan_562630.hex
+        //         )
+        //     ).to.equal(chain[8].digest_le)
 
-            expect(
-                await instance.heaviestFromAncestor(
-                    chain[3].digest_le,
-                    REGULAR_CHAIN.orphan_562630.hex,
-                    chain[8].hex
-                )
-            ).to.equal(REGULAR_CHAIN.orphan_562630.digest_le)
+        //     expect(
+        //         await instance.heaviestFromAncestor(
+        //             chain[3].digest_le,
+        //             REGULAR_CHAIN.orphan_562630.hex,
+        //             chain[8].hex
+        //         )
+        //     ).to.equal(REGULAR_CHAIN.orphan_562630.digest_le)
 
-        });
+        // });
     });
 
     describe('#heaviestFromAncestor (with retarget)', async () => {
@@ -673,155 +673,155 @@ describe('Relay', async () => {
             );
         });
 
-        it('handles descendants in different difficulty periods', async () => {
+        // it('handles descendants in different difficulty periods', async () => {
 
-            expect(
-                await instance.heaviestFromAncestor(
-                    REORG_AND_RETARGET_CHAIN.genesis.digest_le,
-                    orphan.hex,
-                    PRE_CHAIN[3].hex
-                )
-            ).to.equal(orphan.digest_le)
+        //     expect(
+        //         await instance.heaviestFromAncestor(
+        //             REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+        //             orphan.hex,
+        //             PRE_CHAIN[3].hex
+        //         )
+        //     ).to.equal(orphan.digest_le)
 
-            // let res = await instance.heaviestFromAncestor.call(
-            //   REORG_AND_RETARGET_CHAIN.genesis.digest_le,
-            //   orphan.hex,
-            //   PRE_CHAIN[3].hex
-            // );
-            // assert.equal(res, orphan.digest_le);
+        //     // let res = await instance.heaviestFromAncestor.call(
+        //     //   REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+        //     //   orphan.hex,
+        //     //   PRE_CHAIN[3].hex
+        //     // );
+        //     // assert.equal(res, orphan.digest_le);
 
-            expect(
-                await instance.heaviestFromAncestor(
-                    REORG_AND_RETARGET_CHAIN.genesis.digest_le,
-                    PRE_CHAIN[3].hex,
-                    orphan.hex
-                )
-            ).to.equal(orphan.digest_le)
-        });
+        //     expect(
+        //         await instance.heaviestFromAncestor(
+        //             REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+        //             PRE_CHAIN[3].hex,
+        //             orphan.hex
+        //         )
+        //     ).to.equal(orphan.digest_le)
+        // });
 
-        it('handles descendants when both are in a new difficulty period', async () => {
-            expect(
-                await instance.heaviestFromAncestor(
-                    REORG_AND_RETARGET_CHAIN.genesis.digest_le,
-                    orphan.hex,
-                    POST_CHAIN[3].hex
-                )
-            ).to.equal(orphan.digest_le)
+        // it('handles descendants when both are in a new difficulty period', async () => {
+        //     expect(
+        //         await instance.heaviestFromAncestor(
+        //             REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+        //             orphan.hex,
+        //             POST_CHAIN[3].hex
+        //         )
+        //     ).to.equal(orphan.digest_le)
 
 
-            expect(
-                await instance.heaviestFromAncestor(
-                    REORG_AND_RETARGET_CHAIN.genesis.digest_le,
-                    POST_CHAIN[3].hex,
-                    orphan.hex
-                )
-            ).to.equal(orphan.digest_le)
+        //     expect(
+        //         await instance.heaviestFromAncestor(
+        //             REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+        //             POST_CHAIN[3].hex,
+        //             orphan.hex
+        //         )
+        //     ).to.equal(orphan.digest_le)
 
-        });
+        // });
     });
 
-    describe('#isMostRecentAncestor', async () => {
-        const PRE_CHAIN = REORG_AND_RETARGET_CHAIN.preRetargetChain;
-        const POST_CHAIN = REORG_AND_RETARGET_CHAIN.postRetargetChain;
+    // describe('#isMostRecentAncestor', async () => {
+    //     const PRE_CHAIN = REORG_AND_RETARGET_CHAIN.preRetargetChain;
+    //     const POST_CHAIN = REORG_AND_RETARGET_CHAIN.postRetargetChain;
 
-        const orphan = REORG_AND_RETARGET_CHAIN.orphan_437478;
-        const pre = utils.concatenateHeadersHexes(PRE_CHAIN);
-        const post = utils.concatenateHeadersHexes(POST_CHAIN);
-        const shortPost = utils.concatenateHeadersHexes(POST_CHAIN.slice(0, POST_CHAIN.length - 2));
-        const postWithOrphan = utils.concatenateHexStrings([shortPost, orphan.hex]);
+    //     const orphan = REORG_AND_RETARGET_CHAIN.orphan_437478;
+    //     const pre = utils.concatenateHeadersHexes(PRE_CHAIN);
+    //     const post = utils.concatenateHeadersHexes(POST_CHAIN);
+    //     const shortPost = utils.concatenateHeadersHexes(POST_CHAIN.slice(0, POST_CHAIN.length - 2));
+    //     const postWithOrphan = utils.concatenateHexStrings([shortPost, orphan.hex]);
 
-        beforeEach(async () => {
-            [deployer, signer1] = await ethers.getSigners();
+    //     beforeEach(async () => {
+    //         [deployer, signer1] = await ethers.getSigners();
 
-            const bitcoinRelayFactory = new BitcoinRelay__factory(
-                deployer
-            );
+    //         const bitcoinRelayFactory = new BitcoinRelay__factory(
+    //             deployer
+    //         );
 
-            instance = await bitcoinRelayFactory.deploy(
-                REORG_AND_RETARGET_CHAIN.genesis.hex,
-                REORG_AND_RETARGET_CHAIN.genesis.height,
-                REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le,
-                ZERO_ADDRESS,
-                ZERO_ADDRESS
-            );
-            await instance.addHeaders(
-                REORG_AND_RETARGET_CHAIN.genesis.hex,
-                pre
-            );
-            await instance.addHeadersWithRetarget(
-                REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
-                PRE_CHAIN[PRE_CHAIN.length - 1].hex,
-                post
-            );
-            await instance.addHeadersWithRetarget(
-                REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
-                PRE_CHAIN[PRE_CHAIN.length - 1].hex,
-                postWithOrphan
-            );
-        });
+    //         instance = await bitcoinRelayFactory.deploy(
+    //             REORG_AND_RETARGET_CHAIN.genesis.hex,
+    //             REORG_AND_RETARGET_CHAIN.genesis.height,
+    //             REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le,
+    //             ZERO_ADDRESS,
+    //             ZERO_ADDRESS
+    //         );
+    //         await instance.addHeaders(
+    //             REORG_AND_RETARGET_CHAIN.genesis.hex,
+    //             pre
+    //         );
+    //         await instance.addHeadersWithRetarget(
+    //             REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
+    //             PRE_CHAIN[PRE_CHAIN.length - 1].hex,
+    //             post
+    //         );
+    //         await instance.addHeadersWithRetarget(
+    //             REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
+    //             PRE_CHAIN[PRE_CHAIN.length - 1].hex,
+    //             postWithOrphan
+    //         );
+    //     });
 
-        it('returns false if it found a more recent ancestor', async () => {
+    //     it('returns false if it found a more recent ancestor', async () => {
 
-            expect(
-                await instance.isMostRecentAncestor(
-                    POST_CHAIN[0].digest_le,
-                    POST_CHAIN[3].digest_le,
-                    POST_CHAIN[2].digest_le,
-                    5
-                )
-            ).to.equal(false)
+    //         expect(
+    //             await instance.isMostRecentAncestor(
+    //                 POST_CHAIN[0].digest_le,
+    //                 POST_CHAIN[3].digest_le,
+    //                 POST_CHAIN[2].digest_le,
+    //                 5
+    //             )
+    //         ).to.equal(false)
 
-        });
+    //     });
 
-        it('returns false if it did not find the specified common ancestor within the limit', async () => {
+    //     it('returns false if it did not find the specified common ancestor within the limit', async () => {
 
-            expect(
-                await instance.isMostRecentAncestor(
-                    POST_CHAIN[1].digest_le,
-                    POST_CHAIN[3].digest_le,
-                    POST_CHAIN[2].digest_le,
-                    1
-                )
-            ).to.equal(false)
+    //         expect(
+    //             await instance.isMostRecentAncestor(
+    //                 POST_CHAIN[1].digest_le,
+    //                 POST_CHAIN[3].digest_le,
+    //                 POST_CHAIN[2].digest_le,
+    //                 1
+    //             )
+    //         ).to.equal(false)
 
-        });
+    //     });
 
-        it('returns true if the provided digest is the most recent common ancestor', async () => {
+    //     it('returns true if the provided digest is the most recent common ancestor', async () => {
 
-            expect(
-                await instance.isMostRecentAncestor(
-                    POST_CHAIN[2].digest_le,
-                    POST_CHAIN[3].digest_le,
-                    POST_CHAIN[2].digest_le,
-                    5
-                )
-            ).to.equal(true)
+    //         expect(
+    //             await instance.isMostRecentAncestor(
+    //                 POST_CHAIN[2].digest_le,
+    //                 POST_CHAIN[3].digest_le,
+    //                 POST_CHAIN[2].digest_le,
+    //                 5
+    //             )
+    //         ).to.equal(true)
 
 
-            expect(
-                await instance.isMostRecentAncestor(
-                    POST_CHAIN[5].digest_le,
-                    POST_CHAIN[6].digest_le,
-                    orphan.digest_le,
-                    5
-                )
-            ).to.equal(true)
+    //         expect(
+    //             await instance.isMostRecentAncestor(
+    //                 POST_CHAIN[5].digest_le,
+    //                 POST_CHAIN[6].digest_le,
+    //                 orphan.digest_le,
+    //                 5
+    //             )
+    //         ).to.equal(true)
 
-        });
+    //     });
 
-        it('shortcuts the trivial case (ancestor is left is right)', async () => {
+    //     it('shortcuts the trivial case (ancestor is left is right)', async () => {
 
-            expect(
-                await instance.isMostRecentAncestor(
-                    POST_CHAIN[3].digest_le,
-                    POST_CHAIN[3].digest_le,
-                    POST_CHAIN[3].digest_le,
-                    5
-                )
-            ).to.equal(true)
+    //         expect(
+    //             await instance.isMostRecentAncestor(
+    //                 POST_CHAIN[3].digest_le,
+    //                 POST_CHAIN[3].digest_le,
+    //                 POST_CHAIN[3].digest_le,
+    //                 5
+    //             )
+    //         ).to.equal(true)
 
-        });
-    });
+    //     });
+    // });
 
     describe('#markNewHeaviest', async () => {
         const PRE_CHAIN = REORG_AND_RETARGET_CHAIN.preRetargetChain;
@@ -864,91 +864,91 @@ describe('Relay', async () => {
             );
         });
 
-        it('errors if the passed in best is not the best known', async () => {
+        // it('errors if the passed in best is not the best known', async () => {
 
-            await expect(
-                instance.markNewHeaviest(
-                    REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le,
-                    REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
-                    REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
-                    10
-                )
-            ).to.revertedWith("Passed in best is not best known")
+        //     await expect(
+        //         instance.markNewHeaviest(
+        //             REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le,
+        //             REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
+        //             REORG_AND_RETARGET_CHAIN.oldPeriodStart.hex,
+        //             10
+        //         )
+        //     ).to.revertedWith("Passed in best is not best known")
 
-        });
+        // });
 
-        it('errors if the new best is not already known', async () => {
+        // it('errors if the new best is not already known', async () => {
 
-            await expect(
-                instance.markNewHeaviest(
-                    REORG_AND_RETARGET_CHAIN.genesis.digest_le,
-                    REORG_AND_RETARGET_CHAIN.genesis.hex,
-                    `0x${'99'.repeat(80)}`,
-                    10
-                )
-            ).to.revertedWith("New best is unknown")
+        //     await expect(
+        //         instance.markNewHeaviest(
+        //             REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+        //             REORG_AND_RETARGET_CHAIN.genesis.hex,
+        //             `0x${'99'.repeat(80)}`,
+        //             10
+        //         )
+        //     ).to.revertedWith("New best is unknown")
 
-        });
+        // });
 
-        it('errors if the ancestor is not the heaviest common ancestor', async () => {
-            await instance.markNewHeaviest(
-                REORG_AND_RETARGET_CHAIN.genesis.digest_le,
-                REORG_AND_RETARGET_CHAIN.genesis.hex,
-                PRE_CHAIN[0].hex,
-                10
-            );
+        // it('errors if the ancestor is not the heaviest common ancestor', async () => {
+        //     await instance.markNewHeaviest(
+        //         REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+        //         REORG_AND_RETARGET_CHAIN.genesis.hex,
+        //         PRE_CHAIN[0].hex,
+        //         10
+        //     );
 
-            await expect(
-                instance.markNewHeaviest(
-                    REORG_AND_RETARGET_CHAIN.genesis.digest_le,
-                    PRE_CHAIN[0].hex,
-                    PRE_CHAIN[1].hex,
-                    10
-                )
-            ).to.revertedWith("Ancestor must be heaviest common ancestor")
+        //     await expect(
+        //         instance.markNewHeaviest(
+        //             REORG_AND_RETARGET_CHAIN.genesis.digest_le,
+        //             PRE_CHAIN[0].hex,
+        //             PRE_CHAIN[1].hex,
+        //             10
+        //         )
+        //     ).to.revertedWith("Ancestor must be heaviest common ancestor")
 
-        });
+        // });
 
-        it('updates the best known and emits a reorg event', async () => {
+        // it('updates the best known and emits a reorg event', async () => {
 
-            expect(
-                await instance.markNewHeaviest(
-                    PRE_CHAIN[0].digest_le,
-                    PRE_CHAIN[0].hex,
-                    orphan.hex,
-                    20
-                )
-            ).to.emit(instance, "NewTip")
+        //     expect(
+        //         await instance.markNewHeaviest(
+        //             PRE_CHAIN[0].digest_le,
+        //             PRE_CHAIN[0].hex,
+        //             orphan.hex,
+        //             20
+        //         )
+        //     ).to.emit(instance, "NewTip")
 
-            // const blockNumber = await web3.eth.getBlock('latest').number;
-            // await instance.markNewHeaviest(
-            //   PRE_CHAIN[0].digest_le,
-            //   PRE_CHAIN[0].hex,
-            //   orphan.hex,
-            //   20
-            // );
-            // const eventList = await instance.getPastEvents(
-            //   'NewTip',
-            //   { fromBlock: blockNumber, toBlock: 'latest' }
-            // );
+        //     // const blockNumber = await web3.eth.getBlock('latest').number;
+        //     // await instance.markNewHeaviest(
+        //     //   PRE_CHAIN[0].digest_le,
+        //     //   PRE_CHAIN[0].hex,
+        //     //   orphan.hex,
+        //     //   20
+        //     // );
+        //     // const eventList = await instance.getPastEvents(
+        //     //   'NewTip',
+        //     //   { fromBlock: blockNumber, toBlock: 'latest' }
+        //     // );
 
-            /* eslint-disable no-underscore-dangle */
-            // assert.equal(eventList[0].returnValues._to, orphan.digest_le);
-            // assert.equal(eventList[0].returnValues._from, PRE_CHAIN[0].digest_le);
-            // assert.equal(eventList[0].returnValues._gcd, PRE_CHAIN[0].digest_le);
-            /* eslint-enable no-underscore-dangle */
-        });
+        //     /* eslint-disable no-underscore-dangle */
+        //     // assert.equal(eventList[0].returnValues._to, orphan.digest_le);
+        //     // assert.equal(eventList[0].returnValues._from, PRE_CHAIN[0].digest_le);
+        //     // assert.equal(eventList[0].returnValues._gcd, PRE_CHAIN[0].digest_le);
+        //     /* eslint-enable no-underscore-dangle */
+        // });
 
-        it('errors if the new best hash is not better', async () => {
+        // it('errors if the new best hash is not better', async () => {
 
-            await expect(
-                instance.markNewHeaviest(
-                    POST_CHAIN.slice(-3)[0].digest_le, // the main chain before the split
-                    orphan.hex,
-                    POST_CHAIN.slice(-2)[0].hex, // the main chain competing with the split
-                    10
-                )
-            ).to.revertedWith("New best hash does not have more work than previous")
-        });
+        //     await expect(
+        //         instance.markNewHeaviest(
+        //             POST_CHAIN.slice(-3)[0].digest_le, // the main chain before the split
+        //             orphan.hex,
+        //             POST_CHAIN.slice(-2)[0].hex, // the main chain competing with the split
+        //             10
+        //         )
+        //     ).to.revertedWith("New best hash does not have more work than previous")
+        // });
     });
 });

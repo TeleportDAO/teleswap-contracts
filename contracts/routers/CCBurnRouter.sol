@@ -244,9 +244,9 @@ contract CCBurnRouter is ICCBurnRouter {
             txId,
             blockNumber,
             intermediateNodes,
-            index,
-            payWithTDT,
-            neededConfirmations
+            index
+        // payWithTDT,
+        // neededConfirmations
         );
     }
 

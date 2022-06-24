@@ -72,7 +72,7 @@ describe("CCTransferRouter", async () => {
         const ccTransferRouterFactory = new CCTransferRouter__factory(deployer);
         ccTransferRouter = await ccTransferRouterFactory.deploy(
             mockBitcoinRelay.address,
-            mockBitcoinTeleporter.address, 
+            mockBitcoinTeleporter.address,
             NORMAL_CONFIRMATION_PARAMETER
         );
 
@@ -80,7 +80,7 @@ describe("CCTransferRouter", async () => {
         const teleBTCFactory = new WrappedToken__factory(deployer);
         teleBTC = await teleBTCFactory.deploy(
             "teleBTC",
-            "teleBTC", 
+            "teleBTC",
             ccTransferRouter.address
         );
 
@@ -94,8 +94,8 @@ describe("CCTransferRouter", async () => {
             request.blockNumber,
             request.intermediateNodes,
             request.index,
-            false, // payWithTDT
-            NORMAL_CONFIRMATION_PARAMETER
+            // false, // payWithTDT
+            // NORMAL_CONFIRMATION_PARAMETER
         ).returns(isTrue);
     }
 
@@ -226,7 +226,7 @@ describe("CCTransferRouter", async () => {
         })
 
     });
-    
+
     describe("isRequestUsed", async () => {
         it("checks if the request has been used before (unused)", async function () {
             await revertProvider(signer1.provider, beginning);
