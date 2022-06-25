@@ -20,7 +20,7 @@ import {CCBurnRouter__factory} from "../src/types/factories/CCBurnRouter__factor
 
 import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
 
-describe("CC Exchange Router", async () => {
+describe("CC Burn Router", async () => {
     let snapshotId: any;
 
     let deployer: Signer;
@@ -39,6 +39,8 @@ describe("CC Exchange Router", async () => {
     let ccBurnRouter: CCBurnRouter;
 
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+    let ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
+
     let telePortTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000)
     let ten = BigNumber.from(10).pow(18).mul(10)
     let oneHundred = BigNumber.from(10).pow(18).mul(100)
@@ -128,7 +130,7 @@ describe("CC Exchange Router", async () => {
         const wrappedToken = await wrappedTokenFactory.deploy(
             "WrappedBTC",
             "TBTC",
-            ZERO_ADDRESS
+            ONE_ADDRESS
         );
 
         return wrappedToken;

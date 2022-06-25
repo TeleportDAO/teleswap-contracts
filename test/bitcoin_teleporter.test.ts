@@ -24,12 +24,13 @@ describe("BitcoinTeleporter", async () => {
 
     // Constants
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+    let ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
     // Bitcoin public key (32 bytes)
     let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
     let TELEPORTER2 = '0x03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626';
     let UNLOCK_FEE =  5; // percentage of bond that protocol receives
-    let UNLOCK_PERIOD = 2; 
-    let REQUIRED_LOCKED_AMOUNT =  1000; // amount of required TDT 
+    let UNLOCK_PERIOD = 2;
+    let REQUIRED_LOCKED_AMOUNT =  1000; // amount of required TDT
 
     // Accounts
     let deployer: Signer;
@@ -53,15 +54,15 @@ describe("BitcoinTeleporter", async () => {
         const teleBTCFactory = new WrappedToken__factory(deployer);
         teleBTC = await teleBTCFactory.deploy(
             "teleBTC",
-            "teleBTC", 
-            ZERO_ADDRESS // ccTransferRouter
+            "teleBTC",
+            ONE_ADDRESS // ccTransferRouter
         );
 
         // Deploys teleportDAO token
         const erc20Factory = new ERC20__factory(deployer);
         teleportDAOToken = await erc20Factory.deploy(
-            "teleportDAOToken", 
-            "TDT", 
+            "teleportDAOToken",
+            "TDT",
             100000
         );
 
@@ -79,12 +80,12 @@ describe("BitcoinTeleporter", async () => {
         bitcoinTeleporter = await bitcoinTeleporterFactory.deploy(
             teleportDAOToken.address,
             mockExchangeRouter.address,
-            UNLOCK_FEE, 
-            UNLOCK_PERIOD, 
+            UNLOCK_FEE,
+            UNLOCK_PERIOD,
             REQUIRED_LOCKED_AMOUNT
         );
 
-        // Sets ccBurnRouter address 
+        // Sets ccBurnRouter address
         await bitcoinTeleporter.setCCBurnRouter(deployerAddress);
 
     });
@@ -105,7 +106,7 @@ describe("BitcoinTeleporter", async () => {
 
         // Checks number of teleporters
         expect(await bitcoinTeleporter.numberOfTeleporters()).to.equal(teleporterNumber);
-        
+
         return true;
     }
 
@@ -115,7 +116,7 @@ describe("BitcoinTeleporter", async () => {
             // Takes snapshot
             snapshotId = await takeSnapshot(deployer.provider);
         });
-    
+
         afterEach(async () => {
             // Reverts the state
             await revertProvider(deployer.provider, snapshotId);
@@ -126,7 +127,7 @@ describe("BitcoinTeleporter", async () => {
             expect(
                 await addTeleporter(TELEPORTER1, 1)
             ).to.equal(true);
-            
+
             // Adds second teleporter
             expect(
                 await addTeleporter(TELEPORTER2, 2)
@@ -148,7 +149,7 @@ describe("BitcoinTeleporter", async () => {
             expect(
                 await addTeleporter(TELEPORTER1, 1)
             ).to.equal(true);
-            
+
             // Gives allowance to bitcoinTeleporter
             await teleportDAOToken.approve(bitcoinTeleporter.address, REQUIRED_LOCKED_AMOUNT);
 
@@ -167,7 +168,7 @@ describe("BitcoinTeleporter", async () => {
             // Takes snapshot
             snapshotId = await takeSnapshot(deployer.provider);
         });
-    
+
         afterEach(async () => {
             // Reverts the state
             await revertProvider(deployer.provider, snapshotId);
@@ -189,12 +190,12 @@ describe("BitcoinTeleporter", async () => {
 
             // Checks that teleporter receives its bond
             expect(
-                await teleportDAOToken.balanceOf(deployerAddress) 
+                await teleportDAOToken.balanceOf(deployerAddress)
             ).to.equal(oldTDTBalanceTeleporter.add(REQUIRED_LOCKED_AMOUNT*(100-UNLOCK_FEE)/100));
 
             // Checks that the protocol receives the unlock fee
             expect(
-                await teleportDAOToken.balanceOf(bitcoinTeleporter.address) 
+                await teleportDAOToken.balanceOf(bitcoinTeleporter.address)
             ).to.equal(REQUIRED_LOCKED_AMOUNT*UNLOCK_FEE/100);
 
             // Checks that total number of teleporters is updated
@@ -206,7 +207,7 @@ describe("BitcoinTeleporter", async () => {
             expect(
                 await addTeleporter(TELEPORTER1, 1)
             ).to.equal(true);
-            
+
             // Removes teleporter
             let bitcoinTeleporterSigner1 = await bitcoinTeleporter.connect(signer1);
             await expect(

@@ -2,10 +2,67 @@ pragma solidity ^0.7.6;
 
 import "./interfaces/IWrappedToken.sol";
 import "../libraries/SafeMath.sol";
+import "../role/Ownable.sol";
+import "../role/Roles.sol";
 import "hardhat/console.sol";
 
-contract WrappedToken is IWrappedToken {
-    
+contract WrappedToken is IWrappedToken, Ownable {
+    using Roles for Roles.Role;
+
+    event MinterAdded(address indexed account);
+    event MinterRemoved(address indexed account);
+
+    event BurnerAdded(address indexed account);
+    event BurnerRemoved(address indexed account);
+
+    Roles.Role private _minters;
+    Roles.Role private _burner;
+
+    modifier onlyMinter() {
+        require(
+            isMinter(_msgSender()),
+            "WrappedToken: caller does not have the minter role"
+        );
+        _;
+    }
+
+    function isMinter(address account) public view returns (bool) {
+        return _minters.has(account);
+    }
+
+    function addMinter(address account) public onlyOwner {
+        _minters.add(account);
+        emit MinterAdded(account);
+    }
+
+    function removeMinter(address account) public onlyOwner {
+        _minters.remove(account);
+        emit MinterRemoved(account);
+    }
+
+
+    modifier onlyBurner() {
+        require(
+            isBurner(_msgSender()),
+            "WrappedToken: caller does not have the burner role"
+        );
+        _;
+    }
+
+    function isBurner(address account) public view returns (bool) {
+        return _burner.has(account);
+    }
+
+    function addBurner(address account) public onlyOwner {
+        _burner.add(account);
+        emit MinterAdded(account);
+    }
+
+    function removeBurner(address account) public onlyOwner {
+        _burner.remove(account);
+        emit MinterRemoved(account);
+    }
+
     using SafeMath for uint;
     address public override CCTransferRouter;
     string public override name;
@@ -23,6 +80,20 @@ contract WrappedToken is IWrappedToken {
         name = _name;
         symbol = _symbol;
         totalSupply = 0;
+
+        if (!isMinter(_msgSender())) {
+            addMinter(_msgSender());
+        }
+
+        if (!isBurner(_msgSender())) {
+            addBurner(_msgSender());
+        }
+
+        console.log("_CCTransferRouter");
+        console.log(_CCTransferRouter);
+
+        addMinter(_CCTransferRouter);
+
         CCTransferRouter = _CCTransferRouter;
     }
 
@@ -38,7 +109,7 @@ contract WrappedToken is IWrappedToken {
         emit Burn(msg.sender, amount);
     }
 
-    function mint(address receiver, uint amount) external override returns (bool) {
+    function mint(address receiver, uint amount) external override onlyMinter returns (bool) {
         require(msg.sender == CCTransferRouter, "message sender is not CCTransferRouter");
         _mint(receiver, amount);
         emit Mint(receiver, amount);

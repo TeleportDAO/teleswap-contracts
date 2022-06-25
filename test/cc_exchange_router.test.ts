@@ -33,6 +33,7 @@ describe("CCExchangeRouter", async () => {
 
     // Constants
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+    let ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
     let DUMMY_ADDRESS = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
     let NORMAL_CONFIRMATION_PARAMETER = 6;
 
@@ -71,8 +72,8 @@ describe("CCExchangeRouter", async () => {
             deployer,
             bitcoinRelayContract.abi
         );
-    
-        // Mocks checkTxProof of bitcoinRelay 
+
+        // Mocks checkTxProof of bitcoinRelay
         // We don't pass arguments since the request was modified and the txId is not valid
         await mockBitcoinRelay.mock.checkTxProof.returns(true);
 
@@ -98,15 +99,16 @@ describe("CCExchangeRouter", async () => {
         const ccTransferRouterFactory = new CCTransferRouter__factory(deployer);
         ccTransferRouter = await ccTransferRouterFactory.deploy(
             mockBitcoinRelay.address,
-            mockBitcoinTeleporter.address, 
+            mockBitcoinTeleporter.address,
             NORMAL_CONFIRMATION_PARAMETER
         );
 
         // Deploys teleBTC contract
         const teleBTCFactory = new WrappedToken__factory(deployer);
+        console.log("cc transfer router address: ", ccTransferRouter.address)
         teleBTC = await teleBTCFactory.deploy(
             "teleBTC",
-            "teleBTC", 
+            "teleBTC",
             ccTransferRouter.address
         );
 
@@ -118,7 +120,7 @@ describe("CCExchangeRouter", async () => {
         liquidityPoolFactory = await liquidityPoolFactoryFactory.deploy(
             deployerAddress
         );
-        
+
         // Creates liquidityPool__factory object
         liquidityPool__factory = new LiquidityPool__factory(deployer);
 
@@ -133,8 +135,8 @@ describe("CCExchangeRouter", async () => {
         // We replace the exchangeToken address in ccExchangeRequests
         const erc20Factory = new ERC20__factory(deployer);
         exchangeToken = await erc20Factory.deploy(
-            "exchangeToken", 
-            "TDT", 
+            "exchangeToken",
+            "TDT",
             100000
         );
         // console.log(exchangeToken.address);
@@ -143,7 +145,7 @@ describe("CCExchangeRouter", async () => {
         const ccExchangeRouterFactory = new CCExchangeRouter__factory(deployer);
         ccExchangeRouter = await ccExchangeRouterFactory.deploy(
             exchangeRouter.address,
-            mockBitcoinTeleporter.address, 
+            mockBitcoinTeleporter.address,
             ccTransferRouter.address
         );
 
@@ -181,7 +183,7 @@ describe("CCExchangeRouter", async () => {
             // Checks enough teleBTC has been minted for user
             expect(newUserBalanceTeleBTC).to.equal(
                 oldUserBalanceTeleBTC.add(
-                    request.bitcoinAmount - 
+                    request.bitcoinAmount -
                     request.teleporterFee
                 )
             );
@@ -209,7 +211,7 @@ describe("CCExchangeRouter", async () => {
         beforeEach("adds liquidity to liquidity pool", async () => {
             // Takes snapshot before adding liquidity
             snapshotId = await takeSnapshot(deployer.provider);
-    
+
             // Adds liquidity to teleBTC-TDT liquidity pool
             await teleBTC.mintTestToken();
             await teleBTC.approve(exchangeRouter.address, 10000);
@@ -227,10 +229,10 @@ describe("CCExchangeRouter", async () => {
                 1000000000, // Long deadline
             );
             let liquidityPoolAddress = await liquidityPoolFactory.getLiquidityPool(
-                teleBTC.address, 
+                teleBTC.address,
                 exchangeToken.address
             );
-            
+
             // Records total supply of teleBTC
             oldTotalSupplyTeleBTC = await teleBTC.totalSupply();
 
@@ -254,7 +256,7 @@ describe("CCExchangeRouter", async () => {
             );
             oldDeployerBalanceTDT = await exchangeToken.balanceOf(deployerAddress);
         });
-    
+
         afterEach(async () => {
             // Reverts the state to the before of adding liquidity
             await revertProvider(deployer.provider, snapshotId);
@@ -265,15 +267,15 @@ describe("CCExchangeRouter", async () => {
             await mockBitcoinTeleporter.mock.redeemScriptHash.returns(
                 CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient
             );
-            
+
             // Finds expected output amount that user receives
             let expectedOutputAmount = await exchangeRouter.getAmountOut(
-                CC_EXCHANGE_REQUESTS.normalCCExchange.bitcoinAmount - 
-                CC_EXCHANGE_REQUESTS.normalCCExchange.teleporterFee, 
-                oldReserveTeleBTC, 
+                CC_EXCHANGE_REQUESTS.normalCCExchange.bitcoinAmount -
+                CC_EXCHANGE_REQUESTS.normalCCExchange.teleporterFee,
+                oldReserveTeleBTC,
                 oldReserveExchangeToken
             );
-            
+
             // Replaces dummy address in vout with exchange token address
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
@@ -291,7 +293,7 @@ describe("CCExchangeRouter", async () => {
                     false // payWithTDT
                 )
             ).to.emit(ccExchangeRouter, 'CCExchange');
-            
+
             // Records new supply of teleBTC
             let newTotalSupplyTeleBTC = await teleBTC.totalSupply();
 
@@ -350,7 +352,7 @@ describe("CCExchangeRouter", async () => {
                     false // payWithTDT
                 )
             ).to.emit(teleBTC, 'Transfer').and.not.emit(ccExchangeRouter, 'CCExchange');
-            
+
             // Checks needed conditions when exchange fails
             expect(await checksWhenExchangeFails(CC_EXCHANGE_REQUESTS.normalCCExchangeExpired)).to.equal(true);
 
@@ -430,7 +432,7 @@ describe("CCExchangeRouter", async () => {
             await mockBitcoinTeleporter.mock.redeemScriptHash.returns(
                 CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient
             );
-            
+
             // Replaces dummy address in vout with exchange token address
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
