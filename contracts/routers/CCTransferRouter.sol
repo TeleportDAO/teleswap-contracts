@@ -34,7 +34,7 @@ contract CCTransferRouter is ICCTransferRouter {
 
     constructor(
         address _bitcoinRelay,
-        address _bitcoinTeleporter, 
+        address _bitcoinTeleporter,
         uint _normalConfirmationParameter
     ) public {
         bitcoinRelay = _bitcoinRelay;
@@ -54,7 +54,7 @@ contract CCTransferRouter is ICCTransferRouter {
     function setBitcoinRelay(address _bitcoinRelay) external override onlyOwner {
         bitcoinRelay = _bitcoinRelay;
     }
-    
+
     function setFastRouter(address _fastRouter) external override onlyOwner {
         fastRouter = _fastRouter;
         bitcoinFastPool = IFastRouter(fastRouter).bitcoinFastPool();
@@ -109,9 +109,9 @@ contract CCTransferRouter is ICCTransferRouter {
             );
             require(normalCCTransfer(txId), "normal cc transfer was not successful");
             emit CCTransfer(
-                wrapRequests[txId].recipientAddress, 
-                wrappedBitcoin, 
-                wrapRequests[txId].bitcoinAmount, 
+                wrapRequests[txId].recipientAddress,
+                wrappedBitcoin,
+                wrapRequests[txId].bitcoinAmount,
                 wrapRequests[txId].speed
             );
             return true;
@@ -123,12 +123,12 @@ contract CCTransferRouter is ICCTransferRouter {
                 require(normalCCTransfer(txId), "fast cc transfer was not successful");
                 wrapRequests[txId].isMinted = true; // wrapped token is minted
                 emit CCTransfer(
-                    wrapRequests[txId].recipientAddress, 
-                    wrappedBitcoin, 
-                    wrapRequests[txId].bitcoinAmount, 
+                    wrapRequests[txId].recipientAddress,
+                    wrappedBitcoin,
+                    wrapRequests[txId].bitcoinAmount,
                     0 // the token is wrapped normally
                 );
-            } else {            
+            } else {
                 // check that the block has received enough confirmations
                 require(
                     isConfirmed(
@@ -143,9 +143,9 @@ contract CCTransferRouter is ICCTransferRouter {
                 );
                 require(fastCCTransfer(txId), "fast cc transfer was not successful");
                 emit CCTransfer(
-                    wrapRequests[txId].recipientAddress, 
-                    wrappedBitcoin, 
-                    wrapRequests[txId].bitcoinAmount, 
+                    wrapRequests[txId].recipientAddress,
+                    wrappedBitcoin,
+                    wrapRequests[txId].bitcoinAmount,
                     wrapRequests[txId].speed
                 );
             }
@@ -179,7 +179,7 @@ contract CCTransferRouter is ICCTransferRouter {
                 return true;
             }
 
-            if (msg.sender != ccExchangeRouter) { 
+            if (msg.sender != ccExchangeRouter) {
                 // handle unpredicted cases that exchange request execution was not succesful, so we want to mint wrapped token for user
                 // wrapped token can only be mint after passing of deadline
                 require(wrapRequests[txId].deadline < block.number, "deadline has not passed yet");
@@ -194,9 +194,9 @@ contract CCTransferRouter is ICCTransferRouter {
                     wrapRequests[txId].recipientAddress,
                     wrapRequests[txId].bitcoinAmount.sub(wrapRequests[txId].teleporterFee)
                 );
-                return true;    
-            }   
-        } 
+                return true;
+            }
+        }
 
         if (wrapRequests[txId].isExchange == false) {
             require(
@@ -210,7 +210,7 @@ contract CCTransferRouter is ICCTransferRouter {
                 wrapRequests[txId].recipientAddress,
                 wrapRequests[txId].bitcoinAmount.sub(wrapRequests[txId].teleporterFee)
             );
-            return true; 
+            return true;
         }
     }
 
@@ -241,7 +241,7 @@ contract CCTransferRouter is ICCTransferRouter {
                         wrapRequests[txId].teleporterFee/2,
                         wrapRequests[txId].blockNumber
                     ),
-                "fast transfer to teleporter was failed"
+                    "fast transfer to teleporter was failed"
                 );
             }
             require(
@@ -286,21 +286,21 @@ contract CCTransferRouter is ICCTransferRouter {
     function instantCCTransferWithPermit(
         address signer,
         bytes memory signature,
-        address receiver, 
+        address receiver,
         uint instantTokenAmount,
         uint deadline
     ) public override returns(bool) {
         IInstantRouter(instantRouter).instantCCTransferWithPermit(
-            signer, 
-            signature, 
-            receiver, 
-            instantTokenAmount, 
+            signer,
+            signature,
+            receiver,
+            instantTokenAmount,
             deadline
         );
         emit CCTransfer(
-            receiver, 
-            wrappedBitcoin, 
-            instantTokenAmount, 
+            receiver,
+            wrappedBitcoin,
+            instantTokenAmount,
             2 // 2 means fast
         );
         return true;
@@ -323,11 +323,11 @@ contract CCTransferRouter is ICCTransferRouter {
         uint blockNumber
     ) internal returns (bool) {
         return
-            IFastRouter(fastRouter).fastTransfer(
-                _recipient,
-                amount,
-                blockNumber
-            );
+        IFastRouter(fastRouter).fastTransfer(
+            _recipient,
+            amount,
+            blockNumber
+        );
     }
 
     function mintAfterFinalization(bytes32 txId) public override returns (bool) {
@@ -350,12 +350,12 @@ contract CCTransferRouter is ICCTransferRouter {
         wrapRequests[txId].isMinted = true;
 
         IWrappedToken(wrappedBitcoin).mint(
-            bitcoinFastPool, 
+            bitcoinFastPool,
             wrapRequests[txId].bitcoinAmount - wrapRequests[txId].teleporterFee/2
         ); // mint for the bitcoin fast pool
         IWrappedToken(wrappedBitcoin).mint(msg.sender, wrapRequests[txId].teleporterFee/2); // mint for the teleporter
         emit PaybackFastLoan(
-            wrapRequests[txId].recipientAddress, 
+            wrapRequests[txId].recipientAddress,
             wrapRequests[txId].bitcoinAmount - wrapRequests[txId].teleporterFee/2
         );
         return true;
@@ -396,7 +396,7 @@ contract CCTransferRouter is ICCTransferRouter {
     function getFastNeededConfirmations() internal view returns(uint) {
         return IFastRouter(fastRouter).getNeededConfirmations();
     }
-    
+
     function isConfirmed(
         bytes32 txId,
         uint256 blockNumber,
@@ -409,13 +409,13 @@ contract CCTransferRouter is ICCTransferRouter {
         // uint feeAmount;
         // IERC20(feeTokenAddress).transferFrom(msg.sender, address(this), feeAmount);
         return IBitcoinRelay(bitcoinRelay).checkTxProof(
-                txId,
-                blockNumber,
-                intermediateNodes,
-                index,
-                payWithTDT,
-                neededConfirmations
-            );
+            txId,
+            blockNumber,
+            intermediateNodes,
+            index
+        // payWithTDT,
+        // neededConfirmations
+        );
     }
 
     function isRequestUsed(bytes32 txId) external view override returns(bool) {
