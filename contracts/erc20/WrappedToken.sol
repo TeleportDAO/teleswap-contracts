@@ -1,4 +1,4 @@
-pragma solidity ^0.7.6;
+pragma solidity 0.8.0;
 
 import "./interfaces/IWrappedToken.sol";
 import "../libraries/SafeMath.sol";
@@ -137,7 +137,9 @@ contract WrappedToken is IWrappedToken, Ownable {
     }
 
     function transferFrom(address from, address to, uint value) external override returns (bool) {
-        if (allowance[from][msg.sender] != uint(-1)) {
+        uint max_uint = type(uint).max;
+
+        if (allowance[from][msg.sender] != max_uint) {
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
         }
         balanceOf[from] = balanceOf[from].sub(value);

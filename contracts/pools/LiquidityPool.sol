@@ -1,4 +1,4 @@
-pragma solidity 0.7.6;
+pragma solidity 0.8.0;
 
 import './interfaces/ILiquidityPool.sol';
 import './interfaces/ILiquidityPoolFactory.sol';
@@ -64,7 +64,9 @@ contract LiquidityPool is ILiquidityPool, ERC20 {
 
     // update reserves and, on the first call per block, price accumulators
     function _update(uint balance0, uint balance1, uint112 _reserve0, uint112 _reserve1) private {
-        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), 'TeleportDAO: OVERFLOW');
+        uint112 max_uint112 = type(uint112).max;
+
+        require(balance0 <= max_uint112 && balance1 <= max_uint112, 'TeleportDAO: OVERFLOW');
         uint32 blockTimestamp = uint32(block.timestamp % 2**32);
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {

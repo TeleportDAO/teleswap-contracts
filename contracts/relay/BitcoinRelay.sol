@@ -1,4 +1,4 @@
-pragma solidity ^0.7.6;
+pragma solidity 0.8.0;
 
 /** @title Relay */
 /** @author Summa (https://summa.one) */
@@ -342,7 +342,8 @@ contract BitcoinRelay is IBitcoinRelay {
         uint feeAmount;
         feeAmount = (submissionGasUsed.mul(tx.gasprice).mul(relayerPercentageFee).mul(epochLength)).div(lastEpochQueries.mul(100));
         require(msg.value >= feeAmount, "BitcoinRelay: fee is not enough");
-        msg.sender.send(feeAmount);
+        address payable recipient = payable(msg.sender);
+        recipient.send(feeAmount);
         return true;
     }
 
@@ -432,7 +433,8 @@ contract BitcoinRelay is IBitcoinRelay {
             return (rewardAmountInTDT, true);
         } else if (rewardAmountInTNT <= contractTNTBalance && rewardAmountInTNT > 0) {
             // Transfer TNT from relay to relayer
-            msg.sender.transfer(rewardAmountInTNT);
+            address payable recipient = payable(msg.sender);
+            recipient.transfer(rewardAmountInTNT);
             return (rewardAmountInTNT, false);
         }
         // TODO: handle if both treasuries go out of funds (decreasment in TDT should prevent confronting a limit but still keep an eye)

@@ -1,4 +1,4 @@
-pragma solidity ^0.7.6;
+pragma solidity 0.8.0;
 
 import "../libraries/SafeMath.sol";
 import "../libraries/BitcoinTxParser.sol";
@@ -80,7 +80,7 @@ contract CCBurnRouter is ICCBurnRouter {
     }
 
     function bytesToAddress (bytes memory data, uint start, uint end) internal returns (address resultAddress) {
-        byte temp;
+        bytes1 temp;
         bytes memory resultBytes;
         for (uint i = start; i < end + 1; i++) {
             temp = data[i];

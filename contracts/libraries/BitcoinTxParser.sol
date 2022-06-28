@@ -1,4 +1,4 @@
-pragma solidity 0.7.6;
+pragma solidity 0.8.0;
 
 import "./TypedMemView.sol";
 import "./ViewBTC.sol";
@@ -152,7 +152,7 @@ library BitcoinTxParser {
     }
 
     function sliceBytes(bytes memory data, uint start, uint end) internal returns (bytes memory result) {
-        byte temp;
+        bytes1 temp;
         for (uint i = start; i < end + 1; i++) {
             temp = data[i];
             result = abi.encodePacked(result, temp);

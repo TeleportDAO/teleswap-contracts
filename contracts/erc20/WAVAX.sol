@@ -1,4 +1,4 @@
-pragma solidity 0.7.6;
+pragma solidity 0.8.0;
 
 import "./interfaces/IWAVAX.sol";
 import "../libraries/SafeMath.sol";
@@ -28,7 +28,8 @@ contract WAVAX is IWAVAX {
     function withdraw(uint value) external override {
         require(balanceOf[msg.sender] >= value, "Balance is not sufficient");
         _burn(msg.sender, value);
-        msg.sender.send(value);
+        address payable recipient = payable(msg.sender);
+        recipient.send(value);
     }
 
     function _mint(address to, uint value) internal {
@@ -53,7 +54,9 @@ contract WAVAX is IWAVAX {
     }
 
     function transferFrom(address from, address to, uint value) external returns (bool) {
-        if (allowance[from][msg.sender] != uint(-1)) {
+        uint max_uint = type(uint).max;
+
+        if (allowance[from][msg.sender] != max_uint) {
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
         }
         balanceOf[from] = balanceOf[from].sub(value);
