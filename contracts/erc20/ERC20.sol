@@ -5,6 +5,7 @@ pragma solidity 0.8.0;
 import "./interfaces/IERC20.sol";
 import "./Context.sol";
 import '../libraries/SafeMath.sol';
+import "hardhat/console.sol";
 
 /**
  * @dev Implementation of the {IERC20} interface.
@@ -150,10 +151,11 @@ contract ERC20 is Context, IERC20 {
      * `amount`.
      */
     function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
-        _transfer(sender, recipient, amount);
 
         uint256 currentAllowance = _allowances[sender][_msgSender()];
         require(currentAllowance >= amount, "ERC20: transfer amount exceeds allowance");
+
+        _transfer(sender, recipient, amount);
         _approve(sender, _msgSender(), currentAllowance - amount);
 
         return true;
@@ -236,6 +238,7 @@ contract ERC20 is Context, IERC20 {
      * - `account` cannot be the zero address.
      */
     function _mint(address account, uint256 amount) internal virtual {
+        // FIXME: un-comment next line
         // require(account != address(0), "ERC20: mint to the zero address");
 
         _beforeTokenTransfer(address(0), account, amount);
