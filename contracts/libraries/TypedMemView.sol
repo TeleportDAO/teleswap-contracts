@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-pragma solidity 0.7.6;
+pragma solidity 0.8.0;
 
 import "./SafeMath.sol";
 
@@ -509,13 +509,16 @@ library TypedMemView {
         }
         require(_bytes <= 32, "TypedMemView/index - Attempted to index more than 32 bytes");
 
-        uint8 bitLength = _bytes * 8;
-        uint256 _loc = loc(memView);
-        uint256 _mask = leftMask(bitLength);
-        assembly {
+        unchecked {
+            uint8 bitLength = _bytes * 8;
+            uint256 _loc = loc(memView);
+            uint256 _mask = leftMask(bitLength);
+            assembly {
             // solium-disable-previous-line security/no-inline-assembly
-            result := and(mload(add(_loc, _index)), _mask)
+                result := and(mload(add(_loc, _index)), _mask)
+            }
         }
+
     }
 
     /**
