@@ -1,7 +1,9 @@
 pragma solidity 0.8.0;
 
-interface IWAVAX {
+import './IERC20.sol';
+
+interface IWAVAX is IERC20 {
     function deposit() external payable;
-    function transfer(address to, uint value) external returns (bool);
+    // function transfer(address to, uint value) external returns (bool);
     function withdraw(uint) external;
 }

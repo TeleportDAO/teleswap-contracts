@@ -2,65 +2,24 @@ pragma solidity 0.8.0;
 
 import "./interfaces/IWAVAX.sol";
 import "../libraries/SafeMath.sol";
+import "./ERC20.sol";
 import "hardhat/console.sol";
 
-contract WAVAX is IWAVAX {
-    using SafeMath for uint;
+contract WAVAX is ERC20 {
+    // using SafeMath for uint;
 
-    string public name;
-    string public symbol;
-    uint8 public constant decimals = 18;
-    uint public totalSupply;
-    mapping(address => uint) public balanceOf;
-    mapping(address => mapping(address => uint)) public allowance;
+    constructor(string memory _name, string memory _symbol)
+    ERC20(_name, _symbol, 0) public {}
 
-    constructor(string memory _name, string memory _symbol) public {
-        name = _name;
-        symbol = _symbol;
-        totalSupply = 0;
-    }
-
-    function deposit() external payable override {
+    function deposit() external payable {
         require(msg.value > 0);
-        _mint(msg.sender, msg.value);
+        _mint(_msgSender(), msg.value);
     }
-    
-    function withdraw(uint value) external override {
-        require(balanceOf[msg.sender] >= value, "Balance is not sufficient");
-        _burn(msg.sender, value);
-        address payable recipient = payable(msg.sender);
+
+    function withdraw(uint value) external {
+        require(balanceOf(_msgSender()) >= value, "Balance is not sufficient");
+        _burn(_msgSender(), value);
+        address payable recipient = payable(_msgSender());
         recipient.send(value);
-    }
-
-    function _mint(address to, uint value) internal {
-        totalSupply = totalSupply.add(value);
-        balanceOf[to] = balanceOf[to].add(value);
-    }
-
-    function _burn(address from, uint value) internal {
-        balanceOf[from] = balanceOf[from].sub(value);
-        totalSupply = totalSupply.sub(value);
-    }
-
-    function approve(address spender, uint value) external returns(bool) {
-        allowance[msg.sender][spender] = value;
-        return true;
-    }
-
-    function transfer(address to, uint value) external override returns (bool){
-        balanceOf[msg.sender] = balanceOf[msg.sender].sub(value);
-        balanceOf[to] = balanceOf[to].add(value);
-        return true;
-    }
-
-    function transferFrom(address from, address to, uint value) external returns (bool) {
-        uint max_uint = type(uint).max;
-
-        if (allowance[from][msg.sender] != max_uint) {
-            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
-        }
-        balanceOf[from] = balanceOf[from].sub(value);
-        balanceOf[to] = balanceOf[to].add(value);
-        return true;
     }
 }
