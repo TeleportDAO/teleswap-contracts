@@ -103,7 +103,7 @@ interface ILocker {
 
     // function lockerTargetAddressList(uint _index) external view returns (address);
 
-    function candidateTargetAddressList(uint _index) external view returns (address);
+    // function candidateTargetAddressList(uint _index) external view returns (address);
 
     function isLocker(address _lockerTargetAddress) external view returns (bool);
 
@@ -113,9 +113,10 @@ interface ILocker {
 
     function isActive(address _lockerTargetAddress) external view returns (bool);
 
-    function getLockerCapacity(address _lockerTargetAddress) external view returns (address);
+    function getLockerCapacity(address _lockerTargetAddress) external view returns (uint);
 
-    function assignLocker(bool _isMint, uint _amount) external view returns (address);
+    // FIXME: What is this?
+    // function assignLocker(bool _isMint, uint _amount) external view returns (address);
 
 
     // state-changing functions
@@ -132,7 +133,11 @@ interface ILocker {
 
     // State-changing functions
 
-    function setRequiredLockedAmount(uint _requiredLockedAmount) external;
+    // function setRequiredLockedAmount(uint _requiredLockedAmount) external;
+
+    function setRequiredTDTLockedAmount(uint _requiredTDTLockedAmount) external;
+
+    function setRequiredTNTLockedAmount(uint _requiredTNTLockedAmount) external;
 
     function setPriceOracle(address _priceOracle) external;
 
@@ -144,6 +149,7 @@ interface ILocker {
 
     function setCollateralRatio(uint _collateralRatio) external;
 
+    // FIXME: change the function signature
     function updateIsActive(address _lockerBitcoinAddress, uint _amount, bool _isMint) external returns (bool);
 
     function requestToBecomeLocker(
@@ -158,8 +164,8 @@ interface ILocker {
 
     function requestToRemoveLocker() external returns (bool);
 
-    function removeLocker() external returns(bool);
+    function removeLocker(address _lockerTargetAddress) external returns(bool);
 
-    function slashLocker(address _lockerTargetAddress, uint _amount, address _recipient) external;
+    function slashLocker(address _lockerTargetAddress, uint _amount, address _recipient) external returns(bool);
 
 }

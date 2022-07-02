@@ -35,12 +35,12 @@ contract Locker is ILocker, Ownable, ReentrancyGuard {
 
     mapping(address => bool) public lockerLeavingRequests;
 
-    mapping(bytes => address) public BitcoinAddressToTargetAddress;
+    mapping(bytes => address) public override BitcoinAddressToTargetAddress;
 
     // below list is for sorting lockers regarding capacity and choosing locker for burn or mint
     // TODO: remove this list and add a variable to store the number of the lockers
-    address[] public lockerTargetAddressList;
-    address[] public candidateTargetAddressList;
+    // address[] public lockerTargetAddressList;
+    // address[] public candidateTargetAddressList;
 
     // uint public unlockFee; // it is a percentage
     // uint public unlockPeriod;
@@ -96,7 +96,7 @@ contract Locker is ILocker, Ownable, ReentrancyGuard {
     /// @param _lockerTargetAddress       Address of locker on the target chain
     /// @return                           True if user is locker
     function isLocker(address _lockerTargetAddress) external override view returns(bool) {
-        return lockersList[_lockerTargetAddress].isExisted;
+        return lockersMapping[_lockerTargetAddress].isExisted;
     }
 
     /// @notice                           Give number of lockers
@@ -111,7 +111,7 @@ contract Locker is ILocker, Ownable, ReentrancyGuard {
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             Bitcoin public key of locker
     function getLockerBitcoinAddress(address _lockerTargetAddress) external view override returns (bytes memory) {
-        return lockersList[_lockerTargetAddress].lockerBitcoinAddress;
+        return lockersMapping[_lockerTargetAddress].lockerBitcoinAddress;
     }
 
     /// @notice                             Tells if a locker is active or not
@@ -120,15 +120,16 @@ contract Locker is ILocker, Ownable, ReentrancyGuard {
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             True if the locker is active and accepts mint requests
     function isActive(address _lockerTargetAddress) external view override returns (bool) {
-        return lockersList[_lockerTargetAddress].isActive;
+        return lockersMapping[_lockerTargetAddress].isActive;
     }
 
     /// @notice                             Get how much net this locker has minted
     /// @dev                                Net minted amount is total minted minus total burnt for the locker
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             The net minted of the locker
-    function getLockerCapacity(address _lockerTargetAddress) external view returns (address) {
-        return _lockerCollateralInTeleBTC(_lockerTargetAddress).mul(collateralRatio).sub(lockersList[_lockerTargetAddress].netMinted);
+    function getLockerCapacity(address _lockerTargetAddress) external view override returns (uint) {
+        // FIXME: fix this function too
+        return _lockerCollateralInTeleBTC(_lockerTargetAddress).mul(collateralRatio).sub(lockersMapping[_lockerTargetAddress].netMinted);
     }
 
     /// @notice         Changes the required bond amount to become locker
@@ -187,7 +188,7 @@ contract Locker is ILocker, Ownable, ReentrancyGuard {
     /// @param _lockerBitcoinAddress    Locker address on the target chain
     /// @param _amount                  Amount of the burn or mint that has been done
     /// @param _isMint                  True if the request is mint, false if it is burn
-    function updateIsActive(bytes memory _lockerBitcoinAddress, uint _amount, bool _isMint) external override onlyOwner returns (bool) {
+    function updateIsActive(address _lockerBitcoinAddress, uint _amount, bool _isMint) external override onlyOwner returns (bool) {
         // FIXME: this function signature is not working for its reason and must get the ethereum address of the locker
         // TODO: require after the transaction is done, the locker still has enough collateral (not necessarily active)
         return true;
@@ -231,6 +232,17 @@ contract Locker is ILocker, Ownable, ReentrancyGuard {
         locker_.isExisted = true;
 
         candidatesMapping[msg.sender] = locker_;
+
+        totalNumberOfCandidates = totalNumberOfCandidates + 1;
+
+        emit RequestAddLocker(
+            msg.sender,
+            _candidateBitcoinAddress,
+            _lockedTDTAmount,
+            0,
+            false
+        );
+
         return true;
     }
 
@@ -250,6 +262,8 @@ contract Locker is ILocker, Ownable, ReentrancyGuard {
 
         // Removes candidate from candidate list
         _removeElementFromCandidatesMapping(msg.sender);
+
+        totalNumberOfCandidates = totalNumberOfCandidates -1;
         return true;
     }
 
@@ -274,6 +288,11 @@ contract Locker is ILocker, Ownable, ReentrancyGuard {
         _removeElementFromCandidatesMapping(_lockerTargetAddress);
         // require(_updateRedeemScriptHash(), "locker address is not correct");
         // require(_updateMultisigAddress(), "locker address is not correct");
+
+        totalNumberOfLockers = totalNumberOfLockers + 1;
+        totalNumberOfCandidates = totalNumberOfCandidates -1;
+
+        BitcoinAddressToTargetAddress[lockersMapping[_lockerTargetAddress].lockerBitcoinAddress] = _lockerTargetAddress;
 
         emit LockerAdded(
             _lockerTargetAddress,
@@ -307,32 +326,60 @@ contract Locker is ILocker, Ownable, ReentrancyGuard {
 
         lockerLeavingRequests[msg.sender] = true;
 
+        emit RequestRemoveLocker(
+            msg.sender,
+            lockersMapping[msg.sender].lockerBitcoinAddress,
+            lockersMapping[msg.sender].TDTLockedAmount,
+            lockersMapping[msg.sender].nativeTokenLockedAmount,
+            lockersMapping[msg.sender].netMinted
+        );
+
         return true;
     }
 
     /// @notice                           Removes a locker from lockers pool
     /// @return                           True if locker is removed successfully
     // FIXME: removeLocker must be changed and got the lockerAddress and only admin must be able to call it
-    function removeLocker() external nonReentrant override returns (bool) {
+    function removeLocker(address _lockerTargetAddress) external nonReentrant onlyOwner override returns (bool) {
         // TODO
-        require(lockersList.length > _lockerIndex, "Index is not in range");
         require(
-            lockersList[_lockerIndex].lockerAddress == msg.sender,
-            "Caller is not allowed"
+            lockersMapping[_lockerTargetAddress].isExisted,
+            "Locker: no locker with this address"
         );
-        require(block.number.add(unlockPeriod) >= lastLockerRemove, "Cannot remove locker at this time");
-        bytes memory lockerBitcoinPubKey = lockersList[_lockerIndex].lockerBitcoinPubKey;
-        address lockerAddress = lockersList[_lockerIndex].lockerAddress;
-        uint lockedAmount = lockersList[_lockerIndex].lockedAmount;
+
+        require(
+            lockerLeavingRequests[_lockerTargetAddress],
+            "Locker: locker didn't request to be removed"
+        );
+
+        require(
+            lockersMapping[_lockerTargetAddress].netMinted == 0,
+            "Locker: net minted is not zero"
+        );
+
+        // require(block.number.add(unlockPeriod) >= lastLockerRemove, "Cannot remove locker at this time");
+        // bytes memory lockerBitcoinPubKey = lockersList[_lockerIndex].lockerBitcoinPubKey;
+        // address lockerAddress = lockersList[_lockerIndex].lockerAddress;
+        // uint lockedAmount = lockersList[_lockerIndex].lockedAmount;
         // Amount of unlocked token after reducing the unlocking fee
-        uint unlockedAmount = lockedAmount.mul(100.sub(unlockFee)).div(100);
-        _removeElementFromLockersList(_lockerIndex);
-        require(_updateRedeemScriptHash(), "Locker address is not correct");
-        require(_updateMultisigAddress(), "Locker address is not correct");
+        // uint unlockedAmount = lockedAmount.mul(100.sub(unlockFee)).div(100);
+
+        locker memory theRemovingLokcer = lockersMapping[_lockerTargetAddress];
+
+        // require(_updateRedeemScriptHash(), "Locker address is not correct");
+        // require(_updateMultisigAddress(), "Locker address is not correct");
         // Sends back part of the locker's bond
-        IERC20(TeleportDAOToken).transfer(lockerAddress, unlockedAmount);
-        lastLockerRemove = block.number;
-        emit RemoveLocker(lockerBitcoinPubKey, lockerAddress, unlockedAmount);
+        IERC20(TeleportDAOToken).transfer(_lockerTargetAddress, theRemovingLokcer.TDTLockedAmount);
+
+        _removeElementFromLockersMapping(_lockerTargetAddress);
+
+        emit LockerRemoved(
+            _lockerTargetAddress,
+            theRemovingLokcer.lockerBitcoinAddress,
+            theRemovingLokcer.TDTLockedAmount,
+            theRemovingLokcer.nativeTokenLockedAmount
+        );
+
         return true;
     }
 
@@ -343,7 +390,16 @@ contract Locker is ILocker, Ownable, ReentrancyGuard {
     /// @param _recipient                 Address of user who receives the slashed amount
     /// @return                           True if lockers are slashed successfully
     function slashLocker(address _lockerTargetAddress, uint _amount, address _recipient) external nonReentrant override returns (bool) {
-        require(msg.sender == ccBurnRouter, "Locker: Caller can't slash");
+        require(
+            msg.sender == ccBurnRouter,
+            "Locker: Caller can't slash"
+        );
+
+        require(
+            lockersMapping[_lockerTargetAddress].isExisted,
+            "Locker: target is not locker"
+        );
+
         // TODO: slash only the determined locker
         address[] memory path = new address[](2);
         path[0] = TeleportDAOToken;
@@ -351,20 +407,33 @@ contract Locker is ILocker, Ownable, ReentrancyGuard {
         // Finds the needed input amount to buy _amount of output token
         uint[] memory neededTDT = IExchangeRouter(exchangeRouter).getAmountsIn(_amount, path);
         // Updates locked amount of lockers
-        uint lockersListLenght = lockersList.lenght;
-        for (uint i = 0; i < lockersListLenght; i++) {
-            lockersList[i].lockedAmount = lockersList[i].lockedAmount.sub(
-                neededTDT.div(lockersListLenght)
-            );
-        }
+        // uint lockersListLenght = lockersList.lenght;
+        // for (uint i = 0; i < lockersListLenght; i++) {
+        //     lockersList[i].lockedAmount = lockersList[i].lockedAmount.sub(
+        //         neededTDT.div(lockersListLenght)
+        //     );
+        // }
         // Transfers slashed tokens to recipient
-        IERC20(TeleportDAOToken).transfer(_recipient, neededTDT[0]);
+        // IERC20(TeleportDAOToken).transfer(_recipient, neededTDT[0]);
+
+        lockersMapping[_lockerTargetAddress].TDTLockedAmount = lockersMapping[_lockerTargetAddress].TDTLockedAmount - neededTDT[0];
+
+        IERC20(TeleportDAOToken).approve(exchangeRouter, neededTDT[0]);
+        uint deadline = block.timestamp + 1000;
+        IExchangeRouter(exchangeRouter).swapTokensForExactTokens(
+            _amount, // amount out
+            neededTDT[0], // amount in
+            path,
+            _recipient,
+            deadline
+        );
+
         return true;
     }
 
     /// @notice                      Removes an element of array of candidates
     /// @dev                         Deletes and shifts the array
-    /// @param _candidateIndex       Index of the element that will be deleted
+    /// @param _candidateAddress       Index of the element that will be deleted
     function _removeElementFromCandidatesMapping(address _candidateAddress) internal {
         require(candidatesMapping[_candidateAddress].isExisted, "Locker: this candidate doesn't exist");
 
@@ -374,20 +443,18 @@ contract Locker is ILocker, Ownable, ReentrancyGuard {
 
     /// @notice                      Removes an element of lockers list
     /// @dev                         Deletes and shifts the array
-    /// @param _lockerIndex      Index of the element that will be deleted
-    function _removeElementFromLockersList (uint _lockerIndex) internal {
-        require(_lockerIndex < lockersList.length, "Index is out of bound");
-        for (uint i = _lockerIndex; i < lockersList.length - 1; i++) {
-            lockersList[i] = lockersList[i+1];
-        }
-        lockersList.pop();
+    /// @param _lockerAddress      Index of the element that will be deleted
+    function _removeElementFromLockersMapping(address _lockerAddress) internal {
+        require(lockersMapping[_lockerAddress].isExisted, "Locker: this locker doesn't exist");
+
+        delete lockersMapping[_lockerAddress];
     }
 
     /// @notice                             Get the locker collateral in terms of TeleBTC
     /// @dev
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             The locker collateral in TeleBTC
-    function _lockerCollateralInTeleBTC(address _lockerTargetAddress) internal returns (uint) {
+    function _lockerCollateralInTeleBTC(address _lockerTargetAddress) internal view returns (uint) {
         // TODO
         return lockersMapping[_lockerTargetAddress].TDTLockedAmount;
     }
