@@ -166,6 +166,8 @@ interface ILocker {
 
     function removeLocker(address _lockerTargetAddress) external returns(bool);
 
+    function selfRemoveLocker() external returns (bool);
+
     function slashLocker(address _lockerTargetAddress, uint _amount, address _recipient) external returns(bool);
 
 }

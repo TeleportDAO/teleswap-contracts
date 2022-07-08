@@ -33,7 +33,10 @@ contract Locker is ILocker, Ownable, ReentrancyGuard {
     // remember to remove from candidates when becomes locker
     mapping(address => locker) public candidatesMapping;
 
+
+    // TODO: Combining the 2 mapping into
     mapping(address => bool) public lockerLeavingRequests;
+    mapping(address => bool) public lockerLeavingAcceptance;
 
     mapping(bytes => address) public override BitcoinAddressToTargetAddress;
 
@@ -373,8 +376,57 @@ contract Locker is ILocker, Ownable, ReentrancyGuard {
 
         _removeElementFromLockersMapping(_lockerTargetAddress);
 
+        totalNumberOfLockers = totalNumberOfLockers - 1;
+
         emit LockerRemoved(
             _lockerTargetAddress,
+            theRemovingLokcer.lockerBitcoinAddress,
+            theRemovingLokcer.TDTLockedAmount,
+            theRemovingLokcer.nativeTokenLockedAmount
+        );
+
+        return true;
+    }
+
+
+    /// @notice                           Removes a locker from lockers pool
+    /// @return                           True if locker is removed successfully
+    // FIXME: removeLocker must be changed and got the lockerAddress and only admin must be able to call it
+    function selfRemoveLocker() external nonReentrant override returns (bool) {
+        // TODO
+        require(
+            lockersMapping[msg.sender].isExisted,
+            "Locker: no locker with this address"
+        );
+
+        require(
+            lockerLeavingRequests[msg.sender],
+            "Locker: locker didn't request to be removed"
+        );
+
+        require(
+            lockersMapping[msg.sender].netMinted == 0,
+            "Locker: net minted is not zero"
+        );
+
+        // require(block.number.add(unlockPeriod) >= lastLockerRemove, "Cannot remove locker at this time");
+        // bytes memory lockerBitcoinPubKey = lockersList[_lockerIndex].lockerBitcoinPubKey;
+        // address lockerAddress = lockersList[_lockerIndex].lockerAddress;
+        // uint lockedAmount = lockersList[_lockerIndex].lockedAmount;
+        // Amount of unlocked token after reducing the unlocking fee
+        // uint unlockedAmount = lockedAmount.mul(100.sub(unlockFee)).div(100);
+
+        locker memory theRemovingLokcer = lockersMapping[msg.sender];
+
+        // require(_updateRedeemScriptHash(), "Locker address is not correct");
+        // require(_updateMultisigAddress(), "Locker address is not correct");
+        // Sends back part of the locker's bond
+        IERC20(TeleportDAOToken).transfer(msg.sender, theRemovingLokcer.TDTLockedAmount);
+
+        _removeElementFromLockersMapping(msg.sender);
+
+        emit LockerRemoved(
+            msg.sender,
             theRemovingLokcer.lockerBitcoinAddress,
             theRemovingLokcer.TDTLockedAmount,
             theRemovingLokcer.nativeTokenLockedAmount
