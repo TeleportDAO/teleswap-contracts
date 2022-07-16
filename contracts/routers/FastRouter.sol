@@ -8,13 +8,13 @@ import './interfaces/ICCTransferRouter.sol';
 import '../libraries/SafeMath.sol';
 
 contract FastRouter is IFastRouter {
-    
+
     using SafeMath for uint;
     address public override bitcoinFastPool;
     address public override ccTransferRouter;
     address public wrappedBitcoin;
     address public override owner;
-    
+
     modifier onlyOwner {
         require(msg.sender == owner);
         _;
@@ -22,22 +22,23 @@ contract FastRouter is IFastRouter {
 
     constructor (address _ccTransferRouter, uint _fastLimit, uint _fastFee, uint _neededConfirmations) public {
         ccTransferRouter = _ccTransferRouter;
-        wrappedBitcoin = ICCTransferRouter(ccTransferRouter).wrappedBitcoin();
+        // FIXME: update based on new cc transfer
+        // wrappedBitcoin = ICCTransferRouter(ccTransferRouter).wrappedBitcoin();
         FastPool _bitcoinFastPool;
         _bitcoinFastPool = new FastPool(
-            wrappedBitcoin, 
-            address(this), 
-            "BitcoinFastPoolToken", 
-            "BTCFPT", 
-            _fastLimit, 
-            _fastFee, 
+            wrappedBitcoin,
+            address(this),
+            "BitcoinFastPoolToken",
+            "BTCFPT",
+            _fastLimit,
+            _fastFee,
             _neededConfirmations,
             msg.sender
         );
         bitcoinFastPool = address(_bitcoinFastPool);
         owner = msg.sender;
     }
-    
+
     function changeOwner(address _owner) external override onlyOwner {
         owner = _owner;
     }
@@ -60,16 +61,16 @@ contract FastRouter is IFastRouter {
     function getNeededConfirmations() public view override returns(uint) {
         return IFastPool(bitcoinFastPool).fastConfirmationParameter();
     }
-    
+
     function addLiquidity(address user, uint wrappedBitcoinAmount) external override returns(uint){
         require(IERC20(wrappedBitcoin).transferFrom(
-            msg.sender, address(this), 
-            wrappedBitcoinAmount), 
+                msg.sender, address(this),
+                wrappedBitcoinAmount),
             "user balance is not sufficient"
         );
         require(IERC20(wrappedBitcoin).approve(
-            bitcoinFastPool, 
-            wrappedBitcoinAmount), 
+                bitcoinFastPool,
+                wrappedBitcoinAmount),
             "fast router balance is not sufficient"
         );
         return IFastPool(bitcoinFastPool).addLiquidity(user, wrappedBitcoinAmount);
@@ -77,8 +78,8 @@ contract FastRouter is IFastRouter {
 
     function removeLiquidity(address user, uint fastPoolTokenAmount) external override returns(uint) {
         require(IFastPool(bitcoinFastPool).transferFrom(
-            msg.sender, address(this), 
-            fastPoolTokenAmount), 
+                msg.sender, address(this),
+                fastPoolTokenAmount),
             "user balance is not sufficient"
         );
         return IFastPool(bitcoinFastPool).removeLiquidity(user, fastPoolTokenAmount);

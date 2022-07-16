@@ -1,14 +1,14 @@
 pragma solidity 0.8.0;
 
 import "../libraries/SafeMath.sol";
-import "./interfaces/ILocker.sol";
+import "./interfaces/ILockers.sol";
 import "../routers/interfaces/IExchangeRouter.sol";
 import "../erc20/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";
 
-contract Locker is ILocker, Ownable, ReentrancyGuard {
+contract Lockers is ILockers, Ownable, ReentrancyGuard {
     using SafeMath for uint256;
 
     address public override TeleportDAOToken;

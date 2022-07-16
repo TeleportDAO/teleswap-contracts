@@ -1,6 +1,6 @@
 pragma solidity 0.8.0;
 
-interface ILocker {
+interface ILockers {
     // structures
     // struct teleporter {
     //     bytes teleporterBitcoinPubKey;
