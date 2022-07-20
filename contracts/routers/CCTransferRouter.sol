@@ -154,7 +154,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
             !ccTransferRequests[txId].isUsed,
             "CCTransferRouter: CC transfer request has been used before"
         );
-        ccTransferRequests[txId].isUsed = true;
+        // ccTransferRequests[txId].isUsed = true;
         _saveCCTransferRequest(_vout, txId);
         // Check if tx has been confirmed on source chain
         require(
@@ -166,6 +166,10 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
             ),
             "CCTransferRouter: transaction has not been finalized yet"
         );
+
+        console.log("ccTransfer _mintAndSend");
+        console.log(ccTransferRequests[txId].speed);
+
         // Normal cc transfer request
         if (ccTransferRequests[txId].speed == 0) {
             require(_mintAndSend(txId), "CCTransferRouter: normal cc transfer was not successful");
@@ -199,6 +203,15 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
                 ccTransferRequests[_txId].fee
             );
         }
+
+        console.log("_mintAndSend ....");
+        console.log("fee");
+        console.log(ccTransferRequests[_txId].fee);
+        console.log("recipientAddress");
+        console.log(ccTransferRequests[_txId].recipientAddress);
+        console.log("inputAmount");
+        console.log(ccTransferRequests[_txId].inputAmount);
+
         // Mint wrapped tokens for user
         ITeleBTC(teleBTC).mint(
             ccTransferRequests[_txId].recipientAddress,
@@ -257,14 +270,17 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         // TODO: check which lockers are available and check whether the money has been
         // transferred to an active locker
         // FIXME: how to get the redeemScriptHash from new lockers contract
-        // desiredRecipient = ILockers(lockers).redeemScriptHash();
-        desiredRecipient = address(0);
+        desiredRecipient = ILockers(lockers).redeemScriptHash();
         // Parse request tx data
-        (request.inputAmount, arbitraryData) = TxHelper.parseAmountForP2SH(_vout, desiredRecipient);
+        (request.inputAmount, arbitraryData) = TxHelper.parseAmountForP2PK(_vout, desiredRecipient);
         // Make sure request is for transfer (and not exchange)
         require(!TxHelper.parseIsExchange(arbitraryData), "CCTransferRouter: request is exchange request");
         // Parse request tx data
         percentageFee = TxHelper.parsePercentageFee(arbitraryData);
+
+        console.log("percentageFee...");
+        console.log(percentageFee);
+
         require(percentageFee >= 0 && percentageFee < 100, "CCTransferRouter: percentage fee is not correct");
         request.fee = percentageFee.mul(request.inputAmount).div(100);
         request.recipientAddress = TxHelper.parseRecipientAddress(arbitraryData);

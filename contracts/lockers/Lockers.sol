@@ -51,7 +51,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     // teleporter[] public teleportersList;
     // uint public override numberOfTeleporters;
     // bytes public override redeemScript;
-    // address public override redeemScriptHash;
+    address public override redeemScriptHash;
     // address public override multisigAddress;
     // bytes public override multisigAddressBeforeEncoding;
     // bytes constant ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';

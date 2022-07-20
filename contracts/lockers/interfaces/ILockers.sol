@@ -76,7 +76,7 @@ interface ILockers {
     // function requiredLockedAmount() external view returns(uint);
     // function numberOfTeleporters() external view returns(uint);
     // function redeemScript() external view returns(bytes memory);
-    // function redeemScriptHash() external view returns(address);
+    function redeemScriptHash() external view returns(address);
     // function multisigAddress() external view returns(address);
     // function multisigAddressBeforeEncoding() external view returns(bytes memory);
     // function isTeleporter (address teleporter, uint index) external view returns(bool);

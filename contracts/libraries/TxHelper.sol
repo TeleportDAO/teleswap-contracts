@@ -63,7 +63,7 @@ library TxHelper {
                 if (scriptPubkey.len() == 26) {
                     bitcoinRecipient = scriptPubkey.indexAddress(4);
                 }
-                if (scriptPubkey.len() == 23) {
+                if (scriptPubkey.len() == 23 || scriptPubkey.len() == 24) {
                     bitcoinRecipient = scriptPubkey.indexAddress(3);
                 }
                 if (bitcoinRecipient == desiredRecipient) {

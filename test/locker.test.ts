@@ -10,8 +10,8 @@ import { Address } from "hardhat-deploy/types";
 import { solidity } from "ethereum-waffle";
 
 import { isBytesLike } from "ethers/lib/utils";
-import { Locker } from "../src/types/Locker";
-import { Locker__factory } from "../src/types/factories/Locker__factory";
+import { Lockers } from "../src/types/Lockers";
+import { Lockers__factory } from "../src/types/factories/Lockers__factory";
 import { WrappedToken } from "../src/types/WrappedToken";
 import { WrappedToken__factory } from "../src/types/factories/WrappedToken__factory";
 import { ERC20 } from "../src/types/ERC20";
@@ -47,7 +47,7 @@ describe("BitcoinTeleporter", async () => {
     let ccBurnSimulatorAddress: Address;
 
     // Contracts
-    let locker: Locker
+    let locker: Lockers
     let teleportDAOToken: ERC20;
     let teleBTC: WrappedToken;
 
@@ -127,8 +127,8 @@ describe("BitcoinTeleporter", async () => {
 
     const deployLocker = async (
         _signer?: Signer
-    ): Promise<Locker> => {
-        const lockerFactory = new Locker__factory(
+    ): Promise<Lockers> => {
+        const lockerFactory = new Lockers__factory(
             _signer || deployer
         );
 
