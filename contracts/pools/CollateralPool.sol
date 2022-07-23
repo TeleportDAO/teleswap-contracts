@@ -4,28 +4,23 @@ pragma solidity ^0.8.0;
 import '../libraries/SafeMath.sol';
 import './interfaces/ICollateralPool.sol';
 import '../erc20/interfaces/IERC20.sol';
+import '../erc20/ERC20.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import 'hardhat/console.sol'; // Just for test
 
-contract CollateralPool is ICollateralPool, Ownable, ReentrancyGuard {
+contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
     
     using SafeMath for uint;
-    string public override name;
-    address public override instantRouter;
     address public override collateralToken;
-    uint public override collateralizationRatio; // MultIplied by 100
-    uint public override totalPoolShare;
-    mapping(address => uint) public override poolShare; // user => pool share
+    uint public override collateralizationRatio; // Multiplied by 100
     
     constructor(
         string memory _name,
-        address _instantRouter,
+        string memory _symbol,
         address _collateralToken,
         uint _collateralizationRatio
-    ) public {
-        _name = name;
-        instantRouter = _instantRouter;
+    ) ERC20(_name, _symbol, 0) public {
         collateralToken = _collateralToken;
         collateralizationRatio = _collateralizationRatio;
     }
@@ -36,18 +31,6 @@ contract CollateralPool is ICollateralPool, Ownable, ReentrancyGuard {
         return IERC20(collateralToken).balanceOf(address(this));
     }
 
-    /// @return                 Amount of total added collateral
-    function poolShareToCollateral(uint _poolShare) public view override returns (uint) {
-        return totalAddedCollateral().mul(_poolShare).div(totalPoolShare);
-    }
-
-    /// @notice                 Changes instant router contract address
-    /// @dev                    Only owner can call this
-    /// @param _instantRouter   The new instant router contract address    
-    function setInstantRouter(address _instantRouter) external override onlyOwner {
-        instantRouter = _instantRouter;
-    }
-
     /// @notice                          Changes the collateralization ratio
     /// @dev                             Only owner can call this
     /// @param _collateralizationRatio   The new collateralization ratio
@@ -55,73 +38,52 @@ contract CollateralPool is ICollateralPool, Ownable, ReentrancyGuard {
         collateralizationRatio = _collateralizationRatio;
     }
 
-    /// @notice                 Adds collateral to collateral pool
-    /// @dev                    
-    /// @param _user            Address of user whose collateral is increased
+    /// @notice                 Adds collateral to collateral pool 
+    /// @dev                    Mints collateral pool token for user
+    /// @param _user            Address of user whose collateral balance is increased
     /// @param _amount          Amount of added collateral
     /// @return                 True if collateral is added successfully
     function addCollateral(address _user, uint _amount) external nonReentrant override returns (bool) {
-        uint _poolShare;
+        // Checks basic requirements
+        require(_user != address(0), "CollateralPool: User address is zero");
+        require(_amount != 0, "CollateralPool: Amount is zero");
+
+        // Calculates collateral pool token amount
+        uint collateralPoolTokenAmount;
+        if (totalSupply() == 0) {
+            collateralPoolTokenAmount = _amount;
+        } else {
+            collateralPoolTokenAmount = _amount*totalSupply()/totalAddedCollateral();
+        }
+
         // Transfers collateral tokens from message sender to contract
         IERC20(collateralToken).transferFrom(msg.sender, address(this), _amount);
-        // Prevents reentrancy
-        uint totalAddedCollateral = totalAddedCollateral() - _amount;
-        if (totalAddedCollateral == 0) {
-            _poolShare = _amount;
-        } else {
-            _poolShare = _amount.mul(totalPoolShare).div(totalAddedCollateral);
-        }
-        totalPoolShare = totalPoolShare.add(_poolShare);
-        poolShare[_user] = poolShare[_user].add(_poolShare);
-        emit AddCollateral(_user, _amount, _poolShare);
+
+        // Mints collateral pool token for _user
+        _mint(_user, collateralPoolTokenAmount);
+        emit AddCollateral(_user, _amount, collateralPoolTokenAmount);
+
         return true;
     }
 
-    /// @notice                 Removes collateral from collateral pool
-    /// @dev                    Instant router can remove users collateral for slashing them
-    /// @param _user            Address of user whose collateral is decreased
-    /// @param _poolShare       Amount of burnt pool share
-    /// @return                 True if collateral is removed successfully
-    function removeCollateral(address _user, uint _poolShare) external nonReentrant override returns (bool) {
-        require(msg.sender == _user || msg.sender == instantRouter, "CollateralPool: sender is not allowed");
-        require(poolShare[_user] >= _poolShare, "CollateralPool: balance is not enough");
-        uint collateralAmount = _poolShare.mul(totalAddedCollateral()).div(totalPoolShare);
-        poolShare[_user] = poolShare[_user].sub(_poolShare);
-        totalPoolShare = totalPoolShare.sub(_poolShare);
-        IERC20(collateralToken).transfer(msg.sender, collateralAmount);
-        emit RemoveCollateral(_user, collateralAmount, _poolShare);
-        return true;
-    }
+    /// @notice                               Removes collateral from collateral pool
+    /// @dev                                  Burns collateral pool token of message sender
+    /// @param _collateralPoolTokenAmount     Amount of burnt collateral pool token
+    /// @return                               True if collateral is removed successfully
+    function removeCollateral(uint _collateralPoolTokenAmount) external nonReentrant override returns (bool) {
+        // Checks basic requirements
+        require(_collateralPoolTokenAmount != 0, "CollateralPool: Amount is zero");
+        require(balanceOf(msg.sender) >= _collateralPoolTokenAmount, "CollateralPool: balance is not enough");
 
-    /// @notice                 Locks part of the user collateral
-    /// @dev                    Only instant router can call this
-    /// @param _user            Address of user whose collateral is locked
-    /// @param _amount          Amount of locked collateral
-    /// @return                 True if collateral is locked successfully
-    function lockCollateral(address _user, uint _amount) external nonReentrant override returns (bool) {
-        require(msg.sender == instantRouter, "CollateralPool: sender is not allowed");
-        uint _poolShare = _amount.mul(totalPoolShare).div(totalAddedCollateral());
-        require(_poolShare <= poolShare[_user], "CollateralPool: available collateral is not enough");
-        // Transfers pool share from user to instant router
-        poolShare[_user] = poolShare[_user].sub(_poolShare);
-        poolShare[instantRouter] = poolShare[instantRouter].add(_poolShare);
-        emit LockCollateral(_user, _amount, _poolShare);
-        return true;
-    }
+        // Finds equivalent collateral token amount
+        uint collateralTokenAmount = _collateralPoolTokenAmount*totalAddedCollateral()/totalSupply();
 
-    /// @notice                 Unlocks the user collateral
-    /// @dev                    Only instant router can call this
-    /// @param _user            Address of user whose collateral is unlocked
-    /// @param _amount          Amount of unlocked collateral
-    /// @return                 True if collateral is unlocked successfully
-    function unlockCollateral(address _user, uint _amount) external nonReentrant override returns (bool) {
-        require(msg.sender == instantRouter, "CollateralPool: sender is not allowed");
-        uint _poolShare = _amount.mul(totalPoolShare).div(totalAddedCollateral());
-        require(_poolShare <= poolShare[instantRouter], "CollateralPool: available collateral is not enough");
-        // Transfers pool share from instant router to user
-        poolShare[instantRouter] = poolShare[instantRouter].sub(_poolShare);
-        poolShare[_user] = poolShare[_user].add(_poolShare);
-        emit UnlockCollateral(_user, _amount, _poolShare);
+        // Burn collateral pool token of user
+        _burn(msg.sender, _collateralPoolTokenAmount);
+
+        // Sends collateral token to user
+        IERC20(collateralToken).transfer(msg.sender, collateralTokenAmount);
+        emit RemoveCollateral(msg.sender, collateralTokenAmount, _collateralPoolTokenAmount);
         return true;
     }
 

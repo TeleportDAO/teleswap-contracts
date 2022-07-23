@@ -25,7 +25,7 @@ describe("CollateralPoolFactory", async () => {
     let erc20: ERC20;
     let _erc20: ERC20;
 
-    let beginning: any;
+    let snapshotId: any;
 
     before(async () => {
         // Sets accounts
@@ -56,7 +56,7 @@ describe("CollateralPoolFactory", async () => {
 
         it("Creates a collateral pool", async function () {
             // Takes a snapshot
-            beginning = await takeSnapshot(signer1.provider);
+            snapshotId = await takeSnapshot(signer1.provider);
 
             // Checks thta address is equal to zero
             expect(
@@ -100,7 +100,7 @@ describe("CollateralPoolFactory", async () => {
         })
 
         it("Reverts since non-owner account calls the function", async function () {
-            await revertProvider(signer1.provider, beginning);
+            await revertProvider(signer1.provider, snapshotId);
             let collateralPoolFactorySigner1 = collateralPoolFactory.connect(signer1)
             await expect(
                 collateralPoolFactorySigner1.createCollateralPool(
@@ -111,7 +111,7 @@ describe("CollateralPoolFactory", async () => {
         })
 
         it("Reverts since collateral token address is zero", async function () {
-            await revertProvider(signer1.provider, beginning);
+            await revertProvider(signer1.provider, snapshotId);
             await expect(
                 collateralPoolFactory.createCollateralPool(
                     ZERO_ADDRESS,
@@ -121,7 +121,7 @@ describe("CollateralPoolFactory", async () => {
         })
 
         it("Reverts since collateralization ratio is zero", async function () {
-            await revertProvider(signer1.provider, beginning);
+            await revertProvider(signer1.provider, snapshotId);
             await expect(
                 collateralPoolFactory.createCollateralPool(
                     erc20.address,
@@ -136,7 +136,7 @@ describe("CollateralPoolFactory", async () => {
 
         it("Removes a collateral pool", async function () {
             // Takes a snapshot
-            beginning = await takeSnapshot(signer1.provider);
+            snapshotId = await takeSnapshot(signer1.provider);
 
             // Creates two collateral pools
             await collateralPoolFactory.createCollateralPool(erc20.address, 100);
@@ -174,7 +174,7 @@ describe("CollateralPoolFactory", async () => {
         })
 
         it("Reverts since the collateral pool doesn't exist", async function () {
-            await revertProvider(signer1.provider, beginning);
+            await revertProvider(signer1.provider, snapshotId);
             
             // Removes collateral pool
             await expect(
@@ -183,7 +183,7 @@ describe("CollateralPoolFactory", async () => {
         })
 
         it("Reverts since non-owner account calls the function", async function () {
-            await revertProvider(signer1.provider, beginning);
+            await revertProvider(signer1.provider, snapshotId);
             let collateralPoolFactorySigner1 = collateralPoolFactory.connect(signer1)
             await expect(
                 collateralPoolFactorySigner1.removeCollateralPool(erc20.address, 0)

@@ -53,8 +53,10 @@ contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGua
         );
         CollateralPool pool;
         string memory name;
+        string memory symbol;
         name = string(abi.encodePacked(IERC20(_collateralToken).name(), "-", "Collateral-Pool"));
-        pool = new CollateralPool(name, instantRouter, _collateralToken, _collateralizationRatio);
+        symbol = string(abi.encodePacked(IERC20(_collateralToken).symbol(), "CP"));
+        pool = new CollateralPool(name, symbol, _collateralToken, _collateralizationRatio);
         getCollateralPoolByToken[_collateralToken] = address(pool);
         allCollateralPools.push(address(pool));
         emit CreateCollateralPool(name, _collateralToken, _collateralizationRatio, address(pool));
