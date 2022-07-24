@@ -379,6 +379,11 @@ contract ExchangeRouter is IExchangeRouter {
         return TeleportDAOLibrary.quote(amountA, reserveA, reserveB);
     }
 
+    // Library functions
+    function getReserves (address tokenA, address tokenB) external override returns (uint reserveA, uint reserveB) {
+        return TeleportDAOLibrary.getReserves(liquidityPoolFactory, tokenA, tokenB);
+    }
+
     function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut)
         public
         pure
