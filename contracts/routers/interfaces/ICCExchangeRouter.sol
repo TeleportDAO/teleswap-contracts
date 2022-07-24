@@ -181,7 +181,7 @@ interface ICCExchangeRouter {
     // function setInstantRouter (address _instantRouter) external;
     // function setBitcoinTeleporter (address _bitcoinTeleporter) external;
     // function setCCTransferRouter (address _ccTransferRouter) external;
-    // function setExchangeRouter (address _exchangeRouter) external;
+     function setExchangeRouter (address _exchangeRouter) external;
     // function setWrappedBitcoin (address _wrappedBitcoin) external;
     // function ccExchange(
     //     bytes4 version,

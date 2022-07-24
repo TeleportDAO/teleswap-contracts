@@ -113,11 +113,11 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     //     instantRouter = _instantRouter;
     // }
 
-    // function setExchangeRouter (address _exchangeRouter) external override onlyOwner {
-    //     exchangeRouter = _exchangeRouter;
-    //     liquidityPoolFactory = IExchangeRouter(exchangeRouter).liquidityPoolFactory();
-    //     WAVAX = IExchangeRouter(exchangeRouter).WAVAX();
-    // }
+     function setExchangeRouter (address _exchangeRouter) external override onlyOwner {
+         exchangeRouter = _exchangeRouter;
+//         liquidityPoolFactory = IExchangeRouter(exchangeRouter).liquidityPoolFactory();
+//         WAVAX = IExchangeRouter(exchangeRouter).WAVAX();
+     }
     // // for executing "normal" and "fast" cross-chain exchange requests
     // function ccExchange(
     //     bytes4 version,
