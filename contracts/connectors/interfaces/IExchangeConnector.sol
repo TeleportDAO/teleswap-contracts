@@ -3,6 +3,9 @@ pragma solidity ^0.8.0;
 
 interface IExchangeConnector {
 
+    // Events
+    event Swap(address[] path, uint[] amounts, address receiver);
+
     // Read-only functions
 
     function name() external view returns (string memory);

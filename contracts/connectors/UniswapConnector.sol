@@ -3,8 +3,10 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/IExchangeConnector.sol";
 import "../routers/interfaces/IExchangeRouter.sol";
+import "../erc20/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "hardhat/console.sol";
 
 contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
 
@@ -52,18 +54,24 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
         uint256 _deadline,
         bool _isFixedToken
     ) external override nonReentrant returns(bool _result, uint[] memory _amounts) {
-            _result = _checkExchangeConditions(
-                _inputAmount,
-                _outputAmount,
-                _path,
-                _to,
-                _deadline,
-                _isFixedToken
-            );
+        uint neededInputAmount;
+        (_result, neededInputAmount) = _checkExchangeConditions(
+            _inputAmount,
+            _outputAmount,
+            _path,
+            _to,
+            _deadline,
+            _isFixedToken
+        );
         if (_result) {
+            // Gets tokens from user
+            IERC20(_path[0]).transferFrom(msg.sender, address(this), neededInputAmount);
+            // Gives allowance to exchange router
+            IERC20(_path[0]).approve(exchangeRouter, neededInputAmount);
+
             if (_isFixedToken == false && _path[_path.length-1] != wrappedNativeToken) {
                 // TODO: use the original uniswap router
-                (_amounts,) = IExchangeRouter(exchangeRouter).swapExactTokensForTokens(
+                _amounts = IExchangeRouter(exchangeRouter).swapTokensForExactTokens(
                     _inputAmount,
                     _outputAmount,
                     _path,
@@ -73,7 +81,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
             }
 
             if (_isFixedToken == false && _path[_path.length-1] == wrappedNativeToken) {
-                (_amounts,) = IExchangeRouter(exchangeRouter).swapExactTokensForAVAX(
+                _amounts = IExchangeRouter(exchangeRouter).swapTokensForExactAVAX(
                     _inputAmount,
                     _outputAmount,
                     _path,
@@ -83,7 +91,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
             }
 
             if (_isFixedToken == true && _path[_path.length-1] != wrappedNativeToken) {
-                _amounts = IExchangeRouter(exchangeRouter).swapTokensForExactTokens(
+                (_amounts,) = IExchangeRouter(exchangeRouter).swapExactTokensForTokens(
                     _inputAmount,
                     _outputAmount,
                     _path,
@@ -93,7 +101,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
             }
 
             if (_isFixedToken == true && _path[_path.length-1] == wrappedNativeToken) {
-                _amounts = IExchangeRouter(exchangeRouter).swapTokensForExactAVAX(
+                (_amounts,) = IExchangeRouter(exchangeRouter).swapExactTokensForAVAX(
                     _inputAmount,
                     _outputAmount,
                     _path,
@@ -101,6 +109,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
                     _deadline
                 );   
             }
+            emit Swap(_path, _amounts, _to);
         }
     }
 
@@ -114,10 +123,10 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
         address _to,
         uint256 _deadline,
         bool _isFixedToken
-    ) internal returns (bool) {
+    ) internal returns (bool, uint) {
         // Checks deadline has not passed
         if (_deadline < block.number) {
-            return false;
+            return (false, 0);
         }
 
         // Gets reserves of input token and output token
@@ -127,8 +136,8 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
         );
 
         // Checks that enough liquidity for output token exists
-        if (_outputAmount < reserveOut) {
-            return false;
+        if (_outputAmount > reserveOut) {
+            return (false, 0);
         }
 
         if (_isFixedToken == false) {
@@ -138,15 +147,15 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
                 reserveIn,
                 reserveOut
             );
-            return _inputAmount >= requiredAmountIn ? true : false;
+            return (_inputAmount >= requiredAmountIn ? true : false, requiredAmountIn);
         } else {
             // Checks that the output amount is enough
             uint exchangedAmountOut = IExchangeRouter(exchangeRouter).getAmountOut(
-                _outputAmount,
+                _inputAmount,
                 reserveIn,
                 reserveOut
             );
-            return exchangedAmountOut >= _outputAmount ? true : false;
+            return (exchangedAmountOut >= _outputAmount ? true : false, _inputAmount);
         }
     }
 
