@@ -13,7 +13,7 @@ import "../libraries/TeleportDAOLibrary.sol";
 import "hardhat/console.sol";
 
 contract CCExchangeRouter is ICCExchangeRouter {
-    
+
     using SafeMath for uint;
     address ZERO_ADDRESS = 0x0000000000000000000000000000000000000000;
     mapping(uint => request) private requests;
@@ -27,7 +27,7 @@ contract CCExchangeRouter is ICCExchangeRouter {
     address public ccTransferRouter;
     address public instantRouter;
     address public override owner;
-    
+
     modifier onlyOwner {
         require(msg.sender == owner);
         _;
@@ -37,7 +37,7 @@ contract CCExchangeRouter is ICCExchangeRouter {
         exchangeRouter = _exchangeRouter;
         liquidityPoolFactory = IExchangeRouter(exchangeRouter).liquidityPoolFactory();
         WAVAX = IExchangeRouter(exchangeRouter).WAVAX();
-        lastRequest = 0;    
+        lastRequest = 0;
         bitcoinTeleporter = _bitcoinTeleporter;
         ccTransferRouter = _ccTransferRouter;
         owner = msg.sender;
@@ -49,11 +49,11 @@ contract CCExchangeRouter is ICCExchangeRouter {
 
     function setBitcoinTeleporter (address _bitcoinTeleporter) external override onlyOwner {
         bitcoinTeleporter = _bitcoinTeleporter;
-    } 
+    }
 
     function setWrappedBitcoin (address _wrappedBitcoin) external override onlyOwner {
         wrappedBitcoin = _wrappedBitcoin;
-    } 
+    }
 
     function setCCTransferRouter (address _ccTransferRouter) external override onlyOwner {
         ccTransferRouter = _ccTransferRouter;
@@ -61,14 +61,14 @@ contract CCExchangeRouter is ICCExchangeRouter {
 
     function setInstantRouter (address _instantRouter) external override onlyOwner {
         instantRouter = _instantRouter;
-    } 
+    }
 
     function setExchangeRouter (address _exchangeRouter) external override onlyOwner {
         exchangeRouter = _exchangeRouter;
         liquidityPoolFactory = IExchangeRouter(exchangeRouter).liquidityPoolFactory();
         WAVAX = IExchangeRouter(exchangeRouter).WAVAX();
-    } 
-    // for executing "normal" and "fast" cross-chain exchange requests 
+    }
+    // for executing "normal" and "fast" cross-chain exchange requests
     function ccExchange(
         bytes4 version,
         bytes memory vin,
@@ -128,14 +128,14 @@ contract CCExchangeRouter is ICCExchangeRouter {
                     );
                 } else {
                     paybackToUser(
-                        version, 
-                        vin, 
-                        vout, 
-                        locktime, 
-                        blockNumber, 
-                        intermediateNodes, 
-                        index, 
-                        payWithTDT, 
+                        version,
+                        vin,
+                        vout,
+                        locktime,
+                        blockNumber,
+                        intermediateNodes,
+                        index,
+                        payWithTDT,
                         currentRequest
                     );
                 }
@@ -167,35 +167,35 @@ contract CCExchangeRouter is ICCExchangeRouter {
                     );
                 } else {
                     paybackToUser(
-                        version, 
-                        vin, 
-                        vout, 
-                        locktime, 
-                        blockNumber, 
-                        intermediateNodes, 
-                        index, 
-                        payWithTDT, 
+                        version,
+                        vin,
+                        vout,
+                        locktime,
+                        blockNumber,
+                        intermediateNodes,
+                        index,
+                        payWithTDT,
                         currentRequest
                     );
                 }
 
             }
-            
+
         }
 
         if (requests[currentRequest].deadline < (block.number + 1)) { // deadline has passed
             paybackToUser(version, vin, vout, locktime, blockNumber, intermediateNodes, index, payWithTDT, currentRequest);
         }
-        
+
     }
 
     function instantCCExchangeWithPermit(
         address signer,
         bytes memory signature,
-        uint amountIn, 
-        uint amountOutMin, 
-        address[] memory path, 
-        address receiver, 
+        uint amountIn,
+        uint amountOutMin,
+        address[] memory path,
+        address receiver,
         uint deadline
     ) external override {
         uint[] memory amounts;
@@ -203,10 +203,10 @@ contract CCExchangeRouter is ICCExchangeRouter {
         (amounts, result) = IInstantRouter(instantRouter).instantCCExchangeWithPermit(
             signer,
             signature,
-            amountIn, 
-            amountOutMin, 
-            path, 
-            receiver, 
+            amountIn,
+            amountOutMin,
+            path,
+            receiver,
             deadline
         );
         emit CCExchange(
@@ -232,24 +232,24 @@ contract CCExchangeRouter is ICCExchangeRouter {
     ) internal {
         // mint wrapped token for cc exchange router
         mintWrappedBitcoin(
-                version,
-                vin,
-                vout,
-                locktime,
-                blockNumber,
-                intermediateNodes,
-                index,
-                payWithTDT
+            version,
+            vin,
+            vout,
+            locktime,
+            blockNumber,
+            intermediateNodes,
+            index,
+            payWithTDT
         );
         // transfer wrapped tokens to user
         IWrappedToken(wrappedBitcoin).transfer(
-                requests[currentRequest].exchangeRecipientAddress,
-                requests[currentRequest].remainedInputAmount
+            requests[currentRequest].exchangeRecipientAddress,
+            requests[currentRequest].remainedInputAmount
         );
         // pay teleporter fee
-            IWrappedToken(wrappedBitcoin).transfer(
-                requests[currentRequest].teleporterAddress,
-                requests[currentRequest].teleporterFee
+        IWrappedToken(wrappedBitcoin).transfer(
+            requests[currentRequest].teleporterAddress,
+            requests[currentRequest].teleporterFee
         );
     }
 
@@ -279,30 +279,31 @@ contract CCExchangeRouter is ICCExchangeRouter {
     }
 
     function parseRemainedInputAmount(
-        uint256 bitcoinAmount, 
-        uint256 teleporterFee, 
+        uint256 bitcoinAmount,
+        uint256 teleporterFee,
         uint speed
     ) internal view returns (uint256) {
-        
+
         if(speed == 0) { // normal cc exchange
             require(bitcoinAmount > teleporterFee, "Insufficient fund");
             return bitcoinAmount.sub(teleporterFee);
         }
 
-        if(speed == 1) { // fast cc exchange
-            // get the fastFee from the fastPool
-            address bitcoinFastPool;
-            bitcoinFastPool = ICCTransferRouter(ccTransferRouter).bitcoinFastPool();
-            uint fastFee = IFastPool(bitcoinFastPool).fastFee();
-            uint bitcoinAmountAfterFastFee = bitcoinAmount*(100-fastFee)/100;
-            require(bitcoinAmountAfterFastFee > teleporterFee, "Insufficient fund");
-            return bitcoinAmountAfterFastFee.sub(teleporterFee);
-        }        
+        // FIXME: un-comment this part of code based on new cc transfer
+        // if(speed == 1) { // fast cc exchange
+        //     // get the fastFee from the fastPool
+        //     address bitcoinFastPool;
+        //     bitcoinFastPool = ICCTransferRouter(ccTransferRouter).bitcoinFastPool();
+        //     uint fastFee = IFastPool(bitcoinFastPool).fastFee();
+        //     uint bitcoinAmountAfterFastFee = bitcoinAmount*(100-fastFee)/100;
+        //     require(bitcoinAmountAfterFastFee > teleporterFee, "Insufficient fund");
+        //     return bitcoinAmountAfterFastFee.sub(teleporterFee);
+        // }
 
         if(speed == 2) { // instant cc exchange
             require(bitcoinAmount > teleporterFee, "Insufficient fund");
             return bitcoinAmount.sub(teleporterFee);
-        }      
+        }
     }
 
     function mintWrappedBitcoin(
@@ -325,8 +326,8 @@ contract CCExchangeRouter is ICCExchangeRouter {
                 locktime,
                 blockNumber,
                 intermediateNodes,
-                index,
-                payWithTDT
+                index
+            // payWithTDT
             )
         );
     }

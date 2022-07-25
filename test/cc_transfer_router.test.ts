@@ -18,8 +18,10 @@ import { WrappedToken__factory } from "../src/types/factories/WrappedToken__fact
 import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
 
 describe("CCTransferRouter", async () => {
+
     // Constants
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+    let ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
     let NORMAL_CONFIRMATION_PARAMETER = 6;
 
     // Accounts
@@ -32,7 +34,7 @@ describe("CCTransferRouter", async () => {
 
     // Mock contracts
     let mockBitcoinRelay: MockContract;
-    let mockBitcoinTeleporter: MockContract;
+    let mockLockers: MockContract;
     let mockInstantRouter: MockContract;
 
     let beginning: any;
@@ -51,12 +53,12 @@ describe("CCTransferRouter", async () => {
         );
 
         // Mocks teleporters contract
-        const bitcoinTeleporterContract = await deployments.getArtifact(
-            "IBitcoinTeleporter"
+        const lockersContract = await deployments.getArtifact(
+            "ILockers"
         );
-        mockBitcoinTeleporter = await deployMockContract(
+        mockLockers = await deployMockContract(
             deployer,
-            bitcoinTeleporterContract.abi
+            lockersContract.abi
         );
 
         // Mocks instant router contract
@@ -72,8 +74,8 @@ describe("CCTransferRouter", async () => {
         const ccTransferRouterFactory = new CCTransferRouter__factory(deployer);
         ccTransferRouter = await ccTransferRouterFactory.deploy(
             mockBitcoinRelay.address,
-            mockBitcoinTeleporter.address,
-            NORMAL_CONFIRMATION_PARAMETER
+            mockLockers.address,
+            ZERO_ADDRESS
         );
 
         // Deploys teleBTC contract
@@ -85,7 +87,7 @@ describe("CCTransferRouter", async () => {
         );
 
         // Set teleBTC address in ccTransferRouter
-        await ccTransferRouter.setWrappedBitcoin(teleBTC.address);
+        await ccTransferRouter.setTeleBTC(teleBTC.address);
     });
 
     async function setRelayReturn(request: any, isTrue: boolean): Promise<void> {
@@ -99,8 +101,8 @@ describe("CCTransferRouter", async () => {
         ).returns(isTrue);
     }
 
-    async function setBitcoinTeleporterReturn(request: any): Promise<void> {
-        await mockBitcoinTeleporter.mock.redeemScriptHash
+    async function setLockersReturn(request: any): Promise<void> {
+        await mockLockers.mock.redeemScriptHash
             .returns(request.desiredRecipient);
     }
 
@@ -111,7 +113,7 @@ describe("CCTransferRouter", async () => {
             // Mocking that relay returns true for our request
             await setRelayReturn(CC_REQUESTS.normalCCTransfer, true);
             // Mocking that Locker returns the Lockers address on Bitcoin
-            await setBitcoinTeleporterReturn(CC_REQUESTS.normalCCTransfer);
+            await setLockersReturn(CC_REQUESTS.normalCCTransfer);
             // Check that ccTransfer performs successfully when everything is valid
             expect(
                 await ccTransferRouter.ccTransfer(
@@ -122,18 +124,29 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer.blockNumber,
                     CC_REQUESTS.normalCCTransfer.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer.index,
-                    false // payWithTDT
+                    // false // payWithTDT
                 )
             ).to.emit(ccTransferRouter, 'CCTransfer');
             // Checks enough teleBTC has been minted for user
+            console.log("111")
+            let theBalance = await teleBTC.balanceOf(CC_REQUESTS.normalCCTransfer.recipientAddress)
+            console.log(theBalance)
+            console.log(CC_REQUESTS.normalCCTransfer.bitcoinAmount - ((CC_REQUESTS.normalCCTransfer.bitcoinAmount * CC_REQUESTS.normalCCTransfer.teleporterFee)/100))
+
             expect(
                 await teleBTC.balanceOf(CC_REQUESTS.normalCCTransfer.recipientAddress)
-            ).to.equal(CC_REQUESTS.normalCCTransfer.bitcoinAmount - CC_REQUESTS.normalCCTransfer.teleporterFee);
+            ).to.equal(CC_REQUESTS.normalCCTransfer.bitcoinAmount - ((CC_REQUESTS.normalCCTransfer.bitcoinAmount * CC_REQUESTS.normalCCTransfer.teleporterFee)/100));
+
             // Checks enough teleBTC has been minted for teleporter
+            console.log("222")
+            console.log(CC_REQUESTS.normalCCTransfer.teleporterFee)
             expect(
                 await teleBTC.balanceOf(await deployer.getAddress())
-            ).to.equal(CC_REQUESTS.normalCCTransfer.teleporterFee);
+            ).to.equal((CC_REQUESTS.normalCCTransfer.bitcoinAmount * CC_REQUESTS.normalCCTransfer.teleporterFee)/100);
+
             // Check correct amount of teleBTC has been minted in total
+            console.log("333")
+            console.log(prevSupply + CC_REQUESTS.normalCCTransfer.bitcoinAmount)
             expect(
                 await teleBTC.totalSupply()
             ).to.equal(prevSupply + CC_REQUESTS.normalCCTransfer.bitcoinAmount)
@@ -157,9 +170,9 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer.blockNumber,
                     CC_REQUESTS.normalCCTransfer.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer.index,
-                    false // payWithTDT
+                    // false // payWithTDT
                 )
-            ).to.revertedWith('Request has been used before');
+            ).to.revertedWith("CCTransferRouter: CC transfer request has been used before");
         })
 
         it("Reverts if the request has not been finalized on the relay", async function () {
@@ -167,7 +180,7 @@ describe("CCTransferRouter", async () => {
             // Mocking that relay returns false for our request
             await setRelayReturn(CC_REQUESTS.normalCCTransfer, false);
             // Mocking that Locker returns the Lockers address on Bitcoin
-            await setBitcoinTeleporterReturn(CC_REQUESTS.normalCCTransfer);
+            await setLockersReturn(CC_REQUESTS.normalCCTransfer);
             // Check that ccTransfer reverts when tx is not finalized on source chain
             await expect(
                 ccTransferRouter.ccTransfer(
@@ -178,9 +191,9 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer.blockNumber,
                     CC_REQUESTS.normalCCTransfer.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer.index,
-                    false // payWithTDT
+                    // false // payWithTDT
                 )
-            ).to.revertedWith("Transaction has not finalized");
+            ).to.revertedWith("CCTransferRouter: transaction has not been finalized yet");
         })
 
         it("Reverts if the percentage fee is out of range [0,100)", async function () {
@@ -238,7 +251,7 @@ describe("CCTransferRouter", async () => {
             // Mocking that relay returns true for our request
             await setRelayReturn(CC_REQUESTS.normalCCTransfer, true);
             // Mocking that Locker returns the Lockers address on Bitcoin
-            await setBitcoinTeleporterReturn(CC_REQUESTS.normalCCTransfer);
+            await setLockersReturn(CC_REQUESTS.normalCCTransfer);
             // send ccTransfer request
             await expect(
                 ccTransferRouter.ccTransfer(
@@ -249,7 +262,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer.blockNumber,
                     CC_REQUESTS.normalCCTransfer.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer.index,
-                    false // payWithTDT
+                    // false // payWithTDT
                 )
             ).to.emit(ccTransferRouter, 'CCTransfer');
             expect(
