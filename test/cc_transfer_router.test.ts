@@ -12,8 +12,8 @@ import { solidity } from "ethereum-waffle";
 import { isBytesLike } from "ethers/lib/utils";
 import { CCTransferRouter } from "../src/types/CCTransferRouter";
 import { CCTransferRouter__factory } from "../src/types/factories/CCTransferRouter__factory";
-import { WrappedToken } from "../src/types/WrappedToken";
-import { WrappedToken__factory } from "../src/types/factories/WrappedToken__factory";
+import { TeleBTC } from "../src/types/TeleBTC";
+import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
 
 import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
 
@@ -30,7 +30,7 @@ describe("CCTransferRouter", async () => {
 
     // Contracts
     let ccTransferRouter: CCTransferRouter;
-    let teleBTC: WrappedToken;
+    let teleBTC: TeleBTC;
 
     // Mock contracts
     let mockBitcoinRelay: MockContract;
@@ -79,11 +79,13 @@ describe("CCTransferRouter", async () => {
         );
 
         // Deploys teleBTC contract
-        const teleBTCFactory = new WrappedToken__factory(deployer);
+        const teleBTCFactory = new TeleBTC__factory(deployer);
         teleBTC = await teleBTCFactory.deploy(
             "teleBTC",
             "teleBTC",
-            ccTransferRouter.address
+            ccTransferRouter.address,
+            ONE_ADDRESS,
+            ONE_ADDRESS
         );
 
         // Set teleBTC address in ccTransferRouter

@@ -21,7 +21,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
         address _ccTransferRouter,
         address _ccExchangeRouter,
         address _ccBurnRouter
-    ) public ERC20(_name, _symbol, 8) {
+    ) public ERC20(_name, _symbol, 0) {
         ccTransferRouter = _ccTransferRouter;
         ccExchangeRouter = _ccExchangeRouter;
         ccBurnRouter = _ccBurnRouter;
