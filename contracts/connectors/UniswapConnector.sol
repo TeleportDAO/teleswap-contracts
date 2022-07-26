@@ -28,6 +28,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
     }
 
     /// @notice                             Setter for exchange router
+    /// @dev                                Gets address of liquidity pool factory from new exchange router
     /// @param _exchangeRouter              Address of the exchange router contract
     function setExchangeRouter(address _exchangeRouter) external override onlyOwner {
         exchangeRouter = _exchangeRouter;
@@ -35,6 +36,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
     }
 
     /// @notice            Setter for liquidity pool factory
+    /// @dev               Gets address from exchange router
     function setLiquidityPoolFactory() external override onlyOwner {
         liquidityPoolFactory = IExchangeRouter(exchangeRouter).liquidityPoolFactory();
     }
@@ -53,8 +55,8 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
     /// @param _to                  Receiver address
     /// @param _deadline            Deadline of exchanging tokens
     /// @param _isFixedToken        True if the first token amount is fixed
-    /// @return _result            
-    /// @return _amounts   
+    /// @return _result             True if the exchange is successful
+    /// @return _amounts            Amounts of tokens that are involved in exchanging
     function swap(
         uint256 _inputAmount,
         uint256 _outputAmount,
@@ -126,6 +128,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
     /// @notice                           Checks if exchanging can happen successfully
     /// @dev                              Avoids reverting the request by exchange router                 
     /// @return                           True if exchange conditions are satisfied
+    /// @return                           Needed amount of input token
     function _checkExchangeConditions(
         uint256 _inputAmount,
         uint256 _outputAmount,
