@@ -34,7 +34,8 @@ describe("UniswapConnector", async () => {
     // Contracts
     let uniswapConnector: UniswapConnector;
     let exchangeRouter: ExchangeRouter;
-    let liquidityPool: LiquidityPool;
+    let liquidityPoolAB: LiquidityPool; // non-WETH/non-WETH
+    let liquidityPoolAC: LiquidityPool; // non-WETH/WETH
     let liquidityPoolFactory: LiquidityPoolFactory;
     let liquidityPool__factory: LiquidityPool__factory;
     let erc20: ERC20;
@@ -68,7 +69,7 @@ describe("UniswapConnector", async () => {
         const exchangeRouterFactory = new ExchangeRouter__factory(deployer);
         exchangeRouter = await exchangeRouterFactory.deploy(
             liquidityPoolFactory.address,
-            ZERO_ADDRESS // WETH
+            WETH.address // WETH
         );
 
         // Deploys exchangeRouter contract
@@ -108,6 +109,9 @@ describe("UniswapConnector", async () => {
             // Adds liquidity to liquidity pool
             let addedLiquidityA = 10000;
             let addedLiquidityB = 10000;
+            let addedLiquidityC = 10000;
+
+            // Adds liquidity for non-WETH/non-WETH pool
             await erc20.approve(exchangeRouter.address, addedLiquidityA);
             await _erc20.approve(exchangeRouter.address, addedLiquidityB);
             await exchangeRouter.addLiquidity(
@@ -120,25 +124,52 @@ describe("UniswapConnector", async () => {
                 deployerAddress,
                 1000000000, // Long deadline
             );
-            let liquidityPoolAddress = await liquidityPoolFactory.getLiquidityPool(
+            let liquidityPoolABAddress = await liquidityPoolFactory.getLiquidityPool(
                 erc20.address,
                 _erc20.address
             );
 
             // Loads liquidity pool
-            liquidityPool = await liquidityPool__factory.attach(liquidityPoolAddress);
+            liquidityPoolAB = await liquidityPool__factory.attach(liquidityPoolABAddress);
 
             // Records current reserves of teleBTC and TDT
-            if (await liquidityPool.token0() == erc20.address) {
-                [oldReserveA, oldReserveB] = await liquidityPool.getReserves();
+            if (await liquidityPoolAB.token0() == erc20.address) {
+                [oldReserveA, oldReserveB] = await liquidityPoolAB.getReserves();
             } else {
-                [oldReserveB, oldReserveA] = await liquidityPool.getReserves()
+                [oldReserveB, oldReserveA] = await liquidityPoolAB.getReserves()
             }
+
+            // // Adds liquidity for non-WETH/WETH pool
+            // await erc20.approve(exchangeRouter.address, addedLiquidityA);
+            // // await WETH.approve(exchangeRouter.address, addedLiquidityB);
+            
+            // await exchangeRouter.addLiquidityAVAX(
+            //     erc20.address,
+            //     addedLiquidityA,
+            //     0, // Minimum added liquidity for first token
+            //     0, // Minimum added liquidity for second token
+            //     deployerAddress,
+            //     1000000000, // Long deadline,
+            // );
+            // let liquidityPoolACAddress = await liquidityPoolFactory.getLiquidityPool(
+            //     erc20.address,
+            //     WETH.address,
+            // );
+
+            // // Loads liquidity pool
+            // liquidityPoolAC = await liquidityPool__factory.attach(liquidityPoolACAddress);
+
+            // // Records current reserves of teleBTC and TDT
+            // if (await liquidityPoolAC.token0() == erc20.address) {
+            //     [oldReserveA, oldReserveB] = await liquidityPoolAC.getReserves();
+            // } else {
+            //     [oldReserveB, oldReserveA] = await liquidityPoolAC.getReserves()
+            // }
 
             // Records current tokens balances of deployer
             oldDeployerBalanceA = await erc20.balanceOf(deployerAddress);
             oldDeployerBalanceB = await _erc20.balanceOf(deployerAddress);
-            // oldDeployerBalanceC = await WETH.balanceOf(deployerAddress);
+            oldDeployerBalanceC = await WETH.balanceOf(deployerAddress);
         });
 
         afterEach(async () => {
@@ -195,7 +226,7 @@ describe("UniswapConnector", async () => {
             let path = [erc20.address, _erc20.address];
             let to = deployerAddress;
             let deadline = 1000000;
-            let isFixedToken = true;
+            let isFixedToken = false;
             
             await erc20.approve(uniswapConnector.address, inputAmount);
             await expect(
@@ -220,6 +251,110 @@ describe("UniswapConnector", async () => {
             expect(newDeployerBalanceB).to.equal(
                 oldDeployerBalanceB.add(outputAmount)
             );
+        })
+
+        it("Should not exchange since expected output amount is high", async function () {
+
+            let outputAmount = 1000;
+            let inputAmount = await exchangeRouter.getAmountIn(
+                outputAmount,
+                oldReserveA,
+                oldReserveB
+            );
+            let path = [erc20.address, _erc20.address];
+            let to = deployerAddress;
+            let deadline = 1000000;
+            let isFixedToken = true;
+            
+            await erc20.approve(uniswapConnector.address, inputAmount);
+            await expect(
+                uniswapConnector.swap(
+                    inputAmount,
+                    outputAmount*2,
+                    path,
+                    to,
+                    deadline,
+                    isFixedToken
+                )
+            ).to.not.emit(uniswapConnector, 'Swap');
+        })
+
+        it("Should not exchange since input amount is not enough", async function () {
+
+            let outputAmount = 1000;
+            let inputAmount = await exchangeRouter.getAmountIn(
+                outputAmount,
+                oldReserveA,
+                oldReserveB
+            );
+            let path = [erc20.address, _erc20.address];
+            let to = deployerAddress;
+            let deadline = 1000000;
+            let isFixedToken = false;
+            
+            await erc20.approve(uniswapConnector.address, inputAmount);
+            await expect(
+                uniswapConnector.swap(
+                    Math.floor(inputAmount.toNumber()/2),
+                    outputAmount,
+                    path,
+                    to,
+                    deadline,
+                    isFixedToken
+                )
+            ).to.not.emit(uniswapConnector, 'Swap');
+        })
+
+        it("Should not exchange since deadline has passed", async function () {
+
+            let outputAmount = 1000;
+            let inputAmount = await exchangeRouter.getAmountIn(
+                outputAmount,
+                oldReserveA,
+                oldReserveB
+            );
+            let path = [erc20.address, _erc20.address];
+            let to = deployerAddress;
+            let deadline = 0;
+            let isFixedToken = true;
+            
+            await erc20.approve(uniswapConnector.address, inputAmount);
+            await expect(
+                uniswapConnector.swap(
+                    inputAmount,
+                    outputAmount,
+                    path,
+                    to,
+                    deadline,
+                    isFixedToken
+                )
+            ).to.not.emit(uniswapConnector, 'Swap');
+        })
+
+        it("Should not exchange since liquidity pool doesn't exist", async function () {
+
+            let outputAmount = 1000;
+            let inputAmount = await exchangeRouter.getAmountIn(
+                outputAmount,
+                oldReserveA,
+                oldReserveB
+            );
+            let path = [erc20.address, deployerAddress];
+            let to = deployerAddress;
+            let deadline = 0;
+            let isFixedToken = true;
+            
+            await erc20.approve(uniswapConnector.address, inputAmount);
+            await expect(
+                uniswapConnector.swap(
+                    inputAmount,
+                    outputAmount,
+                    path,
+                    to,
+                    deadline,
+                    isFixedToken
+                )
+            ).to.not.emit(uniswapConnector, 'Swap');
         })
 
         // it("Swaps fixed non-WETH for WETH", async function () {

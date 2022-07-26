@@ -12,11 +12,15 @@ interface IExchangeConnector {
 
     function exchangeRouter() external view returns (address);
 
+    function liquidityPoolFactory() external view returns (address);
+
     function wrappedNativeToken() external view returns (address);
 
     // State-changing functions
 
 	function setExchangeRouter(address _exchangeRouter) external;
+
+    function setLiquidityPoolFactory() external;
 
     function setWrappedNativeToken(address _wrappedNativeToken) external;
 

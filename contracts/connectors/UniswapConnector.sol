@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/IExchangeConnector.sol";
 import "../routers/interfaces/IExchangeRouter.sol";
+import "../pools/interfaces/ILiquidityPoolFactory.sol";
 import "../erc20/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -12,6 +13,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
 
     string public override name;
     address public override exchangeRouter;
+    address public override liquidityPoolFactory;
     address public override wrappedNativeToken;
 
     /// @notice                          Setter for exchange router
@@ -21,6 +23,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
     constructor(string memory _name, address _exchangeRouter, address _wrappedNativeToken) {
         name = _name;
         exchangeRouter = _exchangeRouter;
+        liquidityPoolFactory = IExchangeRouter(exchangeRouter).liquidityPoolFactory();
         wrappedNativeToken = _wrappedNativeToken;
     }
 
@@ -28,6 +31,12 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
     /// @param _exchangeRouter              Address of the exchange router contract
     function setExchangeRouter(address _exchangeRouter) external override onlyOwner {
         exchangeRouter = _exchangeRouter;
+        liquidityPoolFactory = IExchangeRouter(exchangeRouter).liquidityPoolFactory();
+    }
+
+    /// @notice            Setter for liquidity pool factory
+    function setLiquidityPoolFactory() external override onlyOwner {
+        liquidityPoolFactory = IExchangeRouter(exchangeRouter).liquidityPoolFactory();
     }
 
     /// @notice                              Setter for wrapped native token
@@ -70,10 +79,9 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
             IERC20(_path[0]).approve(exchangeRouter, neededInputAmount);
 
             if (_isFixedToken == false && _path[_path.length-1] != wrappedNativeToken) {
-                // TODO: use the original uniswap router
                 _amounts = IExchangeRouter(exchangeRouter).swapTokensForExactTokens(
-                    _inputAmount,
                     _outputAmount,
+                    _inputAmount,
                     _path,
                     _to,
                     _deadline
@@ -82,8 +90,8 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
 
             if (_isFixedToken == false && _path[_path.length-1] == wrappedNativeToken) {
                 _amounts = IExchangeRouter(exchangeRouter).swapTokensForExactAVAX(
-                    _inputAmount,
                     _outputAmount,
+                    _inputAmount,
                     _path,
                     _to,
                     _deadline
@@ -91,6 +99,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
             }
 
             if (_isFixedToken == true && _path[_path.length-1] != wrappedNativeToken) {
+                // TODO: use the original uniswap router
                 (_amounts,) = IExchangeRouter(exchangeRouter).swapExactTokensForTokens(
                     _inputAmount,
                     _outputAmount,
@@ -101,6 +110,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
             }
 
             if (_isFixedToken == true && _path[_path.length-1] == wrappedNativeToken) {
+                // TODO: use the original uniswap router
                 (_amounts,) = IExchangeRouter(exchangeRouter).swapExactTokensForAVAX(
                     _inputAmount,
                     _outputAmount,
@@ -126,6 +136,13 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
     ) internal returns (bool, uint) {
         // Checks deadline has not passed
         if (_deadline < block.number) {
+            return (false, 0);
+        }
+
+        // Checks that the liquidity pool exists
+        if (
+            ILiquidityPoolFactory(liquidityPoolFactory).getLiquidityPool(_path[0], _path[_path.length-1]) == address(0)
+        ) {
             return (false, 0);
         }
 
