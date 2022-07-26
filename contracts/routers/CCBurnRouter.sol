@@ -204,11 +204,11 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
                 burnRequests[_lockerTargetAddress][i].deadline >= block.number
             ) {
                 (parsedAmount,) = BitcoinTxParser.parseAmountForP2PK( 
-                    // TODO: userBitcoinAddress is ok or we need pubKeyHash back?
                     _vout, 
                     burnRequests[_lockerTargetAddress][i].userBitcoinAddress
                 );
-                if (burnRequests[_lockerTargetAddress][i].remainedAmount == parsedAmount) {
+                if (burnRequests[_lockerTargetAddress][i].remainedAmount == parsedAmount)
+                {
                     burnRequests[_lockerTargetAddress][i].isTransferred = true;
                     emit PaidCCBurn(
                         burnRequests[_lockerTargetAddress][i].sender, 
@@ -234,12 +234,18 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
                 !burnRequests[_lockerTargetAddress][_indices[i]].isTransferred,
                 "CCBurnRouter: request has been paid before"
             );
+            console.log("deadline");
+            console.log(burnRequests[_lockerTargetAddress][_indices[i]].deadline);
+            console.log("last height");
+            console.log(IBitcoinRelay(relay).lastSubmittedHeight());
             require(
                 burnRequests[_lockerTargetAddress][_indices[i]].deadline < IBitcoinRelay(relay).lastSubmittedHeight(),
                 "CCBurnRouter: payback deadline has not passed yet"
             );
             // TODO: specify the locker to be slashed
             // Slashes locker and sends the slashed amount to the user
+            console.log("amount to be slashed:", burnRequests[_lockerTargetAddress][_indices[i]].amount);
+            console.log("sender to get refunded:", burnRequests[_lockerTargetAddress][_indices[i]].sender);
             ILockers(lockers).slashLocker(
                 _lockerTargetAddress,
                 burnRequests[_lockerTargetAddress][_indices[i]].amount,
@@ -282,8 +288,9 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     // /// @param _data           Array of bytes
     // /// @param _start          First index of slice 
     // /// @param _end            Last index of slice
-    // /// @return                Sliced bytes
-    // function _bytesToAddress(bytes memory _data, uint _start, uint _end) internal returns (address resultAddress) {
+    // /// @return                The result address
+    // function _bytesToAddress(bytes memory _data, uint _start, uint _end) internal returns (address) {
+    //     address resultAddress;
     //     bytes1 temp;
     //     bytes memory resultBytes;
     //     for (uint i = _start; i < _end + 1; i++) {

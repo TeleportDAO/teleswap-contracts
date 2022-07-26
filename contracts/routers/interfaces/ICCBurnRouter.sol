@@ -23,7 +23,6 @@ interface ICCBurnRouter {
 		bool isSegwit;
 		uint deadline;
 		bool isTransferred;
-		address lockerTargetAddress;
   	}
 
   	// Events
