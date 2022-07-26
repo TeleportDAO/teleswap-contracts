@@ -37,8 +37,10 @@
   "dependencies": {
     "@liquality/bitcoin-rpc-provider": "^1.13.0",
     "@liquality/client": "^1.13.0",
+    "@openzeppelin/contracts": "^4.3.3",
     "base58check": "^2.0.0",
     "bech32-buffer": "^0.2.0",
+    "bitcoin-address-validation": "^2.2.1",
     "bitcoin_rest_api": "^1.0.1",
     "bitcoind-rpc": "^0.9.1",
     "bitcoinjs-lib": "^6.0.1",
@@ -50,8 +52,7 @@
     "merkletreejs": "^0.2.24",
     "ripemd160-js": "^1.2.0",
     "truffle-assertions": "^0.9.2",
-    "ts-node": "^10.3.0",
-    "@openzeppelin/contracts": "^4.3.3"
+    "ts-node": "^10.3.0"
   },
   "scripts": {
     "build": "hardhat compile && tsc",
