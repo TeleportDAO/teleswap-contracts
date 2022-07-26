@@ -114,20 +114,18 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @notice                             Burns wrapped tokens and records the burn request
     /// @dev                                After submitting the burn request, lockers have a limited time to send BTC
     /// @param _amount                      Amount of wrapped tokens that user wants to burn
-    /// @param _userBitcoinAddress          Address of user on Bitcoin
+    /// @param _userBitcoinDecodedAddress   Address of user on Bitcoin
     /// @param _isScriptHash   		        Whether the user's Bitcoin address is script hash or pubKey hash
     /// @param _isSegwit			   	    Whether the user's Bitcoin address is Segwit or nonSegwit
     /// @param _lockerTargetAddress		    Locker's address on the target chain
     /// @return                             True if request is recorded successfully
     function ccBurn(
-            uint _amount, 
-            address _userBitcoinAddress, 
+            uint _amount,
+            address _userBitcoinDecodedAddress, 
             bool _isScriptHash,
             bool _isSegwit,
             address _lockerTargetAddress
         ) external nonReentrant override returns (bool) {
-        // TODO: choose the locker for this request and add necessary changes to other functions accordingly (if any)
-        // TODO: check that the _userBitcoinAddress is a valid Bitcoin address
         ITeleBTC(teleBTC).transferFrom(msg.sender, address(this), _amount);
         uint remainedAmount = _getFee(_amount);
         // Burns remained wrapped tokens
@@ -136,7 +134,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         _saveBurnRequest(
             _amount, 
             remainedAmount, 
-            _userBitcoinAddress, 
+            _userBitcoinDecodedAddress, 
             _isScriptHash, 
             _isSegwit, 
             lastSubmittedHeight, 
@@ -145,7 +143,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint index = burnRequests[_lockerTargetAddress].length - 1;
         emit CCBurn(
             msg.sender,
-            _userBitcoinAddress, 
+            _userBitcoinDecodedAddress, 
             _isScriptHash,
             _isSegwit,
             _amount,
@@ -205,14 +203,14 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             ) {
                 (parsedAmount,) = BitcoinTxParser.parseAmountForP2PK( 
                     _vout, 
-                    burnRequests[_lockerTargetAddress][i].userBitcoinAddress
+                    burnRequests[_lockerTargetAddress][i].userBitcoinDecodedAddress
                 );
                 if (burnRequests[_lockerTargetAddress][i].remainedAmount == parsedAmount)
                 {
                     burnRequests[_lockerTargetAddress][i].isTransferred = true;
                     emit PaidCCBurn(
                         burnRequests[_lockerTargetAddress][i].sender, 
-                        burnRequests[_lockerTargetAddress][i].userBitcoinAddress, 
+                        burnRequests[_lockerTargetAddress][i].userBitcoinDecodedAddress, 
                         parsedAmount, 
                         _lockerTargetAddress, 
                         i
@@ -242,7 +240,6 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
                 burnRequests[_lockerTargetAddress][_indices[i]].deadline < IBitcoinRelay(relay).lastSubmittedHeight(),
                 "CCBurnRouter: payback deadline has not passed yet"
             );
-            // TODO: specify the locker to be slashed
             // Slashes locker and sends the slashed amount to the user
             console.log("amount to be slashed:", burnRequests[_lockerTargetAddress][_indices[i]].amount);
             console.log("sender to get refunded:", burnRequests[_lockerTargetAddress][_indices[i]].sender);
@@ -258,7 +255,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @notice                           Records burn request of user  
     /// @param _amount                    Amount of wrapped token that user wants to burn
     /// @param _remainedAmount            Amount of wrapped token that actually gets burnt after deducting fees from the original value (_amount)
-    /// @param _userBitcoinAddress        User's Bitcoin address
+    /// @param _userBitcoinDecodedAddress User's Bitcoin address
     /// @param _isScriptHash              Whether user's Bitcoin address is script hash or not
     /// @param _isSegwit                  Whether user's Bitcoin address is segwit or nonSegwit
     /// @param _lastSubmittedHeight       Last block header height submitted on the relay contract
@@ -266,7 +263,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     function _saveBurnRequest(
         uint _amount,
         uint _remainedAmount,
-        address _userBitcoinAddress,
+        address _userBitcoinDecodedAddress,
         bool _isScriptHash,
         bool _isSegwit,
         uint _lastSubmittedHeight,
@@ -276,32 +273,13 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         request.amount = _amount;
         request.remainedAmount = _remainedAmount;
         request.sender = msg.sender;
-        request.userBitcoinAddress = _userBitcoinAddress;
+        request.userBitcoinDecodedAddress = _userBitcoinDecodedAddress;
         request.isScriptHash = _isScriptHash;
         request.isSegwit = _isSegwit;
         request.deadline = _lastSubmittedHeight + transferDeadline;
         request.isTransferred = false;
         burnRequests[_lockerTargetAddress].push(request);
     }
-
-    // /// @notice                Slices byte array and stores it as address  
-    // /// @param _data           Array of bytes
-    // /// @param _start          First index of slice 
-    // /// @param _end            Last index of slice
-    // /// @return                The result address
-    // function _bytesToAddress(bytes memory _data, uint _start, uint _end) internal returns (address) {
-    //     address resultAddress;
-    //     bytes1 temp;
-    //     bytes memory resultBytes;
-    //     for (uint i = _start; i < _end + 1; i++) {
-    //         temp = _data[i];
-    //         resultBytes = abi.encodePacked(resultBytes, temp);
-    //     }
-    //     assembly {
-    //         resultAddress := mload(add(resultBytes, 20))
-    //     }
-    //     return resultAddress;
-    // }
 
     /// @notice                         Checks inclusion of the transaction in the specified block 
     /// @dev                            Calls the relay contract to check Merkle inclusion proof
