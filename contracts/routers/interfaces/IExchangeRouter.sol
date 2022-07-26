@@ -8,6 +8,7 @@ interface IExchangeRouter {
     // function wrappedBitcoin() external view returns (address);
     function WAVAX() external view returns (address);
     function quote(uint amountA, uint reserveA, uint reserveB) external pure returns (uint amountB);
+    function getReserves (address tokenA, address tokenB) external returns (uint reserveA, uint reserveB);
     function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) external returns (uint amountOut);
     function getAmountIn(uint amountOut, uint reserveIn, uint reserveOut) external returns (uint amountIn);
     function getAmountsOut(uint amountIn, address[] calldata path) external returns (uint[] memory amounts);
