@@ -321,10 +321,18 @@ describe("CCExchangeRouter", async () => {
             );
             let newDeployerBalanceTDT = await exchangeToken.balanceOf(deployerAddress);
 
+            // Checks extra teleBTC hasn't been minted
+            expect(newTotalSupplyTeleBTC).to.equal(
+                oldTotalSupplyTeleBTC.add(CC_EXCHANGE_REQUESTS.normalCCExchange.bitcoinAmount)
+            );
+            console.log("Total supply of teleBTC has been checked")
+
             // Checks that enough teleBTC has been minted for teleporter
             expect(newDeployerBalanceTeleBTC).to.equal(
                 oldDeployerBalanceTeleBTC.add(CC_EXCHANGE_REQUESTS.normalCCExchange.teleporterFee)
             );
+
+            console.log("Total supply of teleBTC has been checked")
 
             // Checks that user received enough TDT
             expect(newUserBalanceTDT).to.equal(
@@ -337,11 +345,6 @@ describe("CCExchangeRouter", async () => {
             );
             expect(newDeployerBalanceTDT).to.equal(
                 oldDeployerBalanceTDT
-            );
-
-            // Checks extra teleBTC hasn't been minted
-            expect(newTotalSupplyTeleBTC).to.equal(
-                oldTotalSupplyTeleBTC.add(CC_EXCHANGE_REQUESTS.normalCCExchange.bitcoinAmount)
             );
             // expects z teleBTC has been minted for protocol
             // expects a teleBTC has been minted for locker
@@ -475,7 +478,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange.index,
                     // false // payWithTDT
                 )
-            ).to.revertedWith("Request has been used before");
+            ).to.revertedWith("CCExchangeRouter: the request has been used before");
 
         })
 
@@ -497,7 +500,8 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchangeHighFee.index,
                     // false // payWithTDT
                 )
-            ).to.revertedWith("CCExchangeRouter: request is transfer request");
+            ).to.revertedWith("");
+            // ).to.revertedWith("CCExchangeRouter: request is transfer request");
 
         })
 

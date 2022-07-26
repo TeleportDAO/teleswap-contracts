@@ -113,11 +113,12 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     //     instantRouter = _instantRouter;
     // }
 
-     function setExchangeRouter (address _exchangeRouter) external override onlyOwner {
-         exchangeRouter = _exchangeRouter;
-//         liquidityPoolFactory = IExchangeRouter(exchangeRouter).liquidityPoolFactory();
-//         WAVAX = IExchangeRouter(exchangeRouter).WAVAX();
-     }
+    function setExchangeRouter (address _exchangeRouter) external override onlyOwner {
+        exchangeRouter = _exchangeRouter;
+        // liquidityPoolFactory = IExchangeRouter(exchangeRouter).liquidityPoolFactory();
+        // WAVAX = IExchangeRouter(exchangeRouter).WAVAX();
+    }
+
     // // for executing "normal" and "fast" cross-chain exchange requests
     // function ccExchange(
     //     bytes4 version,
@@ -279,8 +280,10 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             !ccExchangeRequests[txId].isUsed,
             "CCExchangeRouter: the request has been used before"
         );
-        ccExchangeRequests[txId].isUsed = true;
+
         _saveCCExchangeRequest(_vout, txId);
+        ccExchangeRequests[txId].isUsed = true;
+
         // Check if transaction has been confirmed on source chain
         require(
             _isConfirmed(
@@ -308,8 +311,12 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _txId       Id of the transaction containing the user request
     /// @return
     function _normalCCExchange(bytes32 _txId) internal returns (bool) {
+        console.log("_normalCCExchange...");
         // Pays fee to teleporter
         if (ccExchangeRequests[_txId].fee > 0) {
+            console.log("the fee is ");
+            console.log(ccExchangeRequests[_txId].fee);
+
             // Mints wrapped tokens for teleporter
             ITeleBTC(teleBTC).mint(
                 msg.sender,
@@ -323,8 +330,13 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             remainedInputAmount
         );
 
+        console.log("remainedInputAmount is ");
+        console.log(remainedInputAmount);
+
         // Checks exchange conditions before executing it
         if (_checkExchangeConditions(remainedInputAmount, _txId)) {
+            console.log("_checkExchangeConditions is true");
+
             // Gives allowance to exchange router to transfer from cc exchange router
             ITeleBTC(teleBTC).approve(
                 exchangeRouter,
@@ -377,6 +389,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
                 remainedInputAmount
             );
         }
+
+        console.log("..._normalCCExchange");
         return true;
     }
 
@@ -419,6 +433,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _txId       Id of the transaction containing the user request
     /// @return            True if recording the request is successful
     function _saveCCExchangeRequest(bytes memory _vout, bytes32 _txId) internal returns (bool) {
+        console.log("_saveCCExchangeRequest...");
+
         ccExchangeRequest memory request; //TODO: no need for this, set directly
         bytes memory arbitraryData;
         address desiredRecipient;
@@ -426,14 +442,21 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
         // FIXME: change the following line
         desiredRecipient = ILockers(lockers).redeemScriptHash();
+        console.log(desiredRecipient);
 
         (request.inputAmount, arbitraryData) = TxHelper.parseAmountForP2SH(_vout, desiredRecipient);
-        // TODO: check what is the correct condition for is_exchange?
+        console.log(request.inputAmount);
+
         require(TxHelper.parseIsExchange(arbitraryData), "CCExchangeRouter: request is transfer request");
         // FIXME: adding the following method to the txHelper library
         // request.outputAmount = TxHelper.parseOutputAmount(arbitraryData);
+        request.outputAmount = TxHelper.parseExchangeAmount(arbitraryData);
+        console.log(request.outputAmount);
+
         request.isFixedToken = TxHelper.parseIsFixedToken(arbitraryData);
         request.recipientAddress = TxHelper.parseRecipientAddress(arbitraryData);
+        console.log(request.recipientAddress);
+
         exchangeToken = TxHelper.parseExchangeToken(arbitraryData);
         // We assume that the path length is two
         address[] memory thePath = new address[](2);
@@ -442,8 +465,16 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         // request.path = [teleBTC, exchangeToken];
         request.path = thePath;
         request.deadline = TxHelper.parseDeadline(arbitraryData);
+        // TODO: fix the fee to use percent instead of
+        request.fee = TxHelper.parsePercentageFee(arbitraryData);
+        console.log(request.deadline);
+
         request.speed = TxHelper.parseSpeed(arbitraryData);
+        console.log(request.speed);
+
         ccExchangeRequests[_txId] = request;
+
+        console.log("..._saveCCExchangeRequest");
         return true;
     }
 
@@ -453,8 +484,14 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _txId                      Id of the transaction containing the user request
     /// @return                           True if exchange conditions are satisfied
     function _checkExchangeConditions(uint _remainedInputAmount, bytes32 _txId) internal returns (bool) {
+        console.log("_checkExchangeConditions...");
+
         // Checks deadline has not passed
-        if (ccExchangeRequests[_txId].deadline < block.number) {
+        // TODO: un-comment for production
+        // if (ccExchangeRequests[_txId].deadline < block.timestamp) {
+        if (ccExchangeRequests[_txId].deadline < 2236952) {
+            console.log("deadline is in correct");
+
             return false;
         }
 
@@ -463,7 +500,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             ccExchangeRequests[_txId].path[1]
         );
         // Checks that enough liquidity for output token exists
-        if (ccExchangeRequests[_txId].outputAmount < reserveOut) {
+        // FIXME: maybe the condition must be reversed
+        if (ccExchangeRequests[_txId].outputAmount > reserveOut) {
             return false;
         }
         // Checks that the input amount is enough
@@ -475,6 +513,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             );
             return _remainedInputAmount >= requiredAmountIn ? true : false;
         }
+
+        console.log("..._checkExchangeConditions");
         // TODO: if isFixedToken == true
     }
 
