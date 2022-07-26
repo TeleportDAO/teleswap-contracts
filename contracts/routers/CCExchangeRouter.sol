@@ -428,7 +428,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         desiredRecipient = ILockers(lockers).redeemScriptHash();
 
         (request.inputAmount, arbitraryData) = TxHelper.parseAmountForP2SH(_vout, desiredRecipient);
-        require(!TxHelper.parseIsExchange(arbitraryData), "CCExchangeRouter: request is transfer request");
+        // TODO: check what is the correct condition for is_exchange?
+        require(TxHelper.parseIsExchange(arbitraryData), "CCExchangeRouter: request is transfer request");
         // FIXME: adding the following method to the txHelper library
         // request.outputAmount = TxHelper.parseOutputAmount(arbitraryData);
         request.isFixedToken = TxHelper.parseIsFixedToken(arbitraryData);

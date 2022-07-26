@@ -20,8 +20,8 @@ import { CCExchangeRouter } from "../src/types/CCExchangeRouter";
 import { CCExchangeRouter__factory } from "../src/types/factories/CCExchangeRouter__factory";
 import { CCTransferRouter } from "../src/types/CCTransferRouter";
 import { CCTransferRouter__factory } from "../src/types/factories/CCTransferRouter__factory";
-import { WrappedToken } from "../src/types/WrappedToken";
-import { WrappedToken__factory } from "../src/types/factories/WrappedToken__factory";
+import { TeleBTC } from "../src/types/TeleBTC";
+import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { ERC20__factory } from "../src/types/factories/ERC20__factory";
 
@@ -48,7 +48,7 @@ describe("CCExchangeRouter", async () => {
     let liquidityPoolFactory: LiquidityPoolFactory;
     let ccExchangeRouter: CCExchangeRouter;
     let ccTransferRouter: CCTransferRouter;
-    let teleBTC: WrappedToken;
+    let teleBTC: TeleBTC;
     let exchangeToken: ERC20;
 
     // Mock contracts
@@ -114,12 +114,14 @@ describe("CCExchangeRouter", async () => {
         );
 
         // Deploys teleBTC contract
-        const teleBTCFactory = new WrappedToken__factory(deployer);
+        const teleBTCFactory = new TeleBTC__factory(deployer);
         console.log("cc transfer router address: ", ccTransferRouter.address)
         teleBTC = await teleBTCFactory.deploy(
             "teleBTC",
             "teleBTC",
-            ccTransferRouter.address
+            ccTransferRouter.address,
+            ONE_ADDRESS,
+            ONE_ADDRESS
         );
 
         // Sets teleBTC address in ccTransferRouter
@@ -164,6 +166,8 @@ describe("CCExchangeRouter", async () => {
 
         // Sets ccExchangeRouter address in ccTransferRouter
         await ccExchangeRouter.setExchangeRouter(exchangeRouter.address);
+
+        await teleBTC.setCCExchangeRouter(ccExchangeRouter.address);
 
     });
 
