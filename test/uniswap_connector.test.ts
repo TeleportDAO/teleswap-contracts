@@ -35,6 +35,15 @@ describe("UniswapConnector", async () => {
     let _erc20: ERC20;
     let WETH: WAVAX;
 
+    // Variables
+    let oldReserveA: BigNumber;
+    let oldReserveB: BigNumber;
+    let oldReserveC: BigNumber;
+    let oldReserveD: BigNumber;
+    let oldDeployerBalanceERC20: BigNumber;
+    let oldDeployerBalance_ERC20: BigNumber;
+    let oldSigner1BalanceETH: BigNumber;
+
     // let liquidityPool__factory: LiquidityPool__factory;
 
     before(async () => {
@@ -87,86 +96,145 @@ describe("UniswapConnector", async () => {
             100000
         );
 
+        // Adding liquidity to pools
+
+        // Adds liquidity to liquidity pool
+        let addedLiquidityA = 10000; // erc20
+        let addedLiquidityB = 10000; // _erc20
+        let addedLiquidityC = 10000; // erc20
+        let addedLiquidityD = 10000; // WETH
+
+        // Adds liquidity for non-WETH/non-WETH pool
+        await erc20.approve(exchangeRouter.address, addedLiquidityA);
+        await _erc20.approve(exchangeRouter.address, addedLiquidityB);
+        await exchangeRouter.addLiquidity(
+            erc20.address,
+            _erc20.address,
+            addedLiquidityA,
+            addedLiquidityB,
+            0, // Minimum added liquidity for first token
+            0, // Minimum added liquidity for second token
+            deployerAddress,
+            1000000000, // Long deadline
+        );
+        let liquidityPoolABAddress = await liquidityPoolFactory.getLiquidityPool(
+            erc20.address,
+            _erc20.address
+        );
+
+        // Loads liquidity pool
+        liquidityPoolAB = await liquidityPool__factory.attach(liquidityPoolABAddress);
+
+        // Records current reserves of teleBTC and TDT
+        if (await liquidityPoolAB.token0() == erc20.address) {
+            [oldReserveA, oldReserveB] = await liquidityPoolAB.getReserves();
+        } else {
+            [oldReserveB, oldReserveA] = await liquidityPoolAB.getReserves()
+        }
+
+        // Adds liquidity for non-WETH/WETH pool
+        await erc20.approve(exchangeRouter.address, addedLiquidityA);
+        
+        await exchangeRouter.addLiquidityAVAX(
+            erc20.address,
+            addedLiquidityC,
+            0, // Minimum added liquidity for first token
+            0, // Minimum added liquidity for second token
+            deployerAddress,
+            1000000000, // Long deadline
+            {value: addedLiquidityD}
+        );
+        let liquidityPoolCDAddress = await liquidityPoolFactory.getLiquidityPool(
+            erc20.address,
+            WETH.address,
+        );
+
+        // Loads liquidity pool
+        liquidityPoolCD = await liquidityPool__factory.attach(liquidityPoolCDAddress);
+
+        // Records current reserves of teleBTC and TDT
+        if (await liquidityPoolCD.token0() == erc20.address) {
+            [oldReserveC, oldReserveD] = await liquidityPoolCD.getReserves();
+        } else {
+            [oldReserveD, oldReserveC] = await liquidityPoolCD.getReserves()
+        }
+
+        // Records current tokens balances of deployer
+        oldDeployerBalanceERC20 = await erc20.balanceOf(deployerAddress);
+        oldDeployerBalance_ERC20 = await _erc20.balanceOf(deployerAddress);
+        oldSigner1BalanceETH = await signer1.getBalance();
+
+    });
+
+    describe("#getInputAmount", async () => {
+
+        it("Finds needed input amount", async function () {
+            let outputAmount = 1000;
+            let inputAmount = await exchangeRouter.getAmountIn(
+                outputAmount,
+                oldReserveC,
+                oldReserveD
+            );
+            
+            await expect(
+                uniswapConnector.getInputAmount(
+                    outputAmount,
+                    erc20.address,
+                    _erc20.address
+                )
+            ).to.not.reverted;
+        })
+
+        it("Returns false since liquidity pool does not exist", async function () {
+            let outputAmount = 1000;
+
+            await expect(
+                uniswapConnector.getInputAmount(
+                    outputAmount,
+                    deployerAddress,
+                    _erc20.address
+                )
+            ).to.not.reverted;
+        })
+    });
+
+    describe("#getOutputAmount", async () => {
+
+        it("Finds output amount", async function () {
+            let inputAmount = 1000;
+            let outputAmount = await exchangeRouter.getAmountOut(
+                inputAmount,
+                oldReserveC,
+                oldReserveD
+            );
+            
+            await expect(
+                uniswapConnector.getOutputAmount(
+                    inputAmount,
+                    erc20.address,
+                    _erc20.address
+                )
+            ).to.not.reverted;
+        })
+
+        it("Returns false since liquidity pool does not exist", async function () {
+            let inputAmount = 1000;
+
+            await expect(
+                uniswapConnector.getInputAmount(
+                    inputAmount,
+                    deployerAddress,
+                    _erc20.address
+                )
+            ).to.not.reverted;
+        })
     });
 
     describe("#swap", async () => {
-        let oldReserveA: BigNumber;
-        let oldReserveB: BigNumber;
-        let oldReserveC: BigNumber;
-        let oldReserveD: BigNumber;
-        let oldDeployerBalanceERC20: BigNumber;
-        let oldDeployerBalance_ERC20: BigNumber;
-        let oldSigner1BalanceETH: BigNumber;
 
         beforeEach("Adds liquidity to liquidity pool", async () => {
             // Takes snapshot before adding liquidity
             snapshotId = await takeSnapshot(deployer.provider);
-
-            // Adds liquidity to liquidity pool
-            let addedLiquidityA = 10000; // erc20
-            let addedLiquidityB = 10000; // _erc20
-            let addedLiquidityC = 10000; // erc20
-            let addedLiquidityD = 10000; // WETH
-
-            // Adds liquidity for non-WETH/non-WETH pool
-            await erc20.approve(exchangeRouter.address, addedLiquidityA);
-            await _erc20.approve(exchangeRouter.address, addedLiquidityB);
-            await exchangeRouter.addLiquidity(
-                erc20.address,
-                _erc20.address,
-                addedLiquidityA,
-                addedLiquidityB,
-                0, // Minimum added liquidity for first token
-                0, // Minimum added liquidity for second token
-                deployerAddress,
-                1000000000, // Long deadline
-            );
-            let liquidityPoolABAddress = await liquidityPoolFactory.getLiquidityPool(
-                erc20.address,
-                _erc20.address
-            );
-
-            // Loads liquidity pool
-            liquidityPoolAB = await liquidityPool__factory.attach(liquidityPoolABAddress);
-
-            // Records current reserves of teleBTC and TDT
-            if (await liquidityPoolAB.token0() == erc20.address) {
-                [oldReserveA, oldReserveB] = await liquidityPoolAB.getReserves();
-            } else {
-                [oldReserveB, oldReserveA] = await liquidityPoolAB.getReserves()
-            }
-
-            // Adds liquidity for non-WETH/WETH pool
-            await erc20.approve(exchangeRouter.address, addedLiquidityA);
-            
-            await exchangeRouter.addLiquidityAVAX(
-                erc20.address,
-                addedLiquidityC,
-                0, // Minimum added liquidity for first token
-                0, // Minimum added liquidity for second token
-                deployerAddress,
-                1000000000, // Long deadline
-                {value: addedLiquidityD}
-            );
-            let liquidityPoolCDAddress = await liquidityPoolFactory.getLiquidityPool(
-                erc20.address,
-                WETH.address,
-            );
-
-            // Loads liquidity pool
-            liquidityPoolCD = await liquidityPool__factory.attach(liquidityPoolCDAddress);
-
-            // Records current reserves of teleBTC and TDT
-            if (await liquidityPoolCD.token0() == erc20.address) {
-                [oldReserveC, oldReserveD] = await liquidityPoolCD.getReserves();
-            } else {
-                [oldReserveD, oldReserveC] = await liquidityPoolCD.getReserves()
-            }
-
-            // Records current tokens balances of deployer
-            oldDeployerBalanceERC20 = await erc20.balanceOf(deployerAddress);
-            oldDeployerBalance_ERC20 = await _erc20.balanceOf(deployerAddress);
-            oldSigner1BalanceETH = await signer1.getBalance();
         });
 
         afterEach(async () => {

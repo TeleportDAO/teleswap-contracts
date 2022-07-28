@@ -47,6 +47,50 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
         wrappedNativeToken = _wrappedNativeToken;
     }
 
+    function getInputAmount(
+        uint _outputAmount, 
+        address _inputToken, 
+        address _outputToken
+    ) external override returns (bool, uint) {
+
+        // Checks that the liquidity pool exists
+        if (
+            ILiquidityPoolFactory(liquidityPoolFactory).getLiquidityPool(_inputToken, _outputToken) == address(0)
+        ) {
+            return (false, 0);
+        }
+
+        // Gets reserves of input token and output token
+        (uint reserveIn, uint reserveOut) = IExchangeRouter(exchangeRouter).getReserves(
+            _inputToken,
+            _outputToken
+        );
+        
+        return (true, IExchangeRouter(exchangeRouter).getAmountIn(_outputAmount, reserveIn, reserveOut));
+    }
+
+    function getOutputAmount(
+        uint _inputAmount, 
+        address _inputToken, 
+        address _outputToken
+    ) external override returns (bool, uint) {
+
+        // Checks that the liquidity pool exists
+        if (
+            ILiquidityPoolFactory(liquidityPoolFactory).getLiquidityPool(_inputToken, _outputToken) == address(0)
+        ) {
+            return (false, 0);
+        }
+
+        // Gets reserves of input token and output token
+        (uint reserveIn, uint reserveOut) = IExchangeRouter(exchangeRouter).getReserves(
+            _inputToken,
+            _outputToken
+        );
+        
+        return (true, IExchangeRouter(exchangeRouter).getAmountOut(_inputAmount, reserveIn, reserveOut));
+    }
+
     /// @notice                     Exchanges input token for output token through exchange router
     /// @dev                        Checks exchange conditions before exchanging
     /// @param _inputAmount         Amount of input token
