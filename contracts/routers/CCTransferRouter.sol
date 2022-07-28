@@ -280,11 +280,19 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         desiredRecipient = ILockers(lockers).redeemScriptHash();
         // Parse request tx data
         (request.inputAmount, arbitraryData) = NewTxHelper.parseAmountForP2PK(_vout, desiredRecipient);
+        console.log("request.inputAmount");
+        console.log(request.inputAmount);
         console.log("arbitrary data parsed correctly");
 
         // Make sure request is for transfer (and not exchange)
         require(NewTxHelper.parseExchangeToken(arbitraryData) == address(0), "CCTransferRouter: request is exchange request");
         // Parse request tx data
+
+        address asfdsfdsf = NewTxHelper.parseRecipientAddress(arbitraryData);
+        console.log("parsed RecipientAddress");
+        console.log(asfdsfdsf);
+
+        console.log("before parsePercentageFee");
         percentageFee = NewTxHelper.parsePercentageFee(arbitraryData);
 
         console.log("percentageFee...");
@@ -292,6 +300,9 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
 
         require(percentageFee >= 0 && percentageFee < 10000, "CCTransferRouter: percentage fee is not correct");
         request.fee = percentageFee.mul(request.inputAmount).div(10000);
+        console.log("request.fee");
+        console.log(request.fee);
+
         request.recipientAddress = NewTxHelper.parseRecipientAddress(arbitraryData);
         request.speed = NewTxHelper.parseSpeed(arbitraryData);
         // request.deadline = NewTxHelper.parseDeadline(arbitraryData);
