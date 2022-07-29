@@ -246,7 +246,7 @@ library ViewBTC {
     // @return         the Op Return Payload (or null if not a valid Op Return output)
     function opReturnPayload(bytes29 _spk) internal pure typeAssert(_spk, BTCTypes.ScriptPubkey) returns (bytes29) {
         uint64 _bodyLength = indexCompactInt(_spk, 0);
-        uint64 _payloadLen = uint64(_spk.indexUint(2, 1));
+        uint64 _payloadLen = uint64(_spk.indexUint(3, 1));
 
         // TODO: the max length of op return (with the prefixes) is 83, please check it for other consequences
         // Also the _spk.indexUint(3, 1) != _bodyLength - 3 has changed from _spk.indexUint(2, 1) != _bodyLength - 2

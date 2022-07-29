@@ -158,11 +158,12 @@ library NewTxHelper {
     }
 
     function parseIsFixedToken(bytes memory arbitraryData) internal returns (uint8 parsedValue){
+        console.log("in the parseIsFixedToken");
         bytes memory slicedBytes = sliceBytes(arbitraryData, 78, 78);
         assembly {
             parsedValue := mload(add(slicedBytes, 1))
         }
-        // console.log("parseDeadline", parsedValue);
+        console.log("parseIsFixedToken: ", parsedValue);
     }
 
     // TODO: use parseExchangeToken to check if the request is a exchange or a transfer

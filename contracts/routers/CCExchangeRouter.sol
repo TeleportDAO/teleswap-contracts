@@ -10,7 +10,8 @@ import "./interfaces/IInstantRouter.sol";
 import "../relay/interfaces/IBitcoinRelay.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../lockers/interfaces/ILockers.sol";
-import "../libraries/TxHelper.sol";
+// import "../libraries/TxHelper.sol";
+import "../libraries/NewTxHelper.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 // import "../teleporter/interfaces/IBitcoinTeleporter.sol";
@@ -275,14 +276,14 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         bytes calldata _intermediateNodes,
         uint _index
     ) external nonReentrant override returns (bool) {
-        bytes32 txId = TxHelper.calculateTxId(_version, _vin, _vout, _locktime);
+        bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
         require(
             !ccExchangeRequests[txId].isUsed,
             "CCExchangeRouter: the request has been used before"
         );
 
         _saveCCExchangeRequest(_vout, txId);
-        ccExchangeRequests[txId].isUsed = true;
+        // ccExchangeRequests[txId].isUsed = true;
 
         // Check if transaction has been confirmed on source chain
         require(
@@ -444,33 +445,46 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         desiredRecipient = ILockers(lockers).redeemScriptHash();
         console.log(desiredRecipient);
 
-        (request.inputAmount, arbitraryData) = TxHelper.parseAmountForP2SH(_vout, desiredRecipient);
+        (request.inputAmount, arbitraryData) = NewTxHelper.parseAmountForP2PK(_vout, desiredRecipient);
         console.log(request.inputAmount);
 
-        require(TxHelper.parseIsExchange(arbitraryData), "CCExchangeRouter: request is transfer request");
+        require(NewTxHelper.parseExchangeToken(arbitraryData) != address(0), "CCExchangeRouter: request is transfer request");
         // FIXME: adding the following method to the txHelper library
         // request.outputAmount = TxHelper.parseOutputAmount(arbitraryData);
-        request.outputAmount = TxHelper.parseExchangeAmount(arbitraryData);
+        request.outputAmount = NewTxHelper.parseExchangeOutputAmount(arbitraryData);
         console.log(request.outputAmount);
+        console.log("just before parseIsFixedToken");
 
-        request.isFixedToken = TxHelper.parseIsFixedToken(arbitraryData);
-        request.recipientAddress = TxHelper.parseRecipientAddress(arbitraryData);
+        if (NewTxHelper.parseIsFixedToken(arbitraryData) == 0) {
+            request.isFixedToken = false ;
+        } else {
+            request.isFixedToken = true ;
+        }
+
+        console.log("just before parseRecipientAddress");
+
+
+        request.recipientAddress = NewTxHelper.parseRecipientAddress(arbitraryData);
         console.log(request.recipientAddress);
 
-        exchangeToken = TxHelper.parseExchangeToken(arbitraryData);
+        exchangeToken = NewTxHelper.parseExchangeToken(arbitraryData);
         // We assume that the path length is two
         address[] memory thePath = new address[](2);
         thePath[0] = teleBTC;
         thePath[1] = exchangeToken;
         // request.path = [teleBTC, exchangeToken];
         request.path = thePath;
-        request.deadline = TxHelper.parseDeadline(arbitraryData);
-        // TODO: fix the fee to use percent instead of
-        request.fee = TxHelper.parsePercentageFee(arbitraryData);
+        request.deadline = NewTxHelper.parseDeadline(arbitraryData);
         console.log(request.deadline);
 
-        request.speed = TxHelper.parseSpeed(arbitraryData);
+        // TODO: fix the fee to use percent instead of
+        request.fee = NewTxHelper.parsePercentageFee(arbitraryData);
+
+
+        request.speed = NewTxHelper.parseSpeed(arbitraryData);
         console.log(request.speed);
+
+        request.isUsed = true;
 
         ccExchangeRequests[_txId] = request;
 
