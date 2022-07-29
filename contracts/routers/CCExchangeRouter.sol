@@ -440,6 +440,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         bytes memory arbitraryData;
         address desiredRecipient;
         address exchangeToken;
+        uint percentageFee;
 
         // FIXME: change the following line
         desiredRecipient = ILockers(lockers).redeemScriptHash();
@@ -478,7 +479,10 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         console.log(request.deadline);
 
         // TODO: fix the fee to use percent instead of
-        request.fee = NewTxHelper.parsePercentageFee(arbitraryData);
+        percentageFee = NewTxHelper.parsePercentageFee(arbitraryData);
+
+        require(percentageFee >= 0 && percentageFee < 10000, "CCTransferRouter: percentage fee is not correct");
+        request.fee = percentageFee.mul(request.inputAmount).div(10000);
 
 
         request.speed = NewTxHelper.parseSpeed(arbitraryData);
