@@ -468,6 +468,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
         // Transfers slashed tokens to recipient
         // IERC20(TeleportDAOToken).transfer(_recipient, neededTDT[0]);
 
+        // TODO: use native token instead of teleport dao token
         lockersMapping[_lockerTargetAddress].TDTLockedAmount = lockersMapping[_lockerTargetAddress].TDTLockedAmount - neededTDT[0];
 
         IERC20(TeleportDAOToken).approve(exchangeRouter, neededTDT[0]);
