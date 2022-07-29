@@ -93,14 +93,16 @@ describe("CCTransferRouter", async () => {
     });
 
     async function setRelayReturn(request: any, isTrue: boolean): Promise<void> {
-        await mockBitcoinRelay.mock.checkTxProof.withArgs(
-            request.txId,
-            request.blockNumber,
-            request.intermediateNodes,
-            request.index,
-            // false, // payWithTDT
-            // NORMAL_CONFIRMATION_PARAMETER
-        ).returns(isTrue);
+        // await mockBitcoinRelay.mock.checkTxProof.withArgs(
+        //     request.txId,
+        //     request.blockNumber,
+        //     request.intermediateNodes,
+        //     request.index,
+        //     // false, // payWithTDT
+        //     // NORMAL_CONFIRMATION_PARAMETER
+        // ).returns(isTrue);
+
+        await mockBitcoinRelay.mock.checkTxProof.returns(isTrue);
     }
 
     async function setLockersReturn(request: any): Promise<void> {

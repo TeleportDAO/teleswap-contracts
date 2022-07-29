@@ -246,11 +246,15 @@ library ViewBTC {
     // @return         the Op Return Payload (or null if not a valid Op Return output)
     function opReturnPayload(bytes29 _spk) internal pure typeAssert(_spk, BTCTypes.ScriptPubkey) returns (bytes29) {
         uint64 _bodyLength = indexCompactInt(_spk, 0);
-        uint64 _payloadLen = uint64(_spk.indexUint(2, 1));
-        if (_bodyLength > 77 || _bodyLength < 4 || _spk.indexUint(1, 1) != 0x6a || _spk.indexUint(2, 1) != _bodyLength - 2) {
+        uint64 _payloadLen = uint64(_spk.indexUint(3, 1));
+
+        // TODO: the max length of op return (with the prefixes) is 83, please check it for other consequences
+        // Also the _spk.indexUint(3, 1) != _bodyLength - 3 has changed from _spk.indexUint(2, 1) != _bodyLength - 2
+        if (_bodyLength > 83 || _bodyLength < 4 || _spk.indexUint(1, 1) != 0x6a || _spk.indexUint(3, 1) != _bodyLength - 3) {
             return TypedMemView.nullView();
         }
-        return _spk.slice(3, _payloadLen, uint40(BTCTypes.OpReturnPayload));
+        // TODO: check, the previous starting index of slice was 3
+        return _spk.slice(4, _payloadLen, uint40(BTCTypes.OpReturnPayload));
     }
 
     // @notice         extracts the payload from a scriptPubkey
@@ -337,6 +341,7 @@ library ViewBTC {
             return TypedMemView.nullView();
         }
         uint64 _nOuts = indexCompactInt(_vout, 0);
+
         uint256 _viewLen = _vout.len();
         if (_nOuts == 0) {
             return TypedMemView.nullView();
@@ -471,7 +476,7 @@ library ViewBTC {
     // @return          The double-sha256 of the concatenated hashes
     function _merkleStep(bytes32 _a, bytes32 _b) internal view returns (bytes32 digest) {
         assembly {
-            // solium-disable-previous-line security/no-inline-assembly
+        // solium-disable-previous-line security/no-inline-assembly
             let ptr := mload(0x40)
             mstore(ptr, _a)
             mstore(add(ptr, 0x20), _b)

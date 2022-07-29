@@ -2,7 +2,8 @@ pragma solidity 0.8.0;
 
 import "../libraries/SafeMath.sol";
 // import "../libraries/BitcoinTxParser.sol";
-import "../libraries/TxHelper.sol";
+// import "../libraries/TxHelper.sol";
+import "../libraries/NewTxHelper.sol";
 import "./interfaces/ICCTransferRouter.sol";
 // import "./interfaces/ICCExchangeRouter.sol";
 import "../erc20/interfaces/IWrappedToken.sol";
@@ -149,7 +150,10 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         bytes calldata _intermediateNodes,
         uint _index
     ) external nonReentrant override returns (bool) {
-        bytes32 txId = TxHelper.calculateTxId(_version, _vin, _vout, _locktime);
+        console.log("ccTransfer...");
+        bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
+        console.log("tx id calculated successfully");
+        console.logBytes32(txId);
         require(
             !ccTransferRequests[txId].isUsed,
             "CCTransferRouter: CC transfer request has been used before"
@@ -180,11 +184,13 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
             // FIXME: set the correct fee in the event
                 0
             );
+            console.log("...ccTransfer");
             return true;
         }
         // Pay back instant loan
         if (ccTransferRequests[txId].speed == 1) {
             require(_payBackInstantLoan(txId), "CCTransferRouter: pay back was not successful");
+            console.log("...ccTransfer");
             return true;
         }
     }
@@ -260,6 +266,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         bytes memory _vout,
         bytes32 _txId
     ) internal {
+        console.log("_saveCCTransferRequest...");
         // TODO: add parse chainId to check whether this is the correct target chain
         // indicated in the tx.
         bytes memory arbitraryData;
@@ -272,23 +279,38 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         // FIXME: how to get the redeemScriptHash from new lockers contract
         desiredRecipient = ILockers(lockers).redeemScriptHash();
         // Parse request tx data
-        (request.inputAmount, arbitraryData) = TxHelper.parseAmountForP2PK(_vout, desiredRecipient);
+        (request.inputAmount, arbitraryData) = NewTxHelper.parseAmountForP2PK(_vout, desiredRecipient);
+        console.log("request.inputAmount");
+        console.log(request.inputAmount);
+        console.log("arbitrary data parsed correctly");
+
         // Make sure request is for transfer (and not exchange)
-        require(!TxHelper.parseIsExchange(arbitraryData), "CCTransferRouter: request is exchange request");
+        require(NewTxHelper.parseExchangeToken(arbitraryData) == address(0), "CCTransferRouter: request is exchange request");
         // Parse request tx data
-        percentageFee = TxHelper.parsePercentageFee(arbitraryData);
+
+        address asfdsfdsf = NewTxHelper.parseRecipientAddress(arbitraryData);
+        console.log("parsed RecipientAddress");
+        console.log(asfdsfdsf);
+
+        console.log("before parsePercentageFee");
+        percentageFee = NewTxHelper.parsePercentageFee(arbitraryData);
 
         console.log("percentageFee...");
         console.log(percentageFee);
 
-        require(percentageFee >= 0 && percentageFee < 100, "CCTransferRouter: percentage fee is not correct");
-        request.fee = percentageFee.mul(request.inputAmount).div(100);
-        request.recipientAddress = TxHelper.parseRecipientAddress(arbitraryData);
-        request.speed = TxHelper.parseSpeed(arbitraryData);
-        request.deadline = TxHelper.parseDeadline(arbitraryData);
+        require(percentageFee >= 0 && percentageFee < 10000, "CCTransferRouter: percentage fee is not correct");
+        request.fee = percentageFee.mul(request.inputAmount).div(10000);
+        console.log("request.fee");
+        console.log(request.fee);
+
+        request.recipientAddress = NewTxHelper.parseRecipientAddress(arbitraryData);
+        request.speed = NewTxHelper.parseSpeed(arbitraryData);
+        // request.deadline = NewTxHelper.parseDeadline(arbitraryData);
         request.isUsed = true;
         // Save the request data
         ccTransferRequests[_txId] = request;
+
+        console.log("..._saveCCTransferRequest");
     }
 
     /// @notice                             Checks if the request tx is included and confirmed on source chain
