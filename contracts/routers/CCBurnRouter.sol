@@ -181,8 +181,13 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint _endIndex
     ) external nonReentrant override returns (bool) {
         // Checks the correction of input indices
-        require(_startIndex >= 0 && _endIndex < burnRequests[_lockerTargetAddress].length
+        require(_startIndex >= 0 && 
+        _endIndex < burnRequests[_lockerTargetAddress].length && 
+        _startIndex<= _endIndex
         , 'CCBurnRouter: burnProof wrong index input');
+        // Checks if the locker address is valid
+        require(ILockers(lockers).isLocker(_lockerTargetAddress),
+        "CCBurnRouter: locker address is not valid");
         // Checks inclusion of transaction
         bytes32 txId = _calculateTxId(_version, _vin, _vout, _locktime);
         require(
