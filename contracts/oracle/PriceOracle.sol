@@ -107,7 +107,7 @@ contract PriceOracle is IPriceOracle, Ownable {
     function addExchangeRouter(address _exchangeRouter, address _exchangeConnector) external override onlyOwner {
         exchangeRoutersList.push(_exchangeRouter);
         exchangeConnector[_exchangeRouter] = _exchangeConnector;
-        emit NewExchangeRouterAdded(_exchangeRouter);
+        emit ExchangeRouterAdded(_exchangeRouter);
         emit SetExchangeConnector(_exchangeRouter, _exchangeConnector);
     }
 

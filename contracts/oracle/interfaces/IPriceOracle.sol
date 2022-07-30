@@ -5,7 +5,7 @@ interface IPriceOracle {
 
     /// @notice                     Emits when new exchange router is added
     /// @param exchangeRouter       The address of the new exchange router
-    event NewExchangeRouterAdded(address exchangeRouter);
+    event ExchangeRouterAdded(address exchangeRouter);
 
     /// @notice                     Emits when an exchange router is removed
     /// @param exchangeRouter       The address of the new exchange router

@@ -115,8 +115,22 @@ describe("PriceOracle", async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
-        it("", async function () {
- 
+        it("Adds an exchange router", async function () {
+            expect(
+                await priceOracle.addExchangeRouter(deployerAddress, mockExchangeConnector.address)
+            ).to.emit(priceOracle, "ExchangeRouterAdded").and.emit(priceOracle, "SetExchangeConnector");
+
+            expect(
+                await priceOracle.exchangeRoutersList(0)
+            ).to.equal(deployerAddress);
+
+            expect(
+                await priceOracle.getExchangeRoutersListLength()
+            ).to.equal(1);  
+            
+            expect(
+                await priceOracle.exchangeConnector(deployerAddress)
+            ).to.equal(mockExchangeConnector.address);
         })
 
     });
@@ -131,8 +145,19 @@ describe("PriceOracle", async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
-        it("", async function () {
- 
+        it("Removes an exchange router", async function () {
+            await priceOracle.addExchangeRouter(deployerAddress, mockExchangeConnector.address)
+            expect(
+                await priceOracle.removeExchangeRouter(0)
+            ).to.emit(priceOracle, "ExchangeRouterRemoved");
+
+            expect(
+                await priceOracle.getExchangeRoutersListLength()
+            ).to.equal(0);  
+            
+            expect(
+                await priceOracle.exchangeConnector(deployerAddress)
+            ).to.equal(ZERO_ADDRESS);
         })
 
     });
@@ -280,6 +305,20 @@ describe("PriceOracle", async () => {
                     _erc20.address
                 )
             ).to.not.reverted;
+        })
+
+        it("Reverts since pair does not exist in exchange", async function () {
+            let inputAmount = 1000;
+            await priceOracle.setExchangeConnector(deployerAddress, mockExchangeConnector.address);
+            await mockFunctionsExchangeConnector(false, 0);
+            await expect(
+                priceOracle.equivalentOutputAmountFromExchange(
+                    deployerAddress,
+                    inputAmount,
+                    deployerAddress,
+                    _erc20.address
+                )
+            ).to.revertedWith("PriceOracle: Pair does not exist on exchange");
         })
 
     });
