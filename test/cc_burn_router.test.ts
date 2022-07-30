@@ -673,6 +673,9 @@ describe("CC Burn Router", async () => {
             // Locker pays the burnt amount and provides proof
             await provideProof(theBlockNumber.add(5));
 
+            // Set mock contracts outputs
+            await setLockersIsLockerReturn(true);
+
             // Locker will not get slashed because it has paid the burnt amount to the user
             let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
             await expect(
@@ -698,6 +701,9 @@ describe("CC Burn Router", async () => {
 
             let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
 
+            // Set mock contracts outputs
+            await setLockersIsLockerReturn(true);
+
             // Locker will not get slashed because the deadline of transfer has not reached
             await expect(
                 ccBurnRouterSigner2.disputeBurn(
@@ -708,7 +714,33 @@ describe("CC Burn Router", async () => {
         })
 
         it("Reverts if the locker is not valid", async function () {
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
 
+            // Find the locker target address
+            await setLockersReturn();
+            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+
+            // Mint TeleBTC for test
+            await mintTeleBTCForTest();
+
+            // Send a burn request
+            await sendBurnRequest(theBlockNumber, userRequestAmount);
+
+            // Locker pays the burnt amount and provides proof
+            await provideProof(theBlockNumber.add(5));
+
+            // Set mock contracts outputs
+            await setLockersIsLockerReturn(false);
+
+            // Reverts cuz locker address was not valid
+            let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
+            await expect(
+                ccBurnRouterSigner2.disputeBurn(
+                    lockerTargetAddress,
+                    [0]
+                )
+            ).to.revertedWith("CCBurnRouter: locker address is not valid")
         })
 
         it("Otherwise goes through", async function () {
@@ -729,6 +761,9 @@ describe("CC Burn Router", async () => {
             await setLockersSlashLockerReturn();
 
             let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
+            
+            // Set mock contracts outputs
+            await setLockersIsLockerReturn(true);
 
             // Locker will not get slashed because the deadline of transfer has not reached
             expect(
