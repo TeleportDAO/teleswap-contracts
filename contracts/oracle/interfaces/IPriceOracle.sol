@@ -17,9 +17,16 @@ interface IPriceOracle {
     /// @param _priceProxyAddress   The address of the price proxy
     event SetPriceProxy(address _firstToken, address _secondToken, address _priceProxyAddress);
 
+    /// @notice                     Emits when a price proxy is updated
+    /// @param _exchangeRouter          Address of the first token
+    /// @param _exchangeConnector         Address of the second token
+    event SetExchangeConnector(address _exchangeRouter, address _exchangeConnector);
+
     // Read-only functions
     
     function ChainlinkPriceProxy(address _firstToken, address _secondToken) external view returns (address);
+
+    function exchangeConnector(address _exchangeRouter) external view returns (address);
 
     function exchangeRoutersList(uint _index) external view returns (address);
 
@@ -50,9 +57,11 @@ interface IPriceOracle {
     
     // State-changing functions
     
-    function addExchangeRouter(address _exchangeAddress) external;
+    function addExchangeRouter(address _exchangeRouter, address _exchangeConnector) external;
 
     function removeExchangeRouter(uint _exchangeIndex) external;
 
     function setPriceProxy(address _firstToken, address _secondToken, address _priceProxyAddress) external;
+
+    function setExchangeConnector(address _exchangeRouter, address _exchangeConnector) external;
 }

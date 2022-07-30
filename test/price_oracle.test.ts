@@ -10,6 +10,7 @@ import { ERC20__factory } from "../src/types/factories/ERC20__factory";
 
 
 import { takeSnapshot, revertProvider } from "./block_utils";
+import { pipeline } from "stream";
 
 describe("PriceOracle", async () => {
 
@@ -29,6 +30,7 @@ describe("PriceOracle", async () => {
 
     // Mock contracts
     let mockPriceProxy: MockContract;
+    let mockExchangeConnector: MockContract;
 
     let snapshotId: any;
 
@@ -64,9 +66,18 @@ describe("PriceOracle", async () => {
             AggregatorV3InterfaceContract.abi
         );
 
+        // Mocks exchange connector contract
+        const ExchangeConnectorContract = await deployments.getArtifact(
+            "IExchangeConnector"
+        );
+        mockExchangeConnector = await deployMockContract(
+            deployer,
+            ExchangeConnectorContract.abi
+        );
+
     });
 
-    async function mockFunctions(        
+    async function mockFunctionsPriceProxy(        
         roundID: number,
         price: number,
         startedAt: number,
@@ -82,6 +93,16 @@ describe("PriceOracle", async () => {
             answeredInRound
         );
         await mockPriceProxy.mock.decimals.returns(decimals);
+    }
+
+    async function mockFunctionsExchangeConnector(        
+        result: boolean,
+        outputAmount: number,
+    ): Promise<void> {
+        await mockExchangeConnector.mock.getOutputAmount.returns(
+            result,
+            outputAmount
+        );
     }
 
     describe("#addExchangeRouter", async () => {
@@ -163,7 +184,7 @@ describe("PriceOracle", async () => {
             erc20Decimals = 8;
             _erc20Decimals = 18;
             await priceOracle.setPriceProxy(erc20.address, _erc20.address, mockPriceProxy.address);
-            await mockFunctions(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
 
             expect(
                 await priceOracle.equivalentOutputAmountFromOracle(
@@ -187,7 +208,7 @@ describe("PriceOracle", async () => {
             erc20Decimals = 18;
             _erc20Decimals = 8;
             await priceOracle.setPriceProxy(erc20.address, _erc20.address, mockPriceProxy.address);
-            await mockFunctions(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
             expect(
                 await priceOracle.equivalentOutputAmountFromOracle(
                     amountIn, 
@@ -210,7 +231,7 @@ describe("PriceOracle", async () => {
             erc20Decimals = 18;
             _erc20Decimals = 8;
             await priceOracle.setPriceProxy(_erc20.address, erc20.address, mockPriceProxy.address);
-            await mockFunctions(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
             expect(
                 await priceOracle.equivalentOutputAmountFromOracle(
                     amountIn, 
@@ -247,8 +268,18 @@ describe("PriceOracle", async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
-        it("", async function () {
- 
+        it("Gets equal amount of output token", async function () {
+            let inputAmount = 1000;
+            await priceOracle.setExchangeConnector(deployerAddress, mockExchangeConnector.address);
+            await mockFunctionsExchangeConnector(true, 100);
+            await expect(
+                priceOracle.equivalentOutputAmountFromExchange(
+                    deployerAddress,
+                    inputAmount,
+                    erc20.address,
+                    _erc20.address
+                )
+            ).to.not.reverted;
         })
 
     });

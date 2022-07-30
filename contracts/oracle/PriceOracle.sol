@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import './interfaces/IPriceOracle.sol';
-import '../routers/interfaces/IExchangeRouter.sol';
+import '../connectors/interfaces/IExchangeConnector.sol';
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import '@openzeppelin/contracts/access/Ownable.sol';
 import "hardhat/console.sol"; // Just for test
@@ -10,6 +10,7 @@ import "hardhat/console.sol"; // Just for test
 contract PriceOracle is IPriceOracle, Ownable {
     
     mapping(address => mapping (address => address)) public override ChainlinkPriceProxy;
+    mapping(address => address) public override exchangeConnector;
     address[] public override exchangeRoutersList;
 
     constructor() public {
@@ -90,15 +91,24 @@ contract PriceOracle is IPriceOracle, Ownable {
         address _inputToken,
         address _outputToken
     ) external override returns (uint) {
-        return _equivalentOutputAmountFromExchange(_exchangeRouter, _inputAmount, _inputToken, _outputToken);
+        (uint outputAmount, bool result) = _equivalentOutputAmountFromExchange(
+            _exchangeRouter, 
+            _inputAmount, 
+            _inputToken, 
+            _outputToken
+        );
+        require(result == true, "PriceOracle: Pair does not exist on exchange");
+        return outputAmount;
     }
 
     /// @notice                 Adds an exchange router to the list of exchanges
     /// @dev                    Only owner can call this
     /// @param _exchangeRouter The new exchange router contract address
-    function addExchangeRouter(address _exchangeRouter) external override onlyOwner {
+    function addExchangeRouter(address _exchangeRouter, address _exchangeConnector) external override onlyOwner {
         exchangeRoutersList.push(_exchangeRouter);
+        exchangeConnector[_exchangeRouter] = _exchangeConnector;
         emit NewExchangeRouterAdded(_exchangeRouter);
+        emit SetExchangeConnector(_exchangeRouter, _exchangeConnector);
     }
 
     /// @notice                 Removes an exchange router from the list of exchanges
@@ -107,6 +117,7 @@ contract PriceOracle is IPriceOracle, Ownable {
     function removeExchangeRouter(uint _exchangeIndex) external override onlyOwner {
         address exchangeRouterAddress = exchangeRoutersList[_exchangeIndex];
         _removeElementFromExchangeRoutersList(_exchangeIndex);
+        exchangeConnector[exchangeRouterAddress] = address(0);
         emit ExchangeRouterRemoved(exchangeRouterAddress);
     }
 
@@ -120,26 +131,35 @@ contract PriceOracle is IPriceOracle, Ownable {
         emit SetPriceProxy(_firstToken, _secondToken, _priceProxyAddress);
     }
 
+    /// @notice                         Sets a price proxy of ChainLink
+    /// @dev                            Only owner can call this
+    /// @param _exchangeRouter          Address of the first token
+    /// @param _exchangeConnector       Address of the second token
+    function setExchangeConnector(address _exchangeRouter, address _exchangeConnector) external override onlyOwner {
+        exchangeConnector[_exchangeRouter] = _exchangeConnector;
+        emit SetExchangeConnector(_exchangeRouter, _exchangeConnector);
+    }
+
     /// @notice                         Finds amount of output token that is equal to the input amount of the input token
     /// @dev                            The exchange should be Uniswap like. And have getReserves() and getAmountOut()
     /// @param _exchangeRouter         Address of the exchange we are reading the price from
     /// @param _inputAmount             Amount of the input token
     /// @param _inputToken              Address of the input token
     /// @param _outputToken             Address of output token
-    /// @return                         Amount of the output token
+    /// @return _outputAmount                   Amount of the output token
+    /// @return _result                   Amount of the output token
     function _equivalentOutputAmountFromExchange(
         address _exchangeRouter,
         uint _inputAmount,
         address _inputToken,
         address _outputToken
-    ) internal returns (uint) {
-        // TODO: check if the exchange doesn't have the output token and return 0 then
-        (uint inputTokenReserve, uint outputTokenReserve) = IExchangeRouter(_exchangeRouter)
-        .getReserves(
+    ) internal returns (uint _outputAmount, bool _result) {
+        
+        (_result, _outputAmount) = IExchangeConnector(exchangeConnector[_exchangeRouter]).getOutputAmount(
+            _inputAmount,
             _inputToken, 
             _outputToken
         );
-        return IExchangeRouter(_exchangeRouter).getAmountOut(_inputAmount, inputTokenReserve, outputTokenReserve);
     }
 
     /// @notice                         Finds amount of output token that is equal to the input amount of the input token
