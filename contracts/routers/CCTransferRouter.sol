@@ -148,7 +148,8 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         uint256 _blockNumber,
     // Merkle proof
         bytes calldata _intermediateNodes,
-        uint _index
+        uint _index,
+        address lockerBitcoinDecodedAddress
     ) external nonReentrant override returns (bool) {
         console.log("ccTransfer...");
         bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
@@ -159,7 +160,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
             "CCTransferRouter: CC transfer request has been used before"
         );
         // ccTransferRequests[txId].isUsed = true;
-        _saveCCTransferRequest(_vout, txId);
+        _saveCCTransferRequest(lockerBitcoinDecodedAddress, _vout, txId);
         // Check if tx has been confirmed on source chain
         require(
             _isConfirmed(
@@ -176,7 +177,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
 
         // Normal cc transfer request
         if (ccTransferRequests[txId].speed == 0) {
-            require(_mintAndSend(txId), "CCTransferRouter: normal cc transfer was not successful");
+            require(_mintAndSend(lockerBitcoinDecodedAddress, txId), "CCTransferRouter: normal cc transfer was not successful");
             emit CCTransfer(
                 ccTransferRequests[txId].recipientAddress,
                 ccTransferRequests[txId].inputAmount,
@@ -189,7 +190,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         }
         // Pay back instant loan
         if (ccTransferRequests[txId].speed == 1) {
-            require(_payBackInstantLoan(txId), "CCTransferRouter: pay back was not successful");
+            require(_payBackInstantLoan(lockerBitcoinDecodedAddress, txId), "CCTransferRouter: pay back was not successful");
             console.log("...ccTransfer");
             return true;
         }
@@ -200,11 +201,13 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @dev                                The check amount for Teleporter fee can be adjusted
     /// @param _txId                        The transaction ID of the request
     /// @return                             True if minting and sending tokens passes
-    function _mintAndSend(bytes32 _txId) internal returns (bool) {
+    // TODO: maybe its better to add lokerBitcoinDecodedAddress to the transfer request struct
+    function _mintAndSend(address _lokerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
         // Pay fees
         if (ccTransferRequests[_txId].fee > 0) {
             // Mint wrapped tokens for Teleporter
-            ITeleBTC(teleBTC).mint(
+            ILockers(lockers).mint(
+                _lokerBitcoinDecodedAddress,
                 msg.sender,
                 ccTransferRequests[_txId].fee
             );
@@ -219,7 +222,8 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         console.log(ccTransferRequests[_txId].inputAmount);
 
         // Mint wrapped tokens for user
-        ITeleBTC(teleBTC).mint(
+        ILockers(lockers).mint(
+            _lokerBitcoinDecodedAddress,
             ccTransferRequests[_txId].recipientAddress,
             ccTransferRequests[_txId].inputAmount.sub(ccTransferRequests[_txId].fee)
         );
@@ -230,17 +234,19 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @dev                                The check amount for Teleporter fee can be adjusted
     /// @param _txId                        The transaction ID of the request
     /// @return                             True if paying back passes
-    function _payBackInstantLoan(bytes32 _txId) internal returns (bool) {
+    function _payBackInstantLoan(address _lokerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
         // Pay fees
         if (ccTransferRequests[_txId].fee > 0) {
-            ITeleBTC(teleBTC).mint(
+            ILockers(lockers).mint(
+                _lokerBitcoinDecodedAddress,
                 msg.sender,
                 ccTransferRequests[_txId].fee
             );
         }
         uint remainedAmount = ccTransferRequests[_txId].inputAmount.sub(ccTransferRequests[_txId].fee);
         // Mint wrapped token for cc transfer router
-        ITeleBTC(teleBTC).mint(
+        ILockers(lockers).mint(
+            _lokerBitcoinDecodedAddress,
             address(this),
             remainedAmount
         );
@@ -263,6 +269,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _vout                        The outputs of the request tx
     /// @param _txId                        The tx ID of the request
     function _saveCCTransferRequest(
+        address _lockerBitcoinDecodedAddress,
         bytes memory _vout,
         bytes32 _txId
     ) internal {
@@ -277,9 +284,15 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         // TODO: check which lockers are available and check whether the money has been
         // transferred to an active locker
         // FIXME: how to get the redeemScriptHash from new lockers contract
-        desiredRecipient = ILockers(lockers).redeemScriptHash();
+        // desiredRecipient = ILockers(lockers).redeemScriptHash();
+
+        require(
+            ILockers(lockers).isLocker(_lockerBitcoinDecodedAddress),
+            "CCTransferRouter: no locker with this bitcoin decoded addresss"
+        );
+
         // Parse request tx data
-        (request.inputAmount, arbitraryData) = NewTxHelper.parseAmountForP2PK(_vout, desiredRecipient);
+        (request.inputAmount, arbitraryData) = NewTxHelper.parseAmountForP2PK(_vout, _lockerBitcoinDecodedAddress);
         console.log("request.inputAmount");
         console.log(request.inputAmount);
         console.log("arbitrary data parsed correctly");

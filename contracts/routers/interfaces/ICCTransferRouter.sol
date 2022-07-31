@@ -93,7 +93,8 @@ interface ICCTransferRouter {
     uint256 _blockNumber,
   // Merkle proof
     bytes calldata _intermediateNodes,
-    uint _index
+    uint _index,
+    address lockerBitcoinDecodedAddress
   ) external returns (bool);
 
   // state-changing functions
