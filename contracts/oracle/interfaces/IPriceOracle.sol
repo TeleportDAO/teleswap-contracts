@@ -32,13 +32,15 @@ interface IPriceOracle {
 
     function getExchangeRoutersListLength() external view returns (uint);
 
+    function acceptableDelay() external view returns (uint);
+
     function equivalentOutputAmount(
         uint _inputAmount,
         uint _inputDecimals,
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) external view returns (uint);
+    ) external returns (uint);
 
     function equivalentOutputAmountFromOracle(
         uint _inputAmount,

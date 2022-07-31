@@ -12,12 +12,14 @@ contract PriceOracle is IPriceOracle, Ownable {
     mapping(address => mapping (address => address)) public override ChainlinkPriceProxy;
     mapping(address => address) public override exchangeConnector;
     address[] public override exchangeRoutersList;
+    uint public override acceptableDelay;
 
-    constructor() public {
+    constructor(uint _acceptableDelay) public {
+        acceptableDelay = _acceptableDelay;
     }
 
     /// @notice                 Getter for the length of the exchange router list
-    function getExchangeRoutersListLength() external view override returns (uint) {
+    function getExchangeRoutersListLength() public view override returns (uint) {
         return exchangeRoutersList.length;
     }
         
@@ -34,7 +36,7 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) external override view returns (uint) {
+    ) external override returns (uint) {
         // Gets output amount from oracle
         (uint outputAmount, uint timestamp, bool result) = _equivalentOutputAmountFromOracle(
             _inputAmount, 
@@ -44,13 +46,33 @@ contract PriceOracle is IPriceOracle, Ownable {
             _outputToken
         );
 
-        // Checks timestamp of oracle result
-        if (timestamp - block.timestamp < 1) {
+        // Checks timestamp of the oracle result
+        console.log("timestamp", timestamp, "block.timestamp", block.timestamp);
+        if (_abs(int(timestamp) - int(block.timestamp)) < acceptableDelay) {
+            console.log("outputAmount", outputAmount);
             return outputAmount;
         } else {
-            return 0;
+            bool _result;
+            uint _outputAmount;
+            uint _totalAmount;
+            uint _totalNumber;
+            _totalAmount = outputAmount;
+            _totalNumber = 1;
+            for (uint i = 0; i < getExchangeRoutersListLength(); i++) {
+                (_outputAmount, _result) = _equivalentOutputAmountFromExchange(
+                    exchangeRoutersList[i],
+                    _inputAmount, 
+                    _inputToken, 
+                    _outputToken
+                );
+                if (result == true) {
+                    _totalNumber = _totalNumber + 1;
+                    _totalAmount = _totalAmount + _outputAmount;
+                } 
+            }
+            console.log("_totalAmount", _totalAmount, "_totalNumber", _totalNumber);
+            return _totalAmount/_totalNumber;
         }
-        
     }
 
     /// @notice                         Finds amount of output token that is equal to the input amount of the input token
@@ -226,6 +248,10 @@ contract PriceOracle is IPriceOracle, Ownable {
             exchangeRoutersList[i] = exchangeRoutersList[i+1];
         }
         exchangeRoutersList.pop();
+    }
+
+    function _abs(int x) internal pure returns (uint) {
+        return x >= 0 ? uint(x) : uint(-x);
     }
 
 }

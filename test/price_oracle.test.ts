@@ -32,6 +32,9 @@ describe("PriceOracle", async () => {
     let mockPriceProxy: MockContract;
     let mockExchangeConnector: MockContract;
 
+    // Values
+    let acceptableDelay: number;
+
     let snapshotId: any;
 
     before(async () => {
@@ -54,8 +57,9 @@ describe("PriceOracle", async () => {
         );
         
         // Deploys collateralPool contract
+        acceptableDelay = 120; // seconds
         const priceOracleFactory = new PriceOracle__factory(deployer);
-        priceOracle = await priceOracleFactory.deploy();
+        priceOracle = await priceOracleFactory.deploy(acceptableDelay);
 
         // Mocks price proxy contract
         const AggregatorV3InterfaceContract = await deployments.getArtifact(
@@ -93,6 +97,21 @@ describe("PriceOracle", async () => {
             answeredInRound
         );
         await mockPriceProxy.mock.decimals.returns(decimals);
+    }
+
+    async function setNextBlockTimestamp(        
+        addedTimestamp: number,
+    ): Promise<void> {
+        let lastBlockNumber = await ethers.provider.getBlockNumber();
+        let lastBlock = await ethers.provider.getBlock(lastBlockNumber);
+        let lastBlockTimestamp = lastBlock.timestamp;
+        await ethers.provider.send("evm_setNextBlockTimestamp", [lastBlockTimestamp + addedTimestamp])
+    }
+
+    async function getLastBlockTimestamp(): Promise<number> {
+        let lastBlockNumber = await ethers.provider.getBlockNumber();
+        let lastBlock = await ethers.provider.getBlock(lastBlockNumber);
+        return lastBlock.timestamp;
     }
 
     async function mockFunctionsExchangeConnector(        
@@ -295,7 +314,7 @@ describe("PriceOracle", async () => {
 
         it("Gets equal amount of output token", async function () {
             let inputAmount = 1000;
-            await priceOracle.setExchangeConnector(deployerAddress, mockExchangeConnector.address);
+            await priceOracle.addExchangeRouter(deployerAddress, mockExchangeConnector.address);
             await mockFunctionsExchangeConnector(true, 100);
             await expect(
                 priceOracle.equivalentOutputAmountFromExchange(
@@ -324,17 +343,95 @@ describe("PriceOracle", async () => {
     });
 
     describe("#equivalentOutputAmount", async () => {
+        let roundID;
+        let price: number;
+        let startedAt;
+        let timeStamp;
+        let answeredInRound;
+        let decimals;
+        // ERC20 decimals
+        let erc20Decimals;
+        let _erc20Decimals;
 
         beforeEach(async() => {
             snapshotId = await takeSnapshot(signer1.provider);
+            await priceOracle.setPriceProxy(erc20.address, _erc20.address, mockPriceProxy.address);
         });
 
         afterEach(async() => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
-        it("", async function () {
- 
+        it("Gets equal amount of output token when delay is acceptable", async function () {
+            let amountIn = 1000; // TT token
+            roundID = 1;
+            price = 123;
+            startedAt = 1;
+            timeStamp = await getLastBlockTimestamp();
+            answeredInRound = 1;
+            decimals = 2;
+            erc20Decimals = 8;
+            _erc20Decimals = 18;
+            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await setNextBlockTimestamp(1);
+            await expect(
+                priceOracle.equivalentOutputAmount(
+                    amountIn,
+                    erc20Decimals,
+                    _erc20Decimals,
+                    erc20.address,
+                    _erc20.address
+                )
+            ).to.not.reverted;
+        })
+
+        it("Gets equal amount of output token when delay is not acceptable", async function () {
+            let amountIn = 1000; // TT token
+            roundID = 1;
+            price = 123;
+            startedAt = 1;
+            timeStamp = await getLastBlockTimestamp();
+            answeredInRound = 1;
+            decimals = 2;
+            erc20Decimals = 8;
+            _erc20Decimals = 18;
+            await priceOracle.addExchangeRouter(deployerAddress, mockExchangeConnector.address);
+            await mockFunctionsExchangeConnector(true, 100);
+            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await setNextBlockTimestamp(120);
+            await expect(
+                priceOracle.equivalentOutputAmount(
+                    amountIn,
+                    erc20Decimals,
+                    _erc20Decimals,
+                    erc20.address,
+                    _erc20.address
+                )
+            ).to.not.reverted;
+        })
+
+        it("Gets equal amount of output token when delay is not acceptable, but there is not any other exchange", async function () {
+            let amountIn = 1000; // TT token
+            roundID = 1;
+            price = 123;
+            startedAt = 1;
+            timeStamp = await getLastBlockTimestamp();
+            answeredInRound = 1;
+            decimals = 2;
+            erc20Decimals = 8;
+            _erc20Decimals = 18;
+            
+            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await setNextBlockTimestamp(120);
+            await expect(
+                priceOracle.equivalentOutputAmount(
+                    amountIn,
+                    erc20Decimals,
+                    _erc20Decimals,
+                    erc20.address,
+                    _erc20.address
+                )
+            ).to.not.reverted;
         })
 
     });
