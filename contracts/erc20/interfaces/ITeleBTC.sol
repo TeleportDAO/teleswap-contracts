@@ -21,6 +21,14 @@ interface ITeleBTC is IERC20 {
 
     // state-changing functions
 
+    function addMinter(address account) external;
+
+    function removeMinter(address account) external;
+
+    function addBurner(address account) external;
+
+    function removeBurner(address account) external;
+
     function setCCTransferRouter(address _ccTransferRouter) external;
 
     function setCCExchangeRouter(address _ccExchangeRouter) external;

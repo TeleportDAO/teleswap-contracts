@@ -90,6 +90,8 @@ describe("CCTransferRouter", async () => {
 
         // Set teleBTC address in ccTransferRouter
         await ccTransferRouter.setTeleBTC(teleBTC.address);
+
+        await teleBTC.setCCTransferRouter(ccTransferRouter.address)
     });
 
     async function setRelayReturn(request: any, isTrue: boolean): Promise<void> {
