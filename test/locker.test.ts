@@ -33,7 +33,9 @@ describe("BitcoinTeleporter", async () => {
 
     // Bitcoin public key (32 bytes)
     let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
+    let TELEPORTER1_PublicKeyHash = '0xe74e55c339726ee799877efc38cf43845b20ca5c';
     let TELEPORTER2 = '0x03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626';
+    let TELEPORTER2_PublicKeyHash = '0xd191dbef3fa0b30f433157748c11cb93f08e839c';
     let UNLOCK_FEE =  5; // percentage of bond that protocol receives
     let UNLOCK_PERIOD = 2;
     let REQUIRED_LOCKED_AMOUNT =  1000; // amount of required TDT
@@ -41,9 +43,11 @@ describe("BitcoinTeleporter", async () => {
     // Accounts
     let deployer: Signer;
     let signer1: Signer;
+    let signer2: Signer;
     let ccBurnSimulator: Signer;
     let deployerAddress: Address;
     let signer1Address: Address;
+    let signer2Address: Address;
     let ccBurnSimulatorAddress: Address;
 
     // Contracts
@@ -56,9 +60,10 @@ describe("BitcoinTeleporter", async () => {
 
     before(async () => {
         // Sets accounts
-        [deployer, signer1, ,ccBurnSimulator] = await ethers.getSigners();
+        [deployer, signer1, signer2,ccBurnSimulator] = await ethers.getSigners();
         deployerAddress = await deployer.getAddress();
         signer1Address = await signer1.getAddress();
+        signer2Address = await signer2.getAddress();
         ccBurnSimulatorAddress = await ccBurnSimulator.getAddress();
 
         teleportDAOToken = await deployTelePortDaoToken()
@@ -79,6 +84,11 @@ describe("BitcoinTeleporter", async () => {
         await locker.setCCBurnRouter(ccBurnSimulatorAddress);
 
         teleBTC = await deployTeleBTC()
+
+        await teleBTC.addMinter(locker.address)
+        await teleBTC.addBurner(locker.address)
+
+        await locker.setTeleBTC(teleBTC.address)
 
     });
 
@@ -177,6 +187,7 @@ describe("BitcoinTeleporter", async () => {
             await expect(
                 lockerSigner1.requestToBecomeLocker(
                     TELEPORTER1,
+                    TELEPORTER1_PublicKeyHash,
                     requiredTDTLockedAmount.sub(1),
                     0
                 )
@@ -189,6 +200,7 @@ describe("BitcoinTeleporter", async () => {
             await expect(
                 lockerSigner1.requestToBecomeLocker(
                     TELEPORTER1,
+                    TELEPORTER1_PublicKeyHash,
                     requiredTDTLockedAmount,
                     0
                 )
@@ -208,6 +220,7 @@ describe("BitcoinTeleporter", async () => {
             await expect(
                 lockerSigner1.requestToBecomeLocker(
                     TELEPORTER1,
+                    TELEPORTER1_PublicKeyHash,
                     requiredTDTLockedAmount,
                     0
                 )
@@ -247,6 +260,7 @@ describe("BitcoinTeleporter", async () => {
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
                 requiredTDTLockedAmount,
                 0
             )
@@ -292,6 +306,7 @@ describe("BitcoinTeleporter", async () => {
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
                 requiredTDTLockedAmount,
                 0
             )
@@ -343,6 +358,7 @@ describe("BitcoinTeleporter", async () => {
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
                 requiredTDTLockedAmount,
                 0
             )
@@ -378,6 +394,7 @@ describe("BitcoinTeleporter", async () => {
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
                 requiredTDTLockedAmount,
                 0
             )
@@ -401,6 +418,7 @@ describe("BitcoinTeleporter", async () => {
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
                 requiredTDTLockedAmount,
                 0
             )
@@ -457,6 +475,91 @@ describe("BitcoinTeleporter", async () => {
                     ccBurnSimulatorAddress
                 )
             ).to.be.revertedWith("Locker: target is not locker")
+        })
+    });
+
+    describe("#mintAndBurnTeleBTC", async () => {
+
+        it("minting tele BTC", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(locker.address, requiredTDTLockedAmount)
+
+            let lockerSigner1 = locker.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                requiredTDTLockedAmount,
+                0
+            )
+
+            await locker.addLocker(signer1Address)
+
+            await locker.addMinter(signer2Address)
+
+            let lockerSigner2 = locker.connect(signer2)
+
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, signer2Address, 1000)
+
+            let theLockerMapping = await locker.lockersMapping(signer1Address)
+
+            expect(
+                theLockerMapping[4]
+            ).to.equal(1000)
+        })
+
+
+        it("burning tele BTC", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(locker.address, requiredTDTLockedAmount)
+
+            let lockerSigner1 = locker.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                requiredTDTLockedAmount,
+                0
+            )
+
+            await locker.addLocker(signer1Address)
+
+
+            await locker.addMinter(signer2Address)
+            await locker.addBurner(signer2Address)
+
+            let lockerSigner2 = locker.connect(signer2)
+
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, signer2Address, 1000)
+
+            let theLockerMapping = await locker.lockersMapping(signer1Address)
+
+            expect(
+                theLockerMapping[4]
+            ).to.equal(1000)
+
+
+            let teleBTCSigner2 = teleBTC.connect(signer2)
+
+            await teleBTCSigner2.mintTestToken()
+
+            await teleBTCSigner2.transfer(locker.address, 900)
+
+            await lockerSigner2.burn(TELEPORTER1_PublicKeyHash, 900)
+
+            theLockerMapping = await locker.lockersMapping(signer1Address)
+
+            expect(
+                theLockerMapping[4]
+            ).to.equal(100)
         })
 
     });

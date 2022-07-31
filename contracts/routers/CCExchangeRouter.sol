@@ -274,7 +274,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         bytes4 _locktime,
         uint256 _blockNumber,
         bytes calldata _intermediateNodes,
-        uint _index
+        uint _index,
+        address lockerBitcoinDecodedAddress
     ) external nonReentrant override returns (bool) {
         bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
         require(
@@ -282,7 +283,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             "CCExchangeRouter: the request has been used before"
         );
 
-        _saveCCExchangeRequest(_vout, txId);
+        _saveCCExchangeRequest(lockerBitcoinDecodedAddress, _vout, txId);
         // ccExchangeRequests[txId].isUsed = true;
 
         // Check if transaction has been confirmed on source chain
@@ -297,12 +298,12 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         );
         // Normal cc exchange request
         if (ccExchangeRequests[txId].speed == 0) {
-            require(_normalCCExchange(txId), "CCExchangeRouter: normal cc exchange was not successful");
+            require(_normalCCExchange(lockerBitcoinDecodedAddress, txId), "CCExchangeRouter: normal cc exchange was not successful");
             return true;
         }
         // Pay back instant loan
         if (ccExchangeRequests[txId].speed == 1) {
-            require(_payBackInstantLoan(txId), "CCExchangeRouter: paying back instant loan was not successful");
+            require(_payBackInstantLoan(lockerBitcoinDecodedAddress, txId), "CCExchangeRouter: paying back instant loan was not successful");
             return true;
         }
     }
@@ -311,7 +312,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @dev               Mints wrapped token for user if exchanging is not successful
     /// @param _txId       Id of the transaction containing the user request
     /// @return
-    function _normalCCExchange(bytes32 _txId) internal returns (bool) {
+    function _normalCCExchange(address lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
         console.log("_normalCCExchange...");
         // Pays fee to teleporter
         if (ccExchangeRequests[_txId].fee > 0) {
@@ -319,14 +320,16 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             console.log(ccExchangeRequests[_txId].fee);
 
             // Mints wrapped tokens for teleporter
-            ITeleBTC(teleBTC).mint(
+            ILockers(lockers).mint(
+                lockerBitcoinDecodedAddress,
                 msg.sender,
                 ccExchangeRequests[_txId].fee
             );
         }
         uint remainedInputAmount = ccExchangeRequests[_txId].inputAmount.sub(ccExchangeRequests[_txId].fee);
         // Mints remained wrapped tokens for cc exchange router
-        ITeleBTC(teleBTC).mint(
+        ILockers(lockers).mint(
+            lockerBitcoinDecodedAddress,
             address(this),
             remainedInputAmount
         );
@@ -399,18 +402,20 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @dev               Mints wrapped token for instant router contract
     /// @param _txId       Id of the transaction containing the user request
     /// @return            True if paying back loan is successful
-    function _payBackInstantLoan(bytes32 _txId) internal returns (bool) {
+    function _payBackInstantLoan(address lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
         // Pays fee to teleporter
         if (ccExchangeRequests[_txId].fee > 0) {
             // Mints wrapped tokens for teleporter
-            ITeleBTC(teleBTC).mint(
+            ILockers(lockers).mint(
+                lockerBitcoinDecodedAddress,
                 msg.sender,
                 ccExchangeRequests[_txId].fee
             );
         }
         uint remainedAmount = ccExchangeRequests[_txId].inputAmount.sub(ccExchangeRequests[_txId].fee);
         // Mints wrapped token for cc exchange router
-        ITeleBTC(teleBTC).mint(
+        ILockers(lockers).mint(
+            lockerBitcoinDecodedAddress,
             address(this),
             remainedAmount
         );
@@ -433,7 +438,11 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _vout       Outputs of the transaction containing the user request
     /// @param _txId       Id of the transaction containing the user request
     /// @return            True if recording the request is successful
-    function _saveCCExchangeRequest(bytes memory _vout, bytes32 _txId) internal returns (bool) {
+    function _saveCCExchangeRequest(
+        address _lockerBitcoinDecodedAddress,
+        bytes memory _vout,
+        bytes32 _txId
+    ) internal returns (bool) {
         console.log("_saveCCExchangeRequest...");
 
         ccExchangeRequest memory request; //TODO: no need for this, set directly
@@ -443,10 +452,14 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         uint percentageFee;
 
         // FIXME: change the following line
-        desiredRecipient = ILockers(lockers).redeemScriptHash();
-        console.log(desiredRecipient);
+        // desiredRecipient = ILockers(lockers).redeemScriptHash();
+        // console.log(desiredRecipient);
+        require(
+            ILockers(lockers).isLocker(_lockerBitcoinDecodedAddress),
+            "CCTransferRouter: no locker with this bitcoin decoded addresss"
+        );
 
-        (request.inputAmount, arbitraryData) = NewTxHelper.parseAmountForP2PK(_vout, desiredRecipient);
+        (request.inputAmount, arbitraryData) = NewTxHelper.parseAmountForP2PK(_vout, _lockerBitcoinDecodedAddress);
         console.log(request.inputAmount);
 
         require(NewTxHelper.parseExchangeToken(arbitraryData) != address(0), "CCExchangeRouter: request is transfer request");
