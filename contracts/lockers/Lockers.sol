@@ -1,6 +1,7 @@
 pragma solidity 0.8.0;
 
 import "../libraries/SafeMath.sol";
+import "../oracle/interfaces/IPriceOracle.sol";
 import "./interfaces/ILockers.sol";
 import "../routers/interfaces/IExchangeRouter.sol";
 import "../erc20/interfaces/IERC20.sol";
@@ -20,16 +21,15 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     uint public override requiredTDTLockedAmount;
     uint public override requiredTNTLockedAmount;
 
+    // 10000 means 100%
     uint public override collateralRatio;
     // ^ this is because of price volitility and making minted coins for some collateral secure
     address public override priceOracle;
 
-    // TODO: add to the interface
     uint public override totalNumberOfLockers;
     // lockerTargetAddress -> locker structure
     mapping(address => locker) public lockersMapping;
 
-    // TODO: add to the interface
     uint public override totalNumberOfCandidates;
     // remember to remove from candidates when becomes locker
     mapping(address => locker) public candidatesMapping;
@@ -40,11 +40,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     mapping(address => bool) public lockerLeavingAcceptance;
 
     mapping(address => address) public override lockerBitcoinDecodedAddressToTargetAddress;
-
-    // below list is for sorting lockers regarding capacity and choosing locker for burn or mint
-    // TODO: remove this list and add a variable to store the number of the lockers
-    // address[] public lockerTargetAddressList;
-    // address[] public candidateTargetAddressList;
 
     address public override redeemScriptHash;
 
@@ -177,8 +172,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             The net minted of the locker
     function getLockerCapacity(address _lockerTargetAddress) external view override returns (uint) {
-        // FIXME: fix this function too
-        return _lockerCollateralInTeleBTC(_lockerTargetAddress).mul(collateralRatio).sub(lockersMapping[_lockerTargetAddress].netMinted);
+        return (_lockerCollateralInTeleBTC(_lockerTargetAddress).mul(10000).div(collateralRatio)).sub(lockersMapping[_lockerTargetAddress].netMinted);
     }
 
     /// @notice         Changes the required bond amount to become locker
@@ -352,13 +346,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
             lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
             lockersMapping[_lockerTargetAddress].isScriptHash
         );
-
-        // emit AddLocker(
-        //     lockerBitcoinPubKey,
-        //     lockerAddress,
-        //     lockedAmount,
-        //     block.timestamp
-        // );
         return true;
     }
 
@@ -556,19 +543,29 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             The locker collateral in TeleBTC
     function _lockerCollateralInTeleBTC(address _lockerTargetAddress) internal view returns (uint) {
-        // FIXME: use price oracle
-        return lockersMapping[_lockerTargetAddress].TDTLockedAmount;
+
+        return IPriceOracle(priceOracle).equivalentOutputAmount(
+            lockersMapping[_lockerTargetAddress].TDTLockedAmount,
+        // FIXME: get decimals from token contracts
+            18,
+            8,
+            TeleportDAOToken,
+            teleBTC
+        );
+        // return lockersMapping[_lockerTargetAddress].TDTLockedAmount;
     }
 
 
     function mint(address lockerBitcoinDecodedAddress, address receiver, uint amount) external nonReentrant onlyMinter override returns (bool) {
 
         // TODO: move the followoing lines of code to an internal function
-        locker memory theLocker = lockersMapping[lockerBitcoinDecodedAddressToTargetAddress[lockerBitcoinDecodedAddress]];
+        address theLockerTargetAddress = lockerBitcoinDecodedAddressToTargetAddress[lockerBitcoinDecodedAddress];
+        locker memory theLocker = lockersMapping[theLockerTargetAddress];
 
-        // FIXME: use price oracle to check the real at time prices
+        uint theLockerCollateral = _lockerCollateralInTeleBTC(theLockerTargetAddress);
+
         require(
-            theLocker.TDTLockedAmount >= amount + theLocker.netMinted,
+            theLockerCollateral >= amount + theLocker.netMinted,
             "Lockers: this locker hasn't sufficient funds"
         );
 
@@ -580,9 +577,10 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     function burn(address lockerBitcoinDecodedAddress, uint amount) external nonReentrant onlyBurner override returns (bool) {
 
         // TODO: move the followoing lines of code to an internal function
-        locker memory theLocker = lockersMapping[lockerBitcoinDecodedAddressToTargetAddress[lockerBitcoinDecodedAddress]];
+        address theLockerTargetAddress = lockerBitcoinDecodedAddressToTargetAddress[lockerBitcoinDecodedAddress];
+        locker memory theLocker = lockersMapping[theLockerTargetAddress];
 
-        // FIXME: use price oracle to check the real at time prices
+        // TODO: check if using price oracle is needed or not
         require(
             theLocker.netMinted >= amount ,
             "Lockers: this locker hasn't sufficient funds"
