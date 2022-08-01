@@ -76,6 +76,7 @@ describe("CCExchangeRouter", async () => {
     // let mockBitcoinTeleporter: MockContract;
     let mockInstantRouter: MockContract;
     let mockExchangeRouter: MockContract;
+    let mockPriceOracle: MockContract;
 
     //
     let liquidityPool__factory: LiquidityPool__factory;
@@ -98,27 +99,20 @@ describe("CCExchangeRouter", async () => {
             bitcoinRelayContract.abi
         );
 
+        const priceOracleContract = await deployments.getArtifact(
+            "IPriceOracle"
+        );
+        mockPriceOracle = await deployMockContract(
+            deployer,
+            priceOracleContract.abi
+        );
+
+        await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
+
         // Mocks checkTxProof of bitcoinRelay
         // We don't pass arguments since the request was modified and the txId is not valid
         await mockBitcoinRelay.mock.checkTxProof.returns(true);
 
-        // Mocks teleporters contract
-        // const bitcoinTeleporterContract = await deployments.getArtifact(
-        //     "IBitcoinTeleporter"
-        // );
-        // mockBitcoinTeleporter = await deployMockContract(
-        //     deployer,
-        //     bitcoinTeleporterContract.abi
-        // );
-
-        // Mocks teleporters contract
-        // const lockersContract = await deployments.getArtifact(
-        //     "ILockers"
-        // );
-        // mockLockers = await deployMockContract(
-        //     deployer,
-        //     lockersContract.abi
-        // );
 
         // Mocks instant router contract
         const instantRouterContract = await deployments.getArtifact(
@@ -239,7 +233,7 @@ describe("CCExchangeRouter", async () => {
         const locker = await lockerFactory.deploy(
             teleportDAOToken.address,
             mockExchangeRouter.address,
-            ONE_ADDRESS,
+            mockPriceOracle.address,
             requiredTDTLockedAmount,
             0,
             collateralRatio

@@ -60,6 +60,7 @@ describe("CCTransferRouter", async () => {
     // let mockLockers: MockContract;
     let mockInstantRouter: MockContract;
     let mockExchangeRouter: MockContract;
+    let mockPriceOracle: MockContract;
 
     let beginning: any;
 
@@ -80,6 +81,16 @@ describe("CCTransferRouter", async () => {
             deployer,
             bitcoinRelayContract.abi
         );
+
+        const priceOracleContract = await deployments.getArtifact(
+            "IPriceOracle"
+        );
+        mockPriceOracle = await deployMockContract(
+            deployer,
+            priceOracleContract.abi
+        );
+
+        await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
 
         // Mocks teleporters contract
         // const lockersContract = await deployments.getArtifact(
@@ -154,7 +165,7 @@ describe("CCTransferRouter", async () => {
         const locker = await lockerFactory.deploy(
             teleportDAOToken.address,
             mockExchangeRouter.address,
-            ONE_ADDRESS,
+            mockPriceOracle.address,
             requiredTDTLockedAmount,
             0,
             collateralRatio
