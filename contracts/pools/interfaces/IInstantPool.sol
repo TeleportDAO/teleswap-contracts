@@ -30,7 +30,7 @@ interface IInstantPool is IERC20 {
 
 	function instantRouter() external view returns (address);
 
-	function totalTeleBTC() external view returns (uint);
+	function totalAddedTeleBTC() external view returns (uint);
 
 	function availableTeleBTC() external view returns (uint);
 
@@ -47,6 +47,8 @@ interface IInstantPool is IERC20 {
 	function setTeleBTC(address _teleBTC) external;
 
 	function addLiquidity(address _user, uint _amount) external returns (uint);
+
+	function addLiquidityWithoutMint(uint _amount) external returns (bool);
 
 	function removeLiquidity(address _user, uint _instantPoolTokenAmount) external returns (uint);
 

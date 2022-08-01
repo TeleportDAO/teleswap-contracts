@@ -11,7 +11,7 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
     using SafeMath for uint256; 
     address public override teleBTC; 
     uint public override instantPercentageFee; // a number between 0-10000 to show %0.01
-    uint public override totalTeleBTC;
+    uint public override totalAddedTeleBTC;
     address public override instantRouter;
 
     constructor(
@@ -38,7 +38,7 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
     /// @return                               Amount of wrapped token that has been borrowed but has not been paid back
     function totalUnpaidLoan() override external view returns (uint) { 
         uint _availableTeleBTC = availableTeleBTC();
-        return totalTeleBTC - _availableTeleBTC; 
+        return totalAddedTeleBTC - _availableTeleBTC; 
     }  
 
     /// @notice                 Changes instant router contract address
@@ -67,21 +67,36 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
     /// @param _user          Address of user who receives instant pool token        
     /// @param _amount        Amount of liquidity that user wants to add   
     /// @return               Amount of instant pool token that user receives
-    function addLiquidity(address _user, uint _amount) external nonReentrant override returns (uint) { 
+    function addLiquidity(address _user, uint _amount) external nonReentrant override returns (uint) {
+        require(_amount > 0, "InstantPool: input amount is zero"); 
         uint instantPoolTokenAmount; 
         // Transfers wrapped tokens from user 
         IERC20(teleBTC).transferFrom(msg.sender, address(this), _amount); 
-        if (totalTeleBTC == 0 || totalSupply() == 0) { 
+        if (totalAddedTeleBTC == 0 || totalSupply() == 0) { 
             instantPoolTokenAmount = _amount; 
         } else { 
-            instantPoolTokenAmount = _amount*totalSupply()/totalTeleBTC; 
+            instantPoolTokenAmount = _amount*totalSupply()/totalAddedTeleBTC; 
         }
-        totalTeleBTC = totalTeleBTC + _amount; 
+        totalAddedTeleBTC = totalAddedTeleBTC + _amount; 
         // Mints instant pool token for user 
         _mint(_user, instantPoolTokenAmount); 
         emit AddLiquidity(_user, _amount, instantPoolTokenAmount); 
         return instantPoolTokenAmount; 
-    } 
+    }
+
+    /// @notice               Adds liquidity to instant pool without minting instant pool tokens
+    /// @dev                  Updates totalAddedTeleBTC (transferring teleBTC directly does not update it)
+    /// @param _amount        Amount of liquidity that user wants to add   
+    /// @return               True if liquidity is added successfully
+    function addLiquidityWithoutMint(uint _amount) external nonReentrant override returns (bool) {
+        require(_amount > 0, "InstantPool: input amount is zero"); 
+        uint instantPoolTokenAmount; 
+        // Transfers wrapped tokens from user 
+        IERC20(teleBTC).transferFrom(msg.sender, address(this), _amount); 
+        totalAddedTeleBTC = totalAddedTeleBTC + _amount; 
+        emit AddLiquidity(msg.sender, _amount, 0); 
+        return true; 
+    }  
     
     /// @notice                               Removes liquidity from instant pool
     /// @dev                           
@@ -89,9 +104,10 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
     /// @param _instantPoolTokenAmount        Amount of instant pool token that is burnt  
     /// @return                               Amount of wrapped token that user receives
     function removeLiquidity(address _user, uint _instantPoolTokenAmount) external nonReentrant override returns (uint) {
+        require(_instantPoolTokenAmount > 0, "InstantPool: input amount is zero");
         require(balanceOf(msg.sender) >= _instantPoolTokenAmount, "InstantPool: balance is not sufficient"); 
-        uint teleBTCAmount = _instantPoolTokenAmount*totalTeleBTC/totalSupply();
-        totalTeleBTC = totalTeleBTC - teleBTCAmount; 
+        uint teleBTCAmount = _instantPoolTokenAmount*totalAddedTeleBTC/totalSupply();
+        totalAddedTeleBTC = totalAddedTeleBTC - teleBTCAmount; 
         IERC20(teleBTC).transfer(_user, teleBTCAmount); 
         _burn(msg.sender, _instantPoolTokenAmount); 
         emit RemoveLiquidity(msg.sender, teleBTCAmount, _instantPoolTokenAmount); 
@@ -107,7 +123,7 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
         require(msg.sender == instantRouter, "InstantPool: sender is not allowed"); 
         // Instant fee increases the total teleBTC amount
         uint instantFee = _amount*instantPercentageFee/10000;
-        totalTeleBTC = totalTeleBTC + instantFee; 
+        totalAddedTeleBTC = totalAddedTeleBTC + instantFee; 
         IERC20(teleBTC).transfer(_user, _amount); 
         emit InstantLoan(_user, _amount, instantFee); 
         return true; 
