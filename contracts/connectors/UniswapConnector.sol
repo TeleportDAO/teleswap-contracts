@@ -73,7 +73,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
         uint _inputAmount, 
         address _inputToken, 
         address _outputToken
-    ) external override returns (bool, uint) {
+    ) external view override returns (bool, uint) {
 
         // Checks that the liquidity pool exists
         if (

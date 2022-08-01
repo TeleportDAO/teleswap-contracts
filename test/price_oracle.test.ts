@@ -106,6 +106,7 @@ describe("PriceOracle", async () => {
         let lastBlock = await ethers.provider.getBlock(lastBlockNumber);
         let lastBlockTimestamp = lastBlock.timestamp;
         await ethers.provider.send("evm_setNextBlockTimestamp", [lastBlockTimestamp + addedTimestamp])
+        await ethers.provider.send("evm_mine", []);
     }
 
     async function getLastBlockTimestamp(): Promise<number> {
@@ -137,7 +138,7 @@ describe("PriceOracle", async () => {
         it("Adds an exchange router", async function () {
             expect(
                 await priceOracle.addExchangeRouter(deployerAddress, mockExchangeConnector.address)
-            ).to.emit(priceOracle, "ExchangeRouterAdded").and.emit(priceOracle, "SetExchangeConnector");
+            ).to.emit(priceOracle, "ExchangeRouterAdded");
 
             expect(
                 await priceOracle.exchangeRoutersList(0)
@@ -316,19 +317,19 @@ describe("PriceOracle", async () => {
             let inputAmount = 1000;
             await priceOracle.addExchangeRouter(deployerAddress, mockExchangeConnector.address);
             await mockFunctionsExchangeConnector(true, 100);
-            await expect(
-                priceOracle.equivalentOutputAmountFromExchange(
+            expect(
+                await priceOracle.equivalentOutputAmountFromExchange(
                     deployerAddress,
                     inputAmount,
                     erc20.address,
                     _erc20.address
                 )
-            ).to.not.reverted;
+            ).to.equal(100);
         })
 
         it("Reverts since pair does not exist in exchange", async function () {
             let inputAmount = 1000;
-            await priceOracle.setExchangeConnector(deployerAddress, mockExchangeConnector.address);
+            await priceOracle.addExchangeRouter(deployerAddress, mockExchangeConnector.address);
             await mockFunctionsExchangeConnector(false, 0);
             await expect(
                 priceOracle.equivalentOutputAmountFromExchange(
@@ -374,15 +375,15 @@ describe("PriceOracle", async () => {
             _erc20Decimals = 18;
             await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
             await setNextBlockTimestamp(1);
-            await expect(
-                priceOracle.equivalentOutputAmount(
+            expect(
+                await priceOracle.equivalentOutputAmount(
                     amountIn,
                     erc20Decimals,
                     _erc20Decimals,
                     erc20.address,
                     _erc20.address
                 )
-            ).to.not.reverted;
+            ).to.equal(amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals));
         })
 
         it("Gets equal amount of output token when delay is not acceptable", async function () {
@@ -398,19 +399,19 @@ describe("PriceOracle", async () => {
             await priceOracle.addExchangeRouter(deployerAddress, mockExchangeConnector.address);
             await mockFunctionsExchangeConnector(true, 100);
             await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
-            await setNextBlockTimestamp(120);
-            await expect(
-                priceOracle.equivalentOutputAmount(
+            await setNextBlockTimestamp(240);
+        expect(
+            await priceOracle.equivalentOutputAmount(
                     amountIn,
                     erc20Decimals,
                     _erc20Decimals,
                     erc20.address,
                     _erc20.address
                 )
-            ).to.not.reverted;
+            ).to.equal(Math.floor((amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals)+100)/2));
         })
 
-        it("Gets equal amount of output token when delay is not acceptable, but there is not any other exchange", async function () {
+        it("Gets equal amount of output token when delay is not acceptable, but no other exchange exists", async function () {
             let amountIn = 1000; // TT token
             roundID = 1;
             price = 123;
@@ -422,16 +423,41 @@ describe("PriceOracle", async () => {
             _erc20Decimals = 18;
             
             await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
-            await setNextBlockTimestamp(120);
-            await expect(
-                priceOracle.equivalentOutputAmount(
+            await setNextBlockTimestamp(240);
+            expect(
+                await priceOracle.equivalentOutputAmount(
                     amountIn,
                     erc20Decimals,
                     _erc20Decimals,
                     erc20.address,
                     _erc20.address
                 )
-            ).to.not.reverted;
+            ).to.equal(amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals));
+        })
+
+        it("Gets equal amount of output token when delay is not acceptable, but exchange does not have the pair", async function () {
+            let amountIn = 1000; // TT token
+            roundID = 1;
+            price = 123;
+            startedAt = 1;
+            timeStamp = await getLastBlockTimestamp();
+            answeredInRound = 1;
+            decimals = 2;
+            erc20Decimals = 8;
+            _erc20Decimals = 18;
+            await priceOracle.addExchangeRouter(deployerAddress, mockExchangeConnector.address);
+            await mockFunctionsExchangeConnector(false, 0);
+            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await setNextBlockTimestamp(240);
+            expect(
+                await priceOracle.equivalentOutputAmount(
+                    amountIn,
+                    erc20Decimals,
+                    _erc20Decimals,
+                    erc20.address,
+                    _erc20.address
+                )
+            ).to.equal(amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals));
         })
 
     });

@@ -5,7 +5,8 @@ interface IPriceOracle {
 
     /// @notice                     Emits when new exchange router is added
     /// @param exchangeRouter       The address of the new exchange router
-    event ExchangeRouterAdded(address exchangeRouter);
+    /// @param exchangeConnector    The address of the exchange connector
+    event ExchangeRouterAdded(address exchangeRouter, address exchangeConnector);
 
     /// @notice                     Emits when an exchange router is removed
     /// @param exchangeRouter       The address of the new exchange router
@@ -16,11 +17,6 @@ interface IPriceOracle {
     /// @param _secondToken         Address of the second token
     /// @param _priceProxyAddress   The address of the price proxy
     event SetPriceProxy(address _firstToken, address _secondToken, address _priceProxyAddress);
-
-    /// @notice                     Emits when a price proxy is updated
-    /// @param _exchangeRouter          Address of the first token
-    /// @param _exchangeConnector         Address of the second token
-    event SetExchangeConnector(address _exchangeRouter, address _exchangeConnector);
 
     // Read-only functions
     
@@ -40,7 +36,7 @@ interface IPriceOracle {
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) external returns (uint);
+    ) external view returns (uint);
 
     function equivalentOutputAmountFromOracle(
         uint _inputAmount,
@@ -55,7 +51,7 @@ interface IPriceOracle {
         uint _inputAmount,
         address _inputToken,
         address _outputToken
-    ) external returns (uint);
+    ) external view returns (uint);
     
     // State-changing functions
     
@@ -64,6 +60,4 @@ interface IPriceOracle {
     function removeExchangeRouter(uint _exchangeIndex) external;
 
     function setPriceProxy(address _firstToken, address _secondToken, address _priceProxyAddress) external;
-
-    function setExchangeConnector(address _exchangeRouter, address _exchangeConnector) external;
 }

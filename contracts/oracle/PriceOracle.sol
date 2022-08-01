@@ -36,7 +36,7 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) external override returns (uint) {
+    ) external view override returns (uint) {
         // Gets output amount from oracle
         (uint outputAmount, uint timestamp, bool result) = _equivalentOutputAmountFromOracle(
             _inputAmount, 
@@ -47,9 +47,7 @@ contract PriceOracle is IPriceOracle, Ownable {
         );
 
         // Checks timestamp of the oracle result
-        console.log("timestamp", timestamp, "block.timestamp", block.timestamp);
-        if (_abs(int(timestamp) - int(block.timestamp)) < acceptableDelay) {
-            console.log("outputAmount", outputAmount);
+        if (_abs(int(timestamp) - int(block.timestamp)) < acceptableDelay) { 
             return outputAmount;
         } else {
             bool _result;
@@ -65,12 +63,12 @@ contract PriceOracle is IPriceOracle, Ownable {
                     _inputToken, 
                     _outputToken
                 );
-                if (result == true) {
+                
+                if (_result == true) {
                     _totalNumber = _totalNumber + 1;
                     _totalAmount = _totalAmount + _outputAmount;
                 } 
             }
-            console.log("_totalAmount", _totalAmount, "_totalNumber", _totalNumber);
             return _totalAmount/_totalNumber;
         }
     }
@@ -112,7 +110,7 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _inputAmount,
         address _inputToken,
         address _outputToken
-    ) external override returns (uint) {
+    ) external view override returns (uint) {
         (uint outputAmount, bool result) = _equivalentOutputAmountFromExchange(
             _exchangeRouter, 
             _inputAmount, 
@@ -129,8 +127,7 @@ contract PriceOracle is IPriceOracle, Ownable {
     function addExchangeRouter(address _exchangeRouter, address _exchangeConnector) external override onlyOwner {
         exchangeRoutersList.push(_exchangeRouter);
         exchangeConnector[_exchangeRouter] = _exchangeConnector;
-        emit ExchangeRouterAdded(_exchangeRouter);
-        emit SetExchangeConnector(_exchangeRouter, _exchangeConnector);
+        emit ExchangeRouterAdded(_exchangeRouter, _exchangeConnector);
     }
 
     /// @notice                 Removes an exchange router from the list of exchanges
@@ -153,15 +150,6 @@ contract PriceOracle is IPriceOracle, Ownable {
         emit SetPriceProxy(_firstToken, _secondToken, _priceProxyAddress);
     }
 
-    /// @notice                         Sets a price proxy of ChainLink
-    /// @dev                            Only owner can call this
-    /// @param _exchangeRouter          Address of the first token
-    /// @param _exchangeConnector       Address of the second token
-    function setExchangeConnector(address _exchangeRouter, address _exchangeConnector) external override onlyOwner {
-        exchangeConnector[_exchangeRouter] = _exchangeConnector;
-        emit SetExchangeConnector(_exchangeRouter, _exchangeConnector);
-    }
-
     /// @notice                         Finds amount of output token that is equal to the input amount of the input token
     /// @dev                            The exchange should be Uniswap like. And have getReserves() and getAmountOut()
     /// @param _exchangeRouter         Address of the exchange we are reading the price from
@@ -175,7 +163,7 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _inputAmount,
         address _inputToken,
         address _outputToken
-    ) internal returns (uint _outputAmount, bool _result) {
+    ) internal view returns (uint _outputAmount, bool _result) {
         
         (_result, _outputAmount) = IExchangeConnector(exchangeConnector[_exchangeRouter]).getOutputAmount(
             _inputAmount,
