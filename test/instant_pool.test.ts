@@ -21,10 +21,10 @@ describe("Instant pool", async () => {
 
     let teleBTC: TeleBTC;
     let instantPool: InstantPool;
+    let teleBTCSigner1: TeleBTC;
+    let instantPoolSigner1: InstantPool;
 
     let ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
-    let ten = BigNumber.from(10).pow(18).mul(10)
-    let oneHundred = BigNumber.from(10).pow(8).mul(100)
 
     let name = "InstantPoolToken"
     let symbol = "IPT"
@@ -45,6 +45,9 @@ describe("Instant pool", async () => {
             ONE_ADDRESS,
             ONE_ADDRESS
         );
+    
+        // Mints teleBTC for deployer
+        await teleBTC.mintTestToken();
 
         // Deploys instant pool contract
         const instantPoolFactory = new InstantPool__factory(deployer);
@@ -55,11 +58,15 @@ describe("Instant pool", async () => {
             name,
             symbol  
         );
+
+        // Connects signer1 to teleBTC and instant pool
+        teleBTCSigner1 = await teleBTC.connect(signer1);
+        instantPoolSigner1 = await instantPool.connect(signer1);
     });
 
     describe("#addLiquidity", async () => {
 
-        let theTestMintedAmount = oneHundred;
+        let addedLiquidity = 100;
 
         beforeEach("deploy a new cc exchange router", async () => {
             snapshotId = await takeSnapshot(signer1.provider);
@@ -69,70 +76,125 @@ describe("Instant pool", async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
-        it("Mints instant pool token in exchange of deposited teleBTC", async function () {
+        it("Mints instant pool token when instant pool is empty", async function () {
 
-            let teleBTCSigner1 = await teleBTC.connect(signer1)
-
-            await teleBTCSigner1.mintTestToken()
-
-            expect(
-                await teleBTC.balanceOf(signer1Address)
-            ).to.equal(theTestMintedAmount)
-
-            let instantPoolSigner1 = await instantPool.connect(signer1)
+            await teleBTC.transfer(signer1Address, addedLiquidity);
 
             await teleBTCSigner1.approve(
                 instantPool.address,
-                theTestMintedAmount
-            )
+                addedLiquidity
+            );
 
             expect(
                 await instantPoolSigner1.addLiquidity(
                     signer1Address,
-                    theTestMintedAmount
+                    addedLiquidity
                 )
-            ).to.emit(instantPool, "AddLiquidity")
-
+            ).to.emit(instantPool, "AddLiquidity");
 
             expect(
                 await instantPool.balanceOf(signer1Address)
-            ).to.equal(theTestMintedAmount)
+            ).to.equal(addedLiquidity);
+        })
+
+        it("Mints instant pool token when instant pool is non-empty", async function () {
+            // Adds initial liquidity to instant pool
+            await teleBTC.approve(
+                instantPool.address,
+                addedLiquidity
+            );
+
+            await instantPool.addLiquidity(
+                deployerAddress,
+                addedLiquidity
+            );
+
+            await teleBTC.transfer(signer1Address, addedLiquidity);
+
+            await teleBTCSigner1.approve(
+                instantPool.address,
+                addedLiquidity
+            );
+
+            expect(
+                await instantPoolSigner1.addLiquidity(
+                    signer1Address,
+                    addedLiquidity
+                )
+            ).to.emit(instantPool, "AddLiquidity");
+
+            expect(
+                await instantPool.balanceOf(signer1Address)
+            ).to.equal(addedLiquidity);
+        })
+
+        it("Mints instant pool token when instant pool is non-empty, but no instant pool token has been minted", async function () {
+            // Transfers teleBTC  to instant pool
+            await teleBTC.transfer(
+                instantPool.address,
+                addedLiquidity
+            );
+
+            await teleBTC.transfer(signer1Address, addedLiquidity);
+
+            await teleBTCSigner1.approve(
+                instantPool.address,
+                addedLiquidity
+            );
+
+            expect(
+                await instantPoolSigner1.addLiquidity(
+                    signer1Address,
+                    addedLiquidity
+                )
+            ).to.emit(instantPool, "AddLiquidity");
+
+            expect(
+                await instantPool.balanceOf(signer1Address)
+            ).to.equal(addedLiquidity);
+        })
+
+        it("Reverts since user balance is not enough", async function () {
+            await expect(
+                instantPoolSigner1.addLiquidity(
+                    signer1Address,
+                    addedLiquidity
+                )
+            ).to.reverted;
         })
 
     });
 
     describe("#removeLiquidity", async () => {
 
-        let theTestMintedAmount = oneHundred;
+        let addedLiquidity = 100;
 
-        it("Burns instant pool token in exchange of withdrawing teleBTC", async function () {
+        beforeEach("deploy a new cc exchange router", async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+        });
+    
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
 
-            let teleBTCSigner1 = await teleBTC.connect(signer1);
+        it("Burns instant pool token in exchange to withdraw teleBTC", async function () {
 
-            await teleBTCSigner1.mintTestToken();
-
-            let instantPoolSigner1 = await instantPool.connect(signer1);
+            await teleBTC.transfer(signer1Address, addedLiquidity);
 
             await teleBTCSigner1.approve(
                 instantPool.address,
-                theTestMintedAmount
+                addedLiquidity
             );
 
             await instantPoolSigner1.addLiquidity(
                 signer1Address,
-                theTestMintedAmount
-            )
-
-            expect(
-                await teleBTC.balanceOf(
-                    signer1Address
-                )
-            ).to.equal(0)
+                addedLiquidity
+            );
 
             expect(
                 await instantPoolSigner1.removeLiquidity(
                     signer1Address,
-                    theTestMintedAmount
+                    addedLiquidity
                 )
             ).to.emit(instantPool, "RemoveLiquidity")
 
@@ -140,13 +202,13 @@ describe("Instant pool", async () => {
                 await teleBTC.balanceOf(
                     signer1Address
                 )
-            ).to.equal(theTestMintedAmount)
+            ).to.equal(addedLiquidity);
 
             expect(
                 await instantPool.balanceOf(
                     signer1Address
                 )
-            ).to.equal(0)
+            ).to.equal(0);
         })
 
     });
