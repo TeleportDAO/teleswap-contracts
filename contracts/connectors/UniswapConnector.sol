@@ -48,8 +48,8 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
     }
 
     function getInputAmount(
-        uint _outputAmount, 
-        address _inputToken, 
+        uint _outputAmount,
+        address _inputToken,
         address _outputToken
     ) external override returns (bool, uint) {
 
@@ -65,13 +65,13 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
             _inputToken,
             _outputToken
         );
-        
+
         return (true, IExchangeRouter(exchangeRouter).getAmountIn(_outputAmount, reserveIn, reserveOut));
     }
 
     function getOutputAmount(
-        uint _inputAmount, 
-        address _inputToken, 
+        uint _inputAmount,
+        address _inputToken,
         address _outputToken
     ) external view override returns (bool, uint) {
 
@@ -87,7 +87,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
             _inputToken,
             _outputToken
         );
-        
+
         return (true, IExchangeRouter(exchangeRouter).getAmountOut(_inputAmount, reserveIn, reserveOut));
     }
 
@@ -141,7 +141,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
                     _path,
                     _to,
                     _deadline
-                );    
+                );
             }
 
             if (_isFixedToken == true && _path[_path.length-1] != wrappedNativeToken) {
@@ -152,7 +152,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
                     _path,
                     _to,
                     _deadline
-                );    
+                );
             }
 
             if (_isFixedToken == true && _path[_path.length-1] == wrappedNativeToken) {
@@ -163,14 +163,14 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
                     _path,
                     _to,
                     _deadline
-                );   
+                );
             }
             emit Swap(_path, _amounts, _to);
         }
     }
 
     /// @notice                           Checks if exchanging can happen successfully
-    /// @dev                              Avoids reverting the request by exchange router                 
+    /// @dev                              Avoids reverting the request by exchange router
     /// @return                           True if exchange conditions are satisfied
     /// @return                           Needed amount of input token
     function _checkExchangeConditions(
@@ -182,9 +182,13 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
         bool _isFixedToken
     ) internal returns (bool, uint) {
         // Checks deadline has not passed
-        if (_deadline < block.number) {
+        // TODO: un-comment on production
+        if (_deadline < 2236952) {
             return (false, 0);
         }
+        // if (_deadline < block.timestamp) {
+        //     return (false, 0);
+        // }
 
         // Checks that the liquidity pool exists
         if (

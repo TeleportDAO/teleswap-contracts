@@ -2,7 +2,8 @@
 pragma solidity 0.8.0;
 
 import "./interfaces/ICCExchangeRouter.sol";
-import "./interfaces/IExchangeRouter.sol";
+// import "./interfaces/IExchangeRouter.sol";
+import "../connectors/interfaces/IExchangeConnector.sol";
 import "./interfaces/IInstantRouter.sol";
 import "../relay/interfaces/IBitcoinRelay.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
@@ -23,7 +24,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
     // TODO: how to set them?
     address public wrappedNativeToken;
-    address public exchangeRouter;
+    address public exchangeConnector;
 
     address public override teleBTC;
     mapping(uint => address) public override exchangeConnectors;
@@ -59,8 +60,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         lockers = _lockers;
     }
 
-    function setExchangeRouter (address _exchangeRouter) external override onlyOwner {
-        exchangeRouter = _exchangeRouter;
+    function setExchangeConnector (address _exchangeConnector) external override onlyOwner {
+        exchangeConnector = _exchangeConnector;
     }
 
     /// @notice                 Changes wrapped token contract address
@@ -157,42 +158,44 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         console.log("remainedInputAmount is ");
         console.log(remainedInputAmount);
 
-        // Checks exchange conditions before executing it
-        if (_checkExchangeConditions(remainedInputAmount, _txId)) {
-            console.log("_checkExchangeConditions is true");
 
-            // Gives allowance to exchange router to transfer from cc exchange router
-            ITeleBTC(teleBTC).approve(
-                exchangeRouter,
-                remainedInputAmount
+        // Gives allowance to exchange router to transfer from cc exchange router
+        ITeleBTC(teleBTC).approve(
+            exchangeConnector,
+            remainedInputAmount
+        );
+        uint[] memory amounts;
+        bool theResult;
+
+        if (
+            ccExchangeRequests[_txId].isFixedToken == false &&
+            ccExchangeRequests[_txId].path[ccExchangeRequests[_txId].path.length-1] != wrappedNativeToken
+        ) {
+            (theResult, amounts) = _swapExactTokensForTokens(
+                remainedInputAmount,
+                ccExchangeRequests[_txId].outputAmount,
+                ccExchangeRequests[_txId].path,
+                ccExchangeRequests[_txId].recipientAddress,
+                ccExchangeRequests[_txId].deadline,
+                ccExchangeRequests[_txId].isFixedToken
             );
-            uint[] memory amounts;
-            if (
-                ccExchangeRequests[_txId].isFixedToken == false &&
-                ccExchangeRequests[_txId].path[ccExchangeRequests[_txId].path.length-1] != wrappedNativeToken
-            ) {
-                (amounts,) = _swapExactTokensForTokens(
-                    remainedInputAmount,
-                    ccExchangeRequests[_txId].outputAmount,
-                    ccExchangeRequests[_txId].path,
-                    ccExchangeRequests[_txId].recipientAddress,
-                    ccExchangeRequests[_txId].deadline
-                );
-            }
+        }
 
-            if (
-                ccExchangeRequests[_txId].isFixedToken == false &&
-                ccExchangeRequests[_txId].path[ccExchangeRequests[_txId].path.length-1] == wrappedNativeToken
-            ) {
-                (amounts,) = _swapExactTokensForAVAX(
-                    remainedInputAmount,
-                    ccExchangeRequests[_txId].outputAmount,
-                    ccExchangeRequests[_txId].path,
-                    ccExchangeRequests[_txId].recipientAddress,
-                    ccExchangeRequests[_txId].deadline
-                );
-            }
+        if (
+            ccExchangeRequests[_txId].isFixedToken == false &&
+            ccExchangeRequests[_txId].path[ccExchangeRequests[_txId].path.length-1] == wrappedNativeToken
+        ) {
+            (theResult, amounts) = _swapExactTokensForAVAX(
+                remainedInputAmount,
+                ccExchangeRequests[_txId].outputAmount,
+                ccExchangeRequests[_txId].path,
+                ccExchangeRequests[_txId].recipientAddress,
+                ccExchangeRequests[_txId].deadline,
+                ccExchangeRequests[_txId].isFixedToken
+            );
+        }
 
+        if (theResult) {
             emit CCExchange(
                 ccExchangeRequests[_txId].recipientAddress,
                 ccExchangeRequests[_txId].path[0],
@@ -203,7 +206,6 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
                 ccExchangeRequests[_txId].fee
             );
         } else {
-            // Mints wrapped token for recipient if exchange was failed
             ITeleBTC(teleBTC).transfer(
                 ccExchangeRequests[_txId].recipientAddress,
                 remainedInputAmount
@@ -213,6 +215,18 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
                 remainedInputAmount
             );
         }
+
+
+
+        // Checks exchange conditions before executing it
+        // if (_checkExchangeConditions(remainedInputAmount, _txId)) {
+        //     console.log("_checkExchangeConditions is true");
+
+
+        // } else {
+        //     // Mints wrapped token for recipient if exchange was failed
+
+        // }
 
         console.log("..._normalCCExchange");
         return true;
@@ -334,40 +348,42 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _remainedInputAmount       Remained input amount after reducing the teleporter fee
     /// @param _txId                      Id of the transaction containing the user request
     /// @return                           True if exchange conditions are satisfied
-    function _checkExchangeConditions(uint _remainedInputAmount, bytes32 _txId) internal returns (bool) {
-        console.log("_checkExchangeConditions...");
+    // TODO: deprecate this function since IExchangeConnector does this checks
+    // function _checkExchangeConditions(uint _remainedInputAmount, bytes32 _txId) internal returns (bool) {
+    //     console.log("_checkExchangeConditions...");
 
-        // Checks deadline has not passed
-        // TODO: un-comment for production
-        // if (ccExchangeRequests[_txId].deadline < block.timestamp) {
-        if (ccExchangeRequests[_txId].deadline < 2236952) {
-            console.log("deadline is in correct");
+    //     // Checks deadline has not passed
+    //     // TODO: un-comment for production
+    //     // if (ccExchangeRequests[_txId].deadline < block.timestamp) {
+    //     if (ccExchangeRequests[_txId].deadline < 2236952) {
+    //         console.log("deadline is in correct");
 
-            return false;
-        }
+    //         return false;
+    //     }
 
-        (uint reserveIn, uint reserveOut) = IExchangeRouter(exchangeRouter).getReserves(
-            ccExchangeRequests[_txId].path[0],
-            ccExchangeRequests[_txId].path[1]
-        );
-        // Checks that enough liquidity for output token exists
-        // FIXME: maybe the condition must be reversed
-        if (ccExchangeRequests[_txId].outputAmount > reserveOut) {
-            return false;
-        }
-        // Checks that the input amount is enough
-        if (ccExchangeRequests[_txId].isFixedToken == false) {
-            uint requiredAmountIn = IExchangeRouter(exchangeRouter).getAmountIn(
-                ccExchangeRequests[_txId].outputAmount,
-                reserveIn,
-                reserveOut
-            );
-            return _remainedInputAmount >= requiredAmountIn ? true : false;
-        }
+    //     // TODO: add getReserves to IExchangeConnector
+    //     (uint reserveIn, uint reserveOut) = IExchangeConnector(exchangeConnector).getReserves(
+    //         ccExchangeRequests[_txId].path[0],
+    //         ccExchangeRequests[_txId].path[1]
+    //     );
+    //     // Checks that enough liquidity for output token exists
+    //     if (ccExchangeRequests[_txId].outputAmount > reserveOut) {
+    //         return false;
+    //     }
 
-        console.log("..._checkExchangeConditions");
-        // TODO: if isFixedToken == true
-    }
+    //     // Checks that the input amount is enough
+    //     if (ccExchangeRequests[_txId].isFixedToken == false) {
+    //         uint requiredAmountIn = IExchangeConnector(exchangeConnector).getAmountIn(
+    //             ccExchangeRequests[_txId].outputAmount,
+    //             reserveIn,
+    //             reserveOut
+    //         );
+    //         return _remainedInputAmount >= requiredAmountIn ? true : false;
+    //     }
+
+    //     console.log("..._checkExchangeConditions");
+    //     // TODO: if isFixedToken == true
+    // }
 
 
     /// @notice                         Checks inclusion of the transaction in the specified block
@@ -400,14 +416,16 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         uint amountOutMin,
         address[] memory path,
         address to,
-        uint deadline
-    ) internal returns(uint[] memory amounts, bool result) {
-        (amounts, result) = IExchangeRouter(exchangeRouter).swapExactTokensForTokens(
+        uint deadline,
+        bool isFixedToken
+    ) internal returns(bool result, uint[] memory amounts) {
+        (result, amounts) = IExchangeConnector(exchangeConnector).swap(
             amountIn,
             amountOutMin,
             path,
             to,
-            deadline
+            deadline,
+            isFixedToken
         );
     }
 
@@ -416,14 +434,16 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         uint amountOutMin,
         address[] memory path,
         address to,
-        uint deadline
-    ) internal returns(uint[] memory amounts, bool result) {
-        (amounts, result) = IExchangeRouter(exchangeRouter).swapExactTokensForAVAX(
+        uint deadline,
+        bool isFixedToken
+    ) internal returns(bool result, uint[] memory amounts) {
+        (result, amounts) = IExchangeConnector(exchangeConnector).swap(
             amountIn,
             amountOutMin,
             path,
             to,
-            deadline
+            deadline,
+            isFixedToken
         );
     }
 }

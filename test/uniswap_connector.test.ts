@@ -134,7 +134,7 @@ describe("UniswapConnector", async () => {
 
         // Adds liquidity for non-WETH/WETH pool
         await erc20.approve(exchangeRouter.address, addedLiquidityA);
-        
+
         await exchangeRouter.addLiquidityAVAX(
             erc20.address,
             addedLiquidityC,
@@ -175,7 +175,7 @@ describe("UniswapConnector", async () => {
                 oldReserveC,
                 oldReserveD
             );
-            
+
             await expect(
                 uniswapConnector.getInputAmount(
                     outputAmount,
@@ -207,7 +207,7 @@ describe("UniswapConnector", async () => {
                 oldReserveC,
                 oldReserveD
             );
-            
+
             await expect(
                 uniswapConnector.getOutputAmount(
                     inputAmount,
@@ -252,9 +252,9 @@ describe("UniswapConnector", async () => {
             );
             let path = [erc20.address, _erc20.address];
             let to = deployerAddress;
-            let deadline = 1000000;
+            let deadline = 2236955;
             let isFixedToken = true;
-            
+
             await erc20.approve(uniswapConnector.address, inputAmount);
             await expect(
                 uniswapConnector.swap(
@@ -290,9 +290,9 @@ describe("UniswapConnector", async () => {
             );
             let path = [erc20.address, _erc20.address];
             let to = deployerAddress;
-            let deadline = 1000000;
+            let deadline = 2236955;
             let isFixedToken = false;
-            
+
             await erc20.approve(uniswapConnector.address, inputAmount);
             await expect(
                 uniswapConnector.swap(
@@ -328,7 +328,7 @@ describe("UniswapConnector", async () => {
             );
             let path = [erc20.address, WETH.address];
             let to = signer1Address;
-            let deadline = 1000000;
+            let deadline = 2236955;
             let isFixedToken = true;
             await erc20.approve(uniswapConnector.address, inputAmount);
             await expect(
@@ -365,9 +365,9 @@ describe("UniswapConnector", async () => {
             );
             let path = [erc20.address, WETH.address];
             let to = signer1Address;
-            let deadline = 1000000;
+            let deadline = 2236955;
             let isFixedToken = false;
-            
+
             await erc20.approve(uniswapConnector.address, inputAmount);
             await expect(
                 uniswapConnector.swap(
@@ -403,9 +403,9 @@ describe("UniswapConnector", async () => {
             );
             let path = [erc20.address, _erc20.address];
             let to = deployerAddress;
-            let deadline = 1000000;
+            let deadline = 2236955;
             let isFixedToken = true;
-            
+
             await erc20.approve(uniswapConnector.address, inputAmount);
             await expect(
                 uniswapConnector.swap(
@@ -429,9 +429,9 @@ describe("UniswapConnector", async () => {
             );
             let path = [erc20.address, _erc20.address];
             let to = deployerAddress;
-            let deadline = 1000000;
+            let deadline = 2236955;
             let isFixedToken = false;
-            
+
             await erc20.approve(uniswapConnector.address, inputAmount);
             await expect(
                 uniswapConnector.swap(
@@ -457,7 +457,7 @@ describe("UniswapConnector", async () => {
             let to = deployerAddress;
             let deadline = 0;
             let isFixedToken = true;
-            
+
             await erc20.approve(uniswapConnector.address, inputAmount);
             await expect(
                 uniswapConnector.swap(
@@ -483,7 +483,7 @@ describe("UniswapConnector", async () => {
             let to = deployerAddress;
             let deadline = 0;
             let isFixedToken = true;
-            
+
             await erc20.approve(uniswapConnector.address, inputAmount);
             await expect(
                 uniswapConnector.swap(
