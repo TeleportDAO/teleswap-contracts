@@ -390,4 +390,57 @@ describe("Instant pool", async () => {
         })
 
     });
+
+    describe("#getLoan", async () => {
+
+        let addedLiquidity = 100;
+
+        beforeEach("deploy a new cc exchange router", async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+            await teleBTC.approve(instantPool.address, addedLiquidity);
+            await instantPool.addLiquidity(
+                deployerAddress,
+                addedLiquidity
+            );
+        });
+    
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("Gets loan from instant pool", async function () {
+            await expect(
+                instantPool.getLoan(
+                    signer1Address,
+                    addedLiquidity
+                )
+            ).to.emit(instantPool, "InstantLoan")
+        })
+
+        it("Reverts since message sender is not instant router", async function () {
+            await expect(
+                instantPoolSigner1.getLoan(
+                    signer1Address,
+                    addedLiquidity
+                )
+            ).to.revertedWith("InstantPool: sender is not allowed")
+        })
+
+        it("Reverts since available liquidity is not sufficient", async function () {
+            // Gets a loan that makes instant pool empty
+            await instantPool.getLoan(
+                signer1Address,
+                addedLiquidity
+            ); 
+
+            await expect(
+                instantPool.getLoan(
+                    signer1Address,
+                    addedLiquidity
+                )
+            ).to.revertedWith("InstantPool: liquidity is not sufficient")
+        })
+
+    });
+
 });
