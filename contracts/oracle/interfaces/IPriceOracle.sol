@@ -4,26 +4,36 @@ pragma solidity ^0.8.0;
 interface IPriceOracle {
 
     /// @notice                     Emits when new exchange router is added
-    /// @param exchangeRouter       The address of the new exchange router
-    /// @param exchangeConnector    The address of the exchange connector
+    /// @param exchangeRouter       Address of new exchange router
+    /// @param exchangeConnector    Address of exchange connector
     event ExchangeRouterAdded(address exchangeRouter, address exchangeConnector);
 
     /// @notice                     Emits when an exchange router is removed
-    /// @param exchangeRouter       The address of the new exchange router
+    /// @param exchangeRouter       Address of removed exchange router
     event ExchangeRouterRemoved(address exchangeRouter);
 
-    /// @notice                     Emits when a price proxy is updated
+    /// @notice                     Emits when a price proxy is set
     /// @param _firstToken          Address of the first token
     /// @param _secondToken         Address of the second token
-    /// @param _priceProxyAddress   The address of the price proxy
+    /// @param _priceProxyAddress   Address of price proxy contract
     event SetPriceProxy(address _firstToken, address _secondToken, address _priceProxyAddress);
 
     // Read-only functions
     
+    /// @notice                     Gives price proxy address for a pair of tokens
+    /// @param _firstToken          Address of the first token
+    /// @param _secondToken         Address of the second token
+    /// @return                     Address of price proxy contract
     function ChainlinkPriceProxy(address _firstToken, address _secondToken) external view returns (address);
 
+    /// @notice                     Gives exchange connector address for an exchange router
+    /// @param _exchangeRouter      Address of the first token
+    /// @return                     Address of exchange connector
     function exchangeConnector(address _exchangeRouter) external view returns (address);
 
+    /// @notice                     Gives address of an exchange router from exchange routers list
+    /// @param _index               Index of exchange router
+    /// @return                     Address of exchange router
     function exchangeRoutersList(uint _index) external view returns (address);
 
     function getExchangeRoutersListLength() external view returns (uint);
@@ -60,4 +70,6 @@ interface IPriceOracle {
     function removeExchangeRouter(uint _exchangeIndex) external;
 
     function setPriceProxy(address _firstToken, address _secondToken, address _priceProxyAddress) external;
+
+    function setAcceptableDelay(uint _acceptableDelay) external;
 }
