@@ -1,23 +1,14 @@
-// const BitcoinRelay = artifacts.require("BitcoinRelay");
-require('dotenv').config({path:"../../.env"});
-
-import { assert, expect, use } from "chai";
-import { deployments, ethers } from "hardhat";
-import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
-import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
-import { Contract } from "@ethersproject/contracts";
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { Signer, BigNumber } from "ethers";
 import { Address } from "hardhat-deploy/types";
-
-import { solidity } from "ethereum-waffle";
-
-import { isBytesLike } from "ethers/lib/utils";
 
 import {TeleBTC} from "../src/types/TeleBTC";
 import {TeleBTC__factory} from "../src/types/factories/TeleBTC__factory";
 import {InstantPool} from "../src/types/InstantPool";
 import {InstantPool__factory} from "../src/types/factories/InstantPool__factory";
 
-import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
+import { takeSnapshot, revertProvider } from "./block_utils";
 
 
 describe("Instant pool", async () => {
@@ -25,20 +16,13 @@ describe("Instant pool", async () => {
 
     let deployer: Signer;
     let signer1: Signer;
-    let signer2: Signer;
     let deployerAddress: Address;
     let signer1Address: Address;
-    let signer2Address: Address;
 
-    let WrappedBTC: TeleBTC;
+    let teleBTC: TeleBTC;
     let instantPool: InstantPool;
-    let instantPoolAddress: Address;
 
-    let mockInstantRouter: MockContract;
-
-    let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     let ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
-    let telePortTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000)
     let ten = BigNumber.from(10).pow(18).mul(10)
     let oneHundred = BigNumber.from(10).pow(8).mul(100)
 
@@ -48,91 +32,56 @@ describe("Instant pool", async () => {
 
     before(async () => {
 
-        [deployer, signer1, signer2] = await ethers.getSigners();
-        deployerAddress = await deployer.getAddress()
-        signer1Address = await signer1.getAddress()
-        signer2Address = await signer2.getAddress()
+        [deployer, signer1] = await ethers.getSigners();
+        deployerAddress = await deployer.getAddress();
+        signer1Address = await signer1.getAddress();
 
-        // read block headers from file
-
-        const instantRouterABI = await deployments.getArtifact(
-            "InstantRouter"
-        );
-        mockInstantRouter = await deployMockContract(
-            deployer,
-            instantRouterABI.abi
-        )
-
-        WrappedBTC = await deployWrappedBTC()
-
-    });
-
-    beforeEach("deploy a new cc exchange router", async () => {
-        snapshotId = await takeSnapshot(signer1.provider);
-
-        instantPool = await deployInstantPool();
-    });
-
-    afterEach(async () => {
-        await revertProvider(signer1.provider, snapshotId);
-    });
-
-
-    const deployInstantPool = async (
-        _signer?: Signer
-    ): Promise<InstantPool> => {
-        const instantPoolFactory = new InstantPool__factory(
-            _signer || deployer
-        );
-
-        const instantPool = await instantPoolFactory.deploy(
-            mockInstantRouter.address,
-            WrappedBTC.address,
-            name,
-            symbol,
-            deployerAddress,
-            instantFee
-        );
-
-        return instantPool;
-    };
-
-
-    const deployWrappedBTC = async (
-        _signer?: Signer
-    ): Promise<TeleBTC> => {
-        const wrappedTokenFactory = new TeleBTC__factory(
-            _signer || deployer
-        );
-
-        const wrappedToken = await wrappedTokenFactory.deploy(
-            "WrappedBTC",
+        // Deploys teleBTC contract
+        const teleBTCFactory = new TeleBTC__factory(deployer);
+        teleBTC = await teleBTCFactory.deploy(
+            "teleBTC",
             "TBTC",
             ONE_ADDRESS,
             ONE_ADDRESS,
             ONE_ADDRESS
         );
 
-        return wrappedToken;
-    };
+        // Deploys instant pool contract
+        const instantPoolFactory = new InstantPool__factory(deployer);
+        instantPool = await instantPoolFactory.deploy(
+            teleBTC.address,
+            deployerAddress,
+            instantFee,
+            name,
+            symbol  
+        );
+    });
 
     describe("#addLiquidity", async () => {
 
-        let theTestMintedAmount = oneHundred
+        let theTestMintedAmount = oneHundred;
 
-        it("minting instant pool token in exchange of wrapped BTC", async function () {
+        beforeEach("deploy a new cc exchange router", async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+        });
+    
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
 
-            let WrappedBTCSigner1 = await WrappedBTC.connect(signer1)
+        it("Mints instant pool token in exchange of deposited teleBTC", async function () {
 
-            await WrappedBTCSigner1.mintTestToken()
+            let teleBTCSigner1 = await teleBTC.connect(signer1)
+
+            await teleBTCSigner1.mintTestToken()
 
             expect(
-                await WrappedBTC.balanceOf(signer1Address)
+                await teleBTC.balanceOf(signer1Address)
             ).to.equal(theTestMintedAmount)
 
             let instantPoolSigner1 = await instantPool.connect(signer1)
 
-            await WrappedBTCSigner1.approve(
+            await teleBTCSigner1.approve(
                 instantPool.address,
                 theTestMintedAmount
             )
@@ -154,20 +103,20 @@ describe("Instant pool", async () => {
 
     describe("#removeLiquidity", async () => {
 
-        let theTestMintedAmount = oneHundred
+        let theTestMintedAmount = oneHundred;
 
-        it("minting instant pool token in exchange of wrapped BTC", async function () {
+        it("Burns instant pool token in exchange of withdrawing teleBTC", async function () {
 
-            let WrappedBTCSigner1 = await WrappedBTC.connect(signer1)
+            let teleBTCSigner1 = await teleBTC.connect(signer1);
 
-            await WrappedBTCSigner1.mintTestToken()
+            await teleBTCSigner1.mintTestToken();
 
-            let instantPoolSigner1 = await instantPool.connect(signer1)
+            let instantPoolSigner1 = await instantPool.connect(signer1);
 
-            await WrappedBTCSigner1.approve(
+            await teleBTCSigner1.approve(
                 instantPool.address,
                 theTestMintedAmount
-            )
+            );
 
             await instantPoolSigner1.addLiquidity(
                 signer1Address,
@@ -175,7 +124,7 @@ describe("Instant pool", async () => {
             )
 
             expect(
-                await WrappedBTC.balanceOf(
+                await teleBTC.balanceOf(
                     signer1Address
                 )
             ).to.equal(0)
@@ -188,7 +137,7 @@ describe("Instant pool", async () => {
             ).to.emit(instantPool, "RemoveLiquidity")
 
             expect(
-                await WrappedBTC.balanceOf(
+                await teleBTC.balanceOf(
                     signer1Address
                 )
             ).to.equal(theTestMintedAmount)
@@ -198,7 +147,6 @@ describe("Instant pool", async () => {
                     signer1Address
                 )
             ).to.equal(0)
-
         })
 
     });
