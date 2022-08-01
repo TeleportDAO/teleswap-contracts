@@ -19,7 +19,7 @@ import { ERC20__factory } from "../src/types/factories/ERC20__factory";
 
 import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
 
-describe("BitcoinTeleporter", async () => {
+describe("Locker", async () => {
 
     let snapshotId: any;
 
@@ -57,6 +57,7 @@ describe("BitcoinTeleporter", async () => {
 
     // Mock contracts
     let mockExchangeRouter: MockContract;
+    let mockPriceOracle: MockContract;
 
     before(async () => {
         // Sets accounts
@@ -75,6 +76,14 @@ describe("BitcoinTeleporter", async () => {
         mockExchangeRouter = await deployMockContract(
             deployer,
             exchangeRouterContract.abi
+        );
+
+        const priceOracleContract = await deployments.getArtifact(
+            "IPriceOracle"
+        );
+        mockPriceOracle = await deployMockContract(
+            deployer,
+            priceOracleContract.abi
         );
 
         // Deploys bitcoinTeleporter contract
@@ -147,7 +156,7 @@ describe("BitcoinTeleporter", async () => {
         const locker = await lockerFactory.deploy(
             teleportDAOToken.address,
             mockExchangeRouter.address,
-            ONE_ADDRESS,
+            mockPriceOracle.address,
             requiredTDTLockedAmount,
             0,
             collateralRatio
@@ -479,6 +488,8 @@ describe("BitcoinTeleporter", async () => {
     });
 
     describe("#mintAndBurnTeleBTC", async () => {
+
+        await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
 
         it("minting tele BTC", async function () {
 

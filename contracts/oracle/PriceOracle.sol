@@ -8,7 +8,7 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import "hardhat/console.sol"; // Just for test
 
 contract PriceOracle is IPriceOracle, Ownable {
-    
+
     mapping(address => mapping (address => address)) public override ChainlinkPriceProxy;
     mapping(address => address) public override exchangeConnector;
     address[] public override exchangeRoutersList;
@@ -22,7 +22,7 @@ contract PriceOracle is IPriceOracle, Ownable {
     function getExchangeRoutersListLength() public view override returns (uint) {
         return exchangeRoutersList.length;
     }
-        
+
     /// @notice                         Finds amount of output token that has equal value to the input amount of the input token
     /// @param _inputAmount             Amount of the input token
     /// @param _inputDecimals           Number of input token decimals
@@ -39,15 +39,15 @@ contract PriceOracle is IPriceOracle, Ownable {
     ) external view override returns (uint) {
         // Gets output amount from oracle
         (bool result, uint outputAmount, uint timestamp) = _equivalentOutputAmountFromOracle(
-            _inputAmount, 
+            _inputAmount,
             _inputDecimals,
             _outputDecimals,
-            _inputToken, 
+            _inputToken,
             _outputToken
         );
 
         // Checks timestamp of the oracle result
-        if (result == true && _abs(int(timestamp) - int(block.timestamp)) < acceptableDelay) { 
+        if (result == true && _abs(int(timestamp) - int(block.timestamp)) < acceptableDelay) {
             return outputAmount;
         } else {
             bool _result;
@@ -64,20 +64,20 @@ contract PriceOracle is IPriceOracle, Ownable {
             for (uint i = 0; i < getExchangeRoutersListLength(); i++) {
                 (_result, _outputAmount) = _equivalentOutputAmountFromExchange(
                     exchangeRoutersList[i],
-                    _inputAmount, 
-                    _inputToken, 
+                    _inputAmount,
+                    _inputToken,
                     _outputToken
                 );
-                
+
                 if (_result == true) {
                     _totalNumber = _totalNumber + 1;
                     _totalAmount = _totalAmount + _outputAmount;
-                } 
+                }
             }
 
             // Returns average of results from different sources
             return _totalNumber > 0 ? _totalAmount/_totalNumber : 0;
-            
+
         }
     }
 
@@ -98,10 +98,10 @@ contract PriceOracle is IPriceOracle, Ownable {
     ) external view override returns (uint _outputAmount) {
         bool result;
         (result, _outputAmount, /*timestamp*/) = _equivalentOutputAmountFromOracle(
-            _inputAmount, 
-            _inputDecimals, 
+            _inputAmount,
+            _inputDecimals,
             _outputDecimals,
-            _inputToken, 
+            _inputToken,
             _outputToken
         );
         require(result == true, "PriceOracle: Price proxy does not exist");
@@ -120,9 +120,9 @@ contract PriceOracle is IPriceOracle, Ownable {
         address _outputToken
     ) external view override returns (uint) {
         (bool result, uint outputAmount) = _equivalentOutputAmountFromExchange(
-            _exchangeRouter, 
-            _inputAmount, 
-            _inputToken, 
+            _exchangeRouter,
+            _inputAmount,
+            _inputToken,
             _outputToken
         );
         require(result == true, "PriceOracle: Pair does not exist on exchange");
@@ -179,10 +179,10 @@ contract PriceOracle is IPriceOracle, Ownable {
         address _inputToken,
         address _outputToken
     ) internal view returns (bool _result, uint _outputAmount) {
-        
+
         (_result, _outputAmount) = IExchangeConnector(exchangeConnector[_exchangeRouter]).getOutputAmount(
             _inputAmount,
-            _inputToken, 
+            _inputToken,
             _outputToken
         );
     }
@@ -210,31 +210,33 @@ contract PriceOracle is IPriceOracle, Ownable {
         if (ChainlinkPriceProxy[_inputToken][_outputToken] != address(0)) {
             // Gets price of _inputToken/_outputToken
             (
-                /*uint80 roundID*/,
-                price,
-                /*uint startedAt*/,
-                _timestamp,
-                /*uint80 answeredInRound*/
+            /*uint80 roundID*/,
+            price,
+            /*uint startedAt*/,
+            _timestamp,
+            /*uint80 answeredInRound*/
             ) = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken][_outputToken]).latestRoundData();
 
             // Gets number of decimals
             decimals = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken][_outputToken]).decimals();
 
+            // TODO: check the logic again
             _outputAmount = uint(price)*_inputAmount*(10**(_outputDecimals + 1))/(10**(decimals + _inputDecimals + 1));
             _result = true;
         } else if (ChainlinkPriceProxy[_outputToken][_inputToken] != address(0)) {
             // Gets price of _outputToken/_inputToken
             (
-                /*uint80 roundID*/,
-                price,
-                /*uint startedAt*/,
-                _timestamp,
-                /*uint80 answeredInRound*/
+            /*uint80 roundID*/,
+            price,
+            /*uint startedAt*/,
+            _timestamp,
+            /*uint80 answeredInRound*/
             ) = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken][_inputToken]).latestRoundData();
 
             // Gets number of decimals
             decimals = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken][_inputToken]).decimals();
-            
+
+            // TODO: check the logic again
             _outputAmount = (10**(decimals + 1))*_inputAmount*(10**(_outputDecimals + 1))/10/(10**(_inputDecimals + 1))/uint(price);
             _result = true;
         } else {
@@ -244,7 +246,7 @@ contract PriceOracle is IPriceOracle, Ownable {
     }
 
     /// @notice             Removes an element of excahngeRouterList
-    /// @dev                Deletes and shifts the array  
+    /// @dev                Deletes and shifts the array
     /// @param _index       Index of the element that will be deleted
     function _removeElementFromExchangeRoutersList(uint _index) internal {
         require(_index < exchangeRoutersList.length, "PriceOracle: Index is out of bound");

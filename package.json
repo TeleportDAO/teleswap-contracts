@@ -35,6 +35,7 @@
     "typescript": "^4.7.3"
   },
   "dependencies": {
+    "@chainlink/contracts": "^0.4.2",
     "@liquality/bitcoin-rpc-provider": "^1.13.0",
     "@liquality/client": "^1.13.0",
     "@openzeppelin/contracts": "^4.3.3",

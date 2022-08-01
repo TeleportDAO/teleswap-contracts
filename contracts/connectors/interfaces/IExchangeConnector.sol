@@ -17,20 +17,20 @@ interface IExchangeConnector {
     function wrappedNativeToken() external view returns (address);
 
     function getInputAmount(
-        uint _outputAmount, 
-        address _inputToken, 
+        uint _outputAmount,
+        address _inputToken,
         address _outputToken
     ) external returns (bool, uint);
 
     function getOutputAmount(
-        uint _inputAmount, 
-        address _inputToken, 
+        uint _inputAmount,
+        address _inputToken,
         address _outputToken
     ) external view returns (bool, uint);
 
     // State-changing functions
 
-	function setExchangeRouter(address _exchangeRouter) external;
+    function setExchangeRouter(address _exchangeRouter) external;
 
     function setLiquidityPoolFactory() external;
 

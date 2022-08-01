@@ -16,6 +16,8 @@ import { LiquidityPoolFactory } from "../src/types/LiquidityPoolFactory";
 import { LiquidityPoolFactory__factory } from "../src/types/factories/LiquidityPoolFactory__factory";
 import { ExchangeRouter } from "../src/types/ExchangeRouter";
 import { ExchangeRouter__factory } from "../src/types/factories/ExchangeRouter__factory";
+import { UniswapConnector } from "../src/types/UniswapConnector";
+import { UniswapConnector__factory } from "../src/types/factories/UniswapConnector__factory";
 import { CCExchangeRouter } from "../src/types/CCExchangeRouter";
 import { CCExchangeRouter__factory } from "../src/types/factories/CCExchangeRouter__factory";
 import { CCTransferRouter } from "../src/types/CCTransferRouter";
@@ -60,6 +62,7 @@ describe("CCExchangeRouter", async () => {
     let signer1Address: string;
 
     // Contracts
+    let exchangeConnector: UniswapConnector;
     let exchangeRouter: ExchangeRouter;
     let liquidityPool: LiquidityPool;
     let liquidityPoolFactory: LiquidityPoolFactory;
@@ -76,6 +79,7 @@ describe("CCExchangeRouter", async () => {
     // let mockBitcoinTeleporter: MockContract;
     let mockInstantRouter: MockContract;
     let mockExchangeRouter: MockContract;
+    let mockPriceOracle: MockContract;
 
     //
     let liquidityPool__factory: LiquidityPool__factory;
@@ -98,27 +102,20 @@ describe("CCExchangeRouter", async () => {
             bitcoinRelayContract.abi
         );
 
+        const priceOracleContract = await deployments.getArtifact(
+            "IPriceOracle"
+        );
+        mockPriceOracle = await deployMockContract(
+            deployer,
+            priceOracleContract.abi
+        );
+
+        await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
+
         // Mocks checkTxProof of bitcoinRelay
         // We don't pass arguments since the request was modified and the txId is not valid
         await mockBitcoinRelay.mock.checkTxProof.returns(true);
 
-        // Mocks teleporters contract
-        // const bitcoinTeleporterContract = await deployments.getArtifact(
-        //     "IBitcoinTeleporter"
-        // );
-        // mockBitcoinTeleporter = await deployMockContract(
-        //     deployer,
-        //     bitcoinTeleporterContract.abi
-        // );
-
-        // Mocks teleporters contract
-        // const lockersContract = await deployments.getArtifact(
-        //     "ILockers"
-        // );
-        // mockLockers = await deployMockContract(
-        //     deployer,
-        //     lockersContract.abi
-        // );
 
         // Mocks instant router contract
         const instantRouterContract = await deployments.getArtifact(
@@ -177,6 +174,13 @@ describe("CCExchangeRouter", async () => {
             ZERO_ADDRESS // WAVAX
         );
 
+        const exchangeConnectorFactory = new UniswapConnector__factory(deployer);
+        exchangeConnector = await exchangeConnectorFactory.deploy(
+            "TheExchangeConnector",
+            exchangeRouter.address,
+            ZERO_ADDRESS // WAVAX
+        );
+
         // Deploys exchange token
         // We replace the exchangeToken address in ccExchangeRequests
         const erc20Factory = new ERC20__factory(deployer);
@@ -199,7 +203,7 @@ describe("CCExchangeRouter", async () => {
         // await ccExchangeRouter.setWrappedBitcoin(teleBTC.address);
 
         // Sets ccExchangeRouter address in ccTransferRouter
-        await ccExchangeRouter.setExchangeRouter(exchangeRouter.address);
+        await ccExchangeRouter.setExchangeConnector(exchangeConnector.address);
 
         await teleBTC.setCCExchangeRouter(ccExchangeRouter.address);
 
@@ -239,7 +243,7 @@ describe("CCExchangeRouter", async () => {
         const locker = await lockerFactory.deploy(
             teleportDAOToken.address,
             mockExchangeRouter.address,
-            ONE_ADDRESS,
+            mockPriceOracle.address,
             requiredTDTLockedAmount,
             0,
             collateralRatio
