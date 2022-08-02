@@ -105,7 +105,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         address _collateralToken
     ) external nonReentrant override returns (bool) {
 		// Checks that deadline for getting loan has not passed
-        require(_deadline >= block.timestamp, "InstantRouter: Deadline has passed");
+        require(_deadline >= block.timestamp, "InstantRouter: deadline has passed");
 
         // Calculates the instant fee
         uint instantPercentageFee = IInstantPool(teleBTCInstantPool).instantPercentageFee();
@@ -334,7 +334,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     /// @param _user        Address of the user whose instant requests array is considered
     /// @param _index       Index of the element that will be deleted
     function _removeElement(address _user, uint _index) internal {
-        require(_index < instantRequests[_user].length, "InstantRouter: Index is out of bound");
+        require(_index < instantRequests[_user].length, "InstantRouter: index is out of bound");
         for (uint i = _index; i < instantRequests[_user].length - 1; i++) {
             instantRequests[_user][i] = instantRequests[_user][i+1];
         }
@@ -382,7 +382,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
 		);
 
 		// Transfers collateral pool token from user to itself
-		IERC20(collateralPool).transferFrom(_user, address(this), requiredCollateralPoolToken);
+        ICollateralPool(collateralPool).transferFrom(_user, address(this), requiredCollateralPoolToken);
 
         // Records the instant request
         instantRequest memory request;
