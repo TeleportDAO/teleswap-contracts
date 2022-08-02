@@ -1,71 +1,142 @@
-pragma solidity >=0.7.6;
+pragma solidity ^0.8.0;
 
 interface IInstantRouter {
-    // structures
-    struct InstantTransferRequest {
+    // Structures
+
+    /// @notice                                 Structure for recording instant requests
+    /// @param user                             Address of user who recieves loan
+    /// @param collateralPool                   Address of collateral pool
+    /// @param paybackAmount                    Amount of requested loan
+    /// @param collateralToken                  Address of underlying collateral token
+    /// @param lockedCollateralPoolTokenAmount  Amount of locked collateral pool token for getting loan
+    /// @param deadline                         Deadline of paying back the loan
+    struct instantRequest {
         address user;
-        uint collateralAmount;
-        uint wrappedBitcoinAmount;
-        uint creationTime;
-        uint deadline;
-        uint paybackDeadline;
-        bool isPaidback;
-        bool isUsed;
-    }
-    struct debt {
-        address user;
-        uint wrappedBitcoinAmount;
-        uint collateralAmount;
+        address collateralPool;
+		address collateralToken;
+        uint paybackAmount;
+        uint lockedCollateralPoolTokenAmount;
         uint deadline;
     }
 
-    // events
-    event PaybackInstantLoan(address user, uint bitcoinAmount);
-    event PunishUser(address user, uint slashedAmount);
+    // Events
 
-    // read-only functions
-    function owner() external view returns(address);
-    function bitcoinInstantPool() external view returns(address);
-    function wrappedBitcoin() external view returns(address);
-    function ccTransferRouter() external view returns(address);
-    function requestCollateralAmount(bytes32 messageHash) external view returns(uint);
-    function paybackDeadline() external returns(uint);
-    function collateralRatio() external returns(uint);
+    /// @notice                            Emits when a loan gets paid back
+    /// @param user                        Address of user who recieves loan
+    /// @param paybackAmount               Amount of (loan + fee) that should be paid back
+    /// @param collateralToken             Address of underlying collateral token
+    /// @param lockedCollateralPoolToken   Amount of locked collateral pool token for getting loan
+    event PaybackLoan(
+		address indexed user, 
+		uint paybackAmount, 
+		address indexed collateralToken, 
+		uint lockedCollateralPoolToken
+	);
 
-    // state-changing functions
-    function changeOwner(address _owner) external;
-    function setExchangeRouter(address _ExchangeRouter) external;
+    /// @notice                         Emits when a user gets slashed
+    /// @param user                     Address of user who recieves loan
+    /// @param collateralToken          Address of collateral underlying token
+	/// @param slashedAmount            How much user got slashed
+	/// @param paybackAmount            Address of collateral underlying token
+    event SlashUser(
+		address indexed user, 
+		address indexed collateralToken, 
+		uint slashedAmount, 
+		uint paybackAmount
+	);
+
+    /// @notice                     Emits when a user submits instant transfer request
+    /// @param user                 Address of the user who made the request
+    /// @param receiver             Address of the loan receiver
+    /// @param loanAmount           Amount of the loan
+    /// @param instantFee           Amount of the instant loan fee
+    /// @param deadline             Deadline of paying back the loan
+    /// @param collateralToken      Address of the collateral token
+    event InstantTransfer(
+        address indexed user, 
+        address receiver, 
+        uint loanAmount, 
+        uint instantFee, 
+        uint indexed deadline, 
+        address indexed collateralToken
+    );
+
+    /// @notice                     Emits when a user submits instant exchange request
+    /// @param user                 Address of the user who made the request
+    /// @param receiver             Address of the loan receiver
+    /// @param loanAmount           Amount of the loan
+    /// @param instantFee           Amount of the instant loan fee
+    /// @param amountOut            Amount of the output token
+    /// @param path                 Path of exchanging tokens
+    /// @param isFixed              Shows whether input or output is fixed in exchange
+    /// @param deadline             Deadline of getting the loan
+    /// @param collateralToken      Address of the collateral token
+    event InstantExchange(
+        address indexed user, 
+        address receiver, 
+        uint loanAmount, 
+        uint instantFee,
+        uint amountOut,
+        address[] path,
+        bool isFixed,
+        uint indexed deadline, 
+        address indexed collateralToken
+    );
+
+    // Read-only functions
+
+    function teleBTCInstantPool() external view returns (address);
+
+    function teleBTC() external view returns (address);
+
+    function relay() external view returns (address);
+
+	function collateralPoolFactory() external view returns (address);
+
+	function priceOracle() external view returns (address);
+
+    function slasherPercentageReward() external view returns (uint);
+
+    function paybackDeadline() external view returns (uint);
+    
+    // function getCollateralAmount(address _user, uint _number) external view returns (uint);
+
+    function getUserRequestsLength(address _user) external view returns (uint);
+
+    function getUserRequestDeadline(address _user, uint _index) external view returns (uint);
+
+    // State-changing functions
+
     function setPaybackDeadline(uint _paybackDeadline) external;
-    function setCollateralRatio(uint _paybackDeadline) external;
-    function setCCTransferRouter (address _ccTransferRouter) external;
-    function setPunisherReward (uint _punisherReward) external;
-    function addLiquidity(address user, uint instantPoolTokenAmount) external returns(uint);
-    function removeLiquidity(address user, uint instantPoolTokenAmount) external returns(uint);
-    function instantCCTransfer (address receiver, uint amount, uint deadline) external returns (bool);
-    function instantCCTransferWithPermit(
-        address signer,
-        bytes memory signature,
-        address receiver,
-        uint amount,
-        uint nonce
-    ) external returns(bool);
-    function instantCCExchange (
-        uint amountIn,
-        uint amountOutMin,
-        address[] memory path,
-        address receiver,
-        uint deadline
-    ) external returns(uint[] memory amounts, bool result);
-    function instantCCExchangeWithPermit(
-        address signer,
-        bytes memory signature,
-        uint amountIn,
-        uint amountOutMin,
-        address[] memory path,
-        address receiver,
-        uint deadline
-    ) external returns(uint[] memory amounts, bool result);
-    function payBackInstantTransfer (uint bitcoinAmount, address user) external returns (bool);
-    function punishUser (address user, uint[] memory debtIndex) external returns (bool);
+
+    function setSlasherPercentageReward(uint _slasherPercentageReward) external;
+
+    function setTeleBTCInstantPool(address _teleBTCInstantPool) external;
+
+    function instantCCTransfer(
+        address _receiver,
+        uint _loanAmount,
+        uint _deadline,
+        address _collateralPool
+    ) external returns (bool);
+
+    function instantCCExchange(
+		address _exchangeConnector,
+        address _receiver,
+        uint _loanAmount, 
+        uint _amountOut, 
+        address[] memory _path, 
+        uint _deadline,
+        address _collateralToken,
+        bool _isFixedToken
+    ) external returns (uint[] memory);
+
+    function payBackLoan(address _user, uint _teleBTCAmount) external returns (bool);
+
+    function slashUser(		
+		address _exchangeConnector, 
+		address _user, 
+		uint _requestIndex
+	) external returns (bool);
 
 }
