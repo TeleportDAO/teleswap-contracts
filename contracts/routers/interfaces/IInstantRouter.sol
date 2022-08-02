@@ -99,7 +99,7 @@ interface IInstantRouter {
 
     function paybackDeadline() external view returns (uint);
     
-    // function getCollateralAmount(address _user, uint _number) external view returns (uint);
+    function getLockedCollateralPoolTokenAmount(address _user, uint _index) external view returns (uint);
 
     function getUserRequestsLength(address _user) external view returns (uint);
 

@@ -24,15 +24,15 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
 	address public override collateralPoolFactory;
 
     /// @notice                             This contract handles instant transfer and instant exchange requests
-    /// @dev                                It manages instant pool and collateral pool contracts 
+    /// @dev                                It manages instant pool contract
     /// @param _teleBTC                     Address of teleBTC contract
-    /// @param _exchangeRouter              Address of exchange router contract
-    /// @param _relay                       Address of relay contract
+    /// @param _relay                       Address of price oracle contract
+	/// @param _priceOracle                 Address of collateral pool factory contract
+	/// @param _collateralPoolFactory       Address of relay contract
     /// @param _slasherPercentageReward     Percentage of total collateral that goes to slasher
     /// @param _paybackDeadline             Dealine of paying back the borrowed tokens from instant pool
     constructor(
         address _teleBTC,
-        address _exchangeRouter,
         address _relay,
 		address _priceOracle,
 		address _collateralPoolFactory,
@@ -47,25 +47,22 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         paybackDeadline = _paybackDeadline;
     }
 
-    // /// @notice                   Gives the collateral amount corresponding to the request
-    // /// @dev                      
-    // /// @param _user              Address of the user
-    // /// @param _number            Number of the instant request
-    // /// @return                   Amount of locked collateral
-    // function getCollateralAmount(address _user, uint _number) external view override returns (uint) {
-    //     return instantRequests[_user][_number].collateralAmount;
-    // }
+    /// @notice                  Gives the collateral amount corresponding to the request
+    /// @param _user             Address of the user
+    /// @param _index            Number of the instant request
+    /// @return                  Amount of locked collateral
+    function getLockedCollateralPoolTokenAmount(address _user, uint _index) external view override returns (uint) {
+        return instantRequests[_user][_index].lockedCollateralPoolTokenAmount;
+    }
 
-    /// @notice                   Gives the total number of user's requests
-    /// @dev                      
+    /// @notice                   Gives the total number of user's requests                  
     /// @param _user              Address of the user
     /// @return                   The total number of user's requests
     function getUserRequestsLength(address _user) external view override returns (uint) {
         return instantRequests[_user].length;
     }
 
-    /// @notice                   Gives the user request deadline
-    /// @dev                      
+    /// @notice                   Gives the user request deadline                 
     /// @param _user              Address of the user
     /// @param _index             Index of the request in user request list
     /// @return                   The deadline of that request
