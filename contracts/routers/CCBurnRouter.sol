@@ -181,8 +181,13 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint _endIndex
     ) external nonReentrant override returns (bool) {
         // Checks the correction of input indices
-        require(_startIndex >= 0 && _endIndex < burnRequests[_lockerTargetAddress].length
+        require(_startIndex >= 0 && 
+        _endIndex < burnRequests[_lockerTargetAddress].length && 
+        _startIndex<= _endIndex
         , 'CCBurnRouter: burnProof wrong index input');
+        // Checks if the locker address is valid
+        require(ILockers(lockers).isLocker(_lockerTargetAddress),
+        "CCBurnRouter: locker address is not valid");
         // Checks inclusion of transaction
         bytes32 txId = _calculateTxId(_version, _vin, _vout, _locktime);
         require(
@@ -227,6 +232,10 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _indices             Array of indices of the requests for that locker
     /// @return                     True if dispute is successfull
     function disputeBurn(address _lockerTargetAddress, uint[] memory _indices) external nonReentrant override returns (bool) {
+        // Checks if the locker address is valid
+        require(ILockers(lockers).isLocker(_lockerTargetAddress),
+        "CCBurnRouter: locker address is not valid");
+        // Goes through provided indexes of burn requests to see if locker should be slashed
         for (uint i = 0; i < _indices.length; i++) { 
             require(
                 !burnRequests[_lockerTargetAddress][_indices[i]].isTransferred,
