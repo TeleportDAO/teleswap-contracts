@@ -2,43 +2,20 @@
 pragma solidity 0.8.0;
 
 import "./interfaces/ICCExchangeRouter.sol";
-import "./interfaces/IExchangeRouter.sol";
-// import "./interfaces/ICCTransferRouter.sol";
+// import "./interfaces/IExchangeRouter.sol";
+import "../connectors/interfaces/IExchangeConnector.sol";
 import "./interfaces/IInstantRouter.sol";
-// import "../pools/interfaces/IFastPool.sol";
-// import "../erc20/interfaces/IWrappedToken.sol";
 import "../relay/interfaces/IBitcoinRelay.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../lockers/interfaces/ILockers.sol";
-import "../libraries/TxHelper.sol";
+import "../libraries/NewTxHelper.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-// import "../teleporter/interfaces/IBitcoinTeleporter.sol";
-// import "../libraries/BitcoinTxParser.sol";
-// import "../libraries/TeleportDAOLibrary.sol";
 import "hardhat/console.sol";
 
 contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
     using SafeMath for uint;
-
-    // address ZERO_ADDRESS = 0x0000000000000000000000000000000000000000;
-    // mapping(uint => request) private requests;
-    // uint private lastRequest;
-    // address[] private parsedPath;
-    // address public override liquidityPoolFactory;
-    // address public override WAVAX;
-    // address public override exchangeRouter;
-    // address public override wrappedBitcoin;
-    // address public bitcoinTeleporter;
-    // address public ccTransferRouter;
-    // address public instantRouter;
-    // address public override owner;
-
-    // modifier onlyOwner {
-    //     require(msg.sender == owner);
-    //     _;
-    // }
 
     // Public variables
     address public override relay;
@@ -47,7 +24,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
     // TODO: how to set them?
     address public wrappedNativeToken;
-    address public exchangeRouter;
+    address public exchangeConnector;
 
     address public override teleBTC;
     mapping(uint => address) public override exchangeConnectors;
@@ -56,21 +33,11 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     mapping(bytes32 => ccExchangeRequest) private ccExchangeRequests;
 
     constructor(address _lockers, address _relay, address _teleBTC) {
-        // wrappedNativeToken = IExchangeRouter(exchangeRouter).wrappedNativeToken();
         relay = _relay;
         lockers = _lockers;
         teleBTC = _teleBTC;
     }
 
-    // constructor (address _exchangeRouter, address _bitcoinTeleporter, address _ccTransferRouter) {
-    //     exchangeRouter = _exchangeRouter;
-    //     liquidityPoolFactory = IExchangeRouter(exchangeRouter).liquidityPoolFactory();
-    //     WAVAX = IExchangeRouter(exchangeRouter).WAVAX();
-    //     lastRequest = 0;
-    //     bitcoinTeleporter = _bitcoinTeleporter;
-    //     ccTransferRouter = _ccTransferRouter;
-    //     owner = msg.sender;
-    // }
 
     /// @notice         Changes relay contract address
     /// @dev            Only owner can call this
@@ -93,153 +60,9 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         lockers = _lockers;
     }
 
-    // function changeOwner(address _owner) external override onlyOwner {
-    //     owner = _owner;
-    // }
-
-    // function setBitcoinTeleporter (address _bitcoinTeleporter) external override onlyOwner {
-    //     bitcoinTeleporter = _bitcoinTeleporter;
-    // }
-
-    // function setWrappedBitcoin (address _wrappedBitcoin) external override onlyOwner {
-    //     wrappedBitcoin = _wrappedBitcoin;
-    // }
-
-    // function setCCTransferRouter (address _ccTransferRouter) external override onlyOwner {
-    //     ccTransferRouter = _ccTransferRouter;
-    // }
-
-    // function setInstantRouter (address _instantRouter) external override onlyOwner {
-    //     instantRouter = _instantRouter;
-    // }
-
-    function setExchangeRouter (address _exchangeRouter) external override onlyOwner {
-        exchangeRouter = _exchangeRouter;
-        // liquidityPoolFactory = IExchangeRouter(exchangeRouter).liquidityPoolFactory();
-        // WAVAX = IExchangeRouter(exchangeRouter).WAVAX();
+    function setExchangeConnector (address _exchangeConnector) external override onlyOwner {
+        exchangeConnector = _exchangeConnector;
     }
-
-    // // for executing "normal" and "fast" cross-chain exchange requests
-    // function ccExchange(
-    //     bytes4 version,
-    //     bytes memory vin,
-    //     bytes calldata vout,
-    //     bytes4 locktime,
-    //     uint256 blockNumber,
-    //     bytes calldata intermediateNodes,
-    //     uint index,
-    //     bool payWithTDT
-    // ) external override {
-    //     uint256 currentRequest = lastRequest;
-    //     require(
-    //         parseBitcoinTransaction(vout),
-    //         "Transaction data is not correct"
-    //     );
-    //     if (requests[currentRequest].deadline >= (block.number + 1)) { // deadline has not passed yet
-    //         // mint wrapped token for cc exchange router
-    //         mintWrappedBitcoin(
-    //             version,
-    //             vin,
-    //             vout,
-    //             locktime,
-    //             blockNumber,
-    //             intermediateNodes,
-    //             index,
-    //             payWithTDT
-    //         );
-    //         // pay teleporter fee
-    //         IWrappedToken(wrappedBitcoin).transfer(
-    //             requests[currentRequest].teleporterAddress,
-    //             requests[currentRequest].teleporterFee
-    //         );
-
-    //         if (requests[currentRequest].isFixedToken == false && requests[currentRequest].exchangeToken != WAVAX) {
-    //             // give allowance to exchangeRouter to transferFrom CCExchangeRouter
-    //             IWrappedToken(wrappedBitcoin).approve(
-    //                 exchangeRouter,
-    //                 requests[currentRequest].remainedInputAmount
-    //             );
-    //             uint[] memory amounts;
-    //             bool result;
-    //             (amounts, result) = swapExactTokensForTokens(
-    //                 requests[currentRequest].remainedInputAmount,
-    //                 requests[currentRequest].exchangeAmount,
-    //                 requests[currentRequest].path,
-    //                 requests[currentRequest].exchangeRecipientAddress,
-    //                 requests[currentRequest].deadline
-    //             );
-    //             if (result) {
-    //                 emit CCExchange(
-    //                     requests[currentRequest].exchangeRecipientAddress,
-    //                     requests[currentRequest].path[0],
-    //                     requests[currentRequest].path[requests[currentRequest].path.length-1],
-    //                     requests[currentRequest].remainedInputAmount,
-    //                     amounts[amounts.length-1],
-    //                     requests[currentRequest].speed
-    //                 );
-    //             } else {
-    //                 paybackToUser(
-    //                     version,
-    //                     vin,
-    //                     vout,
-    //                     locktime,
-    //                     blockNumber,
-    //                     intermediateNodes,
-    //                     index,
-    //                     payWithTDT,
-    //                     currentRequest
-    //                 );
-    //             }
-    //         }
-
-    //         if (requests[currentRequest].isFixedToken == false && requests[currentRequest].exchangeToken == WAVAX) {
-    //             // give allowance to exchangeRouter to transfer from CCExchangeRouter
-    //             IWrappedToken(wrappedBitcoin).approve(
-    //                 exchangeRouter,
-    //                 requests[currentRequest].remainedInputAmount
-    //             );
-    //             uint[] memory amounts;
-    //             bool result;
-    //             (amounts, result) = swapExactTokensForAVAX(
-    //                 requests[currentRequest].remainedInputAmount,
-    //                 requests[currentRequest].exchangeAmount,
-    //                 requests[currentRequest].path,
-    //                 requests[currentRequest].exchangeRecipientAddress,
-    //                 requests[currentRequest].deadline
-    //             );
-    //             if (result) {
-    //                 emit CCExchange(
-    //                     requests[currentRequest].exchangeRecipientAddress,
-    //                     requests[currentRequest].path[0],
-    //                     requests[currentRequest].path[requests[currentRequest].path.length-1],
-    //                     requests[currentRequest].remainedInputAmount,
-    //                     amounts[amounts.length-1],
-    //                     requests[currentRequest].speed
-    //                 );
-    //             } else {
-    //                 paybackToUser(
-    //                     version,
-    //                     vin,
-    //                     vout,
-    //                     locktime,
-    //                     blockNumber,
-    //                     intermediateNodes,
-    //                     index,
-    //                     payWithTDT,
-    //                     currentRequest
-    //                 );
-    //             }
-
-    //         }
-
-    //     }
-
-    //     if (requests[currentRequest].deadline < (block.number + 1)) { // deadline has passed
-    //         paybackToUser(version, vin, vout, locktime, blockNumber, intermediateNodes, index, payWithTDT, currentRequest);
-    //     }
-
-    // }
-
 
     /// @notice                 Changes wrapped token contract address
     /// @dev                    Only owner can call this
@@ -273,16 +96,16 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         bytes4 _locktime,
         uint256 _blockNumber,
         bytes calldata _intermediateNodes,
-        uint _index
+        uint _index,
+        address lockerBitcoinDecodedAddress
     ) external nonReentrant override returns (bool) {
-        bytes32 txId = TxHelper.calculateTxId(_version, _vin, _vout, _locktime);
+        bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
         require(
             !ccExchangeRequests[txId].isUsed,
             "CCExchangeRouter: the request has been used before"
         );
 
-        _saveCCExchangeRequest(_vout, txId);
-        ccExchangeRequests[txId].isUsed = true;
+        _saveCCExchangeRequest(lockerBitcoinDecodedAddress, _vout, txId);
 
         // Check if transaction has been confirmed on source chain
         require(
@@ -296,12 +119,12 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         );
         // Normal cc exchange request
         if (ccExchangeRequests[txId].speed == 0) {
-            require(_normalCCExchange(txId), "CCExchangeRouter: normal cc exchange was not successful");
+            require(_normalCCExchange(lockerBitcoinDecodedAddress, txId), "CCExchangeRouter: normal cc exchange was not successful");
             return true;
         }
         // Pay back instant loan
         if (ccExchangeRequests[txId].speed == 1) {
-            require(_payBackInstantLoan(txId), "CCExchangeRouter: paying back instant loan was not successful");
+            require(_payBackInstantLoan(lockerBitcoinDecodedAddress, txId), "CCExchangeRouter: paying back instant loan was not successful");
             return true;
         }
     }
@@ -310,7 +133,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @dev               Mints wrapped token for user if exchanging is not successful
     /// @param _txId       Id of the transaction containing the user request
     /// @return
-    function _normalCCExchange(bytes32 _txId) internal returns (bool) {
+    function _normalCCExchange(address lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
         console.log("_normalCCExchange...");
         // Pays fee to teleporter
         if (ccExchangeRequests[_txId].fee > 0) {
@@ -318,14 +141,16 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             console.log(ccExchangeRequests[_txId].fee);
 
             // Mints wrapped tokens for teleporter
-            ITeleBTC(teleBTC).mint(
+            ILockers(lockers).mint(
+                lockerBitcoinDecodedAddress,
                 msg.sender,
                 ccExchangeRequests[_txId].fee
             );
         }
         uint remainedInputAmount = ccExchangeRequests[_txId].inputAmount.sub(ccExchangeRequests[_txId].fee);
         // Mints remained wrapped tokens for cc exchange router
-        ITeleBTC(teleBTC).mint(
+        ILockers(lockers).mint(
+            lockerBitcoinDecodedAddress,
             address(this),
             remainedInputAmount
         );
@@ -333,42 +158,44 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         console.log("remainedInputAmount is ");
         console.log(remainedInputAmount);
 
-        // Checks exchange conditions before executing it
-        if (_checkExchangeConditions(remainedInputAmount, _txId)) {
-            console.log("_checkExchangeConditions is true");
 
-            // Gives allowance to exchange router to transfer from cc exchange router
-            ITeleBTC(teleBTC).approve(
-                exchangeRouter,
-                remainedInputAmount
+        // Gives allowance to exchange router to transfer from cc exchange router
+        ITeleBTC(teleBTC).approve(
+            exchangeConnector,
+            remainedInputAmount
+        );
+        uint[] memory amounts;
+        bool theResult;
+
+        if (
+            ccExchangeRequests[_txId].isFixedToken == false &&
+            ccExchangeRequests[_txId].path[ccExchangeRequests[_txId].path.length-1] != wrappedNativeToken
+        ) {
+            (theResult, amounts) = _swapExactTokensForTokens(
+                remainedInputAmount,
+                ccExchangeRequests[_txId].outputAmount,
+                ccExchangeRequests[_txId].path,
+                ccExchangeRequests[_txId].recipientAddress,
+                ccExchangeRequests[_txId].deadline,
+                ccExchangeRequests[_txId].isFixedToken
             );
-            uint[] memory amounts;
-            if (
-                ccExchangeRequests[_txId].isFixedToken == false &&
-                ccExchangeRequests[_txId].path[ccExchangeRequests[_txId].path.length-1] != wrappedNativeToken
-            ) {
-                (amounts,) = _swapExactTokensForTokens(
-                    remainedInputAmount,
-                    ccExchangeRequests[_txId].outputAmount,
-                    ccExchangeRequests[_txId].path,
-                    ccExchangeRequests[_txId].recipientAddress,
-                    ccExchangeRequests[_txId].deadline
-                );
-            }
+        }
 
-            if (
-                ccExchangeRequests[_txId].isFixedToken == false &&
-                ccExchangeRequests[_txId].path[ccExchangeRequests[_txId].path.length-1] == wrappedNativeToken
-            ) {
-                (amounts,) = _swapExactTokensForAVAX(
-                    remainedInputAmount,
-                    ccExchangeRequests[_txId].outputAmount,
-                    ccExchangeRequests[_txId].path,
-                    ccExchangeRequests[_txId].recipientAddress,
-                    ccExchangeRequests[_txId].deadline
-                );
-            }
+        if (
+            ccExchangeRequests[_txId].isFixedToken == false &&
+            ccExchangeRequests[_txId].path[ccExchangeRequests[_txId].path.length-1] == wrappedNativeToken
+        ) {
+            (theResult, amounts) = _swapExactTokensForAVAX(
+                remainedInputAmount,
+                ccExchangeRequests[_txId].outputAmount,
+                ccExchangeRequests[_txId].path,
+                ccExchangeRequests[_txId].recipientAddress,
+                ccExchangeRequests[_txId].deadline,
+                ccExchangeRequests[_txId].isFixedToken
+            );
+        }
 
+        if (theResult) {
             emit CCExchange(
                 ccExchangeRequests[_txId].recipientAddress,
                 ccExchangeRequests[_txId].path[0],
@@ -379,7 +206,6 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
                 ccExchangeRequests[_txId].fee
             );
         } else {
-            // Mints wrapped token for recipient if exchange was failed
             ITeleBTC(teleBTC).transfer(
                 ccExchangeRequests[_txId].recipientAddress,
                 remainedInputAmount
@@ -390,6 +216,18 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             );
         }
 
+
+
+        // Checks exchange conditions before executing it
+        // if (_checkExchangeConditions(remainedInputAmount, _txId)) {
+        //     console.log("_checkExchangeConditions is true");
+
+
+        // } else {
+        //     // Mints wrapped token for recipient if exchange was failed
+
+        // }
+
         console.log("..._normalCCExchange");
         return true;
     }
@@ -398,18 +236,20 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @dev               Mints wrapped token for instant router contract
     /// @param _txId       Id of the transaction containing the user request
     /// @return            True if paying back loan is successful
-    function _payBackInstantLoan(bytes32 _txId) internal returns (bool) {
+    function _payBackInstantLoan(address lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
         // Pays fee to teleporter
         if (ccExchangeRequests[_txId].fee > 0) {
             // Mints wrapped tokens for teleporter
-            ITeleBTC(teleBTC).mint(
+            ILockers(lockers).mint(
+                lockerBitcoinDecodedAddress,
                 msg.sender,
                 ccExchangeRequests[_txId].fee
             );
         }
         uint remainedAmount = ccExchangeRequests[_txId].inputAmount.sub(ccExchangeRequests[_txId].fee);
         // Mints wrapped token for cc exchange router
-        ITeleBTC(teleBTC).mint(
+        ILockers(lockers).mint(
+            lockerBitcoinDecodedAddress,
             address(this),
             remainedAmount
         );
@@ -432,45 +272,70 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _vout       Outputs of the transaction containing the user request
     /// @param _txId       Id of the transaction containing the user request
     /// @return            True if recording the request is successful
-    function _saveCCExchangeRequest(bytes memory _vout, bytes32 _txId) internal returns (bool) {
+    function _saveCCExchangeRequest(
+        address _lockerBitcoinDecodedAddress,
+        bytes memory _vout,
+        bytes32 _txId
+    ) internal returns (bool) {
         console.log("_saveCCExchangeRequest...");
 
         ccExchangeRequest memory request; //TODO: no need for this, set directly
         bytes memory arbitraryData;
         address desiredRecipient;
         address exchangeToken;
+        uint percentageFee;
 
         // FIXME: change the following line
-        desiredRecipient = ILockers(lockers).redeemScriptHash();
-        console.log(desiredRecipient);
+        // desiredRecipient = ILockers(lockers).redeemScriptHash();
+        // console.log(desiredRecipient);
+        require(
+            ILockers(lockers).isLocker(_lockerBitcoinDecodedAddress),
+            "CCTransferRouter: no locker with this bitcoin decoded addresss"
+        );
 
-        (request.inputAmount, arbitraryData) = TxHelper.parseAmountForP2SH(_vout, desiredRecipient);
+        (request.inputAmount, arbitraryData) = NewTxHelper.parseAmountForP2PK(_vout, _lockerBitcoinDecodedAddress);
         console.log(request.inputAmount);
 
-        require(TxHelper.parseIsExchange(arbitraryData), "CCExchangeRouter: request is transfer request");
+        require(NewTxHelper.parseExchangeToken(arbitraryData) != address(0), "CCExchangeRouter: request is transfer request");
         // FIXME: adding the following method to the txHelper library
         // request.outputAmount = TxHelper.parseOutputAmount(arbitraryData);
-        request.outputAmount = TxHelper.parseExchangeAmount(arbitraryData);
+        request.outputAmount = NewTxHelper.parseExchangeOutputAmount(arbitraryData);
         console.log(request.outputAmount);
+        console.log("just before parseIsFixedToken");
 
-        request.isFixedToken = TxHelper.parseIsFixedToken(arbitraryData);
-        request.recipientAddress = TxHelper.parseRecipientAddress(arbitraryData);
+        if (NewTxHelper.parseIsFixedToken(arbitraryData) == 0) {
+            request.isFixedToken = false ;
+        } else {
+            request.isFixedToken = true ;
+        }
+
+        console.log("just before parseRecipientAddress");
+
+
+        request.recipientAddress = NewTxHelper.parseRecipientAddress(arbitraryData);
         console.log(request.recipientAddress);
 
-        exchangeToken = TxHelper.parseExchangeToken(arbitraryData);
+        exchangeToken = NewTxHelper.parseExchangeToken(arbitraryData);
         // We assume that the path length is two
         address[] memory thePath = new address[](2);
         thePath[0] = teleBTC;
         thePath[1] = exchangeToken;
         // request.path = [teleBTC, exchangeToken];
         request.path = thePath;
-        request.deadline = TxHelper.parseDeadline(arbitraryData);
-        // TODO: fix the fee to use percent instead of
-        request.fee = TxHelper.parsePercentageFee(arbitraryData);
+        request.deadline = NewTxHelper.parseDeadline(arbitraryData);
         console.log(request.deadline);
 
-        request.speed = TxHelper.parseSpeed(arbitraryData);
+        // TODO: fix the fee to use percent instead of
+        percentageFee = NewTxHelper.parsePercentageFee(arbitraryData);
+
+        require(percentageFee >= 0 && percentageFee < 10000, "CCTransferRouter: percentage fee is not correct");
+        request.fee = percentageFee.mul(request.inputAmount).div(10000);
+
+
+        request.speed = NewTxHelper.parseSpeed(arbitraryData);
         console.log(request.speed);
+
+        request.isUsed = true;
 
         ccExchangeRequests[_txId] = request;
 
@@ -483,40 +348,42 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _remainedInputAmount       Remained input amount after reducing the teleporter fee
     /// @param _txId                      Id of the transaction containing the user request
     /// @return                           True if exchange conditions are satisfied
-    function _checkExchangeConditions(uint _remainedInputAmount, bytes32 _txId) internal returns (bool) {
-        console.log("_checkExchangeConditions...");
+    // TODO: deprecate this function since IExchangeConnector does this checks
+    // function _checkExchangeConditions(uint _remainedInputAmount, bytes32 _txId) internal returns (bool) {
+    //     console.log("_checkExchangeConditions...");
 
-        // Checks deadline has not passed
-        // TODO: un-comment for production
-        // if (ccExchangeRequests[_txId].deadline < block.timestamp) {
-        if (ccExchangeRequests[_txId].deadline < 2236952) {
-            console.log("deadline is in correct");
+    //     // Checks deadline has not passed
+    //     // TODO: un-comment for production
+    //     // if (ccExchangeRequests[_txId].deadline < block.timestamp) {
+    //     if (ccExchangeRequests[_txId].deadline < 2236952) {
+    //         console.log("deadline is in correct");
 
-            return false;
-        }
+    //         return false;
+    //     }
 
-        (uint reserveIn, uint reserveOut) = IExchangeRouter(exchangeRouter).getReserves(
-            ccExchangeRequests[_txId].path[0],
-            ccExchangeRequests[_txId].path[1]
-        );
-        // Checks that enough liquidity for output token exists
-        // FIXME: maybe the condition must be reversed
-        if (ccExchangeRequests[_txId].outputAmount > reserveOut) {
-            return false;
-        }
-        // Checks that the input amount is enough
-        if (ccExchangeRequests[_txId].isFixedToken == false) {
-            uint requiredAmountIn = IExchangeRouter(exchangeRouter).getAmountIn(
-                ccExchangeRequests[_txId].outputAmount,
-                reserveIn,
-                reserveOut
-            );
-            return _remainedInputAmount >= requiredAmountIn ? true : false;
-        }
+    //     // TODO: add getReserves to IExchangeConnector
+    //     (uint reserveIn, uint reserveOut) = IExchangeConnector(exchangeConnector).getReserves(
+    //         ccExchangeRequests[_txId].path[0],
+    //         ccExchangeRequests[_txId].path[1]
+    //     );
+    //     // Checks that enough liquidity for output token exists
+    //     if (ccExchangeRequests[_txId].outputAmount > reserveOut) {
+    //         return false;
+    //     }
 
-        console.log("..._checkExchangeConditions");
-        // TODO: if isFixedToken == true
-    }
+    //     // Checks that the input amount is enough
+    //     if (ccExchangeRequests[_txId].isFixedToken == false) {
+    //         uint requiredAmountIn = IExchangeConnector(exchangeConnector).getAmountIn(
+    //             ccExchangeRequests[_txId].outputAmount,
+    //             reserveIn,
+    //             reserveOut
+    //         );
+    //         return _remainedInputAmount >= requiredAmountIn ? true : false;
+    //     }
+
+    //     console.log("..._checkExchangeConditions");
+    //     // TODO: if isFixedToken == true
+    // }
 
 
     /// @notice                         Checks inclusion of the transaction in the specified block
@@ -544,233 +411,39 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     }
 
 
-    // function instantCCExchangeWithPermit(
-    //     address signer,
-    //     bytes memory signature,
-    //     uint amountIn,
-    //     uint amountOutMin,
-    //     address[] memory path,
-    //     address receiver,
-    //     uint deadline
-    // ) external override {
-    //     uint[] memory amounts;
-    //     bool result;
-    //     (amounts, result) = IInstantRouter(instantRouter).instantCCExchangeWithPermit(
-    //         signer,
-    //         signature,
-    //         amountIn,
-    //         amountOutMin,
-    //         path,
-    //         receiver,
-    //         deadline
-    //     );
-    //     emit CCExchange(
-    //         receiver,
-    //         path[0],
-    //         path[path.length-1],
-    //         amountIn,
-    //         amounts[amounts.length-1],
-    //         2 // 2 means instant
-    //     );
-    // }
-
-    // function paybackToUser (
-    //     bytes4 version,
-    //     bytes memory vin,
-    //     bytes calldata vout,
-    //     bytes4 locktime,
-    //     uint256 blockNumber,
-    //     bytes calldata intermediateNodes,
-    //     uint index,
-    //     bool payWithTDT,
-    //     uint currentRequest
-    // ) internal {
-    //     // mint wrapped token for cc exchange router
-    //     mintWrappedBitcoin(
-    //         version,
-    //         vin,
-    //         vout,
-    //         locktime,
-    //         blockNumber,
-    //         intermediateNodes,
-    //         index,
-    //         payWithTDT
-    //     );
-    //     // transfer wrapped tokens to user
-    //     IWrappedToken(wrappedBitcoin).transfer(
-    //         requests[currentRequest].exchangeRecipientAddress,
-    //         requests[currentRequest].remainedInputAmount
-    //     );
-    //     // pay teleporter fee
-    //     IWrappedToken(wrappedBitcoin).transfer(
-    //         requests[currentRequest].teleporterAddress,
-    //         requests[currentRequest].teleporterFee
-    //     );
-    // }
-
-    // function parseBitcoinTransaction(bytes memory vout) internal returns (bool){
-    //     bytes memory arbitraryData;
-    //     // TODO: edit address for parseTxOutputs
-    //     address desiredRecipient;
-    //     desiredRecipient = IBitcoinTeleporter(bitcoinTeleporter).redeemScriptHash();
-    //     (requests[lastRequest].bitcoinAmount, arbitraryData) = BitcoinTxParser.parseAmountForP2SH(vout, desiredRecipient);
-    //     requests[lastRequest].exchangeAmount = BitcoinTxParser.parseExchangeAmount(arbitraryData);
-    //     requests[lastRequest].isFixedToken = BitcoinTxParser.parseIsFixedToken(arbitraryData);
-    //     requests[lastRequest].exchangeRecipientAddress = BitcoinTxParser.parseRecipientAddress(arbitraryData);
-    //     requests[lastRequest].teleporterFee = BitcoinTxParser.parseTeleporterFee(arbitraryData);
-    //     requests[lastRequest].exchangeToken = BitcoinTxParser.parseExchangeToken(arbitraryData);
-    //     requests[lastRequest].path = [wrappedBitcoin, requests[lastRequest].exchangeToken];
-    //     requests[lastRequest].teleporterAddress = msg.sender; //TODO: check who is the msg.sender? teleporter or dex?
-    //     requests[lastRequest].deadline = BitcoinTxParser.parseDeadline(arbitraryData);
-    //     requests[lastRequest].isExchange = BitcoinTxParser.parseIsExchange(arbitraryData);
-    //     requests[lastRequest].speed = BitcoinTxParser.parseSpeed(arbitraryData);
-    //     requests[lastRequest].remainedInputAmount = parseRemainedInputAmount(
-    //         requests[lastRequest].bitcoinAmount,
-    //         requests[lastRequest].teleporterFee,
-    //         requests[lastRequest].speed
-    //     );
-    //     lastRequest = lastRequest + 1;
-    //     return true;
-    // }
-
-    // function parseRemainedInputAmount(
-    //     uint256 bitcoinAmount,
-    //     uint256 teleporterFee,
-    //     uint speed
-    // ) internal view returns (uint256) {
-
-    //     if(speed == 0) { // normal cc exchange
-    //         require(bitcoinAmount > teleporterFee, "Insufficient fund");
-    //         return bitcoinAmount.sub(teleporterFee);
-    //     }
-
-    //     // FIXME: un-comment this part of code based on new cc transfer
-    //     // if(speed == 1) { // fast cc exchange
-    //     //     // get the fastFee from the fastPool
-    //     //     address bitcoinFastPool;
-    //     //     bitcoinFastPool = ICCTransferRouter(ccTransferRouter).bitcoinFastPool();
-    //     //     uint fastFee = IFastPool(bitcoinFastPool).fastFee();
-    //     //     uint bitcoinAmountAfterFastFee = bitcoinAmount*(100-fastFee)/100;
-    //     //     require(bitcoinAmountAfterFastFee > teleporterFee, "Insufficient fund");
-    //     //     return bitcoinAmountAfterFastFee.sub(teleporterFee);
-    //     // }
-
-    //     if(speed == 2) { // instant cc exchange
-    //         require(bitcoinAmount > teleporterFee, "Insufficient fund");
-    //         return bitcoinAmount.sub(teleporterFee);
-    //     }
-    // }
-
-    // function mintWrappedBitcoin(
-    //     bytes4 version,
-    //     bytes memory vin,
-    //     bytes memory vout,
-    //     bytes4 locktime,
-    //     uint256 blockNumber,
-    //     bytes memory intermediateNodes,
-    //     uint index,
-    //     bool payWithTDT
-    // ) internal {
-    //     //_WrappedToken = wrappedTokenContract;
-    //     //require(_WrappedToken.mint(blockNumber, rawTransaction, encodedPath, rlpParentNodes) == ture);
-    //     require(
-    //         ICCTransferRouter(ccTransferRouter).ccTransfer(
-    //             version,
-    //             vin,
-    //             vout,
-    //             locktime,
-    //             blockNumber,
-    //             intermediateNodes,
-    //             index
-    //         // payWithTDT
-    //         )
-    //     );
-    // }
-
-    // check slippage and deadline
-    // make it modifier if good
-    // function checkConditions(uint256 requestNumber) internal returns (bool) {
-    //     uint256[] memory amounts;
-    //     if (requests[requestNumber].isFixedToken == false) {
-    //         amounts = TeleportDAOLibrary.getAmountsOut(
-    //             liquidityPoolFactory,
-    //             requests[requestNumber].remainedInputAmount,
-    //             requests[requestNumber].path
-    //         );
-    //         require(
-    //             amounts[amounts.length - 1] >= requests[requestNumber].exchangeAmount,
-    //             "exchangeRouter: INSUFFICIENT_OUTPUT_AMOUNT"
-    //         );
-    //     }
-    //     if (requests[requestNumber].isFixedToken == true) {
-    //         amounts = TeleportDAOLibrary.getAmountsIn(
-    //             liquidityPoolFactory,
-    //             requests[requestNumber].exchangeAmount,
-    //             requests[requestNumber].path
-    //         );
-    //         require(
-    //             amounts[0] <= requests[requestNumber].remainedInputAmount,
-    //             "exchangeRouter: EXCESSIVE_INPUT_AMOUNT"
-    //         );
-    //     }
-    // }
-
-    // function bytesToAddress(bytes memory bys) internal pure returns (address) {
-    //     address addr;
-    //     assembly {
-    //         addr := mload(add(bys, 20))
-    //     }
-    //     return addr;
-    // }
-
     function _swapExactTokensForTokens(
         uint amountIn,
         uint amountOutMin,
         address[] memory path,
         address to,
-        uint deadline
-    ) internal returns(uint[] memory amounts, bool result) {
-        (amounts, result) = IExchangeRouter(exchangeRouter).swapExactTokensForTokens(
+        uint deadline,
+        bool isFixedToken
+    ) internal returns(bool result, uint[] memory amounts) {
+        (result, amounts) = IExchangeConnector(exchangeConnector).swap(
             amountIn,
             amountOutMin,
             path,
             to,
-            deadline
+            deadline,
+            isFixedToken
         );
     }
-
-    // TODO: this function does not exist in the exchangeRouter. why?
-    // function _fromDEX_swapTokensForExactTokensSupportingFeeOnTransferTokens(
-    //     uint amountIn,
-    //     uint amountOutMin,
-    //     address[] memory path,
-    //     address to
-    // ) internal {
-
-    // }
-
-    // TODO: internal functions cannot be payable
-    // function _fromDEX_swapExactAVAXForTokensSupportingFeeOnTransferTokens(
-    //     uint amountOutMin,
-    //     address[] memory path,
-    //     address to
-    // ) internal payable {
-
-    // }
 
     function _swapExactTokensForAVAX(
         uint amountIn,
         uint amountOutMin,
         address[] memory path,
         address to,
-        uint deadline
-    ) internal returns(uint[] memory amounts, bool result) {
-        (amounts, result) = IExchangeRouter(exchangeRouter).swapExactTokensForAVAX(
+        uint deadline,
+        bool isFixedToken
+    ) internal returns(bool result, uint[] memory amounts) {
+        (result, amounts) = IExchangeConnector(exchangeConnector).swap(
             amountIn,
             amountOutMin,
             path,
             to,
-            deadline
+            deadline,
+            isFixedToken
         );
     }
 }

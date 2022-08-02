@@ -172,7 +172,8 @@ interface ICCExchangeRouter {
         uint256 blockNumber,
     // Merkle proof
         bytes calldata intermediateNodes,
-        uint index
+        uint index,
+        address lockerBitcoinDecodedAddress
     ) external returns(bool);
 
 
@@ -181,7 +182,7 @@ interface ICCExchangeRouter {
     // function setInstantRouter (address _instantRouter) external;
     // function setBitcoinTeleporter (address _bitcoinTeleporter) external;
     // function setCCTransferRouter (address _ccTransferRouter) external;
-     function setExchangeRouter (address _exchangeRouter) external;
+    function setExchangeConnector (address _exchangeConnector) external;
     // function setWrappedBitcoin (address _wrappedBitcoin) external;
     // function ccExchange(
     //     bytes4 version,

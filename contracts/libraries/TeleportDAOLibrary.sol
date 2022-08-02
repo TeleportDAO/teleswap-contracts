@@ -40,7 +40,7 @@ library TeleportDAOLibrary {
     // }
     
     //Instead of TeleportDAOLibrary
-    function getReserves(address factory, address tokenA, address tokenB) internal returns (uint reserveA, uint reserveB) {
+    function getReserves(address factory, address tokenA, address tokenB) internal view returns (uint reserveA, uint reserveB) {
         (address token0,) = sortTokens(tokenA, tokenB);
         (uint reserve0, uint reserve1,) = ILiquidityPool(pairFor(factory, tokenA, tokenB)).getReserves();
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);

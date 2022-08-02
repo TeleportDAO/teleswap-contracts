@@ -74,7 +74,6 @@ contract ExchangeRouter is IExchangeRouter {
         address to,
         uint deadline
     ) external virtual override ensure(deadline) returns (uint amountA, uint amountB, uint liquidity) {
-        
         (amountA, amountB) = _addLiquidity(
             tokenA,
             tokenB, 
@@ -380,7 +379,7 @@ contract ExchangeRouter is IExchangeRouter {
     }
 
     // Library functions
-    function getReserves (address tokenA, address tokenB) external override returns (uint reserveA, uint reserveB) {
+    function getReserves (address tokenA, address tokenB) external view override returns (uint reserveA, uint reserveB) {
         return TeleportDAOLibrary.getReserves(liquidityPoolFactory, tokenA, tokenB);
     }
 

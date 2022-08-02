@@ -1,24 +1,57 @@
-pragma solidity 0.8.0;
+pragma solidity ^0.8.0; 
 
 import '../../erc20/interfaces/IERC20.sol';
 
-interface IInstantPool is IERC20{
-  // events
-  event AddLiquidity(address user, uint wrappedBitcoinAmount); 
-  event RemoveLiquidity(address user, uint wrappedBitcoinAmount);
-  event InstantTransfer(address user, uint256 requestedAmount, uint transferredAmount);
+interface IInstantPool is IERC20 {
 
-  // read-only functions
-  function owner() external view returns (address);
-  function wrappedBitcoin() external view returns (address);
-  function totalWrappedBitcoin() external view returns(uint);
-  function instantFee() external view returns(uint);
-  
-  // state-changing fucntions
-  function changeOwner(address _owner) external;
-  function setInstantRouter(address _instantRouter) external;
-  function setInstantFee(uint _instantFee) external;
-  function addLiquidity(address user, uint wrappedBitcoinAmount) external returns(uint);
-  function removeLiquidity(address user, uint instantPoolTokenAmount) external returns (uint);
-  function instantTransfer(address user, uint amount) external returns(bool);
+	// Events
+
+	/// @notice                             emits when some liquidity gets added to the pool               
+	/// @param user                         User who added the liquidity
+	/// @param teleBTCAmount                Amount of teleBTC added to the pool
+	/// @param instantPoolTokenAmount       User's share from the pool
+	event AddLiquidity(address indexed user, uint teleBTCAmount, uint instantPoolTokenAmount); 
+
+	/// @notice                             Emits when some liquidity gets removed from the pool
+	/// @param user                         User who removed the liquidity
+	/// @param teleBTCAmount                Amount of teleBTC removed from the pool
+	/// @param instantPoolTokenAmount       User's share from the pool
+	event RemoveLiquidity(address indexed user, uint teleBTCAmount, uint instantPoolTokenAmount);
+
+	/// @notice                       Adds collateral to collateral pool
+	/// @param user                   User who wants to get the loan
+	/// @param requestedAmount        Amount of loan requested and sent to the user
+	/// @param instantFee             Amount of fee that the user should pay back later with the loan
+	event InstantLoan(address indexed user, uint256 requestedAmount, uint instantFee);
+
+	// Read-only functions
+
+	function teleBTC() external view returns (address);
+
+	function instantRouter() external view returns (address);
+
+	function totalAddedTeleBTC() external view returns (uint);
+
+	function availableTeleBTC() external view returns (uint);
+
+	function totalUnpaidLoan() external view returns (uint);
+
+	function instantPercentageFee() external view returns (uint);
+
+	// State-changing functions
+
+	function setInstantRouter(address _instantRouter) external;
+
+	function setInstantPercentageFee(uint _instantPercentageFee) external;
+
+	function setTeleBTC(address _teleBTC) external;
+
+	function addLiquidity(address _user, uint _amount) external returns (uint);
+
+	function addLiquidityWithoutMint(uint _amount) external returns (bool);
+
+	function removeLiquidity(address _user, uint _instantPoolTokenAmount) external returns (uint);
+
+	function getLoan(address _user, uint _amount) external returns (bool);
+
 }

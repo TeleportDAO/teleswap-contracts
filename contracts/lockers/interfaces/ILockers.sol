@@ -1,11 +1,6 @@
 pragma solidity 0.8.0;
 
 interface ILockers {
-    // structures
-    // struct teleporter {
-    //     bytes teleporterBitcoinPubKey;
-    //     address teleporterAddress;
-    // }
 
     // Structures
 
@@ -19,18 +14,17 @@ interface ILockers {
     /// @param isActive                     Shows if a locker is active (has not requested for removal and
     ///                                     has enough collateral to accept more minting requests)
     struct locker {
+        // TODO: remove lockerBitcoinAddress
         bytes lockerBitcoinAddress;
+        address lockerBitcoinDecodedAddress;
         uint TDTLockedAmount;
         uint nativeTokenLockedAmount;
         uint netMinted;
         bool isExisted;
+        // TODO: isScriptHash is used for p2pkh and p2sh, but what about segwit
         bool isScriptHash;
         bool isActive;
     }
-
-    // events
-    // event AddTeleporter(bytes teleporterBitcoinPubKey, address teleporterAddress, uint lockedAmount, uint addedtime);
-    // event RemoveTeleporter(bytes teleporterBitcoinPubKey, address teleporterAddress, uint unlockedAmount);
 
     // Events
 
@@ -67,26 +61,16 @@ interface ILockers {
     // uint removingTime
     );
 
-    // read-only functions
-    // function owner() external view returns (address);
-    // function TeleportDAOToken() external view returns(address);
-    // function wrappedBitcoin() external view returns(address);
-    // function ccBurnRouter() external view returns(address);
-    // function exchangeRouter() external view returns(address);
-    // function requiredLockedAmount() external view returns(uint);
-    // function numberOfTeleporters() external view returns(uint);
-    // function redeemScript() external view returns(bytes memory);
-    function redeemScriptHash() external view returns(address);
-    // function multisigAddress() external view returns(address);
-    // function multisigAddressBeforeEncoding() external view returns(bytes memory);
-    // function isTeleporter (address teleporter, uint index) external view returns(bool);
-
     // Read-only functions
+
+    // TODO: remove redeemScriptHash
+    function redeemScriptHash() external view returns(address);
 
     function TeleportDAOToken() external view returns(address);
 
     function teleBTC() external view returns (address);
 
+    // TODO: add miter and burner roles and remove cc burn router, cc exchange, and cc transfer
     function ccBurnRouter() external view returns (address);
 
     function exchangeRouter() external view returns (address);
@@ -99,13 +83,13 @@ interface ILockers {
 
     function priceOracle() external view returns (address);
 
-    function BitcoinAddressToTargetAddress(bytes memory _lockerBitcoinAddress) external view returns (address);
+    function lockerBitcoinDecodedAddressToTargetAddress(address  _lockerBitcoinAddress) external view returns (address);
 
     // function lockerTargetAddressList(uint _index) external view returns (address);
 
     // function candidateTargetAddressList(uint _index) external view returns (address);
 
-    function isLocker(address _lockerTargetAddress) external view returns (bool);
+    function isLocker(address _lockerBitcoinDecodedAddress) external view returns (bool);
 
     function getNumberOfLockers() external view returns (uint);
 
@@ -115,23 +99,26 @@ interface ILockers {
 
     function getLockerCapacity(address _lockerTargetAddress) external view returns (uint);
 
+    function totalNumberOfLockers() external view returns (uint);
+
+    function totalNumberOfCandidates() external view returns (uint);
+
     // FIXME: What is this?
     // function assignLocker(bool _isMint, uint _amount) external view returns (address);
 
-
-    // state-changing functions
-    // function changeOwner(address _owner) external;
-    // function setUnlockFee(uint _unlockFee) external;
-    // function setUnlockPeriod(uint _unlockPeriod) external;
-    // function setRequiredLockedAmount(uint _submissionGasUsed) external;
-    // function setExchangeRouter(address _ccTransferRouter) external;
-    // function setCCBurnRouter(address _ccBurnRouter) external;
-    // function setWrappedBitcoin(address _wrappedBitcoin) external;
-    // function addTeleporter(bytes memory teleporterAddress) external returns(bool);
-    // function removeTeleporter(uint teleporterIndex) external returns(bool);
-    // function slashTeleporters (uint amount, address recipient) external;
-
     // State-changing functions
+
+    function addMinter(address account) external;
+
+    function removeMinter(address account) external;
+
+    function addBurner(address account) external;
+
+    function removeBurner(address account) external;
+
+    function mint(address lockerBitcoinDecodedAddress, address receiver, uint amount) external returns(bool);
+
+    function burn(address lockerBitcoinDecodedAddress, uint256 amount) external returns(bool);
 
     // function setRequiredLockedAmount(uint _requiredLockedAmount) external;
 
@@ -141,6 +128,7 @@ interface ILockers {
 
     function setPriceOracle(address _priceOracle) external;
 
+    // TODO: add minter and add burner
     function setCCBurnRouter(address _ccBurnRouter) external;
 
     function setExchangeRouter(address _exchangeRouter) external;
@@ -150,10 +138,12 @@ interface ILockers {
     function setCollateralRatio(uint _collateralRatio) external;
 
     // FIXME: change the function signature
+    // TODO: make it internal and must be called after mint and burn functions, also add mint and burn functions
     function updateIsActive(address _lockerBitcoinAddress, uint _amount, bool _isMint) external returns (bool);
 
     function requestToBecomeLocker(
         bytes memory _candidateBitcoinAddress,
+        address _candidateBitcoinDecodedAddress,
         uint lockedTDTAmount,
         uint lockedNativeTokenAmount
     ) external returns (bool);
