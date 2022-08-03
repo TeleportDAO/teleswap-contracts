@@ -261,6 +261,72 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         return true;
     }
 
+    /// @notice                         Slashes a locker if they issue a tx that doesn't match any burn request
+    /// @dev                        
+    /// @param _lockerTargetAddress     Suspicious locker's target chain address
+    /// @param _version                 Version of the malicious transaction
+    /// @param _vin                     Inputs of the malicious transaction
+    /// @param _vout                    Outputs of the malicious transaction
+    /// @param _locktime                Lock time of the malicious transaction
+    /// @param _blockNumber             The block number in which the malicious tx has happened
+    /// @param _intermediateNodes       Merkle inclusion proof for the malicious transaction
+    /// @param _index                   Index of transaction containing the malicious tx
+    /// @return                         True if dispute is successfull
+    function disputeLocker(
+            address _lockerTargetAddress,
+            bytes4 _version,
+            bytes memory _vin,
+            bytes calldata _vout,
+            bytes4 _locktime,
+            uint256 _blockNumber,
+            bytes calldata _intermediateNodes,
+            uint _index
+        ) external nonReentrant override returns (bool) {
+        // Checks if the locker address is valid
+        require(ILockers(lockers).isLocker(_lockerTargetAddress),
+        "CCBurnRouter: locker address is not valid");
+        // Checks if the provided transaction is valid:
+        // 1. Checks inclusion of transaction
+        bytes32 txId = _calculateTxId(_version, _vin, _vout, _locktime);
+        require(
+            _isConfirmed(
+                txId,
+                _blockNumber,
+                _intermediateNodes,
+                _index
+            ),
+            "CCBurnRouter: transaction is not finalized"
+        );
+        // 2. Check if the tranaction belongs to the locker
+        
+
+        // 3. Check if transaction is not for any burn request
+
+        // Slashes the locker
+        // ILockers(lockers).slashLocker(
+        //     _lockerTargetAddress,
+        //     amount,
+        //     towho
+        // );
+
+        // Emit the event
+        emit LockerDispute(
+            _lockerTargetAddress,
+            _blockNumber,
+            txId
+        );
+        return true;
+    }
+
+    function _extractPubKey(
+        bytes _vin,
+        uint _vinIndex
+    ) internal {
+        // Get out the correct vin using viewBTC indexVin
+        // using that input and scriptSig func, get the <sig + pubKey>
+        // extract pubKey as last 32 bytes of the scriptSig
+    }
+
     /// @notice                           Records burn request of user  
     /// @param _amount                    Amount of wrapped token that user wants to burn
     /// @param _remainedAmount            Amount of wrapped token that actually gets burnt after deducting fees from the original value (_amount)
