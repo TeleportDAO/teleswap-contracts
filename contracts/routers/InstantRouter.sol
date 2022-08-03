@@ -15,7 +15,6 @@ import "hardhat/console.sol"; // Just for test
 contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     
     mapping(address => instantRequest[]) public instantRequests;
-    mapping(address => bool) public override exchangeConnectors;
     uint public override slasherPercentageReward;
     uint public override paybackDeadline;
     address public override teleBTC;
@@ -90,14 +89,6 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     /// @param _teleBTCInstantPool              The new teleBTC instant pool address
     function setTeleBTCInstantPool(address _teleBTCInstantPool) external override onlyOwner {
         teleBTCInstantPool = _teleBTCInstantPool;
-    }
-
-    function addExchangeConnector(address _exchangeConnector) external override onlyOwner {
-        exchangeConnectors[_exchangeConnector] = true;
-    }
-
-    function removeExchangeConnector(address _exchangeConnector) external override onlyOwner {
-        exchangeConnectors[_exchangeConnector] = false;
     }
 
     /// @notice                   Transfers the loan amount to the user
@@ -256,16 +247,19 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
 
     /// @notice                           Slashes collateral of user who did not pay back loan
     /// @dev                              Buys teleBTC using the collateral
-	/// @param _exchangeConnector         Address of the slashed user
+	/// @param _exchangeRouter            Address of exchange router that is used to exchange collateral tokens to teleBTC
     /// @param _user                      Address of the slashed user
     /// @param _requestIndex              Index of the request that have not been paid back before deadline
     /// @return                           True if slashing is successful
     function slashUser(
-		address _exchangeConnector, 
+		address _exchangeRouter, 
 		address _user, 
 		uint _requestIndex
 	) override nonReentrant external returns (bool) {
-        require(exchangeConnectors[_exchangeConnector], "InstantRouter: exchange connector is not acceptable");
+        // Gets exchange connector address
+        address _exchangeConnector = IPriceOracle(priceOracle).exchangeConnector(_exchangeRouter);
+        require(_exchangeConnector != address(0), "InstantRouter: exchange connector is not acceptable");
+
         require(instantRequests[_user].length > _requestIndex, "InstantRouter: request index does not exist");
 
 		// Gets last submitted height on relay
@@ -316,14 +310,16 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
 				false
 			);
 
-            uint remainedCollateralToken = totalCollateralToken - requiredCollateralToken;
-            uint slasherReward = remainedCollateralToken*slasherPercentageReward/100;
+            uint slasherReward = (totalCollateralToken - requiredCollateralToken)*slasherPercentageReward/100;
 
             // Sends reward to slasher 
             IERC20(collateralToken).transfer(msg.sender, slasherReward);
 
             // Deposits rest of the tokens to collateral pool
-            ICollateralPool(collateralPool).addCollateral(_user, remainedCollateralToken - slasherReward);
+            ICollateralPool(collateralPool).addCollateral(
+                _user, 
+                totalCollateralToken - requiredCollateralToken - slasherReward
+            );
 
 			emit SlashUser(_user, collateralToken, requiredCollateralToken, paybackAmount);
         } else {

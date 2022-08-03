@@ -84,7 +84,6 @@ interface IInstantRouter {
     );
 
     // Read-only functions
-    function exchangeConnectors(address _exchangeConnector) external view returns (bool);
 
     function teleBTCInstantPool() external view returns (address);
 
@@ -113,10 +112,6 @@ interface IInstantRouter {
     function setSlasherPercentageReward(uint _slasherPercentageReward) external;
 
     function setTeleBTCInstantPool(address _teleBTCInstantPool) external;
-
-    function addExchangeConnector(address _exchangeConnector) external;
-
-    function removeExchangeConnector(address _exchangeConnector) external;
 
     function instantCCTransfer(
         address _receiver,
