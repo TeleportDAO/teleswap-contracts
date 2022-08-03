@@ -38,6 +38,24 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
         collateralizationRatio = _collateralizationRatio;
     }
 
+    /// @notice                             Converts collateral pool token to collateral token 
+    /// @param _collateralPoolTokenAmount   Amount of collateral pool token
+    /// @return                             Amount of collateral token
+    function equivalentCollateralToken(uint _collateralPoolTokenAmount) external view override returns (uint) {
+        require(totalSupply() > 0, "CollateralPool: collateral pool is empty");
+        require(totalSupply() >= _collateralPoolTokenAmount, "CollateralPool: liquidity is not sufficient");
+        return _collateralPoolTokenAmount*totalAddedCollateral()/totalSupply();
+    }
+
+    /// @notice                         Converts collateral token to collateral pool token 
+    /// @param _collateralTokenAmount   Amount of collateral token
+    /// @return                         Amount of collateral pool token
+    function equivalentCollateralPoolToken(uint _collateralTokenAmount) external view override returns (uint) {
+        require(totalAddedCollateral() > 0, "CollateralPool: collateral pool is empty");
+        require(totalAddedCollateral() >= _collateralTokenAmount, "CollateralPool: liquidity is not sufficient");
+        return _collateralTokenAmount*totalSupply()/totalAddedCollateral();
+    }
+
     /// @notice                 Adds collateral to collateral pool 
     /// @dev                    Mints collateral pool token for user
     /// @param _user            Address of user whose collateral balance is increased

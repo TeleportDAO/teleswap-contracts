@@ -125,7 +125,7 @@ describe("PriceOracle", async () => {
         );
     }
 
-    describe("#addExchangeRouter", async () => {
+    describe("#addExchangeConnector", async () => {
 
         beforeEach(async() => {
             snapshotId = await takeSnapshot(signer1.provider);
@@ -137,8 +137,8 @@ describe("PriceOracle", async () => {
 
         it("Adds an exchange router", async function () {
             expect(
-                await priceOracle.addExchangeRouter(deployerAddress, mockExchangeConnector.address)
-            ).to.emit(priceOracle, "ExchangeRouterAdded");
+                await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address)
+            ).to.emit(priceOracle, "ExchangeConnectorAdded");
 
             expect(
                 await priceOracle.exchangeRoutersList(0)
@@ -155,7 +155,7 @@ describe("PriceOracle", async () => {
 
     });
 
-    describe("#removeExchangeRouter", async () => {
+    describe("#removeExchangeConnector", async () => {
 
         beforeEach(async() => {
             snapshotId = await takeSnapshot(signer1.provider);
@@ -166,10 +166,10 @@ describe("PriceOracle", async () => {
         });
 
         it("Removes an exchange router", async function () {
-            await priceOracle.addExchangeRouter(deployerAddress, mockExchangeConnector.address)
+            await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address)
             expect(
-                await priceOracle.removeExchangeRouter(0)
-            ).to.emit(priceOracle, "ExchangeRouterRemoved");
+                await priceOracle.removeExchangeConnector(0)
+            ).to.emit(priceOracle, "ExchangeConnectorRemoved");
 
             expect(
                 await priceOracle.getExchangeRoutersListLength()
@@ -315,7 +315,7 @@ describe("PriceOracle", async () => {
 
         it("Gets equal amount of output token", async function () {
             let inputAmount = 1000;
-            await priceOracle.addExchangeRouter(deployerAddress, mockExchangeConnector.address);
+            await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
             await mockFunctionsExchangeConnector(true, 100);
             expect(
                 await priceOracle.equivalentOutputAmountFromExchange(
@@ -329,7 +329,7 @@ describe("PriceOracle", async () => {
 
         it("Reverts since pair does not exist in exchange", async function () {
             let inputAmount = 1000;
-            await priceOracle.addExchangeRouter(deployerAddress, mockExchangeConnector.address);
+            await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
             await mockFunctionsExchangeConnector(false, 0);
             await expect(
                 priceOracle.equivalentOutputAmountFromExchange(
@@ -390,7 +390,7 @@ describe("PriceOracle", async () => {
 
         it("Gets equal amount of output token when delay is not acceptable", async function () {
             timeStamp = await getLastBlockTimestamp();
-            await priceOracle.addExchangeRouter(deployerAddress, mockExchangeConnector.address);
+            await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
             await mockFunctionsExchangeConnector(true, 100);
             await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
             await setNextBlockTimestamp(240);
@@ -422,7 +422,7 @@ describe("PriceOracle", async () => {
 
         it("Gets equal amount of output token when delay is not acceptable, but exchange does not have the pair", async function () {
             timeStamp = await getLastBlockTimestamp();
-            await priceOracle.addExchangeRouter(deployerAddress, mockExchangeConnector.address);
+            await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
             await mockFunctionsExchangeConnector(false, 0);
             await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
             await setNextBlockTimestamp(240);
