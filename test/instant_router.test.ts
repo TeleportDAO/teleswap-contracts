@@ -198,6 +198,10 @@ describe("Instant Router", async () => {
         await mockPriceOracle.mock.equivalentOutputAmount.returns(
             outputAmount
         );
+        // Adds an exchange connector to instant router
+        await mockPriceOracle.mock.exchangeConnector.returns(
+            mockExchangeConnector.address
+        );
     }
 
     async function mockFunctionsBitcoinRelay(        
@@ -866,11 +870,6 @@ describe("Instant Router", async () => {
             // Gets last block timestamp 
             let lastBlockTimestamp = await getTimestamp();
 
-            // Adds an exchange connector to instant router
-            await instantRouter.addExchangeConnector(
-                mockExchangeConnector.address
-            );
-
             /* Sends totalCollateralToken to instant router since collateral pool was mocked:
                 ICollateralPool(collateralPool).removeCollateral(lockedCollateralPoolTokenAmount);
             */
@@ -901,7 +900,7 @@ describe("Instant Router", async () => {
 
             await expect(
                 await instantRouter.slashUser(
-                    mockExchangeConnector.address,
+                    deployerAddress, // exchange router address
                     deployerAddress,
                     0
                 )

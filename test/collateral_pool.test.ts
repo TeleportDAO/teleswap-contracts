@@ -222,4 +222,88 @@ describe("CollateralPool", async () => {
 
     });
 
+    describe("#equivalentCollateralToken", async () => {
+        let addedCollateral = 100;
+        
+        beforeEach(async() => {
+            snapshotId = await takeSnapshot(signer1.provider);
+
+            // Adds collateral
+            await erc20.approve(collateralPool.address, addedCollateral);
+            await collateralPool.addCollateral(deployerAddress, addedCollateral);
+        });
+
+        afterEach(async() => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("Converts collateral pool token to collateral token", async function () {
+            await expect(
+                await collateralPool.equivalentCollateralToken(100)
+            ).to.equal(100); 
+        })
+
+        it("Converts collateral pool token to collateral token after transferring some amounts", async function () {
+            await erc20.transfer(collateralPool.address, addedCollateral)
+            await expect(
+                await collateralPool.equivalentCollateralToken(100)
+            ).to.equal(200); 
+        })
+
+        it("Reverts since liquidity is not enough", async function () {
+            await expect(
+                collateralPool.equivalentCollateralToken(200)
+            ).to.revertedWith("CollateralPool: liquidity is not sufficient"); 
+        })
+
+        it("Reverts since collateral pool is empty", async function () {
+            await collateralPool.removeCollateral(addedCollateral);
+            await expect(
+                collateralPool.equivalentCollateralToken(100)
+            ).to.revertedWith("CollateralPool: collateral pool is empty"); 
+        })
+    });
+
+    describe("#equivalentCollateralPoolToken", async () => {
+        let addedCollateral = 100;
+        
+        beforeEach(async() => {
+            snapshotId = await takeSnapshot(signer1.provider);
+
+            // Adds collateral
+            await erc20.approve(collateralPool.address, addedCollateral);
+            await collateralPool.addCollateral(deployerAddress, addedCollateral);
+        });
+
+        afterEach(async() => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("Converts collateral pool token to collateral token", async function () {
+            await expect(
+                await collateralPool.equivalentCollateralPoolToken(100)
+            ).to.equal(100); 
+        })
+
+        it("Converts collateral pool token to collateral token after transferring some amounts", async function () {
+            await erc20.transfer(collateralPool.address, addedCollateral)
+            await expect(
+                await collateralPool.equivalentCollateralPoolToken(200)
+            ).to.equal(100); 
+        })
+
+        it("Reverts since liquidity is not enough", async function () {
+            await expect(
+                collateralPool.equivalentCollateralPoolToken(200)
+            ).to.revertedWith("CollateralPool: liquidity is not sufficient"); 
+        })
+
+        it("Reverts since collateral pool is empty", async function () {
+            await collateralPool.removeCollateral(addedCollateral);
+            await expect(
+                collateralPool.equivalentCollateralPoolToken(100)
+            ).to.revertedWith("CollateralPool: collateral pool is empty"); 
+        })
+    });
+
 });
