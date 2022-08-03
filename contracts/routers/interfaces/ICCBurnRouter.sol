@@ -63,6 +63,16 @@ interface ICCBurnRouter {
 		uint index
 	);
 
+	/// @notice                 		Emits when a locker gets slashed for withdrawing BTC
+	/// @param _lockerTargetAddress		Locker's address on the target chain
+	/// @param _blockNumber				Block number of the malicious tx
+	/// @param txId						Transaction ID of the malicious tx
+	event LockerDispute(
+        address _lockerTargetAddress,
+    	uint _blockNumber,
+        bytes32 txId
+    );
+
 	// Read-only functions
 
 	function relay() external view returns (address);
@@ -124,4 +134,14 @@ interface ICCBurnRouter {
 	) external returns (bool);
 
 	function disputeBurn(address _lockerTargetAddress, uint[] memory _indices) external returns (bool);
+	function disputeLocker(
+		address _lockerTargetAddress,
+		bytes4 _version,
+		bytes memory _vin,
+		bytes calldata _vout,
+		bytes4 _locktime,
+		uint256 _blockNumber,
+		bytes calldata _intermediateNodes,
+		uint _index
+	) external returns (bool);
 }
