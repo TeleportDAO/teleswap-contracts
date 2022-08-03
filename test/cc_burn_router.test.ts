@@ -265,525 +265,525 @@ describe("CC Burn Router", async () => {
         ).to.emit(ccBurnRouter, "PaidCCBurn")
     }
 
-    // describe("#ccBurn", async () => {
+    describe("#ccBurn", async () => {
 
-    //     it("burning wrapped BTC by ccBurn function (is script hash and non-segwit)", async function () {
+        it("burning wrapped BTC by ccBurn function (is script hash and non-segwit)", async function () {
 
-    //         let thisBlockNumber = await signer1.provider?.getBlockNumber()
-    //         let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
 
-    //         let TeleBTCSigner1 = await teleBTC.connect(signer1)
+            let TeleBTCSigner1 = await teleBTC.connect(signer1)
 
-    //         // Mint TeleBTC for test
-    //         await TeleBTCSigner1.mintTestToken()
+            // Mint TeleBTC for test
+            await TeleBTCSigner1.mintTestToken()
 
-    //         expect(
-    //             await TeleBTCSigner1.balanceOf(signer1Address)
-    //         ).to.equal(oneHundred)
+            expect(
+                await TeleBTCSigner1.balanceOf(signer1Address)
+            ).to.equal(oneHundred)
 
-    //         // Give the allowance to the ccBurnRouter so that it could burn tokens
-    //         await TeleBTCSigner1.approve(
-    //             ccBurnRouter.address,
-    //             userRequestAmount
-    //         )
+            // Give the allowance to the ccBurnRouter so that it could burn tokens
+            await TeleBTCSigner1.approve(
+                ccBurnRouter.address,
+                userRequestAmount
+            )
 
-    //         expect(
-    //             await teleBTC.allowance(signer1Address, ccBurnRouter.address)
-    //         ).to.equal(userRequestAmount)
+            expect(
+                await teleBTC.allowance(signer1Address, ccBurnRouter.address)
+            ).to.equal(userRequestAmount)
 
-    //         let ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1)
+            let ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1)
 
-    //         // Set mock contracts outputs
-    //         await setRelayLastSubmittedHeightReturn(theBlockNumber);
-    //         await setLockersReturn();
+            // Set mock contracts outputs
+            await setRelayLastSubmittedHeightReturn(theBlockNumber);
+            await setLockersReturn();
 
-    //         let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = await mockLockers.redeemScriptHash();
 
-    //         let totalSupplyBefore = await TeleBTCSigner1.totalSupply();
+            let totalSupplyBefore = await TeleBTCSigner1.totalSupply();
 
-    //         // Burn some test tokens using ccBurn
-    //         await expect(
-    //             ccBurnRouterSigner1.ccBurn(
-    //                 userRequestAmount,
-    //                 btcDecodedAddress,
-    //                 true,
-    //                 false,
-    //                 lockerTargetAddress
-    //             )
-    //         ).to.emit(ccBurnRouter, "CCBurn")
+            // Burn some test tokens using ccBurn
+            await expect(
+                ccBurnRouterSigner1.ccBurn(
+                    userRequestAmount,
+                    btcDecodedAddress,
+                    true,
+                    false,
+                    lockerTargetAddress
+                )
+            ).to.emit(ccBurnRouter, "CCBurn")
 
-    //         let totalSupplyAfter = await TeleBTCSigner1.totalSupply();
+            let totalSupplyAfter = await TeleBTCSigner1.totalSupply();
 
-    //         // Get the burn request that has been saved in the contract
-    //         let theBurnRequest = await ccBurnRouter.burnRequests(lockerTargetAddress, 0);
+            // Get the burn request that has been saved in the contract
+            let theBurnRequest = await ccBurnRouter.burnRequests(lockerTargetAddress, 0);
 
-    //         expect(
-    //             theBurnRequest.amount
-    //         ).to.equal(userRequestAmount)
-    //         // Difference of total supply of tokens should be user input amount minus fees
-    //         expect(
-    //             totalSupplyBefore.sub(totalSupplyAfter)
-    //         ).to.equal(theBurnRequest.remainedAmount);
+            expect(
+                theBurnRequest.amount
+            ).to.equal(userRequestAmount)
+            // Difference of total supply of tokens should be user input amount minus fees
+            expect(
+                totalSupplyBefore.sub(totalSupplyAfter)
+            ).to.equal(theBurnRequest.remainedAmount);
 
-    //     })
+        })
 
-    //     // it("ccBurn function works if user Bitcoin address is script hash and is segwit", async function () {
-    //     // })
+        // it("ccBurn function works if user Bitcoin address is script hash and is segwit", async function () {
+        // })
 
-    //     it("ccBurn function works if user Bitcoin address is not script hash and is segwit", async function () {
-    //         let thisBlockNumber = await signer1.provider?.getBlockNumber()
-    //         let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
+        it("ccBurn function works if user Bitcoin address is not script hash and is segwit", async function () {
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
 
-    //         let TeleBTCSigner1 = await teleBTC.connect(signer1)
+            let TeleBTCSigner1 = await teleBTC.connect(signer1)
 
-    //         // Mint TeleBTC for test
-    //         await mintTeleBTCForTest();
+            // Mint TeleBTC for test
+            await mintTeleBTCForTest();
 
-    //         // Give the allowance to the ccBurnRouter so that it could burn tokens
-    //         await TeleBTCSigner1.approve(
-    //             ccBurnRouter.address,
-    //             userRequestAmount
-    //         )
+            // Give the allowance to the ccBurnRouter so that it could burn tokens
+            await TeleBTCSigner1.approve(
+                ccBurnRouter.address,
+                userRequestAmount
+            )
 
-    //         let ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1)
+            let ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1)
 
-    //         // Set mock contracts outputs
-    //         await setRelayLastSubmittedHeightReturn(theBlockNumber);
-    //         await setLockersReturn();
+            // Set mock contracts outputs
+            await setRelayLastSubmittedHeightReturn(theBlockNumber);
+            await setLockersReturn();
 
-    //         let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = await mockLockers.redeemScriptHash();
 
-    //         let totalSupplyBefore = await TeleBTCSigner1.totalSupply();
+            let totalSupplyBefore = await TeleBTCSigner1.totalSupply();
 
-    //         // Burn some test tokens using ccBurn
-    //         await expect(
-    //             ccBurnRouterSigner1.ccBurn(
-    //                 userRequestAmount,
-    //                 btcSegwitDecodedAddress,
-    //                 true,
-    //                 true,
-    //                 lockerTargetAddress
-    //             )
-    //         ).to.emit(ccBurnRouter, "CCBurn")
+            // Burn some test tokens using ccBurn
+            await expect(
+                ccBurnRouterSigner1.ccBurn(
+                    userRequestAmount,
+                    btcSegwitDecodedAddress,
+                    true,
+                    true,
+                    lockerTargetAddress
+                )
+            ).to.emit(ccBurnRouter, "CCBurn")
 
-    //         let totalSupplyAfter = await TeleBTCSigner1.totalSupply();
-
-    //         // Get the burn request that has been saved in the contract
-    //         let theBurnRequest = await ccBurnRouter.burnRequests(lockerTargetAddress, 0);
-
-    //         expect(
-    //             theBurnRequest.amount
-    //         ).to.equal(userRequestAmount)
-    //         // Difference of total supply of tokens should be user input amount minus fees
-    //         expect(
-    //             totalSupplyBefore.sub(totalSupplyAfter)
-    //         ).to.equal(theBurnRequest.remainedAmount);
-    //     })
-
-    //     it("ccBurn function reverts if enough allowance is not given", async function () {
-    //         let thisBlockNumber = await signer1.provider?.getBlockNumber()
-    //         let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
-
-    //         let TeleBTCSigner1 = await teleBTC.connect(signer1)
-
-    //         // Mint TeleBTC for test
-    //         await mintTeleBTCForTest();
-
-    //         // Give the allowance to the ccBurnRouter so that it could burn tokens
-    //         await TeleBTCSigner1.approve(
-    //             ccBurnRouter.address,
-    //             userRequestAmount.sub(1)
-    //         )
-
-    //         let ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1)
-
-    //         // Set mock contracts outputs
-    //         await setRelayLastSubmittedHeightReturn(theBlockNumber);
-    //         await setLockersReturn();
-
-    //         let lockerTargetAddress = await mockLockers.redeemScriptHash();
-
-    //         // Burn some test tokens using ccBurn
-    //         await expect(
-    //             ccBurnRouterSigner1.ccBurn(
-    //                 userRequestAmount,
-    //                 btcDecodedAddress,
-    //                 true,
-    //                 false,
-    //                 lockerTargetAddress
-    //             )
-    //         ).to.revertedWith("ERC20: transfer amount exceeds allowance")
-    //     })
-
-    //     // it("ccBurn function reverts if input locker address is not a valid locker", async function () {
-    //     // TODO: after locker gets fixed, in contract we should check this
-    //     // })
-
-    // });
-
-    // describe("#burnProof", async () => {
-
-    //     it("Providing the btc transfer proof by burnProof function", async function () {
-
-    //         let thisBlockNumber = await signer1.provider?.getBlockNumber()
-    //         let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
-
-    //         // Find the locker target address
-    //         await setLockersReturn();
-    //         let lockerTargetAddress = await mockLockers.redeemScriptHash();
-
-    //         // Mint TeleBTC for test
-    //         await mintTeleBTCForTest();
-
-    //         // Send a burn request
-    //         await sendBurnRequest(theBlockNumber, userRequestAmount);
-
-    //         let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
-
-    //         // Set mock contracts outputs
-    //         await setRelayCheckTxProofReturn(true);
-    //         await setLockersIsLockerReturn(true);
-
-    //         await expect(
-    //             ccBurnRouterSigner2.burnProof(
-    //                 btcUserVersion,
-    //                 btcUserVin,
-    //                 btcUserVout,
-    //                 btcUserLocktime,
-    //                 theBlockNumber.add(5),
-    //                 btcUserInterMediateNodes,
-    //                 1,
-    //                 lockerTargetAddress,
-    //                 0,
-    //                 0
-    //             )
-    //         ).to.emit(ccBurnRouter, "PaidCCBurn")
-    //     })
-
-    //     it("Reverts if index range is not correct (wrong start or end index)", async function () {
-    //         let thisBlockNumber = await signer1.provider?.getBlockNumber()
-    //         let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
-
-    //         // Find the locker target address
-    //         await setLockersReturn();
-    //         let lockerTargetAddress = await mockLockers.redeemScriptHash();
-
-    //         // Mint TeleBTC for test
-    //         await mintTeleBTCForTest();
-
-    //         // Send a burn request
-    //         await sendBurnRequest(theBlockNumber, userRequestAmount);
-
-    //         let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
-
-    //         // Set mock contracts outputs
-    //         await setRelayCheckTxProofReturn(true);
-    //         await setLockersIsLockerReturn(true);
-
-    //         // Should revert
-    //         await expect(
-    //                 ccBurnRouterSigner2.burnProof(
-    //                 btcUserVersion,
-    //                 btcUserVin,
-    //                 btcUserVout,
-    //                 btcUserLocktime,
-    //                 theBlockNumber.add(5),
-    //                 btcUserInterMediateNodes,
-    //                 1,
-    //                 lockerTargetAddress,
-    //                 1,
-    //                 0
-    //             )
-    //         ).to.revertedWith("CCBurnRouter: burnProof wrong index input")
-
-    //         // Should revert with a wrong end index
-    //         await expect(
-    //             ccBurnRouterSigner2.burnProof(
-    //                 btcUserVersion,
-    //                 btcUserVin,
-    //                 btcUserVout,
-    //                 btcUserLocktime,
-    //                 theBlockNumber.add(5),
-    //                 btcUserInterMediateNodes,
-    //                 1,
-    //                 lockerTargetAddress,
-    //                 0,
-    //                 1
-    //             )
-    //         ).to.revertedWith("CCBurnRouter: burnProof wrong index input")
-    //     })
-
-    //     it("Reverts if locker is not valid", async function () {
-    //         let thisBlockNumber = await signer1.provider?.getBlockNumber()
-    //         let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
-
-    //         // Find the locker target address
-    //         await setLockersReturn();
-    //         let lockerTargetAddress = await mockLockers.redeemScriptHash();
-
-    //         // Mint TeleBTC for test
-    //         await mintTeleBTCForTest();
-
-    //         // Send a burn request
-    //         await sendBurnRequest(theBlockNumber, userRequestAmount);
-
-    //         let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
-
-    //         // Set mock contracts outputs
-    //         await setRelayCheckTxProofReturn(true);
-    //         await setLockersIsLockerReturn(false);
-
-    //         // Should revert
-    //         await expect(
-    //                 ccBurnRouterSigner2.burnProof(
-    //                 btcUserVersion,
-    //                 btcUserVin,
-    //                 btcUserVout,
-    //                 btcUserLocktime,
-    //                 theBlockNumber.add(5),
-    //                 btcUserInterMediateNodes,
-    //                 1,
-    //                 lockerTargetAddress,
-    //                 0,
-    //                 0
-    //             )
-    //         ).to.revertedWith("CCBurnRouter: locker address is not valid")
-    //     })
-
-    //     it("Reverts if locker's tx has not been finalized on relay", async function () {
-    //         let thisBlockNumber = await signer1.provider?.getBlockNumber()
-    //         let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
-
-    //         // Find the locker target address
-    //         await setLockersReturn();
-    //         let lockerTargetAddress = await mockLockers.redeemScriptHash();
-
-    //         // Mint TeleBTC for test
-    //         await mintTeleBTCForTest();
-
-    //         // Send a burn request
-    //         await sendBurnRequest(theBlockNumber, userRequestAmount);
-
-    //         let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
-
-    //         // Set mock contracts outputs
-    //         await setRelayCheckTxProofReturn(false);
-    //         await setLockersIsLockerReturn(true);
-
-    //         // Should revert
-    //         await expect(
-    //                 ccBurnRouterSigner2.burnProof(
-    //                 btcUserVersion,
-    //                 btcUserVin,
-    //                 btcUserVout,
-    //                 btcUserLocktime,
-    //                 theBlockNumber.add(5),
-    //                 btcUserInterMediateNodes,
-    //                 1,
-    //                 lockerTargetAddress,
-    //                 0,
-    //                 0
-    //             )
-    //         ).to.revertedWith("CCBurnRouter: transaction has not finalized yet");
-    //     })
-
-    //     it("Reverts if provided tx doesn't exist", async function () {
-    //         let thisBlockNumber = await signer1.provider?.getBlockNumber()
-    //         let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
-
-    //         // Find the locker target address
-    //         await setLockersReturn();
-    //         let lockerTargetAddress = await mockLockers.redeemScriptHash();
-
-    //         // Mint TeleBTC for test
-    //         await mintTeleBTCForTest();
-
-    //         // Send a burn request
-    //         await sendBurnRequest(theBlockNumber, userRequestAmount);
-
-    //         let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
-
-    //         // Set mock contracts outputs
-    //         await setRelayCheckTxProofReturn(true);
-    //         await setLockersIsLockerReturn(true);
-
-    //         // Should revert with a wrong start index
-    //         await expect(
-    //                 ccBurnRouterSigner2.burnProof(
-    //                 btcUserVersion,
-    //                 btcUserVin,
-    //                 "0000",
-    //                 btcUserLocktime,
-    //                 theBlockNumber.add(5),
-    //                 btcUserInterMediateNodes,
-    //                 1,
-    //                 lockerTargetAddress,
-    //                 0,
-    //                 0
-    //             )
-    //         ).to.reverted
-    //     })
-
-    //     it("Doesn't accept proof if the paid amount is not exact", async function () {
-    //         let wrongUserRequestAmount = BigNumber.from(100070000)
-    //         let thisBlockNumber = await signer1.provider?.getBlockNumber()
-    //         let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
-
-    //         // Find the locker target address
-    //         await setLockersReturn();
-    //         let lockerTargetAddress = await mockLockers.redeemScriptHash();
-
-    //         // Mint TeleBTC for test
-    //         await mintTeleBTCForTest();
-
-    //         // Send a burn request
-    //         await sendBurnRequest(theBlockNumber, wrongUserRequestAmount);
-
-    //         let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
-
-    //         // Set mock contracts outputs
-    //         await setRelayCheckTxProofReturn(true);
-    //         await setLockersIsLockerReturn(true);
-
-    //         // Should revert with a wrong start index
-    //         await expect(
-    //                 ccBurnRouterSigner2.burnProof(
-    //                 btcUserVersion,
-    //                 btcUserVin,
-    //                 btcUserVout,
-    //                 btcUserLocktime,
-    //                 theBlockNumber.add(5),
-    //                 btcUserInterMediateNodes,
-    //                 1,
-    //                 lockerTargetAddress,
-    //                 0,
-    //                 0
-    //             )
-    //         ).to.not.emit(ccBurnRouter, "PaidCCBurn");
-    //     })
-    // });
-
-    // describe("#disputeBurn", async () => {
-
-    //     it("Couldn't disputeBurn since lockers have paid before hand", async function () {
-    //         let thisBlockNumber = await signer1.provider?.getBlockNumber()
-    //         let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
-
-    //         // Find the locker target address
-    //         await setLockersReturn();
-    //         let lockerTargetAddress = await mockLockers.redeemScriptHash();
-
-    //         // Mint TeleBTC for test
-    //         await mintTeleBTCForTest();
-
-    //         // Send a burn request
-    //         await sendBurnRequest(theBlockNumber, userRequestAmount);
-
-    //         // Locker pays the burnt amount and provides proof
-    //         await provideProof(theBlockNumber.add(5));
-
-    //         // Set mock contracts outputs
-    //         await setLockersIsLockerReturn(true);
-
-    //         // Locker will not get slashed because it has paid the burnt amount to the user
-    //         let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
-    //         await expect(
-    //             ccBurnRouterSigner2.disputeBurn(
-    //                 lockerTargetAddress,
-    //                 [0]
-    //             )
-    //         ).to.revertedWith("CCBurnRouter: request has been paid before")
-    //     })
-
-    //     it("Reverts when deadline hasn't reached", async function () {
-    //         let thisBlockNumber = BigNumber.from(await signer1.provider?.getBlockNumber())
-
-    //         // Find the locker target address
-    //         await setLockersReturn();
-    //         let lockerTargetAddress = await mockLockers.redeemScriptHash();
-
-    //         // Mint TeleBTC for test
-    //         await mintTeleBTCForTest();
-
-    //         // Send a burn request
-    //         await sendBurnRequest(thisBlockNumber.add(5), userRequestAmount);
-
-    //         let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
-
-    //         // Set mock contracts outputs
-    //         await setLockersIsLockerReturn(true);
-
-    //         // Locker will not get slashed because the deadline of transfer has not reached
-    //         await expect(
-    //             ccBurnRouterSigner2.disputeBurn(
-    //                 lockerTargetAddress,
-    //                 [0]
-    //             )
-    //         ).to.revertedWith("CCBurnRouter: payback deadline has not passed yet")
-    //     })
-
-    //     it("Reverts if the locker is not valid", async function () {
-    //         let thisBlockNumber = await signer1.provider?.getBlockNumber()
-    //         let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
-
-    //         // Find the locker target address
-    //         await setLockersReturn();
-    //         let lockerTargetAddress = await mockLockers.redeemScriptHash();
-
-    //         // Mint TeleBTC for test
-    //         await mintTeleBTCForTest();
-
-    //         // Send a burn request
-    //         await sendBurnRequest(theBlockNumber, userRequestAmount);
-
-    //         // Locker pays the burnt amount and provides proof
-    //         await provideProof(theBlockNumber.add(5));
-
-    //         // Set mock contracts outputs
-    //         await setLockersIsLockerReturn(false);
-
-    //         // Reverts cuz locker address was not valid
-    //         let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
-    //         await expect(
-    //             ccBurnRouterSigner2.disputeBurn(
-    //                 lockerTargetAddress,
-    //                 [0]
-    //             )
-    //         ).to.revertedWith("CCBurnRouter: locker address is not valid")
-    //     })
-
-    //     it("Otherwise goes through", async function () {
-    //         let thisBlockNumber = BigNumber.from(await signer1.provider?.getBlockNumber())
-
-    //         // Find the locker target address
-    //         await setLockersReturn();
-    //         let lockerTargetAddress = await mockLockers.redeemScriptHash();
-
-    //         // Mint TeleBTC for test
-    //         await mintTeleBTCForTest();
-
-    //         // Send a burn request
-    //         await sendBurnRequest(thisBlockNumber, userRequestAmount);
-
-    //         // Set the last height for relay so that it shows the deadline has passed
-    //         await setRelayLastSubmittedHeightReturn(thisBlockNumber.add(23));
-    //         await setLockersSlashLockerReturn();
-
-    //         let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
+            let totalSupplyAfter = await TeleBTCSigner1.totalSupply();
+
+            // Get the burn request that has been saved in the contract
+            let theBurnRequest = await ccBurnRouter.burnRequests(lockerTargetAddress, 0);
+
+            expect(
+                theBurnRequest.amount
+            ).to.equal(userRequestAmount)
+            // Difference of total supply of tokens should be user input amount minus fees
+            expect(
+                totalSupplyBefore.sub(totalSupplyAfter)
+            ).to.equal(theBurnRequest.remainedAmount);
+        })
+
+        it("ccBurn function reverts if enough allowance is not given", async function () {
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
+
+            let TeleBTCSigner1 = await teleBTC.connect(signer1)
+
+            // Mint TeleBTC for test
+            await mintTeleBTCForTest();
+
+            // Give the allowance to the ccBurnRouter so that it could burn tokens
+            await TeleBTCSigner1.approve(
+                ccBurnRouter.address,
+                userRequestAmount.sub(1)
+            )
+
+            let ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1)
+
+            // Set mock contracts outputs
+            await setRelayLastSubmittedHeightReturn(theBlockNumber);
+            await setLockersReturn();
+
+            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+
+            // Burn some test tokens using ccBurn
+            await expect(
+                ccBurnRouterSigner1.ccBurn(
+                    userRequestAmount,
+                    btcDecodedAddress,
+                    true,
+                    false,
+                    lockerTargetAddress
+                )
+            ).to.revertedWith("ERC20: transfer amount exceeds allowance")
+        })
+
+        // it("ccBurn function reverts if input locker address is not a valid locker", async function () {
+        // TODO: after locker gets fixed, in contract we should check this
+        // })
+
+    });
+
+    describe("#burnProof", async () => {
+
+        it("Providing the btc transfer proof by burnProof function", async function () {
+
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
+
+            // Find the locker target address
+            await setLockersReturn();
+            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+
+            // Mint TeleBTC for test
+            await mintTeleBTCForTest();
+
+            // Send a burn request
+            await sendBurnRequest(theBlockNumber, userRequestAmount);
+
+            let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
+
+            // Set mock contracts outputs
+            await setRelayCheckTxProofReturn(true);
+            await setLockersIsLockerReturn(true);
+
+            await expect(
+                ccBurnRouterSigner2.burnProof(
+                    btcUserVersion,
+                    btcUserVin,
+                    btcUserVout,
+                    btcUserLocktime,
+                    theBlockNumber.add(5),
+                    btcUserInterMediateNodes,
+                    1,
+                    lockerTargetAddress,
+                    0,
+                    0
+                )
+            ).to.emit(ccBurnRouter, "PaidCCBurn")
+        })
+
+        it("Reverts if index range is not correct (wrong start or end index)", async function () {
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
+
+            // Find the locker target address
+            await setLockersReturn();
+            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+
+            // Mint TeleBTC for test
+            await mintTeleBTCForTest();
+
+            // Send a burn request
+            await sendBurnRequest(theBlockNumber, userRequestAmount);
+
+            let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
+
+            // Set mock contracts outputs
+            await setRelayCheckTxProofReturn(true);
+            await setLockersIsLockerReturn(true);
+
+            // Should revert
+            await expect(
+                    ccBurnRouterSigner2.burnProof(
+                    btcUserVersion,
+                    btcUserVin,
+                    btcUserVout,
+                    btcUserLocktime,
+                    theBlockNumber.add(5),
+                    btcUserInterMediateNodes,
+                    1,
+                    lockerTargetAddress,
+                    1,
+                    0
+                )
+            ).to.revertedWith("CCBurnRouter: burnProof wrong index input")
+
+            // Should revert with a wrong end index
+            await expect(
+                ccBurnRouterSigner2.burnProof(
+                    btcUserVersion,
+                    btcUserVin,
+                    btcUserVout,
+                    btcUserLocktime,
+                    theBlockNumber.add(5),
+                    btcUserInterMediateNodes,
+                    1,
+                    lockerTargetAddress,
+                    0,
+                    1
+                )
+            ).to.revertedWith("CCBurnRouter: burnProof wrong index input")
+        })
+
+        it("Reverts if locker is not valid", async function () {
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
+
+            // Find the locker target address
+            await setLockersReturn();
+            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+
+            // Mint TeleBTC for test
+            await mintTeleBTCForTest();
+
+            // Send a burn request
+            await sendBurnRequest(theBlockNumber, userRequestAmount);
+
+            let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
+
+            // Set mock contracts outputs
+            await setRelayCheckTxProofReturn(true);
+            await setLockersIsLockerReturn(false);
+
+            // Should revert
+            await expect(
+                    ccBurnRouterSigner2.burnProof(
+                    btcUserVersion,
+                    btcUserVin,
+                    btcUserVout,
+                    btcUserLocktime,
+                    theBlockNumber.add(5),
+                    btcUserInterMediateNodes,
+                    1,
+                    lockerTargetAddress,
+                    0,
+                    0
+                )
+            ).to.revertedWith("CCBurnRouter: locker address is not valid")
+        })
+
+        it("Reverts if locker's tx has not been finalized on relay", async function () {
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
+
+            // Find the locker target address
+            await setLockersReturn();
+            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+
+            // Mint TeleBTC for test
+            await mintTeleBTCForTest();
+
+            // Send a burn request
+            await sendBurnRequest(theBlockNumber, userRequestAmount);
+
+            let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
+
+            // Set mock contracts outputs
+            await setRelayCheckTxProofReturn(false);
+            await setLockersIsLockerReturn(true);
+
+            // Should revert
+            await expect(
+                    ccBurnRouterSigner2.burnProof(
+                    btcUserVersion,
+                    btcUserVin,
+                    btcUserVout,
+                    btcUserLocktime,
+                    theBlockNumber.add(5),
+                    btcUserInterMediateNodes,
+                    1,
+                    lockerTargetAddress,
+                    0,
+                    0
+                )
+            ).to.revertedWith("CCBurnRouter: transaction has not finalized yet");
+        })
+
+        it("Reverts if provided tx doesn't exist", async function () {
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
+
+            // Find the locker target address
+            await setLockersReturn();
+            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+
+            // Mint TeleBTC for test
+            await mintTeleBTCForTest();
+
+            // Send a burn request
+            await sendBurnRequest(theBlockNumber, userRequestAmount);
+
+            let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
+
+            // Set mock contracts outputs
+            await setRelayCheckTxProofReturn(true);
+            await setLockersIsLockerReturn(true);
+
+            // Should revert with a wrong start index
+            await expect(
+                    ccBurnRouterSigner2.burnProof(
+                    btcUserVersion,
+                    btcUserVin,
+                    "0000",
+                    btcUserLocktime,
+                    theBlockNumber.add(5),
+                    btcUserInterMediateNodes,
+                    1,
+                    lockerTargetAddress,
+                    0,
+                    0
+                )
+            ).to.reverted
+        })
+
+        it("Doesn't accept proof if the paid amount is not exact", async function () {
+            let wrongUserRequestAmount = BigNumber.from(100070000)
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
+
+            // Find the locker target address
+            await setLockersReturn();
+            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+
+            // Mint TeleBTC for test
+            await mintTeleBTCForTest();
+
+            // Send a burn request
+            await sendBurnRequest(theBlockNumber, wrongUserRequestAmount);
+
+            let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
+
+            // Set mock contracts outputs
+            await setRelayCheckTxProofReturn(true);
+            await setLockersIsLockerReturn(true);
+
+            // Should revert with a wrong start index
+            await expect(
+                    ccBurnRouterSigner2.burnProof(
+                    btcUserVersion,
+                    btcUserVin,
+                    btcUserVout,
+                    btcUserLocktime,
+                    theBlockNumber.add(5),
+                    btcUserInterMediateNodes,
+                    1,
+                    lockerTargetAddress,
+                    0,
+                    0
+                )
+            ).to.not.emit(ccBurnRouter, "PaidCCBurn");
+        })
+    });
+
+    describe("#disputeBurn", async () => {
+
+        it("Couldn't disputeBurn since lockers have paid before hand", async function () {
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
+
+            // Find the locker target address
+            await setLockersReturn();
+            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+
+            // Mint TeleBTC for test
+            await mintTeleBTCForTest();
+
+            // Send a burn request
+            await sendBurnRequest(theBlockNumber, userRequestAmount);
+
+            // Locker pays the burnt amount and provides proof
+            await provideProof(theBlockNumber.add(5));
+
+            // Set mock contracts outputs
+            await setLockersIsLockerReturn(true);
+
+            // Locker will not get slashed because it has paid the burnt amount to the user
+            let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
+            await expect(
+                ccBurnRouterSigner2.disputeBurn(
+                    lockerTargetAddress,
+                    [0]
+                )
+            ).to.revertedWith("CCBurnRouter: request has been paid before")
+        })
+
+        it("Reverts when deadline hasn't reached", async function () {
+            let thisBlockNumber = BigNumber.from(await signer1.provider?.getBlockNumber())
+
+            // Find the locker target address
+            await setLockersReturn();
+            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+
+            // Mint TeleBTC for test
+            await mintTeleBTCForTest();
+
+            // Send a burn request
+            await sendBurnRequest(thisBlockNumber.add(5), userRequestAmount);
+
+            let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
+
+            // Set mock contracts outputs
+            await setLockersIsLockerReturn(true);
+
+            // Locker will not get slashed because the deadline of transfer has not reached
+            await expect(
+                ccBurnRouterSigner2.disputeBurn(
+                    lockerTargetAddress,
+                    [0]
+                )
+            ).to.revertedWith("CCBurnRouter: payback deadline has not passed yet")
+        })
+
+        it("Reverts if the locker is not valid", async function () {
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
+
+            // Find the locker target address
+            await setLockersReturn();
+            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+
+            // Mint TeleBTC for test
+            await mintTeleBTCForTest();
+
+            // Send a burn request
+            await sendBurnRequest(theBlockNumber, userRequestAmount);
+
+            // Locker pays the burnt amount and provides proof
+            await provideProof(theBlockNumber.add(5));
+
+            // Set mock contracts outputs
+            await setLockersIsLockerReturn(false);
+
+            // Reverts cuz locker address was not valid
+            let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
+            await expect(
+                ccBurnRouterSigner2.disputeBurn(
+                    lockerTargetAddress,
+                    [0]
+                )
+            ).to.revertedWith("CCBurnRouter: locker address is not valid")
+        })
+
+        it("Otherwise goes through", async function () {
+            let thisBlockNumber = BigNumber.from(await signer1.provider?.getBlockNumber())
+
+            // Find the locker target address
+            await setLockersReturn();
+            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+
+            // Mint TeleBTC for test
+            await mintTeleBTCForTest();
+
+            // Send a burn request
+            await sendBurnRequest(thisBlockNumber, userRequestAmount);
+
+            // Set the last height for relay so that it shows the deadline has passed
+            await setRelayLastSubmittedHeightReturn(thisBlockNumber.add(23));
+            await setLockersSlashLockerReturn();
+
+            let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
             
-    //         // Set mock contracts outputs
-    //         await setLockersIsLockerReturn(true);
+            // Set mock contracts outputs
+            await setLockersIsLockerReturn(true);
 
-    //         // Locker will not get slashed because the deadline of transfer has not reached
-    //         expect(
-    //             await ccBurnRouterSigner2.disputeBurn(
-    //                 lockerTargetAddress,
-    //                 [0]
-    //             )
-    //         );
-    //     })
+            // Locker will not get slashed because the deadline of transfer has not reached
+            expect(
+                await ccBurnRouterSigner2.disputeBurn(
+                    lockerTargetAddress,
+                    [0]
+                )
+            );
+        })
 
-    // });
+    });
 
     describe("#disputeLocker", async () => {
 

@@ -318,14 +318,14 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         return true;
     }
 
-    function _extractPubKey(
-        bytes _vin,
-        uint _vinIndex
-    ) internal {
-        // Get out the correct vin using viewBTC indexVin
-        // using that input and scriptSig func, get the <sig + pubKey>
-        // extract pubKey as last 32 bytes of the scriptSig
-    }
+    // function _extractPubKey(
+    //     bytes _vin,
+    //     uint _vinIndex
+    // ) internal {
+    //     // Get out the correct vin using viewBTC indexVin
+    //     // using that input and scriptSig func, get the <sig + pubKey>
+    //     // extract pubKey as last 32 bytes of the scriptSig
+    // }
 
     /// @notice                           Records burn request of user  
     /// @param _amount                    Amount of wrapped token that user wants to burn
