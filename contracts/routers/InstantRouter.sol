@@ -203,7 +203,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         for (uint i = 1; i <= instantRequests[_user].length; i++) {
             if (
                 remainedAmount >= instantRequests[_user][i-1].paybackAmount && 
-                instantRequests[_user][i-1].deadline >= lastSubmittedHeight
+                lastSubmittedHeight >= instantRequests[_user][i-1].deadline
             ) {
                 remainedAmount = remainedAmount - instantRequests[_user][i-1].paybackAmount;
 
