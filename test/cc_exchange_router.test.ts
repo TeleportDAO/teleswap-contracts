@@ -36,10 +36,11 @@ describe("CCExchangeRouter", async () => {
     let snapshotId: any;
 
     // Constants
-    let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-    let ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
-    let DUMMY_ADDRESS = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
-    let NORMAL_CONFIRMATION_PARAMETER = 6;
+    const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+    const ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
+    const DUMMY_ADDRESS = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+    const CHAIN_ID = 1;
+    const APP_ID = 1;
 
     // Bitcoin public key (32 bytes)
     let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
@@ -146,7 +147,6 @@ describe("CCExchangeRouter", async () => {
 
         // Deploys teleBTC contract
         const teleBTCFactory = new TeleBTC__factory(deployer);
-        console.log("cc transfer router address: ", ccTransferRouter.address)
         teleBTC = await teleBTCFactory.deploy(
             "teleBTC",
             "teleBTC",
@@ -194,6 +194,7 @@ describe("CCExchangeRouter", async () => {
         // Deploys ccExchangeRouter contract
         const ccExchangeRouterFactory = new CCExchangeRouter__factory(deployer);
         ccExchangeRouter = await ccExchangeRouterFactory.deploy(
+            CHAIN_ID,
             locker.address,
             mockBitcoinRelay.address,
             teleBTC.address
@@ -203,7 +204,7 @@ describe("CCExchangeRouter", async () => {
         // await ccExchangeRouter.setWrappedBitcoin(teleBTC.address);
 
         // Sets ccExchangeRouter address in ccTransferRouter
-        await ccExchangeRouter.setExchangeConnector(exchangeConnector.address);
+        await ccExchangeRouter.setExchangeConnector(APP_ID, exchangeConnector.address);
 
         await teleBTC.setCCExchangeRouter(ccExchangeRouter.address);
 

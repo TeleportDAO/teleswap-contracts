@@ -5,7 +5,7 @@ interface ICCExchangeRouter {
     // Structures
 
     /// @notice                    Structure for recording cross-chain exchange requests
-    /// @dev
+    /// @param appId               Application id that user wants to use
     /// @param inputAmount         Amount of locked tokens on source chain
     /// @param outputAmount        Expected amount of output token
     /// @param isFixedToken        True if amount of input token is fixed
@@ -16,6 +16,7 @@ interface ICCExchangeRouter {
     /// @param deadline            Deadline of exchanging tokens
     /// @param speed               Speed of the request (normal or instant)
     struct ccExchangeRequest {
+        uint appId;
         uint inputAmount;
         uint outputAmount;
         bool isFixedToken;
@@ -26,24 +27,6 @@ interface ICCExchangeRouter {
         uint deadline;
         uint speed;
     }
-
-
-    // struct request{
-    //     uint bitcoinAmount; //total amount of tokenA (exchange + fee)
-    //     uint exchangeAmount;
-    //     uint remainedInputAmount;
-    //     address exchangeToken; // exchangeToken pool address on DEX
-    //     bool isFixedToken;
-    //     address bitcoinRecipient;
-    //     address exchangeRecipientAddress;
-    //     address[] path;
-    //     uint teleporterFee;
-    //     address teleporterAddress;
-    //     uint deadline;
-    //     bool isExchange;
-    //     uint speed;
-    // }
-
 
     // Events
 
@@ -119,26 +102,19 @@ interface ICCExchangeRouter {
 
     // Read-only functions
 
+    function chainId() external view returns (uint);
+
     function relay() external view returns (address);
 
     function instantRouter() external view returns (address);
 
     function lockers() external view returns (address);
 
-    // function wrappedNativeToken() external view returns (address);
-
     function teleBTC() external view returns (address);
 
     function isRequestUsed(bytes32 _txId) external view returns (bool);
 
-    function exchangeConnectors(uint appId) external view returns (address);
-
-
-    // function owner() external view returns (address);
-    // function liquidityPoolFactory() external view returns(address);
-    // function WAVAX() external view returns(address);
-    // function exchangeRouter() external view returns(address);
-    // function wrappedBitcoin() external view returns(address);
+    function exchangeConnector(uint appId) external view returns (address);
 
     // State-changing functions
 
@@ -148,19 +124,9 @@ interface ICCExchangeRouter {
 
     function setLockers(address _lockers) external;
 
-    // function setWrappedNativeToken() external;
-
-    // function setExchangeRouter(address _exchangeRouter) external;
-
     function setTeleBTC(address _teleBTC) external;
 
-
-    // TODO: Add the 3 following functions to the cc exchange
-    // function addExchangeConnector(address _exchangeConnector) external returns (uint);
-
-    // function updateExchangeConnector(uint appId, address _exchangeConnector) external returns (bool);
-
-    // function removeExchangeConnector(uint appId) external returns (bool);
+    function setExchangeConnector(uint _appId, address _exchangeConnector) external;
 
     function ccExchange(
     // Bitcoin tx
@@ -175,32 +141,4 @@ interface ICCExchangeRouter {
         uint index,
         address lockerBitcoinDecodedAddress
     ) external returns(bool);
-
-
-
-    // function changeOwner(address _owner) external;
-    // function setInstantRouter (address _instantRouter) external;
-    // function setBitcoinTeleporter (address _bitcoinTeleporter) external;
-    // function setCCTransferRouter (address _ccTransferRouter) external;
-    function setExchangeConnector (address _exchangeConnector) external;
-    // function setWrappedBitcoin (address _wrappedBitcoin) external;
-    // function ccExchange(
-    //     bytes4 version,
-    //     bytes memory vin,
-    //     bytes calldata vout,
-    //     bytes4 locktime,
-    //     uint256 blockNumber,
-    //     bytes calldata intermediateNodes,
-    //     uint index,
-    //     bool payWithTDT
-    // ) external;
-    // function instantCCExchangeWithPermit(
-    //     address signer,
-    //     bytes memory signature,
-    //     uint amountIn,
-    //     uint amountOutMin,
-    //     address[] memory path,
-    //     address receiver,
-    //     uint deadline
-    // ) external;
 }
