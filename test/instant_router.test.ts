@@ -88,6 +88,14 @@ describe("Instant Router", async () => {
             collateralPoolFactory.abi
         );
 
+        const exchangeConnector = await deployments.getArtifact(
+            "IExchangeConnector"
+        );
+        mockExchangeConnector = await deployMockContract(
+            deployer,
+            exchangeConnector.abi
+        );
+
 		// Deploys collateralToken and TeleportDAOToken contract
         const erc20Factory = new ERC20__factory(deployer);
         collateralToken = await erc20Factory.deploy(
@@ -186,11 +194,17 @@ describe("Instant Router", async () => {
         );
     }
 
+    async function mockFunctionsExchangeConnector(       
+        swapResult: boolean,
+        amounts: Array<number>
+    ): Promise<void> {
+        await mockExchangeConnector.mock.swap.returns(
+            swapResult, amounts
+        );
+    }
+
     describe("#instantCCTransfer", async () => {
-
-        // let reserve1 = 100
-        // let reserve2 = 100
-
+        // Parameters
         let loanAmount: number;
         let equivalentCollateralToken: number;
         let requiredCollateralPoolToken: number;
@@ -245,7 +259,35 @@ describe("Instant Router", async () => {
             await expect(
                 await teleBTC.balanceOf(signer1Address)
             ).to.equal(loanAmount);
+        });
 
+        it("Reverts since instant pool liquidity is not enough", async function () {
+            // Set parameters
+            loanAmount = 200;
+            equivalentCollateralToken = 50; // Assumes that: 1 collateralToken = 2 teleBTC
+            requiredCollateralPoolToken = equivalentCollateralToken*collateralizationRatio; // Assumes that: 1 collateralToken = 1 collateralPoolToken
+            lastSubmittedHeight = 100;
+            isCollateral = true;
+            transferFromResult = true;
+
+            // Mocks functions
+            await mockFunctionsCollateralPoolFactory(isCollateral, mockCollateralPool.address);
+            await mockFunctionsCollateralPool(collateralizationRatio, transferFromResult, requiredCollateralPoolToken);
+            await mockFunctionsPriceOracle(equivalentCollateralToken);
+            await mockFunctionsBitcoinRelay(lastSubmittedHeight);
+
+            // Gets last block timestamp 
+            let lastBlockTimestamp = await getTimestamp();
+
+            // Checks that loan has been issued successfully
+            await expect(
+                instantRouter.instantCCTransfer(
+                    signer1Address,
+                    loanAmount,
+                    lastBlockTimestamp*2,
+                    collateralToken.address
+                )
+            ).to.revertedWith("InstantPool: liquidity is not sufficient")
         });
 
         it("Reverts since deadline has paased", async function () {
@@ -261,7 +303,6 @@ describe("Instant Router", async () => {
                     collateralToken.address
                 )
             ).to.revertedWith("InstantRouter: deadline has passed")
-
         });
 
         it("Reverts since collateral is not acceptable", async function () {
@@ -281,139 +322,158 @@ describe("Instant Router", async () => {
                     collateralToken.address
                 )
             ).to.revertedWith("InstantRouter: collateral token is not acceptable")
-
         });
 
     });
 
-    // describe("#instantCCExchange", async () => {
+    describe("#instantCCExchange", async () => {
 
-    //     let reserve1 = 100
-    //     let reserve2 = 100
+        // Parameters
+        let loanAmount: number;
+        let amountOut: number;
+        let path: Array<string>;
+        let isFixedToken: boolean;
+        let equivalentCollateralToken: number;
+        let requiredCollateralPoolToken: number;
+        let lastSubmittedHeight: number;
+        let isCollateral: boolean;
+        let transferFromResult: boolean;
+        let swapResult: boolean;
 
-    //     let theTestMintedAmount = 100
+        beforeEach("deploy a new cc exchange router", async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+        });
+    
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
 
-    //     it("low deadline", async function () {
+        it("Gives loan to user and exchanges teleBTC to output token", async function () {
+            // Set parameters
+            loanAmount = 100;
+            amountOut = 10;
+            path = [teleBTC.address, collateralToken.address];
+            isFixedToken = true;
+            equivalentCollateralToken = 50; // Assumes that: 1 collateralToken = 2 teleBTC
+            requiredCollateralPoolToken = equivalentCollateralToken*collateralizationRatio; // Assumes that: 1 collateralToken = 1 collateralPoolToken
+            lastSubmittedHeight = 100;
+            isCollateral = true;
+            transferFromResult = true;
+            swapResult = true;
 
-    //         let thisBlockNumber = await signer1.provider?.getBlockNumber()
-    //         let theBlockNumber = BigNumber.from(thisBlockNumber).sub(2)
+            // Mocks functions
+            await mockFunctionsCollateralPoolFactory(isCollateral, mockCollateralPool.address);
+            await mockFunctionsCollateralPool(collateralizationRatio, transferFromResult, requiredCollateralPoolToken);
+            await mockFunctionsPriceOracle(equivalentCollateralToken);
+            await mockFunctionsBitcoinRelay(lastSubmittedHeight);
+            await mockFunctionsExchangeConnector(swapResult, [loanAmount, amountOut]);
 
-    //         let instantRouterSigner1 = instantRouter.connect(signer1)
+            // Gets last block timestamp 
+            let lastBlockTimestamp = await getTimestamp();
 
-    //         let thePath = [
-    //             teleBTC.address,
-    //             wavax.address
-    //         ]
+            await expect(
+                instantRouter.instantCCExchange(
+                    mockExchangeConnector.address,
+                    signer1Address,
+                    loanAmount,
+                    amountOut,
+                    path,
+                    lastBlockTimestamp*2,
+                    collateralToken.address,
+                    isFixedToken
+                )
+            ).to.emit(instantRouter, "InstantExchange").withArgs(
+                deployerAddress,
+                signer1Address,
+                loanAmount,
+                Math.floor(loanAmount*instantPercentageFee/10000),
+                amountOut,
+                path,
+                isFixedToken,
+                lastSubmittedHeight + paybackDeadline,
+                collateralToken.address
+            );
+        });
 
-    //         await expect(
-    //             instantRouterSigner1.instantCCExchange(
-    //                 0,
-    //                 0,
-    //                 thePath,
-    //                 signer1Address,
-    //                 theBlockNumber
-    //             )
-    //         ).to.revertedWith("deadline has passed")
-    //     });
+        it("Reverts since swap was not successful", async function () {
+            // Set parameters
+            loanAmount = 100;
+            amountOut = 10;
+            path = [teleBTC.address, collateralToken.address];
+            isFixedToken = true;
+            equivalentCollateralToken = 50; // Assumes that: 1 collateralToken = 2 teleBTC
+            requiredCollateralPoolToken = equivalentCollateralToken*collateralizationRatio; // Assumes that: 1 collateralToken = 1 collateralPoolToken
+            lastSubmittedHeight = 100;
+            isCollateral = true;
+            transferFromResult = true;
+            swapResult = false;
 
+            // Mocks functions
+            await mockFunctionsCollateralPoolFactory(isCollateral, mockCollateralPool.address);
+            await mockFunctionsCollateralPool(collateralizationRatio, transferFromResult, requiredCollateralPoolToken);
+            await mockFunctionsPriceOracle(equivalentCollateralToken);
+            await mockFunctionsBitcoinRelay(lastSubmittedHeight);
+            await mockFunctionsExchangeConnector(swapResult, []);
 
-    //     it("proper deadline", async function () {
+            // Gets last block timestamp 
+            let lastBlockTimestamp = await getTimestamp();
 
-    //         let thisBlockNumber = await signer1.provider?.getBlockNumber()
-    //         let theBlockNumber = BigNumber.from(thisBlockNumber).add(10)
+            await expect(
+                instantRouter.instantCCExchange(
+                    mockExchangeConnector.address,
+                    signer1Address,
+                    loanAmount,
+                    amountOut,
+                    path,
+                    lastBlockTimestamp*2,
+                    collateralToken.address,
+                    isFixedToken
+                )
+            ).to.revertedWith("InstantRouter: exchange was not successful");
+        });
 
-    //         let instantRouterSigner1 = instantRouter.connect(signer1)
+        it("Reverts since deadline has paased", async function () {
+            // Gets last block timestamp 
+            let lastBlockTimestamp = await getTimestamp();
 
-    //         // console.log("mockLiquidityPoolFactory address: ", mockLiquidityPoolFactory.address)
+            // Checks that loan has been issued successfully
+            await expect(
+                instantRouter.instantCCExchange(
+                    mockExchangeConnector.address,
+                    signer1Address,
+                    loanAmount,
+                    amountOut,
+                    path,
+                    lastBlockTimestamp - 1,
+                    collateralToken.address,
+                    isFixedToken
+                )
+            ).to.revertedWith("InstantRouter: deadline has passed")
+        });
 
-    //         await mockLiquidityPoolFactory.mock.getLiquidityPool.withArgs(
-    //             teleBTC.address,
-    //             TeleportDAOToken.address
-    //         ).returns(
-    //             mockLiquidityPool.address
-    //         )
+        it("Reverts since collateral is not acceptable", async function () {
+            // Mocks functions
+            isCollateral = false;
+            await mockFunctionsCollateralPoolFactory(isCollateral, mockCollateralPool.address);
 
-    //         await mockLiquidityPool.mock.getReserves.returns(
-    //             reserve1,
-    //             reserve2,
-    //             thisBlockNumber
-    //         )
+            // Gets last block timestamp 
+            let lastBlockTimestamp = await getTimestamp();
 
-    //         // simulation of getAmountIn function in TeleportDAOLibrary
-    //         let numerator = reserve1.mul(10).mul(1000);
-    //         let  denominator = (reserve2.sub(10)).mul(997);
-
-    //         console.log("numerator: ", numerator)
-    //         console.log("denominator: ", denominator)
-
-    //         let amountIn = (numerator.div(denominator)).add(1);
-    //         // FIXME: why must multiple by 2
-    //         amountIn = amountIn.mul(2)
-
-    //         console.log("amountIn in test.ts: ", amountIn)
-
-    //         await mockStaking.mock.equivalentStakingShare.withArgs(
-    //             amountIn
-    //         ).returns(
-    //             amountIn
-    //         )
-
-    //         await mockStaking.mock.stakingShare.withArgs(
-    //             signer1Address
-    //         ).returns(
-    //             10.mul(3)
-    //         )
-
-    //         await mockStaking.mock.unstake.withArgs(
-    //             signer1Address,
-    //             amountIn
-    //         ).returns()
-
-    //         let teleBTCInstantPoolAddress = await instantRouter.teleBTCInstantPool()
-
-    //         await teleBTC.mintTestToken()
-    //         await teleBTC.transfer(teleBTCInstantPoolAddress, theTestMintedAmount)
-
-    //         expect(
-    //             await teleBTC.balanceOf(teleBTCInstantPoolAddress)
-    //         ).to.equal(theTestMintedAmount)
-
-
-    //         await mockBitcoinRelay.mock.lastSubmittedHeight.returns(
-    //             BigNumber.from(thisBlockNumber).sub(5)
-    //         )
-
-    //         let thePath = [
-    //             teleBTC.address,
-    //             wavax.address
-    //         ]
-
-    //         let theAmounts = [
-    //             10,
-    //             10
-    //         ]
-
-    //         let modifiedAmountIn = 10.mul(100 - instantPercentageFee).div(100)
-
-    //         await mockExchangeRouter.mock.swapExactTokensForAVAX.withArgs(
-    //             modifiedAmountIn,
-    //             10,
-    //             thePath,
-    //             signer1Address,
-    //             theBlockNumber
-    //         ).returns(theAmounts, true)
-
-
-    //         await instantRouterSigner1.instantCCExchange(
-    //             10,
-    //             10,
-    //             thePath,
-    //             signer1Address,
-    //             theBlockNumber
-    //         )
-    //     });
-
-    // });
+            // Checks that loan has been issued successfully
+            await expect(
+                instantRouter.instantCCExchange(
+                    mockExchangeConnector.address,
+                    signer1Address,
+                    loanAmount,
+                    amountOut,
+                    path,
+                    lastBlockTimestamp*2,
+                    collateralToken.address,
+                    isFixedToken
+                )
+            ).to.revertedWith("InstantRouter: collateral token is not acceptable")
+        });
+    });
 
     // describe("#payBackInstantTransfer", async () => {
 

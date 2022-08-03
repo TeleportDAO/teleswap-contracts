@@ -108,8 +108,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         require(_deadline >= block.timestamp, "InstantRouter: deadline has passed");
 
         // Calculates the instant fee
-        uint instantPercentageFee = IInstantPool(teleBTCInstantPool).instantPercentageFee();
-        uint instantFee = instantPercentageFee*_loanAmount/10000;
+        uint instantFee = IInstantPool(teleBTCInstantPool).instantPercentageFee()*_loanAmount/10000;
 
         // Locks the required amount of user's collateral
         _lockCollateral(msg.sender, _loanAmount + instantFee, _collateralToken);
