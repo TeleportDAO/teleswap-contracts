@@ -15,6 +15,7 @@ import "hardhat/console.sol"; // Just for test
 contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     
     mapping(address => instantRequest[]) public instantRequests;
+    mapping(address => bool) public override exchangeConnectors;
     uint public override slasherPercentageReward;
     uint public override paybackDeadline;
     address public override teleBTC;
@@ -89,6 +90,14 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     /// @param _teleBTCInstantPool              The new teleBTC instant pool address
     function setTeleBTCInstantPool(address _teleBTCInstantPool) external override onlyOwner {
         teleBTCInstantPool = _teleBTCInstantPool;
+    }
+
+    function addExchangeConnector(address _exchangeConnector) external override onlyOwner {
+        exchangeConnectors[_exchangeConnector] = true;
+    }
+
+    function removeExchangeConnector(address _exchangeConnector) external override onlyOwner {
+        exchangeConnectors[_exchangeConnector] = false;
     }
 
     /// @notice                   Transfers the loan amount to the user
@@ -203,7 +212,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         for (uint i = 1; i <= instantRequests[_user].length; i++) {
             if (
                 remainedAmount >= instantRequests[_user][i-1].paybackAmount && 
-                lastSubmittedHeight >= instantRequests[_user][i-1].deadline
+                instantRequests[_user][i-1].deadline >= lastSubmittedHeight
             ) {
                 remainedAmount = remainedAmount - instantRequests[_user][i-1].paybackAmount;
 
@@ -256,6 +265,9 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
 		address _user, 
 		uint _requestIndex
 	) override nonReentrant external returns (bool) {
+        require(exchangeConnectors[_exchangeConnector], "InstantRouter: exchange connector is not acceptable");
+        require(instantRequests[_user].length > _requestIndex, "InstantRouter: request index does not exist");
+
 		// Gets last submitted height on relay
 		uint lastSubmittedHeight = IBitcoinRelay(relay).lastSubmittedHeight();
 
@@ -271,8 +283,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
 		address collateralPool = instantRequests[_user][_requestIndex].collateralPool;
         uint paybackAmount = instantRequests[_user][_requestIndex].paybackAmount;
 
-		// Finds needed collateral pool token to pay back loan
-		(, uint requiredCollateralToken) = IExchangeConnector(_exchangeConnector).getInputAmount(
+		// Finds needed collateral token to pay back loan
+		(bool result, uint requiredCollateralToken) = IExchangeConnector(_exchangeConnector).getInputAmount(
 			paybackAmount,
 			collateralToken,
 			teleBTC
@@ -286,8 +298,14 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         path[0] = collateralToken;
         path[1] = teleBTC;
 
+        // Gets collateral token from collateral pool
+        ICollateralPool(collateralPool).removeCollateral(lockedCollateralPoolTokenAmount);
+
         // Checks that locked collateral is enough to pay back loan
-        if (totalCollateralToken >= requiredCollateralToken) {
+        if (totalCollateralToken >= requiredCollateralToken && result == true) {
+            // Approves exchange connector to use collateral token
+            IERC20(collateralToken).approve(_exchangeConnector, requiredCollateralToken);
+
 			// Exchanges collateral token for teleBTC
 			IExchangeConnector(_exchangeConnector).swap(
 				requiredCollateralToken, 
@@ -304,15 +322,18 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
             // Sends reward to slasher 
             IERC20(collateralToken).transfer(msg.sender, slasherReward);
 
-            // Sends rest of the collateral to user
-            IERC20(collateralToken).transfer(msg.sender, remainedCollateralToken - slasherReward);
+            // Deposits rest of the tokens to collateral pool
+            ICollateralPool(collateralPool).addCollateral(_user, remainedCollateralToken - slasherReward);
 
 			emit SlashUser(_user, collateralToken, requiredCollateralToken, paybackAmount);
         } else {
+            // Approves exchange connector to use collateral token
+            IERC20(collateralToken).approve(_exchangeConnector, totalCollateralToken);
+            
             // Buys teleBTC as much as possible and sends it to instant pool
 			IExchangeConnector(_exchangeConnector).swap(
 				totalCollateralToken, 
-				0, 
+				0,
 				path, 
 				teleBTCInstantPool, 
 				block.timestamp + 1, 
