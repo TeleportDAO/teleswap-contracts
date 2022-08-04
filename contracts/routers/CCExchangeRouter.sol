@@ -14,30 +14,28 @@ import "hardhat/console.sol";
 
 contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
-    using SafeMath for uint;
-
     // Public variables
     uint public override chainId;
     address public override relay;
     address public override instantRouter;
     address public override lockers;
-
-    // TODO: how to set them?
-    address public wrappedNativeToken;
-
     address public override teleBTC;
     mapping(uint => address) public override exchangeConnector;
 
     // Private variables
     mapping(bytes32 => ccExchangeRequest) private ccExchangeRequests;
 
-    constructor(uint _chainId, address _lockers, address _relay, address _teleBTC) {
+    constructor(
+        uint _chainId, 
+        address _lockers, 
+        address _relay, 
+        address _teleBTC
+    ) public {
         chainId = _chainId;
         relay = _relay;
         lockers = _lockers;
         teleBTC = _teleBTC;
     }
-
 
     /// @notice         Changes relay contract address
     /// @dev            Only owner can call this
@@ -60,8 +58,13 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         lockers = _lockers;
     }
 
+    /// @notice                     Sets appId for an exchange connector
+    /// @dev                        Only owner can call this
+    /// @param _appId               AppId of exchange connector
+    /// @param _exchangeConnector   Address of exchange connector
     function setExchangeConnector(uint _appId, address _exchangeConnector) external override onlyOwner {
         exchangeConnector[_appId] = _exchangeConnector;
+        emit SetExchangeConnector(_appId, _exchangeConnector);
     }
 
     /// @notice                 Changes wrapped token contract address
@@ -158,7 +161,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         }
         
         // Mints remained wrapped tokens for cc exchange router
-        uint remainedInputAmount = ccExchangeRequests[_txId].inputAmount.sub(ccExchangeRequests[_txId].fee);
+        uint remainedInputAmount = ccExchangeRequests[_txId].inputAmount - ccExchangeRequests[_txId].fee;
         ILockers(lockers).mint(
             lockerBitcoinDecodedAddress,
             address(this),
@@ -233,7 +236,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
                 ccExchangeRequests[_txId].fee
             );
         }
-        uint remainedAmount = ccExchangeRequests[_txId].inputAmount.sub(ccExchangeRequests[_txId].fee);
+        uint remainedAmount = ccExchangeRequests[_txId].inputAmount - ccExchangeRequests[_txId].fee;
         // Mints wrapped token for cc exchange router
         ILockers(lockers).mint(
             lockerBitcoinDecodedAddress,
@@ -245,12 +248,13 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             instantRouter,
             remainedAmount
         );
-        // FIXME: Update when the instant router is updated
-        // Calls instant router to pay back the borrowed tokens
-        // IInstantRouter(instantRouter).payBackLoan(
-        //     ccExchangeRequests[_txId].recipientAddress,
-        //     remainedAmount
-        // );
+
+        // Pays back instant loan
+        IInstantRouter(instantRouter).payBackLoan(
+            ccExchangeRequests[_txId].recipientAddress,
+            remainedAmount
+        );
+
         return true;
     }
 
@@ -265,7 +269,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         bytes32 _txId
     ) internal returns (bool) {
 
-        ccExchangeRequest memory request; //TODO: no need for this, set directly
+        ccExchangeRequest memory request; // Defines it to save gas
         bytes memory arbitraryData;
         address desiredRecipient;
         address exchangeToken;
@@ -277,8 +281,11 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             "CCExchangeRouter: no locker with the bitcoin decoded addresss exists"
         );
         
-        // Extracts value and opreturn from transaction
+        // Extracts value and opreturn data from request
         (request.inputAmount, arbitraryData) = NewTxHelper.parseAmountForP2PK(_vout, _lockerBitcoinDecodedAddress);
+
+        // Checks that input amount is not zero
+        require(request.inputAmount > 0, "CCExchangeRouter: input amount is zero");
 
         // Checks that the request belongs to this chain
         require(chainId == NewTxHelper.parseChainId(arbitraryData), "CCExchangeRouter: chain id is not correct");
@@ -306,14 +313,14 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
         request.deadline = NewTxHelper.parseDeadline(arbitraryData);
 
-        // TODO: fix the fee to use percent instead of
         // Calculates fee
         percentageFee = NewTxHelper.parsePercentageFee(arbitraryData);
         require(percentageFee >= 0 && percentageFee < 10000, "CCExchangeRouter: percentage fee is not correct");
-        request.fee = percentageFee.mul(request.inputAmount).div(10000);
+        request.fee = percentageFee*request.inputAmount/10000;
 
         request.speed = NewTxHelper.parseSpeed(arbitraryData);
-        
+        require(request.speed == 0 || request.speed == 1, "CCExchangeRouter: speed is not correct");
+
         request.isUsed = true;
 
         // Saves request

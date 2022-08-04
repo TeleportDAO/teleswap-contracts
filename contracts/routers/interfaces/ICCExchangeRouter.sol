@@ -58,47 +58,13 @@ interface ICCExchangeRouter {
         uint remainedInputAmount
     );
 
-    /// @notice                      Emits when a new exchange connector is added
-    /// @param name                  Name of added exchange
+    /// @notice                      Emits when appId for an exchange connector is set
     /// @param appId                 Assigned application id to exchange
-    /// @param exchangeRouter        Address of exchange router contract
     /// @param exchangeConnector     Address of exchange connector contract
-    event AddExchangeConnector(
-        string name,
+    event SetExchangeConnector(
         uint appId,
-        address exchangeRouter,
         address exchangeConnector
     );
-
-    /// @notice                         Emits when address of exchange connector is updated
-    /// @param name                     Name of updated exchange
-    /// @param appId                    Assigned application id to exchange
-    /// @param oldExchangeRouter        Previous address of exchange router contract
-    /// @param oldExchangeConnector     Previous address of exchange connector contract
-    /// @param newExchangeRouter        New address of exchange router contract
-    /// @param newExchangeConnector     New address of exchange connector contract
-    event UpdateExchangeConnector(
-        string name,
-        uint appId,
-        address oldExchangeRouter,
-        address oldExchangeConnector,
-        address newExchangeRouter,
-        address newExchangeConnector
-    );
-
-    /// @notice                      Emits when an exchange connector is removed
-    /// @param name                  Name of removed exchange
-    /// @param appId                 Assigned application id to exchange
-    /// @param exchangeRouter        Address of exchange router contract
-    /// @param exchangeConnector     Address of exchange connector contract
-    event RemoveExchangeConnector(
-        string name,
-        uint appId,
-        address exchangeRouter,
-        address exchangeConnector
-    );
-
-    // event CCExchange(address user, address inputToken, address outputToken, uint inputAmount, uint outputAmount, uint speed);
 
     // Read-only functions
 

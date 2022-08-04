@@ -27,8 +27,8 @@ describe("CCTransferRouter", async () => {
     // Constants
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     let ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
-    let NORMAL_CONFIRMATION_PARAMETER = 6;
-
+    const CHAIN_ID = 1;
+    const APP_ID = 0;
 
     // Bitcoin public key (32 bytes)
     let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
@@ -123,6 +123,8 @@ describe("CCTransferRouter", async () => {
         // Deploys ccTransferRouter contract
         const ccTransferRouterFactory = new CCTransferRouter__factory(deployer);
         ccTransferRouter = await ccTransferRouterFactory.deploy(
+            CHAIN_ID,
+            APP_ID,
             mockBitcoinRelay.address,
             ONE_ADDRESS,
             ZERO_ADDRESS
@@ -229,7 +231,7 @@ describe("CCTransferRouter", async () => {
     //         .returns(request.desiredRecipient);
     // }
 
-    describe("ccTransfer", async () => {
+    describe("#ccTransfer", async () => {
         it("mints teleBTC for normal cc transfer request", async function () {
             beginning = await takeSnapshot(signer1.provider);
             let prevSupply = await teleBTC.totalSupply();
@@ -255,25 +257,18 @@ describe("CCTransferRouter", async () => {
                 )
             ).to.emit(ccTransferRouter, 'CCTransfer');
             // Checks enough teleBTC has been minted for user
-            console.log("111")
-            let theBalance = await teleBTC.balanceOf(CC_REQUESTS.normalCCTransfer.recipientAddress)
-            console.log(theBalance)
-            console.log(CC_REQUESTS.normalCCTransfer.bitcoinAmount - ((CC_REQUESTS.normalCCTransfer.bitcoinAmount * CC_REQUESTS.normalCCTransfer.teleporterFee)/100))
+            let theBalance = await teleBTC.balanceOf(CC_REQUESTS.normalCCTransfer.recipientAddress);
 
             expect(
                 await teleBTC.balanceOf(CC_REQUESTS.normalCCTransfer.recipientAddress)
             ).to.equal(CC_REQUESTS.normalCCTransfer.bitcoinAmount - ((CC_REQUESTS.normalCCTransfer.bitcoinAmount * CC_REQUESTS.normalCCTransfer.teleporterFee)/100));
 
             // Checks enough teleBTC has been minted for teleporter
-            console.log("222")
-            console.log(CC_REQUESTS.normalCCTransfer.teleporterFee)
             expect(
                 await teleBTC.balanceOf(await deployer.getAddress())
             ).to.equal((CC_REQUESTS.normalCCTransfer.bitcoinAmount * CC_REQUESTS.normalCCTransfer.teleporterFee)/100);
 
             // Check correct amount of teleBTC has been minted in total
-            console.log("333")
-            console.log(prevSupply + CC_REQUESTS.normalCCTransfer.bitcoinAmount)
             expect(
                 await teleBTC.totalSupply()
             ).to.equal(prevSupply + CC_REQUESTS.normalCCTransfer.bitcoinAmount)
@@ -371,7 +366,7 @@ describe("CCTransferRouter", async () => {
 
     });
 
-    describe("isRequestUsed", async () => {
+    describe("#isRequestUsed", async () => {
         it("checks if the request has been used before (unused)", async function () {
             await revertProvider(signer1.provider, beginning);
             expect(

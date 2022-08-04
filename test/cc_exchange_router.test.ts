@@ -140,6 +140,8 @@ describe("CCExchangeRouter", async () => {
         // Deploys ccTransferRouter contract
         const ccTransferRouterFactory = new CCTransferRouter__factory(deployer);
         ccTransferRouter = await ccTransferRouterFactory.deploy(
+            1, // chainId
+            0, // appId
             mockBitcoinRelay.address,
             locker.address,
             ZERO_ADDRESS
@@ -275,7 +277,7 @@ describe("CCExchangeRouter", async () => {
     }
 
 
-    describe("ccExchange", async () => {
+    describe("#ccExchange", async () => {
         let oldReserveTeleBTC: BigNumber;
         let oldReserveExchangeToken: BigNumber;
         let oldDeployerBalanceTeleBTC: BigNumber;

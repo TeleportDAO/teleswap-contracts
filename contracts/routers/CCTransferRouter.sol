@@ -1,6 +1,5 @@
 pragma solidity 0.8.0;
 
-import "../libraries/SafeMath.sol";
 import "../libraries/NewTxHelper.sol";
 import "./interfaces/ICCTransferRouter.sol";
 import "../erc20/interfaces/IWrappedToken.sol";
@@ -13,8 +12,9 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";
 
 contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
-    using SafeMath for uint256;
-
+    // Public variables
+    uint public override chainId;
+    uint public override appId;
     address public override relay;
     address public override lockers;
     address public override teleBTC;
@@ -22,13 +22,21 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     // TxId to CCTransferRequest structure
     mapping(bytes32 => ccTransferRequest) public ccTransferRequests;
 
-
     /// @notice                             Gives default params to initiate cc transfer router
-    /// @dev
+    /// @param _chainId                     ...
+    /// @param _appId                       ...
     /// @param _relay                       The Relay address to get data from source chain
     /// @param _lockers                     Lockers' contract address
     /// @param _teleBTC                     TeleportDAO BTC ERC20 token address
-    constructor(address _relay, address _lockers, address _teleBTC) public {
+    constructor(
+        uint _chainId,
+        uint _appId,
+        address _relay, 
+        address _lockers, 
+        address _teleBTC
+    ) public {
+        chainId = _chainId;
+        appId = _appId;
         relay = _relay;
         lockers = _lockers;
         teleBTC = _teleBTC;
@@ -64,7 +72,6 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         return ccTransferRequests[_txId].isUsed ? true : false;
     }
 
-
     /// @notice                             Executes the cross chain transfer request
     /// @dev                                Validates the transfer request, then,
     ///                                     if speed is 1, the request is instant
@@ -91,16 +98,16 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         uint _index,
         address lockerBitcoinDecodedAddress
     ) external nonReentrant override returns (bool) {
-        console.log("ccTransfer...");
         bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
-        console.log("tx id calculated successfully");
-        console.logBytes32(txId);
+
         require(
             !ccTransferRequests[txId].isUsed,
             "CCTransferRouter: CC transfer request has been used before"
         );
-        // ccTransferRequests[txId].isUsed = true;
+        
+        // Extracts information from the request
         _saveCCTransferRequest(lockerBitcoinDecodedAddress, _vout, txId);
+
         // Check if tx has been confirmed on source chain
         require(
             _isConfirmed(
@@ -112,12 +119,12 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
             "CCTransferRouter: transaction has not been finalized yet"
         );
 
-        console.log("ccTransfer _mintAndSend");
-        console.log(ccTransferRequests[txId].speed);
-
         // Normal cc transfer request
         if (ccTransferRequests[txId].speed == 0) {
-            require(_mintAndSend(lockerBitcoinDecodedAddress, txId), "CCTransferRouter: normal cc transfer was not successful");
+            require(
+                _mintAndSend(lockerBitcoinDecodedAddress, txId), 
+                "CCTransferRouter: normal cc transfer was not successful"
+            );
             emit CCTransfer(
                 ccTransferRequests[txId].recipientAddress,
                 ccTransferRequests[txId].inputAmount,
@@ -125,13 +132,15 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
             // FIXME: set the correct fee in the event
                 0
             );
-            console.log("...ccTransfer");
             return true;
         }
-        // Pay back instant loan
+
+        // Pays back instant loan
         if (ccTransferRequests[txId].speed == 1) {
-            require(_payBackInstantLoan(lockerBitcoinDecodedAddress, txId), "CCTransferRouter: pay back was not successful");
-            console.log("...ccTransfer");
+            require(
+                _payBackInstantLoan(lockerBitcoinDecodedAddress, txId), 
+                "CCTransferRouter: pay back was not successful"
+            );
             return true;
         }
     }
@@ -153,19 +162,11 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
             );
         }
 
-        console.log("_mintAndSend ....");
-        console.log("fee");
-        console.log(ccTransferRequests[_txId].fee);
-        console.log("recipientAddress");
-        console.log(ccTransferRequests[_txId].recipientAddress);
-        console.log("inputAmount");
-        console.log(ccTransferRequests[_txId].inputAmount);
-
         // Mint wrapped tokens for user
         ILockers(lockers).mint(
             _lokerBitcoinDecodedAddress,
             ccTransferRequests[_txId].recipientAddress,
-            ccTransferRequests[_txId].inputAmount.sub(ccTransferRequests[_txId].fee)
+            ccTransferRequests[_txId].inputAmount - ccTransferRequests[_txId].fee
         );
         return true;
     }
@@ -183,7 +184,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
                 ccTransferRequests[_txId].fee
             );
         }
-        uint remainedAmount = ccTransferRequests[_txId].inputAmount.sub(ccTransferRequests[_txId].fee);
+        uint remainedAmount = ccTransferRequests[_txId].inputAmount - ccTransferRequests[_txId].fee;
         // Mint wrapped token for cc transfer router
         ILockers(lockers).mint(
             _lokerBitcoinDecodedAddress,
@@ -195,12 +196,13 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
             instantRouter,
             remainedAmount
         );
-        // FIXME: Update when the instant router is updated
-        // User wants to pay back borrowed tokens
-        // IInstantRouter(instantRouter).payBackLoan(
-        //     remainedAmount,
-        //     ccTransferRequests[_txId].recipientAddress
-        // );
+
+        // Pays back instant loan
+        IInstantRouter(instantRouter).payBackLoan(
+            ccTransferRequests[_txId].recipientAddress,
+            remainedAmount
+        );
+
         return true;
     }
 
@@ -213,57 +215,40 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         bytes memory _vout,
         bytes32 _txId
     ) internal {
-        console.log("_saveCCTransferRequest...");
-        // TODO: add parse chainId to check whether this is the correct target chain
-        // indicated in the tx.
         bytes memory arbitraryData;
-        ccTransferRequest memory request; //TODO: no need for this, set directly
+        ccTransferRequest memory request; // Defines it to save gas
         address desiredRecipient;
         uint percentageFee;
-        // Get the multisig address where funds for requests need to go
-        // TODO: check which lockers are available and check whether the money has been
-        // transferred to an active locker
-        // FIXME: how to get the redeemScriptHash from new lockers contract
-        // desiredRecipient = ILockers(lockers).redeemScriptHash();
 
         require(
             ILockers(lockers).isLocker(_lockerBitcoinDecodedAddress),
-            "CCTransferRouter: no locker with this bitcoin decoded addresss"
+            "CCTransferRouter: no locker with the bitcoin decoded addresss exists"
         );
 
-        // Parse request tx data
+        // Extracts value and opreturn data from request
         (request.inputAmount, arbitraryData) = NewTxHelper.parseAmountForP2PK(_vout, _lockerBitcoinDecodedAddress);
-        console.log("request.inputAmount");
-        console.log(request.inputAmount);
-        console.log("arbitrary data parsed correctly");
+        
+        // Checks that input amount is not zero
+        require(request.inputAmount > 0, "CCTransferRouter: input amount is zero");
+        
+        // Checks chain id and app id
+        require(NewTxHelper.parseChainId(arbitraryData) == chainId, "CCTransferRouter: chain id is not correct");
+        require(NewTxHelper.parseAppId(arbitraryData) == appId, "CCTransferRouter: app id is not correct");
 
-        // Make sure request is for transfer (and not exchange)
-        require(NewTxHelper.parseExchangeToken(arbitraryData) == address(0), "CCTransferRouter: request is exchange request");
-        // Parse request tx data
-
-        address asfdsfdsf = NewTxHelper.parseRecipientAddress(arbitraryData);
-        console.log("parsed RecipientAddress");
-        console.log(asfdsfdsf);
-
-        console.log("before parsePercentageFee");
+        // Calculates fee
         percentageFee = NewTxHelper.parsePercentageFee(arbitraryData);
-
-        console.log("percentageFee...");
-        console.log(percentageFee);
-
         require(percentageFee >= 0 && percentageFee < 10000, "CCTransferRouter: percentage fee is not correct");
-        request.fee = percentageFee.mul(request.inputAmount).div(10000);
-        console.log("request.fee");
-        console.log(request.fee);
+        request.fee = percentageFee*request.inputAmount/10000;
 
         request.recipientAddress = NewTxHelper.parseRecipientAddress(arbitraryData);
         request.speed = NewTxHelper.parseSpeed(arbitraryData);
-        // request.deadline = NewTxHelper.parseDeadline(arbitraryData);
+        require(request.speed == 0 || request.speed == 1, "CCTransferRouter: speed is not correct");
+        
+        // Marks the request as used
         request.isUsed = true;
-        // Save the request data
-        ccTransferRequests[_txId] = request;
 
-        console.log("..._saveCCTransferRequest");
+        // Saves the request data
+        ccTransferRequests[_txId] = request;
     }
 
     /// @notice                             Checks if the request tx is included and confirmed on source chain
