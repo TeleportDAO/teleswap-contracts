@@ -136,6 +136,7 @@ interface ICCBurnRouter {
 	function disputeBurn(address _lockerTargetAddress, uint[] memory _indices) external returns (bool);
 	function disputeLocker(
 		address _lockerTargetAddress,
+        uint _inputIndex,
 		bytes4 _version,
 		bytes memory _vin,
 		bytes calldata _vout,

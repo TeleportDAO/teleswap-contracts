@@ -43,10 +43,10 @@ library BitcoinTxParser {
         return (bitcoinAmount, arbitraryData);
     }
 
-        function parseAmountForP2PK (
+    function parseAmountForP2PK (
             bytes memory vout,
             address desiredRecipient
-        ) internal returns(uint64, bytes memory) {
+    ) internal returns(uint64, bytes memory) {
         bytes29 voutView = vout.ref(0).tryAsVout();
         bytes29 output;
         uint64 bitcoinAmount;
@@ -157,6 +157,26 @@ library BitcoinTxParser {
             temp = data[i];
             result = abi.encodePacked(result, temp);
         }
+    }
+
+    function parseInput(bytes memory vin, uint index) internal returns (bytes29 input) {
+        bytes29 vinView = vin.ref(0).tryAsVin();
+        // Extract the desired input
+        input = ViewBTC.indexVin(vinView, index);
+    }
+
+    function parseInputScriptSig(bytes memory vin, uint index) internal returns (bytes memory scriptSig) {
+        // Extract the desired input
+        bytes29 input = parseInput(vin, index);
+        // Extract the script sig
+        bytes29 scriptSigMemView = ViewBTC.scriptSig(input);
+        // Extract redeem script from the script sig
+        scriptSig = scriptSigMemView.clone();
+    }
+
+    function numberOfOutputs(bytes memory vout) internal returns (uint numberOfOutputs) {
+        bytes29 voutView = vout.ref(0).tryAsVout();
+        numberOfOutputs = uint256(ViewBTC.indexCompactInt(voutView, 0));
     }
 
     // TODO: add exchange path to arbitrary data (for now, user only gives us the exchnage token address)

@@ -11,8 +11,6 @@ import { Address } from "hardhat-deploy/types";
 import { solidity } from "ethereum-waffle";
 
 import { isBytesLike } from "ethers/lib/utils";
-import {ERC20} from "../src/types/ERC20";
-import {ERC20__factory} from "../src/types/factories/ERC20__factory";
 import {TeleBTC} from "../src/types/TeleBTC";
 import {TeleBTC__factory} from "../src/types/factories/TeleBTC__factory";
 import {CCBurnRouter} from "../src/types/CCBurnRouter";
@@ -31,13 +29,10 @@ describe("CC Burn Router", async () => {
     let signer1Address: Address;
     let signer2Address: Address;
 
-    let TeleportDAOToken: ERC20;
     let teleBTC: TeleBTC;
 
     let mockBitcoinRelay: MockContract;
-    let mockLockers: MockContract; // TODO it's teleporter or now; change to locker
-    let mockCCTransferRouter: MockContract;
-    let mockCCExchangeRouter: MockContract;
+    let mockLockers: MockContract;
 
     let ccBurnRouter: CCBurnRouter;
 
@@ -61,7 +56,7 @@ describe("CC Burn Router", async () => {
 
     let btcPublicKey = "03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd"
     let btcAddress = "mmPPsxXdtqgHFrxZdtFCtkwhHynGTiTsVh"
-    let btcDecodedAddress = "0x4062c8aeed4f81c2d73ff854a2957021191e20b6"
+    let userBtcDecodedAddress = "0x4062c8aeed4f81c2d73ff854a2957021191e20b6"
     let btcSegwitDecodedAddress = "0x751e76e8199196d454941c45d1b3a323f1433bd6"
 
     // A user sends tokens to the locker
@@ -73,11 +68,12 @@ describe("CC Burn Router", async () => {
 
     // The locker sends tokens to another wallet
     let btcLockerVersion =  "0x02000000"
-    let btcLockerVin = "0x01df4a990ad3c3a225862465bb660f06d445914a038ada819ace235afb9f23cff30200000000feffffff"
+    let btcLockerVin = "0x017b1eabe0209b1fe794124575ef807057c77ada2138ae4fa8d6c4de0398a14f3f000000004241044d05240cfbd8a2786eda9dadd520c1609b8593ff8641018d57703d02ba687cf2f187f0cee2221c3afb1b5ff7888caced2423916b61444666ca1216f26181398cffffffff"
     let btcLockerVout = "0x0200e1f505000000001976a9144062c8aeed4f81c2d73ff854a2957021191e20b688ac984f42060100000016001447ef833107e0ad9998f8711813075ac62ec1104b"
     let btcLockerLocktime = "0x00000000"
     let btcLockerInterMediateNodes = "0x7451e7cd7a5afcd93d5a3f84e4d7976fb3bd771dc6aeab416d818ea1d72c0476"
-
+    let lockerBitcoinAddress = "0x044d05240cfbd8a2786eda9dadd520c1609b8593ff8641018d57703d02ba687cf2f187f0cee2221c3afb1b5ff7888caced2423916b61444666ca1216f26181398c"
+    
     before(async () => {
 
         [deployer, signer1, signer2] = await ethers.getSigners();
@@ -101,22 +97,6 @@ describe("CC Burn Router", async () => {
         mockLockers = await deployMockContract(
             deployer,
             lockers.abi
-        )
-
-        const ccTransferRouter = await deployments.getArtifact(
-            "CCTransferRouter"
-        );
-        mockCCTransferRouter = await deployMockContract(
-            deployer,
-            ccTransferRouter.abi
-        )
-
-        const ccExchangeRouter = await deployments.getArtifact(
-            "BitcoinTeleporter"
-        );
-        mockCCExchangeRouter = await deployMockContract(
-            deployer,
-            ccExchangeRouter.abi
         )
 
         ccBurnRouter = await deployCCBurnRouter();
@@ -146,8 +126,8 @@ describe("CC Burn Router", async () => {
         const teleBTC = await teleBTCFactory.deploy(
             "Teleport Wrapped BTC",
             "TeleBTC",
-            mockCCTransferRouter.address,
-            mockCCExchangeRouter.address,
+            ONE_ADDRESS,
+            ONE_ADDRESS,
             ccBurnRouter.address
         );
 
@@ -190,6 +170,21 @@ describe("CC Burn Router", async () => {
             .returns(isLocker);
     }
 
+    async function setLockersGetBtcAddressReturn(lockerBitcoinAddress: string): Promise<void> {
+        await mockLockers.mock.getLockerBitcoinAddress
+            .returns(lockerBitcoinAddress);
+    }
+
+    async function setLockersGetTargetAddressReturn(lockerTargetAddress: string): Promise<void> {
+        await mockLockers.mock.lockerBitcoinDecodedAddressToTargetAddress
+            .returns(lockerTargetAddress);
+    }
+
+    async function setLockersBurnReturn(): Promise<void> {
+        await mockLockers.mock.burn
+            .returns(true);
+    }
+
     async function setRelayLastSubmittedHeightReturn(theBlockNumber: BigNumber): Promise<void> {
         await mockBitcoinRelay.mock.lastSubmittedHeight
             .returns(theBlockNumber);
@@ -221,18 +216,20 @@ describe("CC Burn Router", async () => {
 
         // Set mock contracts outputs
         await setRelayLastSubmittedHeightReturn(theBlockNumber);
+        await setLockersIsLockerReturn(true);
         await setLockersReturn();
-
+        await setLockersBurnReturn();
         let lockerTargetAddress = await mockLockers.redeemScriptHash();
+        await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
         // Burn some test tokens using ccBurn
         await expect(
             ccBurnRouterSigner1.ccBurn(
                 _userRequestAmount,
-                btcDecodedAddress,
+                userBtcDecodedAddress,
                 true,
                 false,
-                lockerTargetAddress
+                userBtcDecodedAddress
             )
         ).to.emit(ccBurnRouter, "CCBurn")
     }
@@ -247,6 +244,8 @@ describe("CC Burn Router", async () => {
         // Set mock contracts outputs
         await setRelayCheckTxProofReturn(true);
         await setLockersIsLockerReturn(true);
+        await setLockersBurnReturn();
+        await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
         // Provide proof that the locker has paid the burnt amount to the user(s)
         await expect(
@@ -267,7 +266,7 @@ describe("CC Burn Router", async () => {
 
     describe("#ccBurn", async () => {
 
-        it("burning wrapped BTC by ccBurn function (is script hash and non-segwit)", async function () {
+        it("burning TeleBTC by ccBurn function (is script hash and non-segwit)", async function () {
 
             let thisBlockNumber = await signer1.provider?.getBlockNumber()
             let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
@@ -295,24 +294,28 @@ describe("CC Burn Router", async () => {
 
             // Set mock contracts outputs
             await setRelayLastSubmittedHeightReturn(theBlockNumber);
+            await setLockersIsLockerReturn(true);
+            await setLockersBurnReturn();
             await setLockersReturn();
-
+            // Get the locker target address
             let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
-            let totalSupplyBefore = await TeleBTCSigner1.totalSupply();
+
+            // let totalSupplyBefore = await TeleBTCSigner1.totalSupply();
 
             // Burn some test tokens using ccBurn
             await expect(
                 ccBurnRouterSigner1.ccBurn(
                     userRequestAmount,
-                    btcDecodedAddress,
+                    userBtcDecodedAddress,
                     true,
                     false,
-                    lockerTargetAddress
+                    userBtcDecodedAddress
                 )
             ).to.emit(ccBurnRouter, "CCBurn")
 
-            let totalSupplyAfter = await TeleBTCSigner1.totalSupply();
+            // let totalSupplyAfter = await TeleBTCSigner1.totalSupply();
 
             // Get the burn request that has been saved in the contract
             let theBurnRequest = await ccBurnRouter.burnRequests(lockerTargetAddress, 0);
@@ -320,10 +323,10 @@ describe("CC Burn Router", async () => {
             expect(
                 theBurnRequest.amount
             ).to.equal(userRequestAmount)
-            // Difference of total supply of tokens should be user input amount minus fees
-            expect(
-                totalSupplyBefore.sub(totalSupplyAfter)
-            ).to.equal(theBurnRequest.remainedAmount);
+            // // Difference of total supply of tokens should be user input amount minus fees
+            // expect(
+            //     totalSupplyBefore.sub(totalSupplyAfter)
+            // ).to.equal(theBurnRequest.remainedAmount);
 
         })
 
@@ -349,11 +352,13 @@ describe("CC Burn Router", async () => {
 
             // Set mock contracts outputs
             await setRelayLastSubmittedHeightReturn(theBlockNumber);
+            await setLockersIsLockerReturn(true);
+            await setLockersBurnReturn();
             await setLockersReturn();
-
             let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
-            let totalSupplyBefore = await TeleBTCSigner1.totalSupply();
+            // let totalSupplyBefore = await TeleBTCSigner1.totalSupply();
 
             // Burn some test tokens using ccBurn
             await expect(
@@ -362,11 +367,11 @@ describe("CC Burn Router", async () => {
                     btcSegwitDecodedAddress,
                     true,
                     true,
-                    lockerTargetAddress
+                    userBtcDecodedAddress
                 )
             ).to.emit(ccBurnRouter, "CCBurn")
 
-            let totalSupplyAfter = await TeleBTCSigner1.totalSupply();
+            // let totalSupplyAfter = await TeleBTCSigner1.totalSupply();
 
             // Get the burn request that has been saved in the contract
             let theBurnRequest = await ccBurnRouter.burnRequests(lockerTargetAddress, 0);
@@ -374,10 +379,10 @@ describe("CC Burn Router", async () => {
             expect(
                 theBurnRequest.amount
             ).to.equal(userRequestAmount)
-            // Difference of total supply of tokens should be user input amount minus fees
-            expect(
-                totalSupplyBefore.sub(totalSupplyAfter)
-            ).to.equal(theBurnRequest.remainedAmount);
+            // // Difference of total supply of tokens should be user input amount minus fees
+            // expect(
+            //     totalSupplyBefore.sub(totalSupplyAfter)
+            // ).to.equal(theBurnRequest.remainedAmount);
         })
 
         it("ccBurn function reverts if enough allowance is not given", async function () {
@@ -392,7 +397,44 @@ describe("CC Burn Router", async () => {
             // Give the allowance to the ccBurnRouter so that it could burn tokens
             await TeleBTCSigner1.approve(
                 ccBurnRouter.address,
-                userRequestAmount.sub(1)
+                userRequestAmount.div(2)
+            )
+
+            let ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1)
+
+            // Set mock contracts outputs
+            await setRelayLastSubmittedHeightReturn(theBlockNumber);
+            await setLockersIsLockerReturn(true);
+            await setLockersBurnReturn();
+            await setLockersReturn();
+            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            await setLockersGetTargetAddressReturn(lockerTargetAddress);
+
+            // Burn some test tokens using ccBurn
+            await expect(
+                ccBurnRouterSigner1.ccBurn(
+                    userRequestAmount,
+                    userBtcDecodedAddress,
+                    true,
+                    false,
+                    userBtcDecodedAddress
+                )
+            ).to.revertedWith("ERC20: transfer amount exceeds allowance")
+        })
+
+        it("ccBurn function reverts if input locker address is not a valid locker", async function () {
+            let thisBlockNumber = await signer1.provider?.getBlockNumber()
+            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
+
+            let TeleBTCSigner1 = await teleBTC.connect(signer1)
+
+            // Mint TeleBTC for test
+            await mintTeleBTCForTest();
+
+            // Give the allowance to the ccBurnRouter so that it could burn tokens
+            await TeleBTCSigner1.approve(
+                ccBurnRouter.address,
+                userRequestAmount
             )
 
             let ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1)
@@ -400,24 +442,21 @@ describe("CC Burn Router", async () => {
             // Set mock contracts outputs
             await setRelayLastSubmittedHeightReturn(theBlockNumber);
             await setLockersReturn();
-
+            await setLockersIsLockerReturn(false);
             let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
             // Burn some test tokens using ccBurn
             await expect(
                 ccBurnRouterSigner1.ccBurn(
                     userRequestAmount,
-                    btcDecodedAddress,
+                    userBtcDecodedAddress,
                     true,
                     false,
-                    lockerTargetAddress
+                    userBtcDecodedAddress
                 )
-            ).to.revertedWith("ERC20: transfer amount exceeds allowance")
+            ).to.revertedWith("CCBurnRouter: locker address is not valid")
         })
-
-        // it("ccBurn function reverts if input locker address is not a valid locker", async function () {
-        // TODO: after locker gets fixed, in contract we should check this
-        // })
 
     });
 
@@ -443,6 +482,7 @@ describe("CC Burn Router", async () => {
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(true);
             await setLockersIsLockerReturn(true);
+            await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
             await expect(
                 ccBurnRouterSigner2.burnProof(
@@ -479,6 +519,7 @@ describe("CC Burn Router", async () => {
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(true);
             await setLockersIsLockerReturn(true);
+            await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
             // Should revert
             await expect(
@@ -532,6 +573,7 @@ describe("CC Burn Router", async () => {
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(true);
             await setLockersIsLockerReturn(false);
+            await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
             // Should revert
             await expect(
@@ -569,6 +611,7 @@ describe("CC Burn Router", async () => {
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(false);
             await setLockersIsLockerReturn(true);
+            await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
             // Should revert
             await expect(
@@ -606,6 +649,7 @@ describe("CC Burn Router", async () => {
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(true);
             await setLockersIsLockerReturn(true);
+            await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
             // Should revert with a wrong start index
             await expect(
@@ -644,6 +688,7 @@ describe("CC Burn Router", async () => {
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(true);
             await setLockersIsLockerReturn(true);
+            await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
             // Should revert with a wrong start index
             await expect(
@@ -683,7 +728,9 @@ describe("CC Burn Router", async () => {
             await provideProof(theBlockNumber.add(5));
 
             // Set mock contracts outputs
+            await setRelayLastSubmittedHeightReturn(theBlockNumber);
             await setLockersIsLockerReturn(true);
+            await setLockersSlashLockerReturn();
 
             // Locker will not get slashed because it has paid the burnt amount to the user
             let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
@@ -801,16 +848,20 @@ describe("CC Burn Router", async () => {
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(true);
             await setLockersIsLockerReturn(true);
+            await setLockersGetBtcAddressReturn(lockerBitcoinAddress);
+            await setRelayLastSubmittedHeightReturn(theBlockNumber.add(30));
+            await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
             await expect(
                 ccBurnRouterSigner2.disputeLocker(
                     lockerTargetAddress,
-                    btcUserVersion,
-                    btcUserVin,
-                    btcUserVout,
-                    btcUserLocktime,
+                    0,
+                    btcLockerVersion,
+                    btcLockerVin,
+                    btcLockerVout,
+                    btcLockerLocktime,
                     theBlockNumber,
-                    btcUserInterMediateNodes,
+                    btcLockerInterMediateNodes,
                     1
                 )
             ).to.emit(ccBurnRouter, "LockerDispute")
