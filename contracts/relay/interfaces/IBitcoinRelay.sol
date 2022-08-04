@@ -15,7 +15,6 @@ interface IBitcoinRelay {
         address relayer;
     }
 
-
     // events
 
     /// @notice                     Emits when a block header is added
@@ -101,7 +100,7 @@ interface IBitcoinRelay {
 
     function isAncestor(bytes32 _ancestor, bytes32 _descendant, uint256 _limit) external view returns (bool); // see if it's needed
 
-
+    function getCurrentFee() external view returns (uint);
     // state-changing functions
     // function changeOwner(address _owner) external;
     // function setFeeRatio(uint _feeRatio) external;

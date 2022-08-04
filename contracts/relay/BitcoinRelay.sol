@@ -158,6 +158,10 @@ contract BitcoinRelay is IBitcoinRelay {
         return _findAncestor(_hash, _offset);
     }
 
+    function getCurrentFee() external view override returns (uint) {
+        return 0;
+    }
+
     /// @notice             Checks if a hash is an ancestor of the current one
     /// @dev                Limit the amount of lookups (and thus gas usage) with _limit
     /// @param _ancestor    The prospective ancestor
