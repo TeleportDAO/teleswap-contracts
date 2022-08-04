@@ -64,7 +64,7 @@ interface ILockers {
     // Read-only functions
 
     // TODO: remove redeemScriptHash
-    function redeemScriptHash() external view returns(address);
+    // function redeemScriptHash() external view returns(address);
 
     function TeleportDAOToken() external view returns(address);
 
@@ -73,7 +73,7 @@ interface ILockers {
     // TODO: add miter and burner roles and remove cc burn router, cc exchange, and cc transfer
     function ccBurnRouter() external view returns (address);
 
-    function exchangeRouter() external view returns (address);
+    function exchangeConnector() external view returns (address);
 
     function requiredTDTLockedAmount() external view returns (uint);
 
@@ -131,7 +131,7 @@ interface ILockers {
     // TODO: add minter and add burner
     function setCCBurnRouter(address _ccBurnRouter) external;
 
-    function setExchangeRouter(address _exchangeRouter) external;
+    function setExchangeConnector(address _exchangeConnector) external;
 
     function setTeleBTC(address _teleBTC) external;
 

@@ -127,6 +127,9 @@ describe("CCExchangeRouter", async () => {
             instantRouterContract.abi
         );
 
+        await mockInstantRouter.mock.payBackLoan.returns(true);
+
+
         const exchangeRouterContract = await deployments.getArtifact(
             "IExchangeRouter"
         );
@@ -218,6 +221,7 @@ describe("CCExchangeRouter", async () => {
 
         await ccTransferRouter.setLockers(locker.address)
         await ccExchangeRouter.setLockers(locker.address)
+        await ccExchangeRouter.setInstantRouter(mockInstantRouter.address)
     });
 
     const deployTelePortDaoToken = async (
@@ -593,6 +597,63 @@ describe("CCExchangeRouter", async () => {
                 )
             ).to.revertedWith("CCExchangeRouter: the request has been used before");
 
+        })
+
+        it("mints and exchanges teleBTC for desired exchange token (instant cc exchange request)", async function () {
+            // Mocks reedemScriptHash of bitcoinTeleporter
+            // await mockLockers.mock.redeemScriptHash.returns(
+            //     CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient
+            // );
+
+            // Finds expected output amount that user receives
+            let expectedOutputAmount = await exchangeRouter.getAmountOut(
+                CC_EXCHANGE_REQUESTS.instantCCExchange.bitcoinAmount -
+                CC_EXCHANGE_REQUESTS.instantCCExchange.teleporterFee,
+                oldReserveTeleBTC,
+                oldReserveExchangeToken
+            );
+
+            // Replaces dummy address in vout with exchange token address
+            let vout = CC_EXCHANGE_REQUESTS.instantCCExchange.vout;
+            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+
+            // Mints and exchanges teleBTC for TDT
+            expect(
+                await ccExchangeRouter.ccExchange(
+                    CC_EXCHANGE_REQUESTS.instantCCExchange.version,
+                    CC_EXCHANGE_REQUESTS.instantCCExchange.vin,
+                    vout,
+                    CC_EXCHANGE_REQUESTS.instantCCExchange.locktime,
+                    CC_EXCHANGE_REQUESTS.instantCCExchange.blockNumber,
+                    CC_EXCHANGE_REQUESTS.instantCCExchange.intermediateNodes,
+                    CC_EXCHANGE_REQUESTS.instantCCExchange.index,
+                    // false // payWithTDT
+                    CC_EXCHANGE_REQUESTS.instantCCExchange.desiredRecipient,
+                )
+            ).to.emit(ccExchangeRouter, 'CCExchange');
+
+            // Records new supply of teleBTC
+            let newTotalSupplyTeleBTC = await teleBTC.totalSupply();
+
+            // Records new teleBTC and TDT balances of user and teleporter
+            let newUserBalanceTeleBTC = await teleBTC.balanceOf(
+                CC_EXCHANGE_REQUESTS.instantCCExchange.recipientAddress
+            );
+            let newDeployerBalanceTeleBTC = await teleBTC.balanceOf(deployerAddress);
+            let newUserBalanceTDT = await exchangeToken.balanceOf(
+                CC_EXCHANGE_REQUESTS.instantCCExchange.recipientAddress
+            );
+            let newDeployerBalanceTDT = await exchangeToken.balanceOf(deployerAddress);
+
+            // Checks extra teleBTC hasn't been minted
+            expect(newTotalSupplyTeleBTC).to.equal(
+                oldTotalSupplyTeleBTC.add(CC_EXCHANGE_REQUESTS.instantCCExchange.bitcoinAmount)
+            );
+
+            // Checks that enough teleBTC has been minted for teleporter
+            expect(newDeployerBalanceTeleBTC).to.equal(
+                oldDeployerBalanceTeleBTC.add(CC_EXCHANGE_REQUESTS.instantCCExchange.bitcoinAmount * CC_EXCHANGE_REQUESTS.instantCCExchange.teleporterFee / 100)
+            );
         })
 
         // TODO: this test doesn't passed because now fee is percentage not absolute value, then make a new test

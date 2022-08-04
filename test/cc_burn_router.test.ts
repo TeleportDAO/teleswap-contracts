@@ -73,7 +73,7 @@ describe("CC Burn Router", async () => {
     let btcLockerLocktime = "0x00000000"
     let btcLockerInterMediateNodes = "0x7451e7cd7a5afcd93d5a3f84e4d7976fb3bd771dc6aeab416d818ea1d72c0476"
     let lockerBitcoinAddress = "0x044d05240cfbd8a2786eda9dadd520c1609b8593ff8641018d57703d02ba687cf2f187f0cee2221c3afb1b5ff7888caced2423916b61444666ca1216f26181398c"
-    
+
     before(async () => {
 
         [deployer, signer1, signer2] = await ethers.getSigners();
@@ -145,7 +145,7 @@ describe("CC Burn Router", async () => {
         const ccBurnRouter = await ccBurnRouterFactory.deploy(
             mockBitcoinRelay.address,
             mockLockers.address,
-            ZERO_ADDRESS,
+            ONE_ADDRESS,
             transferDeadline,
             lockerFee,
             protocolFee,
@@ -156,8 +156,8 @@ describe("CC Burn Router", async () => {
     };
 
     async function setLockersReturn(): Promise<void> {
-        await mockLockers.mock.redeemScriptHash
-            .returns(ONE_ADDRESS);
+        // await mockLockers.mock.redeemScriptHash
+        //     .returns(ONE_ADDRESS);
     }
 
     async function setLockersSlashLockerReturn(): Promise<void> {
@@ -219,7 +219,8 @@ describe("CC Burn Router", async () => {
         await setLockersIsLockerReturn(true);
         await setLockersReturn();
         await setLockersBurnReturn();
-        let lockerTargetAddress = await mockLockers.redeemScriptHash();
+        // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+        let lockerTargetAddress = ONE_ADDRESS
         await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
         // Burn some test tokens using ccBurn
@@ -239,7 +240,8 @@ describe("CC Burn Router", async () => {
         await setLockersReturn();
 
         // Get the locker target address
-        let lockerTargetAddress = await mockLockers.redeemScriptHash();
+        // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+        let lockerTargetAddress = ONE_ADDRESS
 
         // Set mock contracts outputs
         await setRelayCheckTxProofReturn(true);
@@ -298,7 +300,8 @@ describe("CC Burn Router", async () => {
             await setLockersBurnReturn();
             await setLockersReturn();
             // Get the locker target address
-            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = ONE_ADDRESS
             await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
 
@@ -355,7 +358,8 @@ describe("CC Burn Router", async () => {
             await setLockersIsLockerReturn(true);
             await setLockersBurnReturn();
             await setLockersReturn();
-            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = ONE_ADDRESS
             await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
             // let totalSupplyBefore = await TeleBTCSigner1.totalSupply();
@@ -407,7 +411,8 @@ describe("CC Burn Router", async () => {
             await setLockersIsLockerReturn(true);
             await setLockersBurnReturn();
             await setLockersReturn();
-            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = ONE_ADDRESS
             await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
             // Burn some test tokens using ccBurn
@@ -443,7 +448,8 @@ describe("CC Burn Router", async () => {
             await setRelayLastSubmittedHeightReturn(theBlockNumber);
             await setLockersReturn();
             await setLockersIsLockerReturn(false);
-            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = ONE_ADDRESS
             await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
             // Burn some test tokens using ccBurn
@@ -469,7 +475,8 @@ describe("CC Burn Router", async () => {
 
             // Find the locker target address
             await setLockersReturn();
-            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = ONE_ADDRESS
 
             // Mint TeleBTC for test
             await mintTeleBTCForTest();
@@ -506,7 +513,8 @@ describe("CC Burn Router", async () => {
 
             // Find the locker target address
             await setLockersReturn();
-            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = ONE_ADDRESS
 
             // Mint TeleBTC for test
             await mintTeleBTCForTest();
@@ -523,7 +531,7 @@ describe("CC Burn Router", async () => {
 
             // Should revert
             await expect(
-                    ccBurnRouterSigner2.burnProof(
+                ccBurnRouterSigner2.burnProof(
                     btcUserVersion,
                     btcUserVin,
                     btcUserVout,
@@ -560,7 +568,8 @@ describe("CC Burn Router", async () => {
 
             // Find the locker target address
             await setLockersReturn();
-            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = ONE_ADDRESS
 
             // Mint TeleBTC for test
             await mintTeleBTCForTest();
@@ -577,7 +586,7 @@ describe("CC Burn Router", async () => {
 
             // Should revert
             await expect(
-                    ccBurnRouterSigner2.burnProof(
+                ccBurnRouterSigner2.burnProof(
                     btcUserVersion,
                     btcUserVin,
                     btcUserVout,
@@ -598,7 +607,8 @@ describe("CC Burn Router", async () => {
 
             // Find the locker target address
             await setLockersReturn();
-            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = ONE_ADDRESS
 
             // Mint TeleBTC for test
             await mintTeleBTCForTest();
@@ -615,7 +625,7 @@ describe("CC Burn Router", async () => {
 
             // Should revert
             await expect(
-                    ccBurnRouterSigner2.burnProof(
+                ccBurnRouterSigner2.burnProof(
                     btcUserVersion,
                     btcUserVin,
                     btcUserVout,
@@ -636,7 +646,8 @@ describe("CC Burn Router", async () => {
 
             // Find the locker target address
             await setLockersReturn();
-            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = ONE_ADDRESS
 
             // Mint TeleBTC for test
             await mintTeleBTCForTest();
@@ -653,7 +664,7 @@ describe("CC Burn Router", async () => {
 
             // Should revert with a wrong start index
             await expect(
-                    ccBurnRouterSigner2.burnProof(
+                ccBurnRouterSigner2.burnProof(
                     btcUserVersion,
                     btcUserVin,
                     "0000",
@@ -675,7 +686,8 @@ describe("CC Burn Router", async () => {
 
             // Find the locker target address
             await setLockersReturn();
-            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = ONE_ADDRESS
 
             // Mint TeleBTC for test
             await mintTeleBTCForTest();
@@ -692,7 +704,7 @@ describe("CC Burn Router", async () => {
 
             // Should revert with a wrong start index
             await expect(
-                    ccBurnRouterSigner2.burnProof(
+                ccBurnRouterSigner2.burnProof(
                     btcUserVersion,
                     btcUserVin,
                     btcUserVout,
@@ -716,7 +728,8 @@ describe("CC Burn Router", async () => {
 
             // Find the locker target address
             await setLockersReturn();
-            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = ONE_ADDRESS
 
             // Mint TeleBTC for test
             await mintTeleBTCForTest();
@@ -747,7 +760,8 @@ describe("CC Burn Router", async () => {
 
             // Find the locker target address
             await setLockersReturn();
-            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = ONE_ADDRESS
 
             // Mint TeleBTC for test
             await mintTeleBTCForTest();
@@ -775,7 +789,8 @@ describe("CC Burn Router", async () => {
 
             // Find the locker target address
             await setLockersReturn();
-            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = ONE_ADDRESS
 
             // Mint TeleBTC for test
             await mintTeleBTCForTest();
@@ -804,7 +819,8 @@ describe("CC Burn Router", async () => {
 
             // Find the locker target address
             await setLockersReturn();
-            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = ONE_ADDRESS
 
             // Mint TeleBTC for test
             await mintTeleBTCForTest();
@@ -817,7 +833,7 @@ describe("CC Burn Router", async () => {
             await setLockersSlashLockerReturn();
 
             let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
-            
+
             // Set mock contracts outputs
             await setLockersIsLockerReturn(true);
 
@@ -841,7 +857,8 @@ describe("CC Burn Router", async () => {
 
             // Find the locker target address
             await setLockersReturn();
-            let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            let lockerTargetAddress = ONE_ADDRESS
 
             let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
 

@@ -17,6 +17,7 @@ import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { ERC20__factory } from "../src/types/factories/ERC20__factory";
 
+
 import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
 
 describe("Locker", async () => {
@@ -51,12 +52,12 @@ describe("Locker", async () => {
     let ccBurnSimulatorAddress: Address;
 
     // Contracts
-    let locker: Lockers
+    let locker: Lockers;
     let teleportDAOToken: ERC20;
     let teleBTC: TeleBTC;
 
     // Mock contracts
-    let mockExchangeRouter: MockContract;
+    let mockExchangeConnector: MockContract;
     let mockPriceOracle: MockContract;
 
     before(async () => {
@@ -70,12 +71,12 @@ describe("Locker", async () => {
         teleportDAOToken = await deployTelePortDaoToken()
 
         // Mocks exchange router contract
-        const exchangeRouterContract = await deployments.getArtifact(
-            "IExchangeRouter"
+        const exchangeConnectorContract = await deployments.getArtifact(
+            "IExchangeConnector"
         );
-        mockExchangeRouter = await deployMockContract(
+        mockExchangeConnector = await deployMockContract(
             deployer,
-            exchangeRouterContract.abi
+            exchangeConnectorContract.abi
         );
 
         const priceOracleContract = await deployments.getArtifact(
@@ -85,6 +86,31 @@ describe("Locker", async () => {
             deployer,
             priceOracleContract.abi
         );
+
+        await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
+
+        // Deploys liquidityPoolFactory
+        // const liquidityPoolFactoryFactory = new LiquidityPoolFactory__factory(deployer);
+        // liquidityPoolFactory = await liquidityPoolFactoryFactory.deploy(
+        //     deployerAddress
+        // );
+
+        // // Creates liquidityPool__factory object
+        // liquidityPool__factory = new LiquidityPool__factory(deployer);
+
+        // // Deploys exchangeRouter contract
+        // const exchangeRouterFactory = new ExchangeRouter__factory(deployer);
+        // exchangeRouter = await exchangeRouterFactory.deploy(
+        //     liquidityPoolFactory.address,
+        //     ZERO_ADDRESS // WAVAX
+        // );
+
+        // const exchangeConnectorFactory = new UniswapConnector__factory(deployer);
+        // exchangeConnector = await exchangeConnectorFactory.deploy(
+        //     "TheExchangeConnector",
+        //     mockExchangeRouter.address,
+        //     ZERO_ADDRESS // WAVAX
+        // );
 
         // Deploys bitcoinTeleporter contract
         locker = await deployLocker()
@@ -155,7 +181,7 @@ describe("Locker", async () => {
 
         const locker = await lockerFactory.deploy(
             teleportDAOToken.address,
-            mockExchangeRouter.address,
+            mockExchangeConnector.address,
             mockPriceOracle.address,
             requiredTDTLockedAmount,
             0,
@@ -462,7 +488,7 @@ describe("Locker", async () => {
 
     describe("#slashLocker", async () => {
 
-        it("only admin can call remove locker function", async function () {
+        it("only admin can call slash locker function", async function () {
             let lockerSigner1 = locker.connect(signer1)
 
             await expect(
@@ -474,7 +500,7 @@ describe("Locker", async () => {
             ).to.be.revertedWith("Locker: Caller can't slash")
         })
 
-        it("only admin can call remove locker function", async function () {
+        it("slash locker reverts when the target address is not locker", async function () {
             let lockerCCBurnSimulator = locker.connect(ccBurnSimulator)
 
             await expect(
@@ -485,6 +511,38 @@ describe("Locker", async () => {
                 )
             ).to.be.revertedWith("Locker: target is not locker")
         })
+
+        it("only admin can slash a locker", async function () {
+
+            await mockExchangeConnector.mock.getInputAmount.returns(true, requiredTDTLockedAmount.div(10))
+            await mockExchangeConnector.mock.swap.returns(true, [2500, 5000])
+
+            await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(locker.address, requiredTDTLockedAmount)
+
+            let lockerSigner1 = locker.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                requiredTDTLockedAmount,
+                0
+            )
+
+            expect(
+                await locker.addLocker(signer1Address)
+            ).to.emit(locker, "LockerAdded")
+
+            let lockerCCBurnSigner = await locker.connect(ccBurnSimulator)
+
+            await lockerCCBurnSigner.slashLocker(signer1Address, 10000, ccBurnSimulatorAddress)
+
+        })
+
+
     });
 
     describe("#mintAndBurnTeleBTC", async () => {
