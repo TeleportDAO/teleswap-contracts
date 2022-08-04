@@ -129,23 +129,24 @@ contract PriceOracle is IPriceOracle, Ownable {
         return outputAmount;
     }
 
-    /// @notice                 Adds an exchange router to the list of exchanges
-    /// @dev                    Only owner can call this
-    /// @param _exchangeRouter  The new exchange router contract address
-    function addExchangeRouter(address _exchangeRouter, address _exchangeConnector) external override onlyOwner {
+    /// @notice                    Adds an exchange connector
+    /// @dev                       Only owner can call this
+    /// @param _exchangeRouter     Exchange router contract address
+    /// @param _exchangeConnector  New exchange connector contract address
+    function addExchangeConnector(address _exchangeRouter, address _exchangeConnector) external override onlyOwner {
         exchangeRoutersList.push(_exchangeRouter);
         exchangeConnector[_exchangeRouter] = _exchangeConnector;
-        emit ExchangeRouterAdded(_exchangeRouter, _exchangeConnector);
+        emit ExchangeConnectorAdded(_exchangeRouter, _exchangeConnector);
     }
 
-    /// @notice                 Removes an exchange router from the list of exchange routers
-    /// @dev                    Only owner can call this
-    /// @param _exchangeIndex   The exchange router address
-    function removeExchangeRouter(uint _exchangeIndex) external override onlyOwner {
-        address exchangeRouterAddress = exchangeRoutersList[_exchangeIndex];
-        _removeElementFromExchangeRoutersList(_exchangeIndex);
+    /// @notice                       Removes an exchange connector
+    /// @dev                          Only owner can call this
+    /// @param _exchangeRouterIndex   The exchange router index in the list
+    function removeExchangeConnector(uint _exchangeRouterIndex) external override onlyOwner {
+        address exchangeRouterAddress = exchangeRoutersList[_exchangeRouterIndex];
+        _removeElementFromExchangeRoutersList(_exchangeRouterIndex);
         exchangeConnector[exchangeRouterAddress] = address(0);
-        emit ExchangeRouterRemoved(exchangeRouterAddress);
+        emit ExchangeConnectorRemoved(exchangeRouterAddress);
     }
 
     /// @notice                     Sets a price proxy for a pair of tokens

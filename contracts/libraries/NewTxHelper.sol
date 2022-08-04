@@ -45,12 +45,8 @@ library NewTxHelper {
         bytes memory vout,
         address desiredRecipient
     ) internal returns(uint64, bytes memory) {
-        console.log("parseAmountForP2PK...");
-
         bytes29 voutView = vout.ref(0).tryAsVout();
-        console.log("tryAsVout successfully done");
         bool isvoutViewNull = voutView.isNull();
-        console.logBool(isvoutViewNull);
 
         bytes29 output;
         uint64 bitcoinAmount;
@@ -60,16 +56,11 @@ library NewTxHelper {
         bytes memory arbitraryData;
 
         uint numberOfOutputs = uint256(ViewBTC.indexCompactInt(voutView, 0));
-        console.log("indexCompactInt successfully done");
 
         for (uint index = 0; index < numberOfOutputs; index++) {
-            console.log("inside the for, index");
-            console.log(index);
             output = ViewBTC.indexVout(voutView, index);
             scriptPubkey = ViewBTC.scriptPubkey(output);
             _arbitraryData = ViewBTC.opReturnPayload(scriptPubkey);
-
-            console.logBytes29(_arbitraryData);
 
             // check whether the output is an arbitarary data or not
             if(_arbitraryData == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
@@ -84,18 +75,11 @@ library NewTxHelper {
                     bitcoinAmount = ViewBTC.value(output); // number of btc that user locked
                 }
             } else {
-                console.log("arbitraryData has cloned");
-
                 // output is an arbitrary data
                 arbitraryData = _arbitraryData.clone(); // bytes29.clone() returns the whole bytes array
             }
         }
-        console.log("...parseAmountForP2PK");
-
-        console.log(">>>>>>>>>>> the arbitraryData <<<<<<<<<<<");
-        console.logBytes(arbitraryData);
-        console.log(">>>>>>>>>>> the arbitraryData <<<<<<<<<<<");
-
+        
         return (bitcoinAmount, arbitraryData);
     }
 
@@ -146,7 +130,6 @@ library NewTxHelper {
         assembly {
             parsedValue := mload(add(slicedBytes, 28))
         }
-        // console.log("parseExchangeAmount", parsedValue);
     }
 
     function parseDeadline(bytes memory arbitraryData) internal returns (uint32 parsedValue){
@@ -154,16 +137,13 @@ library NewTxHelper {
         assembly {
             parsedValue := mload(add(slicedBytes, 4))
         }
-        // console.log("parseDeadline", parsedValue);
     }
 
     function parseIsFixedToken(bytes memory arbitraryData) internal returns (uint8 parsedValue){
-        console.log("in the parseIsFixedToken");
         bytes memory slicedBytes = sliceBytes(arbitraryData, 78, 78);
         assembly {
             parsedValue := mload(add(slicedBytes, 1))
         }
-        console.log("parseIsFixedToken: ", parsedValue);
     }
 
     // TODO: use parseExchangeToken to check if the request is a exchange or a transfer

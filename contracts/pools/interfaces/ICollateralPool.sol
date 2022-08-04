@@ -5,26 +5,30 @@ import '../../erc20/interfaces/IERC20.sol';
 
 interface ICollateralPool is IERC20 {
 
-  // Events
+	// Events
 
-  event AddCollateral(address indexed user, uint amount, uint collateralPoolTokenAmount);
+	event AddCollateral(address indexed user, uint amount, uint collateralPoolTokenAmount);
 
-  event RemoveCollateral(address indexed user, uint amount, uint collateralPoolTokenAmount);
+	event RemoveCollateral(address indexed user, uint amount, uint collateralPoolTokenAmount);
 
-  // Read-only functions
+	// Read-only functions
 
-  function collateralToken() external view returns (address);
+	function collateralToken() external view returns (address);
 
-  function collateralizationRatio() external view returns(uint);
+	function collateralizationRatio() external view returns(uint);
 
-  function totalAddedCollateral() external view returns (uint);
+	function totalAddedCollateral() external view returns (uint);
 
-  // State-changing functions
+	function equivalentCollateralToken(uint _collateralPoolTokenAmount) external view returns (uint);
 
-  function setCollateralizationRatio(uint _collateralizationRatio) external;
+	function equivalentCollateralPoolToken(uint _collateralTokenAmount) external view returns (uint);
 
-  function addCollateral(address _user, uint _amount) external returns (bool);
+	// State-changing functions
 
-  function removeCollateral(uint _collateralPoolTokenAmount) external returns (bool);
+	function setCollateralizationRatio(uint _collateralizationRatio) external;
+
+	function addCollateral(address _user, uint _amount) external returns (bool);
+
+	function removeCollateral(uint _collateralPoolTokenAmount) external returns (bool);
 
 }

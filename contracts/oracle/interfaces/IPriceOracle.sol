@@ -6,11 +6,11 @@ interface IPriceOracle {
     /// @notice                     Emits when new exchange router is added
     /// @param exchangeRouter       Address of new exchange router
     /// @param exchangeConnector    Address of exchange connector
-    event ExchangeRouterAdded(address exchangeRouter, address exchangeConnector);
+    event ExchangeConnectorAdded(address exchangeRouter, address exchangeConnector);
 
     /// @notice                     Emits when an exchange router is removed
     /// @param exchangeRouter       Address of removed exchange router
-    event ExchangeRouterRemoved(address exchangeRouter);
+    event ExchangeConnectorRemoved(address exchangeRouter);
 
     /// @notice                     Emits when a price proxy is set
     /// @param _firstToken          Address of the first token
@@ -27,7 +27,7 @@ interface IPriceOracle {
     function ChainlinkPriceProxy(address _firstToken, address _secondToken) external view returns (address);
 
     /// @notice                     Gives exchange connector address for an exchange router
-    /// @param _exchangeRouter      Address of the first token
+    /// @param _exchangeRouter      Address of exchange router
     /// @return                     Address of exchange connector
     function exchangeConnector(address _exchangeRouter) external view returns (address);
 
@@ -65,9 +65,9 @@ interface IPriceOracle {
     
     // State-changing functions
     
-    function addExchangeRouter(address _exchangeRouter, address _exchangeConnector) external;
+    function addExchangeConnector(address _exchangeRouter, address _exchangeConnector) external;
 
-    function removeExchangeRouter(uint _exchangeIndex) external;
+    function removeExchangeConnector(uint _exchangeRouterIndex) external;
 
     function setPriceProxy(address _firstToken, address _secondToken, address _priceProxyAddress) external;
 
