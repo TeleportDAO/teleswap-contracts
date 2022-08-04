@@ -4,6 +4,7 @@ import "../libraries/SafeMath.sol";
 import "../oracle/interfaces/IPriceOracle.sol";
 import "./interfaces/ILockers.sol";
 import "../routers/interfaces/IExchangeRouter.sol";
+import "../connectors/interfaces/IExchangeConnector.sol";
 import "../erc20/interfaces/IERC20.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -16,7 +17,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     address public override TeleportDAOToken;
     address public override teleBTC;
     address public override ccBurnRouter;
-    address public override exchangeRouter;
+    address public override exchangeConnector;
     // uint public override requiredLockedAmount;
     uint public override requiredTDTLockedAmount;
     uint public override requiredTNTLockedAmount;
@@ -41,7 +42,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
 
     mapping(address => address) public override lockerBitcoinDecodedAddressToTargetAddress;
 
-    address public override redeemScriptHash;
+    // address public override redeemScriptHash;
 
     // bytes constant ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 
@@ -119,14 +120,14 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
 
     constructor(
         address _TeleportDAOToken,
-        address _exchangeRouter,
+        address _exchangeConnector,
         address _priceOracle,
         uint _requiredTDTLockedAmount,
         uint _requiredTNTLockedAmount,
         uint _collateralRatio
     ) public {
         TeleportDAOToken = _TeleportDAOToken;
-        exchangeRouter = _exchangeRouter;
+        exchangeConnector = _exchangeConnector;
         priceOracle = _priceOracle;
         requiredTDTLockedAmount = _requiredTDTLockedAmount;
         // requiredNativeTokenLockedAmount = _requiredNativeTokenLockedAmount;
@@ -205,9 +206,9 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
 
     /// @notice                 Changes exchange router contract address and updates wrapped avax addresses
     /// @dev                    Only owner can call this
-    /// @param _exchangeRouter  The new exchange router contract address
-    function setExchangeRouter(address _exchangeRouter) external override onlyOwner {
-        exchangeRouter = _exchangeRouter;
+    /// @param _exchangeConnector  The new exchange router contract address
+    function setExchangeConnector(address _exchangeConnector) external override onlyOwner {
+        exchangeConnector = _exchangeConnector;
     }
 
     /// @notice                 Changes wrapped token contract address
@@ -492,7 +493,11 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
         path[0] = TeleportDAOToken;
         path[1] = teleBTC;
         // Finds the needed input amount to buy _amount of output token
-        uint[] memory neededTDT = IExchangeRouter(exchangeRouter).getAmountsIn(_amount, path);
+        (bool theResult, uint neededTDT) = IExchangeConnector(exchangeConnector).getInputAmount(_amount, TeleportDAOToken, teleBTC);
+
+        if (!theResult) {
+            return false;
+        }
         // Updates locked amount of lockers
         // uint lockersListLenght = lockersList.lenght;
         // for (uint i = 0; i < lockersListLenght; i++) {
@@ -504,16 +509,19 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
         // IERC20(TeleportDAOToken).transfer(_recipient, neededTDT[0]);
 
         // TODO: use native token instead of teleport dao token
-        lockersMapping[_lockerTargetAddress].TDTLockedAmount = lockersMapping[_lockerTargetAddress].TDTLockedAmount - neededTDT[0];
+        lockersMapping[_lockerTargetAddress].TDTLockedAmount = lockersMapping[_lockerTargetAddress].TDTLockedAmount - neededTDT;
 
-        IERC20(TeleportDAOToken).approve(exchangeRouter, neededTDT[0]);
+        IERC20(TeleportDAOToken).approve(exchangeConnector, neededTDT);
         uint deadline = block.timestamp + 1000;
-        IExchangeRouter(exchangeRouter).swapTokensForExactTokens(
+
+        IExchangeConnector(exchangeConnector).swap(
             _amount, // amount out
-            neededTDT[0], // amount in
+            neededTDT, // amount in
             path,
             _recipient,
-            deadline
+            deadline,
+        // TODO: how to set the isFIxedToken
+            true
         );
 
         return true;

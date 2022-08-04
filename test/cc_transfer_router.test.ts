@@ -47,6 +47,7 @@ describe("CCTransferRouter", async () => {
     // Accounts
     let deployer: Signer;
     let signer1: Signer;
+    let deployerAddress: Address;
     let signer1Address: Address;
 
     // Contracts
@@ -68,6 +69,7 @@ describe("CCTransferRouter", async () => {
         // Sets accounts
         [deployer, signer1] = await ethers.getSigners();
 
+        deployerAddress = await deployer.getAddress();
         signer1Address = await signer1.getAddress();
 
 
@@ -109,6 +111,8 @@ describe("CCTransferRouter", async () => {
             deployer,
             instantRouterContract.abi
         );
+
+        await mockInstantRouter.mock.payBackLoan.returns(true);
 
         // Mocks exchange router contract
         const exchangeRouterContract = await deployments.getArtifact(
@@ -155,6 +159,7 @@ describe("CCTransferRouter", async () => {
         await teleBTC.addBurner(locker.address)
 
         await ccTransferRouter.setLockers(locker.address)
+        await ccTransferRouter.setInstantRouter(mockInstantRouter.address)
     });
 
     const deployLocker = async (
@@ -362,6 +367,46 @@ describe("CCTransferRouter", async () => {
             //         false // payWithTDT
             //     )
             // ).to.revertedWith("TODO");
+        })
+
+    });
+
+    describe("#Instant CCTransfer ", async () => {
+        it("mints teleBTC for instant cc transfer request", async function () {
+            beginning = await takeSnapshot(signer1.provider);
+            let prevSupply = await teleBTC.totalSupply();
+            // Mocking that relay returns true for our request
+            await setRelayReturn(CC_REQUESTS.instantCCTransfer, true);
+
+            // await addALockerToLockers();
+            // Mocking that Locker returns the Lockers address on Bitcoin
+            // await setLockersReturn(CC_REQUESTS.normalCCTransfer);
+            // Check that ccTransfer performs successfully when everything is valid
+            expect(
+                await ccTransferRouter.ccTransfer(
+                    CC_REQUESTS.instantCCTransfer.version,
+                    CC_REQUESTS.instantCCTransfer.vin,
+                    CC_REQUESTS.instantCCTransfer.vout,
+                    CC_REQUESTS.instantCCTransfer.locktime,
+                    CC_REQUESTS.instantCCTransfer.blockNumber,
+                    CC_REQUESTS.instantCCTransfer.intermediateNodes,
+                    CC_REQUESTS.instantCCTransfer.index,
+                    // false // payWithTDT
+                    // TELEPORTER1_PublicKeyHash
+                    CC_REQUESTS.instantCCTransfer.desiredRecipient,
+                )
+            ).to.emit(ccTransferRouter, 'CCTransfer');
+
+
+            // Checks enough teleBTC has been minted and approved for instant router
+            expect(
+                await teleBTC.allowance(ccTransferRouter.address, mockInstantRouter.address)
+            ).to.equal((CC_REQUESTS.instantCCTransfer.bitcoinAmount * (100 - CC_REQUESTS.instantCCTransfer.teleporterFee))/100);
+
+            // Check correct amount of teleBTC has been minted in total
+            expect(
+                await teleBTC.totalSupply()
+            ).to.equal(prevSupply + CC_REQUESTS.instantCCTransfer.bitcoinAmount)
         })
 
     });
