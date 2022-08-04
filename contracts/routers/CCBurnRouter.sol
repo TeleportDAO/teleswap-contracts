@@ -16,6 +16,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     address public override teleBTC;
     address public override treasuryAddress;
     mapping(address => burnRequest[]) public burnRequests;
+    mapping(bytes32 => bool) private isPaid;
     uint public override transferDeadline;
     uint public override lockerPercentageFee; // min amount is %0.01
     uint public override protocolPercentageFee; // min amount is %0.01
@@ -155,18 +156,18 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         return true;
     }
 
-    /// @notice                     Checks the correctness of burn proof
-    /// @dev                        Makes isTransferred flag true for the paid requests
-    /// @param _version             Version of the transaction containing the burn transaction
-    /// @param _vin                 Inputs of the transaction containing the burn transaction
-    /// @param _vout                Outputs of the transaction containing the burn transaction
-    /// @param _locktime            Lock time of the transaction containing the burn transaction
-    /// @param _blockNumber         Height of the block containing the burn transaction
-    /// @param _intermediateNodes   Merkle inclusion proof for transaction containing the burn transaction
-    /// @param _index               Index of transaction containing the burn transaction in the block
-    /// @param _lockerTargetAddress Locker's address on the target chain that this burn request belong to
-    /// @param _startIndex          Index to start searching for unpaid burn requests in the list
-    /// @param _endIndex            Index to finish searching for unpaid burn requests in the list
+    /// @notice                             Checks the correctness of burn proof
+    /// @dev                                Makes isTransferred flag true for the paid requests
+    /// @param _version                     Version of the transaction containing the burn transaction
+    /// @param _vin                         Inputs of the transaction containing the burn transaction
+    /// @param _vout                        Outputs of the transaction containing the burn transaction
+    /// @param _locktime                    Lock time of the transaction containing the burn transaction
+    /// @param _blockNumber                 Height of the block containing the burn transaction
+    /// @param _intermediateNodes           Merkle inclusion proof for transaction containing the burn transaction
+    /// @param _index                       Index of transaction containing the burn transaction in the block
+    /// @param _lockerBitcoinDecodedAddress Locker's address on Bitcoin that this burn request belongs to
+    /// @param _startIndex                  Index to start searching for unpaid burn requests in the list
+    /// @param _endIndex                    Index to finish searching for unpaid burn requests in the list
     /// @return  
     function burnProof(
         bytes4 _version,
@@ -176,18 +177,23 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint256 _blockNumber,
         bytes calldata _intermediateNodes,
         uint _index,
-        address _lockerTargetAddress,
+        address _lockerBitcoinDecodedAddress,
         uint _startIndex,
         uint _endIndex
     ) external nonReentrant override returns (bool) {
+        // Get the target address of the locker from its Bitcoin address
+        address _lockerTargetAddress = ILockers(lockers)
+            .lockerBitcoinDecodedAddressToTargetAddress(_lockerBitcoinDecodedAddress);
         // Checks the correction of input indices
         require(_startIndex >= 0 && 
         _endIndex < burnRequests[_lockerTargetAddress].length && 
         _startIndex<= _endIndex
         , 'CCBurnRouter: burnProof wrong index input');
+
         // Checks if the locker address is valid
         require(ILockers(lockers).isLocker(_lockerTargetAddress),
         "CCBurnRouter: locker address is not valid");
+
         // Checks inclusion of transaction
         bytes32 txId = _calculateTxId(_version, _vin, _vout, _locktime);
         require(
@@ -199,30 +205,18 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             ),
             "CCBurnRouter: transaction has not finalized yet"
         );
-        uint parsedAmount;
-        for (uint i = _startIndex; i <= _endIndex; i++) {
-            // Checks that the request has not been paid and its deadline has not passed
-            if (
-                !burnRequests[_lockerTargetAddress][i].isTransferred &&
-                burnRequests[_lockerTargetAddress][i].deadline >= block.number
-            ) {
-                (parsedAmount,) = BitcoinTxParser.parseAmountForP2PK( 
-                    _vout, 
-                    burnRequests[_lockerTargetAddress][i].userBitcoinDecodedAddress
-                );
-                if (burnRequests[_lockerTargetAddress][i].remainedAmount == parsedAmount)
-                {
-                    burnRequests[_lockerTargetAddress][i].isTransferred = true;
-                    emit PaidCCBurn(
-                        burnRequests[_lockerTargetAddress][i].sender, 
-                        burnRequests[_lockerTargetAddress][i].userBitcoinDecodedAddress, 
-                        parsedAmount, 
-                        _lockerTargetAddress, 
-                        i
-                    );
-                }
-            }
-        }
+
+        // Check the paid burn requests
+        uint paidOutputCounter = _checkPaidBurnRequests(
+            _lockerTargetAddress, 
+            _vout,
+            _startIndex,
+            _endIndex
+        );
+
+        // Check if there is an output that goes back to the locker
+        _updateIsPaid(paidOutputCounter, _vout, _lockerBitcoinDecodedAddress, txId);
+        
         return true;
     }
 
@@ -241,17 +235,11 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
                 !burnRequests[_lockerTargetAddress][_indices[i]].isTransferred,
                 "CCBurnRouter: request has been paid before"
             );
-            console.log("deadline");
-            console.log(burnRequests[_lockerTargetAddress][_indices[i]].deadline);
-            console.log("last height");
-            console.log(IBitcoinRelay(relay).lastSubmittedHeight());
             require(
                 burnRequests[_lockerTargetAddress][_indices[i]].deadline < IBitcoinRelay(relay).lastSubmittedHeight(),
                 "CCBurnRouter: payback deadline has not passed yet"
             );
             // Slashes locker and sends the slashed amount to the user
-            console.log("amount to be slashed:", burnRequests[_lockerTargetAddress][_indices[i]].amount);
-            console.log("sender to get refunded:", burnRequests[_lockerTargetAddress][_indices[i]].sender);
             ILockers(lockers).slashLocker(
                 _lockerTargetAddress,
                 burnRequests[_lockerTargetAddress][_indices[i]].amount,
@@ -264,6 +252,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @notice                         Slashes a locker if they issue a tx that doesn't match any burn request
     /// @dev                        
     /// @param _lockerTargetAddress     Suspicious locker's target chain address
+    /// @param _inputIndex              Index of the input in vin that is from the locker
     /// @param _version                 Version of the malicious transaction
     /// @param _vin                     Inputs of the malicious transaction
     /// @param _vout                    Outputs of the malicious transaction
@@ -274,6 +263,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @return                         True if dispute is successfull
     function disputeLocker(
             address _lockerTargetAddress,
+            uint _inputIndex,
             bytes4 _version,
             bytes memory _vin,
             bytes calldata _vout,
@@ -297,12 +287,18 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             ),
             "CCBurnRouter: transaction is not finalized"
         );
-        // 2. Check if the tranaction belongs to the locker
+        // 2. Check if the transaction belongs to the locker
+        bytes memory lockerBitcoinAddress = ILockers(lockers)
+            .getLockerBitcoinAddress(_lockerTargetAddress);
+        require(_isTxFromLocker(_vin, _inputIndex, lockerBitcoinAddress));
         
-
         // 3. Check if transaction is not for any burn request
+        // note: if the deadline for the transaction has passed and no proof has been provided
+        // for it so that isPaid is still false for it, we assume the transaction was malicious
+        require(!isPaid[txId] &&
+        (IBitcoinRelay(relay).lastSubmittedHeight() - _blockNumber) > transferDeadline);
 
-        // Slashes the locker
+        // TODO Slashes the locker
         // ILockers(lockers).slashLocker(
         //     _lockerTargetAddress,
         //     amount,
@@ -318,13 +314,87 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         return true;
     }
 
-    function _extractPubKey(
-        bytes _vin,
-        uint _vinIndex
-    ) internal {
-        // Get out the correct vin using viewBTC indexVin
-        // using that input and scriptSig func, get the <sig + pubKey>
-        // extract pubKey as last 32 bytes of the scriptSig
+    /// @notice                             Checks the burn requests that get paid by this transaction
+    /// @dev                                Counts the number of outputs that are paying a burn request
+    /// @param _lockerTargetAddress         Address of the locker on the target chain  
+    /// @param _vout                        Outputs of a transaction   
+    /// @param _startIndex                  Index to start searching for unpaid burn requests in the list
+    /// @param _endIndex                    Index to finish searching for unpaid burn requests in the list
+    /// @return                             paidOutputCounter that is the number of the outputs that paid a burn request
+    function _checkPaidBurnRequests(
+        address _lockerTargetAddress, 
+        bytes memory _vout,
+        uint _startIndex,
+        uint _endIndex
+    ) internal returns (uint paidOutputCounter) {
+        uint parsedAmount;
+        // Below variable is for checking that every output in vout is related to a burn request
+        // so that we can set isPaid = true for the whole txId
+        paidOutputCounter = 0;
+        for (uint i = _startIndex; i <= _endIndex; i++) {
+            // Checks that the request has not been paid and its deadline has not passed
+            if (
+                !burnRequests[_lockerTargetAddress][i].isTransferred &&
+                burnRequests[_lockerTargetAddress][i].deadline >= block.number
+            ) {
+                (parsedAmount,) = BitcoinTxParser.parseAmountForP2PK( 
+                    _vout, 
+                    burnRequests[_lockerTargetAddress][i].userBitcoinDecodedAddress
+                );
+                if (burnRequests[_lockerTargetAddress][i].remainedAmount == parsedAmount){
+                    burnRequests[_lockerTargetAddress][i].isTransferred = true;
+                    paidOutputCounter = paidOutputCounter + 1;
+                    emit PaidCCBurn(
+                        burnRequests[_lockerTargetAddress][i].sender, 
+                        burnRequests[_lockerTargetAddress][i].userBitcoinDecodedAddress, 
+                        parsedAmount, 
+                        _lockerTargetAddress, 
+                        i
+                    );
+                }
+            }
+        }
+    }
+
+    /// @notice                                 Checks if all outputs of the transaction paid a burn request
+    /// @dev                                    One output might return the remaining value to the locker
+    /// @param _paidOutputCounter               Number of the outputs that pay a burn request   
+    /// @param _vout                            Outputs of a transaction   
+    /// @param _lockerBitcoinDecodedAddress     Address of the locker on Bitcoin    
+    /// @param _txId                            Transaction Id of the transaction    
+    function _updateIsPaid(
+        uint _paidOutputCounter, 
+        bytes memory _vout, 
+        address _lockerBitcoinDecodedAddress,
+        bytes32 _txId
+        ) internal {
+        uint parsedAmount;
+        (parsedAmount,) = BitcoinTxParser.parseAmountForP2PK(_vout, _lockerBitcoinDecodedAddress);
+        if (parsedAmount != 0 &&
+            _paidOutputCounter + 1 == BitcoinTxParser.numberOfOutputs(_vout)) {
+            isPaid[_txId] = true;
+        } else if (parsedAmount == 0 &&
+            _paidOutputCounter == BitcoinTxParser.numberOfOutputs(_vout)) {
+            isPaid[_txId] = true;
+        }
+    }
+
+    /// @notice                      Checks if the locker is among transaction senders
+    /// @param _vin                  Inputs of the transaction     
+    /// @param _inputIndex           Index of the input that is from the locker    
+    /// @param lockerBitcoinAddress  Address of the locker on Bitcoin    
+    /// @return                      True if the transaction sender is the locker   
+    function _isTxFromLocker(
+        bytes memory _vin,
+        uint _inputIndex,
+        bytes memory lockerBitcoinAddress
+    ) internal returns (bool) {
+        bytes memory scriptSig;
+        bytes memory txInputAddress;
+        scriptSig = BitcoinTxParser.parseInputScriptSig(_vin, _inputIndex);
+        txInputAddress = BitcoinTxParser.sliceBytes(scriptSig, scriptSig.length - lockerBitcoinAddress.length, scriptSig.length - 1);
+        return txInputAddress.length == lockerBitcoinAddress.length &&
+            keccak256(txInputAddress) == keccak256(lockerBitcoinAddress);
     }
 
     /// @notice                           Records burn request of user  
