@@ -1,4 +1,3 @@
-// const BitcoinRelay = artifacts.require("BitcoinRelay");
 require('dotenv').config({path:"../../.env"});
 
 import { assert, expect, use } from "chai";
@@ -44,13 +43,11 @@ describe("CC Burn Router", async () => {
     let oneHundred = BigNumber.from(10).pow(8).mul(100)
 
     // This one is set so that:
-    // userRequestAmount * (1 - lockerFee / 10000 - protocolFee / 10000) - bitcoinFee = 100000000
-    let userRequestAmount = BigNumber.from(100070042)
+    // userRequestAmount * (1 - lockerFee / 10000 - PROTOCOL_PERCENTAGE_FEE / 10000) - bitcoinFee = 100000000
+    let userRequestAmount = BigNumber.from(100060030);
 
-    let confirmationParameter = 6
     let transferDeadline = 20
-    let protocolFee = 5 // means 0.05%
-    let lockerFee = 1 // means 0.01%
+    let PROTOCOL_PERCENTAGE_FEE = 5 // means 0.05%
     let bitcoinFee = 10000 // estimation of Bitcoin transaction fee in Satoshi
 
 
@@ -147,8 +144,7 @@ describe("CC Burn Router", async () => {
             mockLockers.address,
             ONE_ADDRESS,
             transferDeadline,
-            lockerFee,
-            protocolFee,
+            PROTOCOL_PERCENTAGE_FEE,
             bitcoinFee
         );
 
@@ -176,13 +172,13 @@ describe("CC Burn Router", async () => {
     }
 
     async function setLockersGetTargetAddressReturn(lockerTargetAddress: string): Promise<void> {
-        await mockLockers.mock.lockerBitcoinDecodedAddressToTargetAddress
+        await mockLockers.mock.lockerTargetAddress
             .returns(lockerTargetAddress);
     }
 
-    async function setLockersBurnReturn(): Promise<void> {
+    async function setLockersBurnReturn(burntAmount: number): Promise<void> {
         await mockLockers.mock.burn
-            .returns(true);
+            .returns(burntAmount);
     }
 
     async function setRelayLastSubmittedHeightReturn(theBlockNumber: BigNumber): Promise<void> {
@@ -218,8 +214,13 @@ describe("CC Burn Router", async () => {
         await setRelayLastSubmittedHeightReturn(theBlockNumber);
         await setLockersIsLockerReturn(true);
         await setLockersReturn();
-        await setLockersBurnReturn();
-        // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+
+        let burntAmount: number;
+        let protocolFee = Math.floor(_userRequestAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
+        burntAmount = _userRequestAmount.toNumber() - bitcoinFee - protocolFee;
+        await setLockersBurnReturn(burntAmount);
+        await setLockersReturn();
+
         let lockerTargetAddress = ONE_ADDRESS
         await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
@@ -246,7 +247,13 @@ describe("CC Burn Router", async () => {
         // Set mock contracts outputs
         await setRelayCheckTxProofReturn(true);
         await setLockersIsLockerReturn(true);
-        await setLockersBurnReturn();
+
+        let burntAmount: number;
+        let protocolFee = Math.floor(userRequestAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
+        burntAmount = userRequestAmount.toNumber() - bitcoinFee - protocolFee;
+        await setLockersBurnReturn(burntAmount);
+        await setLockersReturn();
+
         await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
         // Provide proof that the locker has paid the burnt amount to the user(s)
@@ -297,10 +304,13 @@ describe("CC Burn Router", async () => {
             // Set mock contracts outputs
             await setRelayLastSubmittedHeightReturn(theBlockNumber);
             await setLockersIsLockerReturn(true);
-            await setLockersBurnReturn();
+
+            let burntAmount: number;
+            let protocolFee = Math.floor(userRequestAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
+            burntAmount = userRequestAmount.toNumber() - bitcoinFee - protocolFee;
+            await setLockersBurnReturn(burntAmount);
             await setLockersReturn();
-            // Get the locker target address
-            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+
             let lockerTargetAddress = ONE_ADDRESS
             await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
@@ -317,7 +327,7 @@ describe("CC Burn Router", async () => {
                     userBtcDecodedAddress
                 )
             ).to.emit(ccBurnRouter, "CCBurn")
-
+           
             // let totalSupplyAfter = await TeleBTCSigner1.totalSupply();
 
             // Get the burn request that has been saved in the contract
@@ -356,9 +366,13 @@ describe("CC Burn Router", async () => {
             // Set mock contracts outputs
             await setRelayLastSubmittedHeightReturn(theBlockNumber);
             await setLockersIsLockerReturn(true);
-            await setLockersBurnReturn();
+
+            let burntAmount: number;
+            let protocolFee = Math.floor(userRequestAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
+            burntAmount = userRequestAmount.toNumber() - bitcoinFee - protocolFee;
+            await setLockersBurnReturn(burntAmount);
             await setLockersReturn();
-            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            
             let lockerTargetAddress = ONE_ADDRESS
             await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
@@ -409,9 +423,13 @@ describe("CC Burn Router", async () => {
             // Set mock contracts outputs
             await setRelayLastSubmittedHeightReturn(theBlockNumber);
             await setLockersIsLockerReturn(true);
-            await setLockersBurnReturn();
+
+            let burntAmount: number;
+            let protocolFee = Math.floor(userRequestAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
+            burntAmount = userRequestAmount.toNumber() - bitcoinFee - protocolFee;
+            await setLockersBurnReturn(burntAmount);
             await setLockersReturn();
-            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+            
             let lockerTargetAddress = ONE_ADDRESS
             await setLockersGetTargetAddressReturn(lockerTargetAddress);
 
@@ -680,7 +698,7 @@ describe("CC Burn Router", async () => {
         })
 
         it("Doesn't accept proof if the paid amount is not exact", async function () {
-            let wrongUserRequestAmount = BigNumber.from(100070000)
+            let wrongUserRequestAmount = BigNumber.from(100080000)
             let thisBlockNumber = await signer1.provider?.getBlockNumber()
             let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
 

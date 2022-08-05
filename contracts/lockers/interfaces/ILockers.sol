@@ -81,7 +81,7 @@ interface ILockers {
 
     function priceOracle() external view returns (address);
 
-    function lockerBitcoinDecodedAddressToTargetAddress(address  _lockerBitcoinAddress) external view returns (address);
+    function lockerTargetAddress(address  _lockerBitcoinDecodedAddress) external view returns (address);
 
     function isLocker(address _lockerBitcoinDecodedAddress) external view returns (bool);
 

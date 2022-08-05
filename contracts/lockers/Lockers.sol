@@ -39,7 +39,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     mapping(address => bool) public lockerLeavingRequests;
     mapping(address => bool) public lockerLeavingAcceptance;
 
-    mapping(address => address) public override lockerBitcoinDecodedAddressToTargetAddress;
+    mapping(address => address) public override lockerTargetAddress;
 
     // address public override redeemScriptHash;
 
@@ -142,7 +142,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     /// @return                           True if user is locker
     function isLocker(address _lockerBitcoinDecodedAddress) external override view returns(bool) {
         // TODO: use the bitcoin decoed address or target address
-        return lockersMapping[lockerBitcoinDecodedAddressToTargetAddress[_lockerBitcoinDecodedAddress]].isExisted;
+        return lockersMapping[lockerTargetAddress[_lockerBitcoinDecodedAddress]].isExisted;
     }
 
     /// @notice                           Give number of lockers
@@ -226,14 +226,18 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
         collateralRatio = _collateralRatio;
     }
 
-    /// @notice                         Updates status of isActive for a locker
-    /// @dev                            If someone mints or burns, the locker it uses might change status according
+    /// @notice                                Updates status of isActive for a locker
+    /// @dev                                   If someone mints or burns, the locker it uses might change status according
     /// to the condition: minted - burnt should be << locked collateral. Might revert if the amount is too high and
     /// status cannot be updated. -> very important for security
-    /// @param _lockerBitcoinAddress    Locker address on the target chain
-    /// @param _amount                  Amount of the burn or mint that has been done
-    /// @param _isMint                  True if the request is mint, false if it is burn
-    function updateIsActive(address _lockerBitcoinAddress, uint _amount, bool _isMint) external override onlyOwner returns (bool) {
+    /// @param _lockerBitcoinDecodedAddress    Locker address on the target chain
+    /// @param _amount                         Amount of the burn or mint that has been done
+    /// @param _isMint                         True if the request is mint, false if it is burn
+    function updateIsActive(
+        address _lockerBitcoinDecodedAddress, 
+        uint _amount, 
+        bool _isMint
+    ) external override onlyOwner returns (bool) {
         // FIXME: this function signature is not working for its reason and must get the ethereum address of the locker
         // TODO: require after the transaction is done, the locker still has enough collateral (not necessarily active)
         return true;
@@ -339,7 +343,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
         totalNumberOfLockers = totalNumberOfLockers + 1;
         totalNumberOfCandidates = totalNumberOfCandidates -1;
 
-        lockerBitcoinDecodedAddressToTargetAddress[lockersMapping[_lockerTargetAddress].lockerBitcoinDecodedAddress] = _lockerTargetAddress;
+        lockerTargetAddress[lockersMapping[_lockerTargetAddress].lockerBitcoinDecodedAddress] = _lockerTargetAddress;
 
         emit LockerAdded(
             _lockerTargetAddress,
@@ -572,7 +576,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     ) external nonReentrant onlyMinter override returns (uint) {
 
         // TODO: move the followoing lines of code to an internal function
-        address theLockerTargetAddress = lockerBitcoinDecodedAddressToTargetAddress[_lockerBitcoinDecodedAddress];
+        address theLockerTargetAddress = lockerTargetAddress[_lockerBitcoinDecodedAddress];
         locker memory theLocker = lockersMapping[theLockerTargetAddress];
 
         uint theLockerCollateral = _lockerCollateralInTeleBTC(theLockerTargetAddress);
@@ -602,7 +606,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     ) external nonReentrant onlyBurner override returns (uint) {
 
         // TODO: move the followoing lines of code to an internal function
-        address theLockerTargetAddress = lockerBitcoinDecodedAddressToTargetAddress[_lockerBitcoinDecodedAddress];
+        address theLockerTargetAddress = lockerTargetAddress[_lockerBitcoinDecodedAddress];
 
         // Transfers teleBTC from user
         ITeleBTC(teleBTC).transferFrom(msg.sender, address(this), _amount);

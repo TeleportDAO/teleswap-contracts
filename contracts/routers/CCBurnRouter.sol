@@ -14,11 +14,10 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     address public override relay;
     address public override lockers;
     address public override teleBTC;
-    address public override treasuryAddress;
+    address public override treasury;
     mapping(address => burnRequest[]) public burnRequests;
     mapping(bytes32 => bool) private isPaid;
     uint public override transferDeadline;
-    uint public override lockerPercentageFee; // min amount is %0.01
     uint public override protocolPercentageFee; // min amount is %0.01
     uint public override bitcoinFee;
 
@@ -26,25 +25,22 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @dev                                Lockers use this contract for coordinating of burning wrapped tokens
     /// @param _relay                       Address of relay contract
     /// @param _lockers                     Address of lockers contract
-    /// @param _treasuryAddress             Address of the treasury of the protocol
+    /// @param _treasury                    Address of the treasury of the protocol
     /// @param _transferDeadline            Dealine of sending BTC to user
-    /// @param _lockerPercentageFee         Percentage of tokens that user pays to lockers for burning
     /// @param _protocolPercentageFee       Percentage of tokens that user pays to protocol for burning 
     /// @param _bitcoinFee                  Transaction fee on Bitcoin that lockers pay
     constructor(
         address _relay,
         address _lockers,
-        address _treasuryAddress,
+        address _treasury,
         uint _transferDeadline,
-        uint _lockerPercentageFee,
         uint _protocolPercentageFee,
         uint _bitcoinFee
     ) public {
         relay = _relay;
         lockers = _lockers;
-        treasuryAddress = _treasuryAddress;
+        treasury = _treasury;
         transferDeadline = _transferDeadline;
-        lockerPercentageFee = _lockerPercentageFee;
         protocolPercentageFee = _protocolPercentageFee;
         bitcoinFee = _bitcoinFee;
     }
@@ -79,9 +75,9 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     /// @notice                     Changes protocol treasury address
     /// @dev                        Only owner can call this
-    /// @param _treasuryAddress     The new treasury address
-	function setTreasuryAddress(address _treasuryAddress) external override onlyOwner {
-        treasuryAddress = _treasuryAddress;
+    /// @param _treasury            The new treasury address
+	function setTreasury(address _treasury) external override onlyOwner {
+        treasury = _treasury;
     }
 
     /// @notice                             Changes deadline for sending tokens
@@ -89,13 +85,6 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _transferDeadline            The new transfer deadline
     function setTransferDeadline(uint _transferDeadline) external override onlyOwner {
         transferDeadline = _transferDeadline;
-    }
-
-    /// @notice                             Changes locker percentage fee for burning tokens
-    /// @dev                                Only owner can call this
-    /// @param _lockerPercentageFee         The new locker percentage fee
-    function setLockerPercentageFee(uint _lockerPercentageFee) external override onlyOwner {
-        lockerPercentageFee = _lockerPercentageFee;
     }
 
     /// @notice                             Changes protocol percentage fee for burning tokens
@@ -128,38 +117,47 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             address _lockerBitcoinDecodedAddress
         ) external nonReentrant override returns (bool) {
         // Checks if the locker address is valid
-        require(ILockers(lockers).isLocker(_lockerBitcoinDecodedAddress),
-        "CCBurnRouter: locker address is not valid");
-        uint remainedAmount = _getFee(_amount);
+        require(
+            ILockers(lockers).isLocker(_lockerBitcoinDecodedAddress),
+            "CCBurnRouter: locker address is not valid"
+        );
+
+        // Transfers users's teleBTC
+        ITeleBTC(teleBTC).transferFrom(msg.sender, address(this), _amount);
+
+        uint remainedAmount = _getFee(
+            _amount, 
+            ILockers(lockers).lockerTargetAddress(_lockerBitcoinDecodedAddress)
+        );
+        
         // Burns remained wrapped tokens
-        // First send the amount that gets burnt to the Lockers contract
-        ITeleBTC(teleBTC).transferFrom(msg.sender, lockers, remainedAmount);
-        ILockers(lockers).burn(_lockerBitcoinDecodedAddress, remainedAmount);
+        ITeleBTC(teleBTC).approve(lockers, remainedAmount);
+        uint burntAmount = ILockers(lockers).burn(_lockerBitcoinDecodedAddress, remainedAmount);
 
         // Get the target address of the locker from its Bitcoin address
         address _lockerTargetAddress = ILockers(lockers)
-            .lockerBitcoinDecodedAddressToTargetAddress(_lockerBitcoinDecodedAddress);
+            .lockerTargetAddress(_lockerBitcoinDecodedAddress);
 
         _saveBurnRequest(
             _amount, 
-            remainedAmount, 
+            burntAmount, 
             _userBitcoinDecodedAddress, 
             _isScriptHash, 
             _isSegwit, 
             IBitcoinRelay(relay).lastSubmittedHeight(), 
             _lockerTargetAddress
         );
-        uint index = burnRequests[_lockerTargetAddress].length - 1;
+
         emit CCBurn(
             msg.sender,
             _userBitcoinDecodedAddress, 
             _isScriptHash,
             _isSegwit,
             _amount,
-            remainedAmount, 
+            burntAmount, 
             _lockerTargetAddress, 
-            index,
-            burnRequests[_lockerTargetAddress][index].deadline
+            burnRequests[_lockerTargetAddress].length - 1, // index
+            burnRequests[_lockerTargetAddress][burnRequests[_lockerTargetAddress].length - 1].deadline
         );
         return true;
     }
@@ -191,16 +189,19 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     ) external nonReentrant override returns (bool) {
         // Get the target address of the locker from its Bitcoin address
         address _lockerTargetAddress = ILockers(lockers)
-            .lockerBitcoinDecodedAddressToTargetAddress(_lockerBitcoinDecodedAddress);
+            .lockerTargetAddress(_lockerBitcoinDecodedAddress);
         // Checks the correction of input indices
-        require(_startIndex >= 0 && 
-        _endIndex < burnRequests[_lockerTargetAddress].length && 
-        _startIndex<= _endIndex
-        , 'CCBurnRouter: burnProof wrong index input');
+        require(
+            _startIndex >= 0 && 
+            _endIndex < burnRequests[_lockerTargetAddress].length && 
+            _startIndex<= _endIndex,
+            'CCBurnRouter: burnProof wrong index input');
 
         // Checks if the locker address is valid
-        require(ILockers(lockers).isLocker(_lockerBitcoinDecodedAddress),
-        "CCBurnRouter: locker address is not valid");
+        require(
+            ILockers(lockers).isLocker(_lockerBitcoinDecodedAddress),
+            "CCBurnRouter: locker address is not valid"
+        );
 
         // Checks inclusion of transaction
         bytes32 txId = _calculateTxId(_version, _vin, _vout, _locktime);
@@ -239,7 +240,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         "CCBurnRouter: locker address is not valid");
         // Get the target address of the locker from its Bitcoin address
         address _lockerTargetAddress = ILockers(lockers)
-            .lockerBitcoinDecodedAddressToTargetAddress(_lockerBitcoinDecodedAddress);
+            .lockerTargetAddress(_lockerBitcoinDecodedAddress);
         // Goes through provided indexes of burn requests to see if locker should be slashed
         for (uint i = 0; i < _indices.length; i++) { 
             require(
@@ -301,7 +302,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         // 2. Check if the transaction belongs to the locker
         // First get the target address of the locker from its Bitcoin address
         address _lockerTargetAddress = ILockers(lockers)
-            .lockerBitcoinDecodedAddressToTargetAddress(_lockerBitcoinDecodedAddress);
+            .lockerTargetAddress(_lockerBitcoinDecodedAddress);
         bytes memory lockerBitcoinAddress = ILockers(lockers)
             .getLockerBitcoinAddress(_lockerTargetAddress);
         require(_isTxFromLocker(_vin, _inputIndex, lockerBitcoinAddress));
@@ -355,7 +356,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
                     _vout, 
                     burnRequests[_lockerTargetAddress][i].userBitcoinDecodedAddress
                 );
-                if (burnRequests[_lockerTargetAddress][i].remainedAmount == parsedAmount){
+
+                if (burnRequests[_lockerTargetAddress][i].remainedAmount == parsedAmount) {
                     burnRequests[_lockerTargetAddress][i].isTransferred = true;
                     paidOutputCounter = paidOutputCounter + 1;
                     emit PaidCCBurn(
@@ -463,19 +465,25 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     /// @notice                      Checks inclusion of the transaction in the specified block 
     /// @dev                         Calls the relay contract to check Merkle inclusion proof
-    /// @param _amount               Id of the transaction     
+    /// @param _amount               Id of the transaction
+    /// @param _lockerTargetAddress  Id of the transaction          
     /// @return                      Remained amount after reducing fees   
     function _getFee(
-        uint _amount
+        uint _amount,
+        address _lockerTargetAddress
     ) internal returns (uint) {
-        // Calculates Locker fee
-        uint lockerFee = _amount * lockerPercentageFee / 10000;
         // Calculates protocol fee
-        uint protocolFee = _amount * protocolPercentageFee / 10000;
-        uint remainedAmount = _amount - lockerFee - protocolFee - bitcoinFee;
+        uint protocolFee = _amount*protocolPercentageFee/10000;
+
+        uint remainedAmount = _amount - protocolFee - bitcoinFee;
         require(remainedAmount > 0, "CCBurnRouter: amount is too low");
+
         // Transfers protocol fee
-        // ITeleBTC(teleBTC).transfer(treasuryAddress, protocolFee);
+        ITeleBTC(teleBTC).transfer(treasury, protocolFee);
+
+        // Transfers bitcoin fee to locker
+        ITeleBTC(teleBTC).transfer(_lockerTargetAddress, bitcoinFee);
+
         return remainedAmount;
     }
 

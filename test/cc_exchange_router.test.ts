@@ -9,7 +9,6 @@ import { Contract } from "@ethersproject/contracts";
 
 import { solidity } from "ethereum-waffle";
 
-import { isBytesLike } from "ethers/lib/utils";
 import { LiquidityPool } from "../src/types/LiquidityPool";
 import { LiquidityPool__factory } from "../src/types/factories/LiquidityPool__factory";
 import { LiquidityPoolFactory } from "../src/types/LiquidityPoolFactory";
@@ -20,8 +19,6 @@ import { UniswapConnector } from "../src/types/UniswapConnector";
 import { UniswapConnector__factory } from "../src/types/factories/UniswapConnector__factory";
 import { CCExchangeRouter } from "../src/types/CCExchangeRouter";
 import { CCExchangeRouter__factory } from "../src/types/factories/CCExchangeRouter__factory";
-import { CCTransferRouter } from "../src/types/CCTransferRouter";
-import { CCTransferRouter__factory } from "../src/types/factories/CCTransferRouter__factory";
 import { Lockers } from "../src/types/Lockers";
 import { Lockers__factory } from "../src/types/factories/Lockers__factory";
 import { TeleBTC } from "../src/types/TeleBTC";
@@ -29,7 +26,7 @@ import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { ERC20__factory } from "../src/types/factories/ERC20__factory";
 
-import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
+import { takeSnapshot, revertProvider } from "./block_utils";
 
 describe("CCExchangeRouter", async () => {
 
