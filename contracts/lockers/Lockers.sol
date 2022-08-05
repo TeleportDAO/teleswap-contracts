@@ -566,50 +566,61 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
 
 
     function mint(
-        address lockerBitcoinDecodedAddress, 
-        address receiver, 
-        uint amount
+        address _lockerBitcoinDecodedAddress, 
+        address _receiver, 
+        uint _amount
     ) external nonReentrant onlyMinter override returns (uint) {
 
         // TODO: move the followoing lines of code to an internal function
-        address theLockerTargetAddress = lockerBitcoinDecodedAddressToTargetAddress[lockerBitcoinDecodedAddress];
+        address theLockerTargetAddress = lockerBitcoinDecodedAddressToTargetAddress[_lockerBitcoinDecodedAddress];
         locker memory theLocker = lockersMapping[theLockerTargetAddress];
 
         uint theLockerCollateral = _lockerCollateralInTeleBTC(theLockerTargetAddress);
-
+        uint netMinted = lockersMapping[theLockerTargetAddress].netMinted;
         require(
-            theLockerCollateral >= amount + theLocker.netMinted,
+            theLockerCollateral >= _amount + netMinted,
             "Lockers: this locker hasn't sufficient funds"
         );
 
-        lockersMapping[lockerBitcoinDecodedAddressToTargetAddress[lockerBitcoinDecodedAddress]].netMinted = theLocker.netMinted + amount;
+        lockersMapping[theLockerTargetAddress].netMinted = netMinted + _amount;
 
         // Mints locker fee
-        uint lockerFee = amount*lockerPercentageFee/10000;
+        uint lockerFee = _amount*lockerPercentageFee/10000;
         if (lockerFee > 0) {
             ITeleBTC(teleBTC).mint(theLockerTargetAddress, lockerFee);
         }
         
         // Mints tokens for receiver
-        ITeleBTC(teleBTC).mint(receiver, amount - lockerFee);
+        ITeleBTC(teleBTC).mint(_receiver, _amount - lockerFee);
 
-        return amount - lockerFee;
+        return _amount - lockerFee;
     }
 
-    function burn(address lockerBitcoinDecodedAddress, uint amount) external nonReentrant onlyBurner override returns (bool) {
+    function burn(
+        address _lockerBitcoinDecodedAddress, 
+        uint _amount
+    ) external nonReentrant onlyBurner override returns (uint) {
 
         // TODO: move the followoing lines of code to an internal function
-        address theLockerTargetAddress = lockerBitcoinDecodedAddressToTargetAddress[lockerBitcoinDecodedAddress];
-        locker memory theLocker = lockersMapping[theLockerTargetAddress];
+        address theLockerTargetAddress = lockerBitcoinDecodedAddressToTargetAddress[_lockerBitcoinDecodedAddress];
+
+        // Transfers teleBTC from user
+        ITeleBTC(teleBTC).transferFrom(msg.sender, address(this), _amount);
+
+        uint lockerFee = _amount*lockerPercentageFee/10000;
+        uint remainedAmount = _amount - lockerFee;
+        uint netMinted = lockersMapping[theLockerTargetAddress].netMinted;
 
         // TODO: check if using price oracle is needed or not
         require(
-            theLocker.netMinted >= amount ,
-            "Lockers: this locker hasn't sufficient funds"
+            netMinted >= remainedAmount,
+            "Lockers: locker doesn't have sufficient funds"
         );
 
-        lockersMapping[lockerBitcoinDecodedAddressToTargetAddress[lockerBitcoinDecodedAddress]].netMinted = theLocker.netMinted - amount;
+        lockersMapping[theLockerTargetAddress].netMinted = netMinted - remainedAmount;
 
-        return ITeleBTC(teleBTC).burn(amount);
+        // Burns teleBTC and sends rest of it to locker
+        ITeleBTC(teleBTC).burn(remainedAmount);
+        ITeleBTC(teleBTC).transfer(theLockerTargetAddress, lockerFee);
     }
 }

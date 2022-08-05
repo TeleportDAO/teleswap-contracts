@@ -99,17 +99,17 @@ interface ILockers {
 
     // State-changing functions
 
-    function addMinter(address account) external;
+    function addMinter(address _account) external;
 
-    function removeMinter(address account) external;
+    function removeMinter(address _account) external;
 
-    function addBurner(address account) external;
+    function addBurner(address _account) external;
 
-    function removeBurner(address account) external;
+    function removeBurner(address _account) external;
 
-    function mint(address lockerBitcoinDecodedAddress, address receiver, uint amount) external returns(uint);
+    function mint(address _lockerBitcoinDecodedAddress, address _receiver, uint _amount) external returns(uint);
 
-    function burn(address lockerBitcoinDecodedAddress, uint256 amount) external returns(bool);
+    function burn(address _lockerBitcoinDecodedAddress, uint256 _amount) external returns(uint);
 
     // function setRequiredLockedAmount(uint _requiredLockedAmount) external;
 
@@ -135,8 +135,8 @@ interface ILockers {
     function requestToBecomeLocker(
         bytes memory _candidateBitcoinAddress,
         address _candidateBitcoinDecodedAddress,
-        uint lockedTDTAmount,
-        uint lockedNativeTokenAmount
+        uint _lockedTDTAmount,
+        uint _lockedNativeTokenAmount
     ) external returns (bool);
 
     function revokeRequest() external returns (bool);

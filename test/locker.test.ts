@@ -31,6 +31,7 @@ describe("Locker", async () => {
     let requiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
     let btcAmountToSlash = BigNumber.from(10).pow(8).mul(1)
     let collateralRatio = 2;
+    const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
 
     // Bitcoin public key (32 bytes)
     let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
@@ -185,7 +186,8 @@ describe("Locker", async () => {
             mockPriceOracle.address,
             requiredTDTLockedAmount,
             0,
-            collateralRatio
+            collateralRatio,
+            LOCKER_PERCENTAGE_FEE
         );
 
         return locker;
@@ -545,11 +547,20 @@ describe("Locker", async () => {
 
     });
 
-    describe("#mintAndBurnTeleBTC", async () => {
+    describe("#mint", async () => {
 
-        await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
+        let amount;
+        
+        beforeEach(async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
+        });
+    
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
 
-        it("minting tele BTC", async function () {
+        it("Mints tele BTC", async function () {
 
             await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount)
 
@@ -564,25 +575,52 @@ describe("Locker", async () => {
                 TELEPORTER1_PublicKeyHash,
                 requiredTDTLockedAmount,
                 0
-            )
+            );
 
-            await locker.addLocker(signer1Address)
+            await locker.addLocker(signer1Address);
 
-            await locker.addMinter(signer2Address)
+            await locker.addMinter(signer2Address);
 
             let lockerSigner2 = locker.connect(signer2)
+            
+            amount = 1000;
+            let lockerFee = Math.floor(amount*LOCKER_PERCENTAGE_FEE/10000);
 
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, signer2Address, 1000)
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, amount);
 
-            let theLockerMapping = await locker.lockersMapping(signer1Address)
+            let theLockerMapping = await locker.lockersMapping(signer1Address);
 
             expect(
                 theLockerMapping[4]
-            ).to.equal(1000)
+            ).to.equal(1000);
+            
+            // Checks that enough teleBTC has been minted for user
+            expect(
+                await teleBTC.balanceOf(ONE_ADDRESS)
+            ).to.equal(amount - lockerFee);
+
+            // Checks that enough teleBTC has been minted for locker
+            expect(
+                await teleBTC.balanceOf(signer1Address)
+            ).to.equal(lockerFee);
         })
 
+    });
 
-        it("burning tele BTC", async function () {
+    describe("#burn", async () => {
+        
+        let amount;
+
+        beforeEach(async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
+        });
+    
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("Burns tele BTC", async function () {
 
             await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount)
 
@@ -600,7 +638,6 @@ describe("Locker", async () => {
             )
 
             await locker.addLocker(signer1Address)
-
 
             await locker.addMinter(signer2Address)
             await locker.addBurner(signer2Address)
@@ -609,26 +646,30 @@ describe("Locker", async () => {
 
             await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, signer2Address, 1000)
 
-            let theLockerMapping = await locker.lockersMapping(signer1Address)
+            let theLockerMapping = await locker.lockersMapping(signer1Address);
 
             expect(
                 theLockerMapping[4]
-            ).to.equal(1000)
-
+            ).to.equal(1000);
 
             let teleBTCSigner2 = teleBTC.connect(signer2)
 
             await teleBTCSigner2.mintTestToken()
+            
+            amount = 900;
+            let lockerFee = Math.floor(amount*LOCKER_PERCENTAGE_FEE/10000);
 
-            await teleBTCSigner2.transfer(locker.address, 900)
+            await teleBTCSigner2.approve(locker.address, amount);
 
-            await lockerSigner2.burn(TELEPORTER1_PublicKeyHash, 900)
+            await lockerSigner2.burn(TELEPORTER1_PublicKeyHash, amount);
 
-            theLockerMapping = await locker.lockersMapping(signer1Address)
+            theLockerMapping = await locker.lockersMapping(signer1Address);
 
             expect(
                 theLockerMapping[4]
-            ).to.equal(100)
+            ).to.equal(1000 - amount + lockerFee);
+
+
         })
 
     });
