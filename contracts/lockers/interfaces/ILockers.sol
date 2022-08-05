@@ -63,14 +63,12 @@ interface ILockers {
 
     // Read-only functions
 
-    // TODO: remove redeemScriptHash
-    // function redeemScriptHash() external view returns(address);
+    function lockerPercentageFee() external view returns (uint);
 
     function TeleportDAOToken() external view returns(address);
 
     function teleBTC() external view returns (address);
 
-    // TODO: add miter and burner roles and remove cc burn router, cc exchange, and cc transfer
     function ccBurnRouter() external view returns (address);
 
     function exchangeConnector() external view returns (address);
@@ -84,10 +82,6 @@ interface ILockers {
     function priceOracle() external view returns (address);
 
     function lockerBitcoinDecodedAddressToTargetAddress(address  _lockerBitcoinAddress) external view returns (address);
-
-    // function lockerTargetAddressList(uint _index) external view returns (address);
-
-    // function candidateTargetAddressList(uint _index) external view returns (address);
 
     function isLocker(address _lockerBitcoinDecodedAddress) external view returns (bool);
 
@@ -103,9 +97,6 @@ interface ILockers {
 
     function totalNumberOfCandidates() external view returns (uint);
 
-    // FIXME: What is this?
-    // function assignLocker(bool _isMint, uint _amount) external view returns (address);
-
     // State-changing functions
 
     function addMinter(address account) external;
@@ -116,7 +107,7 @@ interface ILockers {
 
     function removeBurner(address account) external;
 
-    function mint(address lockerBitcoinDecodedAddress, address receiver, uint amount) external returns(bool);
+    function mint(address lockerBitcoinDecodedAddress, address receiver, uint amount) external returns(uint);
 
     function burn(address lockerBitcoinDecodedAddress, uint256 amount) external returns(bool);
 

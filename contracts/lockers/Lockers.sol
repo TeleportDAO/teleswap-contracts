@@ -1,6 +1,5 @@
 pragma solidity 0.8.0;
 
-import "../libraries/SafeMath.sol";
 import "../oracle/interfaces/IPriceOracle.sol";
 import "./interfaces/ILockers.sol";
 import "../routers/interfaces/IExchangeRouter.sol";
@@ -12,8 +11,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";
 
 contract Lockers is ILockers, Ownable, ReentrancyGuard {
-    using SafeMath for uint256;
 
+    uint public override lockerPercentageFee;
     address public override TeleportDAOToken;
     address public override teleBTC;
     address public override ccBurnRouter;
@@ -124,7 +123,8 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
         address _priceOracle,
         uint _requiredTDTLockedAmount,
         uint _requiredTNTLockedAmount,
-        uint _collateralRatio
+        uint _collateralRatio,
+        uint _lockerPercentageFee
     ) public {
         TeleportDAOToken = _TeleportDAOToken;
         exchangeConnector = _exchangeConnector;
@@ -133,6 +133,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
         // requiredNativeTokenLockedAmount = _requiredNativeTokenLockedAmount;
         requiredTNTLockedAmount = _requiredTNTLockedAmount;
         collateralRatio = _collateralRatio;
+        lockerPercentageFee = _lockerPercentageFee;
     }
 
     /// @notice                           Checks whether an address is locker
@@ -173,7 +174,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             The net minted of the locker
     function getLockerCapacity(address _lockerTargetAddress) external view override returns (uint) {
-        return (_lockerCollateralInTeleBTC(_lockerTargetAddress).mul(10000).div(collateralRatio)).sub(lockersMapping[_lockerTargetAddress].netMinted);
+        return (_lockerCollateralInTeleBTC(_lockerTargetAddress)*10000/collateralRatio) - lockersMapping[_lockerTargetAddress].netMinted;
     }
 
     /// @notice         Changes the required bond amount to become locker
@@ -564,7 +565,11 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     }
 
 
-    function mint(address lockerBitcoinDecodedAddress, address receiver, uint amount) external nonReentrant onlyMinter override returns (bool) {
+    function mint(
+        address lockerBitcoinDecodedAddress, 
+        address receiver, 
+        uint amount
+    ) external nonReentrant onlyMinter override returns (uint) {
 
         // TODO: move the followoing lines of code to an internal function
         address theLockerTargetAddress = lockerBitcoinDecodedAddressToTargetAddress[lockerBitcoinDecodedAddress];
@@ -579,7 +584,16 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
 
         lockersMapping[lockerBitcoinDecodedAddressToTargetAddress[lockerBitcoinDecodedAddress]].netMinted = theLocker.netMinted + amount;
 
-        return ITeleBTC(teleBTC).mint(receiver, amount);
+        // Mints locker fee
+        uint lockerFee = amount*lockerPercentageFee/10000;
+        if (lockerFee > 0) {
+            ITeleBTC(teleBTC).mint(theLockerTargetAddress, lockerFee);
+        }
+        
+        // Mints tokens for receiver
+        ITeleBTC(teleBTC).mint(receiver, amount - lockerFee);
+
+        return amount - lockerFee;
     }
 
     function burn(address lockerBitcoinDecodedAddress, uint amount) external nonReentrant onlyBurner override returns (bool) {
