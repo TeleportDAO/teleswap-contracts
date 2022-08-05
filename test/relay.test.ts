@@ -14,6 +14,9 @@ import { isBytesLike, zeroPad } from "ethers/lib/utils";
 import {BitcoinRelay} from "../src/types/BitcoinRelay";
 import {BitcoinRelay__factory} from "../src/types/factories/BitcoinRelay__factory";
 
+// check if fee is paid when a block gets finalized - both ETH and TDT (and amount are correct)
+// check if tx goes through even if ETH or TDT balance is not enough to pay previous relayer
+// check if ETH reward amount gets updated correctly in new epochs
 
 describe('Relay', async () => {
 

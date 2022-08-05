@@ -45,21 +45,6 @@ interface IBitcoinRelay {
         uint rewardAmountTDT
     );
 
-
-    // read-only functions
-    // function owner() external view returns (address);
-    // function getCurrentEpochDifficulty() external view returns (uint256);
-    // function getPrevEpochDifficulty() external view returns (uint256);
-    // function getRelayGenesis() external view returns (bytes32);
-    // function getBestKnownDigest() external view returns (bytes32);
-    // function getLastReorgCommonAncestor() external view returns (bytes32);
-    // function feeRatio() external view returns(uint);
-    // function chain(uint) external returns(blockHeader[] memory);
-    // function lastBuyBack() external view returns(uint);
-    // function buyBackPeriod() external view returns(uint);
-    // function WAVAX() external view returns(address);
-
-
     // Read-only functions
 
     function relayGenesisHash() external view returns (bytes32);
@@ -100,26 +85,13 @@ interface IBitcoinRelay {
 
     function isAncestor(bytes32 _ancestor, bytes32 _descendant, uint256 _limit) external view returns (bool); // see if it's needed
 
-    function getCurrentFee() external view returns (uint);
-    // state-changing functions
-    // function changeOwner(address _owner) external;
-    // function setFeeRatio(uint _feeRatio) external;
-    // function setBuyBackPeriod(uint _buyBackPeriod) external;
-    // function markNewHeaviest(
-    //     bytes32 _ancestor,
-    //     bytes calldata _currentBest,
-    //     bytes calldata _newBest,
-    //     uint256 _limit
-    // ) external returns (bool);
-    // function calculateTxId (
-    //     bytes4 _version,
-    //     bytes memory _vin,
-    //     bytes memory _vout,
-    //     bytes4 _locktime
-    // ) external returns(bytes32);
+    function currentFee() external view returns (uint);
 
+    function rewardAmountInTDT() external view returns (uint);
+    
 
     // State-changing functions
+    function setRewardAmountInTDT(uint _rewardAmountInTDT) external;
 
     function setFinalizationParameter(uint _finalizationParameter) external;
 
@@ -138,7 +110,7 @@ interface IBitcoinRelay {
         uint blockHeight,
         bytes calldata intermediateNodes,
         uint index
-    ) external returns (bool);
+    ) external payable returns (bool);
 
     function addHeaders(bytes calldata _anchor, bytes calldata _headers) external returns (bool);
 
