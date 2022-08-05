@@ -175,9 +175,9 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _txId                        The transaction ID of the request
     /// @return                             True if minting and sending tokens passes
     // TODO: maybe its better to add lokerBitcoinDecodedAddress to the transfer request struct
-    function _mintAndSend(address _lokerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
+    function _mintAndSend(address _lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
         // Gets remained amount after reducing fees
-        uint remainedAmount = _mintAndReduceFees(_lokerBitcoinDecodedAddress, _txId);
+        uint remainedAmount = _mintAndReduceFees(_lockerBitcoinDecodedAddress, _txId);
         
         // Transfers rest of tokens to recipient
         ITeleBTC(teleBTC).transfer(
@@ -192,10 +192,10 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @dev                                The check amount for Teleporter fee can be adjusted
     /// @param _txId                        The transaction ID of the request
     /// @return                             True if paying back passes
-    function _payBackInstantLoan(address _lokerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
+    function _payBackInstantLoan(address _lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
         
         // Gets remained amount after reducing fees
-        uint remainedAmount = _mintAndReduceFees(_lokerBitcoinDecodedAddress, _txId);
+        uint remainedAmount = _mintAndReduceFees(_lockerBitcoinDecodedAddress, _txId);
 
         // Gives allowance to instant router to transfer remained teleBTC
         ITeleBTC(teleBTC).approve(
@@ -282,17 +282,17 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     }
 
     /// @notice                               Checks if the request tx is included and confirmed on source chain
-    /// @param _lokerBitcoinDecodedAddress    The request tx
+    /// @param _lockerBitcoinDecodedAddress    The request tx
     /// @param _txId                          The request tx
     /// @return _remainedAmount               True if the tx is confirmed on the source chain
     function _mintAndReduceFees(
-        address _lokerBitcoinDecodedAddress, 
+        address _lockerBitcoinDecodedAddress, 
         bytes32 _txId
     ) internal returns (uint _remainedAmount) {
 
         // Mints teleBTC for cc transfer router
         uint mintedAmount = ILockers(lockers).mint(
-            _lokerBitcoinDecodedAddress,
+            _lockerBitcoinDecodedAddress,
             address(this),
             ccTransferRequests[_txId].inputAmount
         );

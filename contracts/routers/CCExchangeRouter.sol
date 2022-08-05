@@ -16,25 +16,31 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
     // Public variables
     uint public override chainId;
+    uint public override protocolPercentageFee; // A number between 0 to 10000
     address public override relay;
     address public override instantRouter;
     address public override lockers;
     address public override teleBTC;
+    address public override treasury;
     mapping(uint => address) public override exchangeConnector;
 
     // Private variables
     mapping(bytes32 => ccExchangeRequest) private ccExchangeRequests;
 
     constructor(
+        uint _protocolPercentageFee,
         uint _chainId, 
         address _lockers, 
         address _relay, 
-        address _teleBTC
+        address _teleBTC,
+        address _treasury
     ) public {
+        protocolPercentageFee = _protocolPercentageFee;
         chainId = _chainId;
         relay = _relay;
         lockers = _lockers;
         teleBTC = _teleBTC;
+        treasury = _treasury;
     }
 
     /// @notice         Changes relay contract address
@@ -72,6 +78,22 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _teleBTC         The new wrapped token contract address
     function setTeleBTC(address _teleBTC) external override onlyOwner {
         teleBTC = _teleBTC;
+    }
+
+    /// @notice                             Setter for protocol percentage fee
+    /// @param _protocolPercentageFee       Percentage amount of protocol fee
+    function setProtocolPercentageFee(uint _protocolPercentageFee) external override onlyOwner {
+        require(
+            _protocolPercentageFee >= 0 && 10000 >= _protocolPercentageFee, 
+            "CCTransferRouter: fee is out of range"
+        );
+        protocolPercentageFee = _protocolPercentageFee;
+    }
+
+    /// @notice                             Setter for treasury
+    /// @param _treasury                    Treasury address
+    function setTreasury(address _treasury) external override onlyOwner {
+        treasury = _treasury;
     }
 
     /// @notice                             Check if the cc exchange request is done before
@@ -148,26 +170,9 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @dev               Mints wrapped token for user if exchanging is not successful
     /// @param _txId       Id of the transaction containing the user request
     /// @return
-    function _normalCCExchange(address lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
-        // Pays fee to teleporter
-        if (ccExchangeRequests[_txId].fee > 0) {
-
-            // Mints wrapped tokens for teleporter
-            ILockers(lockers).mint(
-                lockerBitcoinDecodedAddress,
-                msg.sender,
-                ccExchangeRequests[_txId].fee
-            );
-        }
-        
-        // Mints remained wrapped tokens for cc exchange router
-        uint remainedInputAmount = ccExchangeRequests[_txId].inputAmount - ccExchangeRequests[_txId].fee;
-        ILockers(lockers).mint(
-            lockerBitcoinDecodedAddress,
-            address(this),
-            remainedInputAmount
-        );
-
+    function _normalCCExchange(address _lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
+        // Gets remained amount after reducing fees
+        uint remainedInputAmount = _mintAndReduceFees(_lockerBitcoinDecodedAddress, _txId);
         
         bool result;
         uint[] memory amounts;
@@ -226,23 +231,10 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @dev               Mints wrapped token for instant router contract
     /// @param _txId       Id of the transaction containing the user request
     /// @return            True if paying back loan is successful
-    function _payBackInstantLoan(address lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
-        // Pays fee to teleporter
-        if (ccExchangeRequests[_txId].fee > 0) {
-            // Mints wrapped tokens for teleporter
-            ILockers(lockers).mint(
-                lockerBitcoinDecodedAddress,
-                msg.sender,
-                ccExchangeRequests[_txId].fee
-            );
-        }
-        uint remainedAmount = ccExchangeRequests[_txId].inputAmount - ccExchangeRequests[_txId].fee;
-        // Mints wrapped token for cc exchange router
-        ILockers(lockers).mint(
-            lockerBitcoinDecodedAddress,
-            address(this),
-            remainedAmount
-        );
+    function _payBackInstantLoan(address _lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
+        // Gets remained amount after reducing fees
+        uint remainedAmount = _mintAndReduceFees(_lockerBitcoinDecodedAddress, _txId);
+        
         // Gives allowance to instant router to transfer minted wrapped tokens
         ITeleBTC(teleBTC).approve(
             instantRouter,
@@ -351,5 +343,33 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             _intermediateNodes,
             _index
         );
+    }
+
+    /// @notice                               Checks if the request tx is included and confirmed on source chain
+    /// @param _lokerBitcoinDecodedAddress    The request tx
+    /// @param _txId                          The request tx
+    /// @return _remainedAmount               True if the tx is confirmed on the source chain
+    function _mintAndReduceFees(
+        address _lokerBitcoinDecodedAddress, 
+        bytes32 _txId
+    ) internal returns (uint _remainedAmount) {
+
+        // Mints teleBTC for cc transfer router
+        uint mintedAmount = ILockers(lockers).mint(
+            _lokerBitcoinDecodedAddress,
+            address(this),
+            ccExchangeRequests[_txId].inputAmount
+        );
+
+        // Calculates fees
+        uint protocolFee = ccExchangeRequests[_txId].inputAmount*protocolPercentageFee/10000;
+        uint teleporterFee = ccExchangeRequests[_txId].fee;
+
+        // Pays Teleporter fee
+        if (teleporterFee > 0) {
+            ITeleBTC(teleBTC).transfer(msg.sender, teleporterFee);
+        }
+
+        _remainedAmount = mintedAmount - protocolFee - teleporterFee;
     }
 }
