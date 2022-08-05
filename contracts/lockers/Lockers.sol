@@ -1,6 +1,5 @@
 pragma solidity 0.8.0;
 
-import "../libraries/SafeMath.sol";
 import "../oracle/interfaces/IPriceOracle.sol";
 import "./interfaces/ILockers.sol";
 import "../routers/interfaces/IExchangeRouter.sol";
@@ -12,8 +11,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";
 
 contract Lockers is ILockers, Ownable, ReentrancyGuard {
-    using SafeMath for uint256;
 
+    uint public override lockerPercentageFee;
     address public override TeleportDAOToken;
     address public override teleBTC;
     address public override ccBurnRouter;
@@ -40,7 +39,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     mapping(address => bool) public lockerLeavingRequests;
     mapping(address => bool) public lockerLeavingAcceptance;
 
-    mapping(address => address) public override lockerBitcoinDecodedAddressToTargetAddress;
+    mapping(address => address) public override lockerTargetAddress;
 
     // address public override redeemScriptHash;
 
@@ -124,7 +123,8 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
         address _priceOracle,
         uint _requiredTDTLockedAmount,
         uint _requiredTNTLockedAmount,
-        uint _collateralRatio
+        uint _collateralRatio,
+        uint _lockerPercentageFee
     ) public {
         TeleportDAOToken = _TeleportDAOToken;
         exchangeConnector = _exchangeConnector;
@@ -133,6 +133,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
         // requiredNativeTokenLockedAmount = _requiredNativeTokenLockedAmount;
         requiredTNTLockedAmount = _requiredTNTLockedAmount;
         collateralRatio = _collateralRatio;
+        lockerPercentageFee = _lockerPercentageFee;
     }
 
     /// @notice                           Checks whether an address is locker
@@ -141,7 +142,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     /// @return                           True if user is locker
     function isLocker(address _lockerBitcoinDecodedAddress) external override view returns(bool) {
         // TODO: use the bitcoin decoed address or target address
-        return lockersMapping[lockerBitcoinDecodedAddressToTargetAddress[_lockerBitcoinDecodedAddress]].isExisted;
+        return lockersMapping[lockerTargetAddress[_lockerBitcoinDecodedAddress]].isExisted;
     }
 
     /// @notice                           Give number of lockers
@@ -173,7 +174,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             The net minted of the locker
     function getLockerCapacity(address _lockerTargetAddress) external view override returns (uint) {
-        return (_lockerCollateralInTeleBTC(_lockerTargetAddress).mul(10000).div(collateralRatio)).sub(lockersMapping[_lockerTargetAddress].netMinted);
+        return (_lockerCollateralInTeleBTC(_lockerTargetAddress)*10000/collateralRatio) - lockersMapping[_lockerTargetAddress].netMinted;
     }
 
     /// @notice         Changes the required bond amount to become locker
@@ -225,14 +226,18 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
         collateralRatio = _collateralRatio;
     }
 
-    /// @notice                         Updates status of isActive for a locker
-    /// @dev                            If someone mints or burns, the locker it uses might change status according
+    /// @notice                                Updates status of isActive for a locker
+    /// @dev                                   If someone mints or burns, the locker it uses might change status according
     /// to the condition: minted - burnt should be << locked collateral. Might revert if the amount is too high and
     /// status cannot be updated. -> very important for security
-    /// @param _lockerBitcoinAddress    Locker address on the target chain
-    /// @param _amount                  Amount of the burn or mint that has been done
-    /// @param _isMint                  True if the request is mint, false if it is burn
-    function updateIsActive(address _lockerBitcoinAddress, uint _amount, bool _isMint) external override onlyOwner returns (bool) {
+    /// @param _lockerBitcoinDecodedAddress    Locker address on the target chain
+    /// @param _amount                         Amount of the burn or mint that has been done
+    /// @param _isMint                         True if the request is mint, false if it is burn
+    function updateIsActive(
+        address _lockerBitcoinDecodedAddress, 
+        uint _amount, 
+        bool _isMint
+    ) external override onlyOwner returns (bool) {
         // FIXME: this function signature is not working for its reason and must get the ethereum address of the locker
         // TODO: require after the transaction is done, the locker still has enough collateral (not necessarily active)
         return true;
@@ -338,7 +343,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
         totalNumberOfLockers = totalNumberOfLockers + 1;
         totalNumberOfCandidates = totalNumberOfCandidates -1;
 
-        lockerBitcoinDecodedAddressToTargetAddress[lockersMapping[_lockerTargetAddress].lockerBitcoinDecodedAddress] = _lockerTargetAddress;
+        lockerTargetAddress[lockersMapping[_lockerTargetAddress].lockerBitcoinDecodedAddress] = _lockerTargetAddress;
 
         emit LockerAdded(
             _lockerTargetAddress,
@@ -564,38 +569,62 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard {
     }
 
 
-    function mint(address lockerBitcoinDecodedAddress, address receiver, uint amount) external nonReentrant onlyMinter override returns (bool) {
+    function mint(
+        address _lockerBitcoinDecodedAddress, 
+        address _receiver, 
+        uint _amount
+    ) external nonReentrant onlyMinter override returns (uint) {
 
         // TODO: move the followoing lines of code to an internal function
-        address theLockerTargetAddress = lockerBitcoinDecodedAddressToTargetAddress[lockerBitcoinDecodedAddress];
+        address theLockerTargetAddress = lockerTargetAddress[_lockerBitcoinDecodedAddress];
         locker memory theLocker = lockersMapping[theLockerTargetAddress];
 
         uint theLockerCollateral = _lockerCollateralInTeleBTC(theLockerTargetAddress);
-
+        uint netMinted = lockersMapping[theLockerTargetAddress].netMinted;
         require(
-            theLockerCollateral >= amount + theLocker.netMinted,
+            theLockerCollateral >= _amount + netMinted,
             "Lockers: this locker hasn't sufficient funds"
         );
 
-        lockersMapping[lockerBitcoinDecodedAddressToTargetAddress[lockerBitcoinDecodedAddress]].netMinted = theLocker.netMinted + amount;
+        lockersMapping[theLockerTargetAddress].netMinted = netMinted + _amount;
 
-        return ITeleBTC(teleBTC).mint(receiver, amount);
+        // Mints locker fee
+        uint lockerFee = _amount*lockerPercentageFee/10000;
+        if (lockerFee > 0) {
+            ITeleBTC(teleBTC).mint(theLockerTargetAddress, lockerFee);
+        }
+        
+        // Mints tokens for receiver
+        ITeleBTC(teleBTC).mint(_receiver, _amount - lockerFee);
+
+        return _amount - lockerFee;
     }
 
-    function burn(address lockerBitcoinDecodedAddress, uint amount) external nonReentrant onlyBurner override returns (bool) {
+    function burn(
+        address _lockerBitcoinDecodedAddress, 
+        uint _amount
+    ) external nonReentrant onlyBurner override returns (uint) {
 
         // TODO: move the followoing lines of code to an internal function
-        address theLockerTargetAddress = lockerBitcoinDecodedAddressToTargetAddress[lockerBitcoinDecodedAddress];
-        locker memory theLocker = lockersMapping[theLockerTargetAddress];
+        address theLockerTargetAddress = lockerTargetAddress[_lockerBitcoinDecodedAddress];
+
+        // Transfers teleBTC from user
+        ITeleBTC(teleBTC).transferFrom(msg.sender, address(this), _amount);
+
+        uint lockerFee = _amount*lockerPercentageFee/10000;
+        uint remainedAmount = _amount - lockerFee;
+        uint netMinted = lockersMapping[theLockerTargetAddress].netMinted;
 
         // TODO: check if using price oracle is needed or not
         require(
-            theLocker.netMinted >= amount ,
-            "Lockers: this locker hasn't sufficient funds"
+            netMinted >= remainedAmount,
+            "Lockers: locker doesn't have sufficient funds"
         );
 
-        lockersMapping[lockerBitcoinDecodedAddressToTargetAddress[lockerBitcoinDecodedAddress]].netMinted = theLocker.netMinted - amount;
+        lockersMapping[theLockerTargetAddress].netMinted = netMinted - remainedAmount;
 
-        return ITeleBTC(teleBTC).burn(amount);
+        // Burns teleBTC and sends rest of it to locker
+        ITeleBTC(teleBTC).burn(remainedAmount);
+        ITeleBTC(teleBTC).transfer(theLockerTargetAddress, lockerFee);
     }
 }

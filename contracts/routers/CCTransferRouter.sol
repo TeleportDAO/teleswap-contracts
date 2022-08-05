@@ -15,31 +15,49 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     // Public variables
     uint public override chainId;
     uint public override appId;
+    uint public override protocolPercentageFee; // A number between 0 to 10000
     address public override relay;
     address public override lockers;
     address public override teleBTC;
     address public override instantRouter;
+    address public override treasury;
     // TxId to CCTransferRequest structure
     mapping(bytes32 => ccTransferRequest) public ccTransferRequests;
 
     /// @notice                             Gives default params to initiate cc transfer router
-    /// @param _chainId                     ...
-    /// @param _appId                       ...
+    /// @param _protocolPercentageFee       Percentage amount of protocol fee (min: %0.01) 
+    /// @param _chainId                     Id of the underlying chain
+    /// @param _appId                       Id of ccTransfer dApp
     /// @param _relay                       The Relay address to get data from source chain
     /// @param _lockers                     Lockers' contract address
     /// @param _teleBTC                     TeleportDAO BTC ERC20 token address
+    /// @param _treasury                    Address of treasury that collects fees
     constructor(
+        uint _protocolPercentageFee,
         uint _chainId,
         uint _appId,
         address _relay, 
         address _lockers, 
-        address _teleBTC
+        address _teleBTC,
+        address _treasury
     ) public {
+        protocolPercentageFee = _protocolPercentageFee;
         chainId = _chainId;
         appId = _appId;
         relay = _relay;
         lockers = _lockers;
         teleBTC = _teleBTC;
+        treasury = _treasury;
+    }
+
+    /// @notice                             Setter for protocol percentage fee
+    /// @param _protocolPercentageFee       Percentage amount of protocol fee
+    function setProtocolPercentageFee(uint _protocolPercentageFee) external override onlyOwner {
+        require(
+            _protocolPercentageFee >= 0 && 10000 >= _protocolPercentageFee, 
+            "CCTransferRouter: fee is out of range"
+        );
+        protocolPercentageFee = _protocolPercentageFee;
     }
 
     /// @notice                             Setter for relay
@@ -62,6 +80,12 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _teleBTC                     TeleportDAO BTC ERC20 token address
     function setTeleBTC(address _teleBTC) external override onlyOwner {
         teleBTC = _teleBTC;
+    }
+
+    /// @notice                             Setter for treasury
+    /// @param _treasury                    Treasury address
+    function setTreasury(address _treasury) external override onlyOwner {
+        treasury = _treasury;
     }
 
     /// @notice                             Check if the wrap request is done before
@@ -151,23 +175,16 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _txId                        The transaction ID of the request
     /// @return                             True if minting and sending tokens passes
     // TODO: maybe its better to add lokerBitcoinDecodedAddress to the transfer request struct
-    function _mintAndSend(address _lokerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
-        // Pay fees
-        if (ccTransferRequests[_txId].fee > 0) {
-            // Mint wrapped tokens for Teleporter
-            ILockers(lockers).mint(
-                _lokerBitcoinDecodedAddress,
-                msg.sender,
-                ccTransferRequests[_txId].fee
-            );
-        }
-
-        // Mint wrapped tokens for user
-        ILockers(lockers).mint(
-            _lokerBitcoinDecodedAddress,
+    function _mintAndSend(address _lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
+        // Gets remained amount after reducing fees
+        uint remainedAmount = _mintAndReduceFees(_lockerBitcoinDecodedAddress, _txId);
+        
+        // Transfers rest of tokens to recipient
+        ITeleBTC(teleBTC).transfer(
             ccTransferRequests[_txId].recipientAddress,
-            ccTransferRequests[_txId].inputAmount - ccTransferRequests[_txId].fee
+            remainedAmount
         );
+
         return true;
     }
 
@@ -175,23 +192,12 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @dev                                The check amount for Teleporter fee can be adjusted
     /// @param _txId                        The transaction ID of the request
     /// @return                             True if paying back passes
-    function _payBackInstantLoan(address _lokerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
-        // Pay fees
-        if (ccTransferRequests[_txId].fee > 0) {
-            ILockers(lockers).mint(
-                _lokerBitcoinDecodedAddress,
-                msg.sender,
-                ccTransferRequests[_txId].fee
-            );
-        }
-        uint remainedAmount = ccTransferRequests[_txId].inputAmount - ccTransferRequests[_txId].fee;
-        // Mint wrapped token for cc transfer router
-        ILockers(lockers).mint(
-            _lokerBitcoinDecodedAddress,
-            address(this),
-            remainedAmount
-        );
-        // Give allowance to instant router to transfer minted wrapped tokens
+    function _payBackInstantLoan(address _lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
+        
+        // Gets remained amount after reducing fees
+        uint remainedAmount = _mintAndReduceFees(_lockerBitcoinDecodedAddress, _txId);
+
+        // Gives allowance to instant router to transfer remained teleBTC
         ITeleBTC(teleBTC).approve(
             instantRouter,
             remainedAmount
@@ -273,5 +279,33 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
             _intermediateNodes,
             _index
         );
+    }
+
+    /// @notice                               Checks if the request tx is included and confirmed on source chain
+    /// @param _lockerBitcoinDecodedAddress    The request tx
+    /// @param _txId                          The request tx
+    /// @return _remainedAmount               True if the tx is confirmed on the source chain
+    function _mintAndReduceFees(
+        address _lockerBitcoinDecodedAddress, 
+        bytes32 _txId
+    ) internal returns (uint _remainedAmount) {
+
+        // Mints teleBTC for cc transfer router
+        uint mintedAmount = ILockers(lockers).mint(
+            _lockerBitcoinDecodedAddress,
+            address(this),
+            ccTransferRequests[_txId].inputAmount
+        );
+
+        // Calculates fees
+        uint protocolFee = ccTransferRequests[_txId].inputAmount*protocolPercentageFee/10000;
+        uint teleporterFee = ccTransferRequests[_txId].fee;
+
+        // Pays Teleporter fee
+        if (teleporterFee > 0) {
+            ITeleBTC(teleBTC).transfer(msg.sender, teleporterFee);
+        }
+
+        _remainedAmount = mintedAmount - protocolFee - teleporterFee;
     }
 }

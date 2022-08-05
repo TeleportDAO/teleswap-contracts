@@ -81,12 +81,9 @@ interface ICCBurnRouter {
 
 	function teleBTC() external view returns (address);
 
-	function treasuryAddress() external view returns (address);
+	function treasury() external view returns (address);
 
 	function transferDeadline() external view returns (uint);
-
-	// To cover transaction cost for calling burnProof + service they provide
-	function lockerPercentageFee() external view returns (uint);
 
 	function protocolPercentageFee() external view returns (uint);
 
@@ -102,11 +99,9 @@ interface ICCBurnRouter {
 
 	function setTeleBTC(address _teleBTC) external;
 
-	function setTreasuryAddress(address _treasuryAddress) external;
+	function setTreasury(address _treasury) external;
 
 	function setTransferDeadline(uint _transferDeadline) external;
-
-	function setLockerPercentageFee(uint _lockerPercentageFee) external; 
 
 	function setProtocolPercentageFee(uint _protocolPercentageFee) external;
 

@@ -32,6 +32,8 @@ interface ICCTransferRouter {
 
 	// Read-only functions
 
+	function protocolPercentageFee() external view returns (uint);
+	
 	function chainId() external view returns (uint);
 
 	function appId() external view returns (uint);
@@ -44,6 +46,8 @@ interface ICCTransferRouter {
 
 	function teleBTC() external view returns (address);
 
+	function treasury() external view returns (address);
+
 	function isRequestUsed(bytes32 _txId) external view returns (bool);
 
 	// State-changing functions
@@ -55,6 +59,10 @@ interface ICCTransferRouter {
 	function setLockers(address _lockers) external;
 
 	function setTeleBTC(address _teleBTC) external;
+
+	function setTreasury(address _treasury) external;
+
+	function setProtocolPercentageFee(uint _protocolPercentageFee) external;
 
 	function ccTransfer(
 		// Bitcoin tx

@@ -63,14 +63,12 @@ interface ILockers {
 
     // Read-only functions
 
-    // TODO: remove redeemScriptHash
-    // function redeemScriptHash() external view returns(address);
+    function lockerPercentageFee() external view returns (uint);
 
     function TeleportDAOToken() external view returns(address);
 
     function teleBTC() external view returns (address);
 
-    // TODO: add miter and burner roles and remove cc burn router, cc exchange, and cc transfer
     function ccBurnRouter() external view returns (address);
 
     function exchangeConnector() external view returns (address);
@@ -83,11 +81,7 @@ interface ILockers {
 
     function priceOracle() external view returns (address);
 
-    function lockerBitcoinDecodedAddressToTargetAddress(address  _lockerBitcoinAddress) external view returns (address);
-
-    // function lockerTargetAddressList(uint _index) external view returns (address);
-
-    // function candidateTargetAddressList(uint _index) external view returns (address);
+    function lockerTargetAddress(address  _lockerBitcoinDecodedAddress) external view returns (address);
 
     function isLocker(address _lockerBitcoinDecodedAddress) external view returns (bool);
 
@@ -103,22 +97,19 @@ interface ILockers {
 
     function totalNumberOfCandidates() external view returns (uint);
 
-    // FIXME: What is this?
-    // function assignLocker(bool _isMint, uint _amount) external view returns (address);
-
     // State-changing functions
 
-    function addMinter(address account) external;
+    function addMinter(address _account) external;
 
-    function removeMinter(address account) external;
+    function removeMinter(address _account) external;
 
-    function addBurner(address account) external;
+    function addBurner(address _account) external;
 
-    function removeBurner(address account) external;
+    function removeBurner(address _account) external;
 
-    function mint(address lockerBitcoinDecodedAddress, address receiver, uint amount) external returns(bool);
+    function mint(address _lockerBitcoinDecodedAddress, address _receiver, uint _amount) external returns(uint);
 
-    function burn(address lockerBitcoinDecodedAddress, uint256 amount) external returns(bool);
+    function burn(address _lockerBitcoinDecodedAddress, uint256 _amount) external returns(uint);
 
     // function setRequiredLockedAmount(uint _requiredLockedAmount) external;
 
@@ -144,8 +135,8 @@ interface ILockers {
     function requestToBecomeLocker(
         bytes memory _candidateBitcoinAddress,
         address _candidateBitcoinDecodedAddress,
-        uint lockedTDTAmount,
-        uint lockedNativeTokenAmount
+        uint _lockedTDTAmount,
+        uint _lockedNativeTokenAmount
     ) external returns (bool);
 
     function revokeRequest() external returns (bool);

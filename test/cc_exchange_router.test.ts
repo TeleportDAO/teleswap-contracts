@@ -9,7 +9,6 @@ import { Contract } from "@ethersproject/contracts";
 
 import { solidity } from "ethereum-waffle";
 
-import { isBytesLike } from "ethers/lib/utils";
 import { LiquidityPool } from "../src/types/LiquidityPool";
 import { LiquidityPool__factory } from "../src/types/factories/LiquidityPool__factory";
 import { LiquidityPoolFactory } from "../src/types/LiquidityPoolFactory";
@@ -20,8 +19,6 @@ import { UniswapConnector } from "../src/types/UniswapConnector";
 import { UniswapConnector__factory } from "../src/types/factories/UniswapConnector__factory";
 import { CCExchangeRouter } from "../src/types/CCExchangeRouter";
 import { CCExchangeRouter__factory } from "../src/types/factories/CCExchangeRouter__factory";
-import { CCTransferRouter } from "../src/types/CCTransferRouter";
-import { CCTransferRouter__factory } from "../src/types/factories/CCTransferRouter__factory";
 import { Lockers } from "../src/types/Lockers";
 import { Lockers__factory } from "../src/types/factories/Lockers__factory";
 import { TeleBTC } from "../src/types/TeleBTC";
@@ -29,7 +26,7 @@ import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { ERC20__factory } from "../src/types/factories/ERC20__factory";
 
-import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
+import { takeSnapshot, revertProvider } from "./block_utils";
 
 describe("CCExchangeRouter", async () => {
 
@@ -41,6 +38,8 @@ describe("CCExchangeRouter", async () => {
     const DUMMY_ADDRESS = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
     const CHAIN_ID = 1;
     const APP_ID = 1;
+    const PROTOCOL_PERCENTAGE_FEE = 10; // Means %0.1
+    const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
 
     // Bitcoin public key (32 bytes)
     let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
@@ -59,8 +58,10 @@ describe("CCExchangeRouter", async () => {
     // Accounts
     let deployer: Signer;
     let signer1: Signer;
+    let locker: Signer;
     let deployerAddress: string;
     let signer1Address: string;
+    let lockerAddress: string;
 
     // Contracts
     let exchangeConnector: UniswapConnector;
@@ -68,8 +69,7 @@ describe("CCExchangeRouter", async () => {
     let liquidityPool: LiquidityPool;
     let liquidityPoolFactory: LiquidityPoolFactory;
     let ccExchangeRouter: CCExchangeRouter;
-    let ccTransferRouter: CCTransferRouter;
-    let locker: Lockers;
+    let lockers: Lockers;
     let teleBTC: TeleBTC;
     let teleportDAOToken: ERC20;
     let exchangeToken: ERC20;
@@ -87,9 +87,10 @@ describe("CCExchangeRouter", async () => {
 
     before(async () => {
         // Sets accounts
-        [deployer, signer1] = await ethers.getSigners();
+        [deployer, signer1, locker] = await ethers.getSigners();
         deployerAddress = await deployer.getAddress();
         signer1Address = await signer1.getAddress();
+        lockerAddress = await locker.getAddress();
 
 
         teleportDAOToken = await deployTelePortDaoToken();
@@ -138,30 +139,17 @@ describe("CCExchangeRouter", async () => {
             exchangeRouterContract.abi
         );
 
-        locker = await deployLocker()
-
-        // Deploys ccTransferRouter contract
-        const ccTransferRouterFactory = new CCTransferRouter__factory(deployer);
-        ccTransferRouter = await ccTransferRouterFactory.deploy(
-            1, // chainId
-            0, // appId
-            mockBitcoinRelay.address,
-            locker.address,
-            ZERO_ADDRESS
-        );
+        lockers = await deployLocker()
 
         // Deploys teleBTC contract
         const teleBTCFactory = new TeleBTC__factory(deployer);
         teleBTC = await teleBTCFactory.deploy(
             "teleBTC",
             "teleBTC",
-            ccTransferRouter.address,
+            ONE_ADDRESS,
             ONE_ADDRESS,
             ONE_ADDRESS
         );
-
-        // Sets teleBTC address in ccTransferRouter
-        await ccTransferRouter.setTeleBTC(teleBTC.address);
 
         // Deploys liquidityPoolFactory
         const liquidityPoolFactoryFactory = new LiquidityPoolFactory__factory(deployer);
@@ -199,28 +187,29 @@ describe("CCExchangeRouter", async () => {
         // Deploys ccExchangeRouter contract
         const ccExchangeRouterFactory = new CCExchangeRouter__factory(deployer);
         ccExchangeRouter = await ccExchangeRouterFactory.deploy(
+            PROTOCOL_PERCENTAGE_FEE,
             CHAIN_ID,
-            locker.address,
+            lockers.address,
             mockBitcoinRelay.address,
-            teleBTC.address
+            teleBTC.address,
+            ONE_ADDRESS
         );
 
         // Sets teleBTC address in ccExchangeRouter
         // await ccExchangeRouter.setWrappedBitcoin(teleBTC.address);
 
-        // Sets ccExchangeRouter address in ccTransferRouter
+        // Sets exchangeConnector address in ccExchangeRouter
         await ccExchangeRouter.setExchangeConnector(APP_ID, exchangeConnector.address);
 
         await teleBTC.setCCExchangeRouter(ccExchangeRouter.address);
 
-        await locker.setTeleBTC(teleBTC.address)
-        await locker.addMinter(ccExchangeRouter.address)
+        await lockers.setTeleBTC(teleBTC.address)
+        await lockers.addMinter(ccExchangeRouter.address)
 
-        await teleBTC.addMinter(locker.address)
-        await teleBTC.addBurner(locker.address)
+        await teleBTC.addMinter(lockers.address)
+        await teleBTC.addBurner(lockers.address)
 
-        await ccTransferRouter.setLockers(locker.address)
-        await ccExchangeRouter.setLockers(locker.address)
+        await ccExchangeRouter.setLockers(lockers.address)
         await ccExchangeRouter.setInstantRouter(mockInstantRouter.address)
     });
 
@@ -247,29 +236,30 @@ describe("CCExchangeRouter", async () => {
             _signer || deployer
         );
 
-        const locker = await lockerFactory.deploy(
+        const lockers = await lockerFactory.deploy(
             teleportDAOToken.address,
             mockExchangeRouter.address,
             mockPriceOracle.address,
             requiredTDTLockedAmount,
             0,
-            collateralRatio
+            collateralRatio,
+            LOCKER_PERCENTAGE_FEE
         );
 
-        return locker;
+        return lockers;
     };
 
     async function addALockerToLockers(): Promise<void> {
 
-        await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount)
+        await teleportDAOToken.transfer(lockerAddress, requiredTDTLockedAmount)
 
-        let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+        let teleportDAOTokenlocker = teleportDAOToken.connect(locker)
 
-        await teleportDAOTokenSigner1.approve(locker.address, requiredTDTLockedAmount)
+        await teleportDAOTokenlocker.approve(lockers.address, requiredTDTLockedAmount)
 
-        let lockerSigner1 = locker.connect(signer1)
+        let lockerlocker = lockers.connect(locker)
 
-        await lockerSigner1.requestToBecomeLocker(
+        await lockerlocker.requestToBecomeLocker(
             TELEPORTER1,
             // TELEPORTER1_PublicKeyHash,
             CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient,
@@ -277,7 +267,7 @@ describe("CCExchangeRouter", async () => {
             0
         )
 
-        await locker.addLocker(signer1Address)
+        await lockers.addLocker(lockerAddress)
     }
 
 
@@ -303,11 +293,16 @@ describe("CCExchangeRouter", async () => {
                 request.recipientAddress
             );
             let newDeployerBalanceTDT = await exchangeToken.balanceOf(deployerAddress);
+            
+            // Calculates fees
+            let lockerFee = Math.floor(request.bitcoinAmount*LOCKER_PERCENTAGE_FEE/10000);
+            let teleporterFee = Math.floor(request.bitcoinAmount*request.teleporterFee/100);
+            let protocolFee = Math.floor(request.bitcoinAmount*PROTOCOL_PERCENTAGE_FEE/10000);
 
             // Checks enough teleBTC has been minted for user
             expect(newUserBalanceTeleBTC).to.equal(
                 oldUserBalanceTeleBTC.add(
-                    request.bitcoinAmount * (100 - request.teleporterFee) / 100
+                    request.bitcoinAmount - lockerFee - teleporterFee - protocolFee
                 )
             );
 
@@ -459,7 +454,7 @@ describe("CCExchangeRouter", async () => {
                 oldDeployerBalanceTDT
             );
             // expects z teleBTC has been minted for protocol
-            // expects a teleBTC has been minted for locker
+            // expects a teleBTC has been minted for lockers
         })
 
         it("mints teleBTC since deadline has passed (normal cc exchange request)", async function () {
@@ -490,7 +485,7 @@ describe("CCExchangeRouter", async () => {
             // expects y teleBTC has been minted for teleporter
             // expects z teleBTC has been minted for user
             // expects a teleBTC has been minted for protocol
-            // expects b teleBTC has been minted for locker
+            // expects b teleBTC has been minted for lockers
         })
 
         it("mints teleBTC since output amount is less than minimum expected amount (normal cc exchange request)", async function () {
@@ -525,7 +520,7 @@ describe("CCExchangeRouter", async () => {
             // expects y teleBTC has been minted for teleporter
             // expects z teleBTC has been minted for user
             // expects a teleBTC has been minted for protocol
-            // expects b teleBTC has been minted for locker
+            // expects b teleBTC has been minted for lockers
         })
 
         it("mints teleBTC since exchange token doesn't exist (normal cc exchange request)", async function () {
@@ -556,7 +551,7 @@ describe("CCExchangeRouter", async () => {
             // expects y teleBTC has been minted for teleporter
             // expects z teleBTC has been minted for user
             // expects a teleBTC has been minted for protocol
-            // expects b teleBTC has been minted for locker
+            // expects b teleBTC has been minted for lockers
         })
 
         it("reverts if the request has been used before", async function () {

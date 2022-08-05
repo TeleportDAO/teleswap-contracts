@@ -68,6 +68,8 @@ interface ICCExchangeRouter {
 
     // Read-only functions
 
+    function protocolPercentageFee() external view returns (uint);
+    
     function chainId() external view returns (uint);
 
     function relay() external view returns (address);
@@ -82,6 +84,8 @@ interface ICCExchangeRouter {
 
     function exchangeConnector(uint appId) external view returns (address);
 
+    function treasury() external view returns (address);
+
     // State-changing functions
 
     function setRelay(address _relay) external;
@@ -93,6 +97,10 @@ interface ICCExchangeRouter {
     function setTeleBTC(address _teleBTC) external;
 
     function setExchangeConnector(uint _appId, address _exchangeConnector) external;
+
+	function setTreasury(address _treasury) external;
+
+	function setProtocolPercentageFee(uint _protocolPercentageFee) external;
 
     function ccExchange(
     // Bitcoin tx
