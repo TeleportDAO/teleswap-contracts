@@ -98,6 +98,8 @@ library TypedMemView {
 
     /**
      * @notice      Returns a uint16 containing the hex-encoded byte.
+     *              `the first 8 bits of encoded is the nibbleHex of top 4 bits of _b`
+     *              `the second 8 bits of encoded is the nibbleHex of lower 4 bits of _b`
      * @param _b    The byte
      * @return      encoded - The hex-encoded byte
      */
@@ -360,6 +362,7 @@ library TypedMemView {
      * @return          bool - True if the 5-byte type flag is equal
      */
     function sameType(bytes29 left, bytes29 right) internal pure returns (bool) {
+        // XOR the inputs to check their difference
         return (left ^ right) >> (2 * TWELVE_BYTES) == 0;
     }
 
@@ -509,6 +512,7 @@ library TypedMemView {
         }
         require(_bytes <= 32, "TypedMemView/index - Attempted to index more than 32 bytes");
 
+        // FIXME: why the following lines need `unchecked`
     unchecked {
         uint8 bitLength = _bytes * 8;
         uint256 _loc = loc(memView);
