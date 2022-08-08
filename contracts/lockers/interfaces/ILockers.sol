@@ -99,6 +99,10 @@ interface ILockers {
 
     // State-changing functions
 
+    function pauseLocker() external;
+
+    function unPauseLocker() external;
+
     function addMinter(address _account) external;
 
     function removeMinter(address _account) external;
