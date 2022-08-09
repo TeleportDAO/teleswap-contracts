@@ -243,23 +243,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         collateralRatio = _collateralRatio;
     }
 
-    /// @notice                                Updates status of isActive for a locker
-    /// @dev                                   If someone mints or burns, the locker it uses might change status according
-    /// to the condition: minted - burnt should be << locked collateral. Might revert if the amount is too high and
-    /// status cannot be updated. -> very important for security
-    /// @param _lockerBitcoinDecodedAddress    Locker address on the target chain
-    /// @param _amount                         Amount of the burn or mint that has been done
-    /// @param _isMint                         True if the request is mint, false if it is burn
-    function updateIsActive(
-        address _lockerBitcoinDecodedAddress,
-        uint _amount,
-        bool _isMint
-    ) external override onlyOwner returns (bool) {
-        // FIXME: this function signature is not working for its reason and must get the ethereum address of the locker
-        // TODO: require after the transaction is done, the locker still has enough collateral (not necessarily active)
-        return true;
-    }
-
     /// @notice                                 Adds user to candidates list
     /// @dev
     /// @param _candidateBitcoinAddress         Bitcoin address of the candidate

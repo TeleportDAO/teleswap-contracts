@@ -132,10 +132,6 @@ interface ILockers {
 
     function setCollateralRatio(uint _collateralRatio) external;
 
-    // FIXME: change the function signature
-    // TODO: make it internal and must be called after mint and burn functions, also add mint and burn functions
-    function updateIsActive(address _lockerBitcoinAddress, uint _amount, bool _isMint) external returns (bool);
-
     function requestToBecomeLocker(
         bytes memory _candidateBitcoinAddress,
         address _candidateBitcoinDecodedAddress,
