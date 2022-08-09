@@ -176,6 +176,7 @@ describe("CCTransferRouter", async () => {
         );
 
         const lockers = await lockerFactory.deploy(
+            ONE_ADDRESS,
             teleportDAOToken.address,
             mockExchangeRouter.address,
             mockPriceOracle.address,
@@ -268,12 +269,12 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer.desiredRecipient,
                 )
             ).to.emit(ccTransferRouter, 'CCTransfer');
-            
+
             // Calculates fees
             let lockerFee = Math.floor(CC_REQUESTS.normalCCTransfer.bitcoinAmount*LOCKER_PERCENTAGE_FEE/10000);
             let teleporterFee = Math.floor(CC_REQUESTS.normalCCTransfer.bitcoinAmount*CC_REQUESTS.normalCCTransfer.teleporterFee/100);
             let protocolFee = Math.floor(CC_REQUESTS.normalCCTransfer.bitcoinAmount*PROTOCOL_PERCENTAGE_FEE/10000);
-            
+
             // Checks enough teleBTC has been minted for user
             expect(
                 await teleBTC.balanceOf(CC_REQUESTS.normalCCTransfer.recipientAddress)

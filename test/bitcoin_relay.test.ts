@@ -73,8 +73,7 @@ describe("Bitcoin Relay [combined version]", async () => {
         let _genesisHeader = await bitcoinRESTAPI.getHexBlockHeader(_height);
         let _periodStart = await bitcoinRESTAPI.getHexBlockHash(_height);
         _genesisHeader = '0x' + _genesisHeader;
-
-        console.log("the genesis header: ", _genesisHeader)
+        
         _periodStart = '0x' + _periodStart;
 
         const bitcoinRelay = await bitcoinRelayFactory.deploy(

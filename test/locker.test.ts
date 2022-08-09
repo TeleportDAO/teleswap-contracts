@@ -29,6 +29,7 @@ describe("Locker", async () => {
     let ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
     let telePortTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000);
     let requiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
+    let requiredNativeTokenLockedAmount = BigNumber.from(10).pow(18).mul(5);
     let btcAmountToSlash = BigNumber.from(10).pow(8).mul(1)
     let collateralRatio = 2;
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
@@ -181,11 +182,12 @@ describe("Locker", async () => {
         );
 
         const locker = await lockerFactory.deploy(
+            ONE_ADDRESS,
             teleportDAOToken.address,
             mockExchangeConnector.address,
             mockPriceOracle.address,
             requiredTDTLockedAmount,
-            0,
+            requiredNativeTokenLockedAmount,
             collateralRatio,
             LOCKER_PERCENTAGE_FEE
         );
@@ -226,7 +228,8 @@ describe("Locker", async () => {
                     TELEPORTER1,
                     TELEPORTER1_PublicKeyHash,
                     requiredTDTLockedAmount.sub(1),
-                    0
+                    requiredNativeTokenLockedAmount,
+                    {value: requiredNativeTokenLockedAmount}
                 )
             ).to.be.revertedWith("Locker: low locking TDT amount")
         })
@@ -239,7 +242,8 @@ describe("Locker", async () => {
                     TELEPORTER1,
                     TELEPORTER1_PublicKeyHash,
                     requiredTDTLockedAmount,
-                    0
+                    requiredNativeTokenLockedAmount,
+                    {value: requiredNativeTokenLockedAmount}
                 )
             ).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
         })
@@ -259,7 +263,8 @@ describe("Locker", async () => {
                     TELEPORTER1,
                     TELEPORTER1_PublicKeyHash,
                     requiredTDTLockedAmount,
-                    0
+                    requiredNativeTokenLockedAmount,
+                    {value: requiredNativeTokenLockedAmount}
                 )
             ).to.emit(locker, "RequestAddLocker")
 
@@ -299,7 +304,8 @@ describe("Locker", async () => {
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 requiredTDTLockedAmount,
-                0
+                requiredNativeTokenLockedAmount,
+                {value: requiredNativeTokenLockedAmount}
             )
 
             let theCandidateMapping = await locker.candidatesMapping(signer1Address)
@@ -345,7 +351,8 @@ describe("Locker", async () => {
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 requiredTDTLockedAmount,
-                0
+                requiredNativeTokenLockedAmount,
+                {value: requiredNativeTokenLockedAmount}
             )
 
             let theCandidateMapping = await locker.candidatesMapping(signer1Address)
@@ -397,7 +404,8 @@ describe("Locker", async () => {
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 requiredTDTLockedAmount,
-                0
+                requiredNativeTokenLockedAmount,
+                {value: requiredNativeTokenLockedAmount}
             )
 
             await locker.addLocker(signer1Address)
@@ -433,7 +441,8 @@ describe("Locker", async () => {
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 requiredTDTLockedAmount,
-                0
+                requiredNativeTokenLockedAmount,
+                {value: requiredNativeTokenLockedAmount}
             )
 
             await locker.addLocker(signer1Address)
@@ -457,7 +466,8 @@ describe("Locker", async () => {
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 requiredTDTLockedAmount,
-                0
+                requiredNativeTokenLockedAmount,
+                {value: requiredNativeTokenLockedAmount}
             )
 
             await locker.addLocker(signer1Address)
@@ -531,7 +541,8 @@ describe("Locker", async () => {
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 requiredTDTLockedAmount,
-                0
+                requiredNativeTokenLockedAmount,
+                {value: requiredNativeTokenLockedAmount}
             )
 
             expect(
@@ -544,18 +555,17 @@ describe("Locker", async () => {
 
         })
 
-
     });
 
     describe("#mint", async () => {
 
         let amount;
-        
+
         beforeEach(async () => {
             snapshotId = await takeSnapshot(signer1.provider);
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
@@ -574,7 +584,8 @@ describe("Locker", async () => {
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 requiredTDTLockedAmount,
-                0
+                requiredNativeTokenLockedAmount,
+                {value: requiredNativeTokenLockedAmount}
             );
 
             await locker.addLocker(signer1Address);
@@ -582,7 +593,7 @@ describe("Locker", async () => {
             await locker.addMinter(signer2Address);
 
             let lockerSigner2 = locker.connect(signer2)
-            
+
             amount = 1000;
             let lockerFee = Math.floor(amount*LOCKER_PERCENTAGE_FEE/10000);
 
@@ -593,7 +604,7 @@ describe("Locker", async () => {
             expect(
                 theLockerMapping[4]
             ).to.equal(1000);
-            
+
             // Checks that enough teleBTC has been minted for user
             expect(
                 await teleBTC.balanceOf(ONE_ADDRESS)
@@ -608,14 +619,14 @@ describe("Locker", async () => {
     });
 
     describe("#burn", async () => {
-        
+
         let amount;
 
         beforeEach(async () => {
             snapshotId = await takeSnapshot(signer1.provider);
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
@@ -634,7 +645,8 @@ describe("Locker", async () => {
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 requiredTDTLockedAmount,
-                0
+                requiredNativeTokenLockedAmount,
+                {value: requiredNativeTokenLockedAmount}
             )
 
             await locker.addLocker(signer1Address)
@@ -655,7 +667,7 @@ describe("Locker", async () => {
             let teleBTCSigner2 = teleBTC.connect(signer2)
 
             await teleBTCSigner2.mintTestToken()
-            
+
             amount = 900;
             let lockerFee = Math.floor(amount*LOCKER_PERCENTAGE_FEE/10000);
 

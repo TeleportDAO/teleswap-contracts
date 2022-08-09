@@ -237,6 +237,7 @@ describe("CCExchangeRouter", async () => {
         );
 
         const lockers = await lockerFactory.deploy(
+            ONE_ADDRESS,
             teleportDAOToken.address,
             mockExchangeRouter.address,
             mockPriceOracle.address,
@@ -293,7 +294,7 @@ describe("CCExchangeRouter", async () => {
                 request.recipientAddress
             );
             let newDeployerBalanceTDT = await exchangeToken.balanceOf(deployerAddress);
-            
+
             // Calculates fees
             let lockerFee = Math.floor(request.bitcoinAmount*LOCKER_PERCENTAGE_FEE/10000);
             let teleporterFee = Math.floor(request.bitcoinAmount*request.teleporterFee/100);

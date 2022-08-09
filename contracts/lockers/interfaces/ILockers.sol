@@ -69,6 +69,8 @@ interface ILockers {
 
     function teleBTC() external view returns (address);
 
+    function wrappedNativeToken() external view returns (address);
+
     function ccBurnRouter() external view returns (address);
 
     function exchangeConnector() external view returns (address);
@@ -99,6 +101,10 @@ interface ILockers {
 
     // State-changing functions
 
+    function pauseLocker() external;
+
+    function unPauseLocker() external;
+
     function addMinter(address _account) external;
 
     function removeMinter(address _account) external;
@@ -126,18 +132,16 @@ interface ILockers {
 
     function setTeleBTC(address _teleBTC) external;
 
-    function setCollateralRatio(uint _collateralRatio) external;
+    function setWrappedNativeToken(address _wrappedNativeToken) external;
 
-    // FIXME: change the function signature
-    // TODO: make it internal and must be called after mint and burn functions, also add mint and burn functions
-    function updateIsActive(address _lockerBitcoinAddress, uint _amount, bool _isMint) external returns (bool);
+    function setCollateralRatio(uint _collateralRatio) external;
 
     function requestToBecomeLocker(
         bytes memory _candidateBitcoinAddress,
         address _candidateBitcoinDecodedAddress,
         uint _lockedTDTAmount,
         uint _lockedNativeTokenAmount
-    ) external returns (bool);
+    ) external payable returns (bool);
 
     function revokeRequest() external returns (bool);
 
