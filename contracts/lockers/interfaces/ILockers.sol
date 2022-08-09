@@ -137,7 +137,7 @@ interface ILockers {
         address _candidateBitcoinDecodedAddress,
         uint _lockedTDTAmount,
         uint _lockedNativeTokenAmount
-    ) external returns (bool);
+    ) external payable returns (bool);
 
     function revokeRequest() external returns (bool);
 

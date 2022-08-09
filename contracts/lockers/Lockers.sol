@@ -254,7 +254,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         address _candidateBitcoinDecodedAddress,
         uint _lockedTDTAmount,
         uint _lockedNativeTokenAmount
-    ) external nonReentrant override returns (bool) {
+    ) external payable nonReentrant override returns (bool) {
         // TODO: interface has changed, change the inside to comply with it
         // Locks user bond
 
@@ -273,18 +273,28 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
             "Locker: low locking TDT amount"
         );
 
+        console.log("before checking msg.value");
+        console.log("msg.value");
+        console.log(msg.value);
+
+        require(
+            _lockedNativeTokenAmount >= requiredTNTLockedAmount && msg.value == _lockedNativeTokenAmount,
+            "Locker: low locking TNT amount"
+        );
+
         require(
             lockerTargetAddress[_candidateBitcoinDecodedAddress] == address(0),
             "Locker: bitcoin decoded address is used before"
         );
+
+        console.log("after all requires");
 
         require(IERC20(TeleportDAOToken).transferFrom(msg.sender, address(this), _lockedTDTAmount));
         locker memory locker_;
         locker_.lockerBitcoinAddress = _candidateBitcoinAddress;
         locker_.lockerBitcoinDecodedAddress = _candidateBitcoinDecodedAddress;
         locker_.TDTLockedAmount = _lockedTDTAmount;
-        // TODO: what exactly should I do with _lockedNativeTokenAmount?
-        locker_.nativeTokenLockedAmount = 0;
+        locker_.nativeTokenLockedAmount = _lockedNativeTokenAmount;
         locker_.isExisted = true;
 
         candidatesMapping[msg.sender] = locker_;
@@ -311,13 +321,16 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
             "Locker: request doesn't exit or already accepted"
         );
 
-        // TODO: implement it
-        // TODO: msg.sender is the target chain address of the candidate (require)
-        // Sends back the candidate bond
-        IERC20(TeleportDAOToken).transfer(_msgSender(), candidatesMapping[_msgSender()].TDTLockedAmount);
+        locker memory theLockerRequest = candidatesMapping[_msgSender()];
+
+        IERC20(TeleportDAOToken).transfer(_msgSender(), theLockerRequest.TDTLockedAmount);
+
+        // TODO: consider all possible attacks
+        address payable targetLockerAddress = payable(_msgSender());
+        targetLockerAddress.transfer(theLockerRequest.nativeTokenLockedAmount);
 
         // Removes candidate from candidate list
-        _removeElementFromCandidatesMapping(msg.sender);
+        _removeElementFromCandidatesMapping(_msgSender());
 
         totalNumberOfCandidates = totalNumberOfCandidates -1;
         return true;
@@ -404,6 +417,10 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
 
         IERC20(TeleportDAOToken).transfer(_lockerTargetAddress, theRemovingLokcer.TDTLockedAmount);
 
+        // TODO: consider all possible attacks
+        address payable targetLockerAddress = payable(_lockerTargetAddress);
+        targetLockerAddress.transfer(theRemovingLokcer.nativeTokenLockedAmount);
+
         _removeElementFromLockersMapping(_lockerTargetAddress);
 
         totalNumberOfLockers = totalNumberOfLockers - 1;
@@ -441,6 +458,11 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         locker memory theRemovingLokcer = lockersMapping[_msgSender()];
 
         IERC20(TeleportDAOToken).transfer(_msgSender(), theRemovingLokcer.TDTLockedAmount);
+
+
+        // TODO: consider all possible attacks
+        address payable targetLockerAddress = payable(_msgSender());
+        targetLockerAddress.transfer(theRemovingLokcer.nativeTokenLockedAmount);
 
         _removeElementFromLockersMapping(_msgSender());
 
