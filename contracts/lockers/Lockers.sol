@@ -472,7 +472,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     /// @notice                           Slashes lockers
     /// @dev                              Only cc burn router can call this
     /// @param _lockerTargetAddress       Locker's target chain address
-    /// @param _amount                    Amount that is slashed from lockers
+    /// @param _amount                    Amount of teleBTC that is slashed from lockers
     /// @param _recipient                 Address of user who receives the slashed amount
     /// @return                           True if lockers are slashed successfully
     function slashLocker(
@@ -508,7 +508,9 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
             = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - equivalentNativeToken;
 
         // Transfers slashed collateral to user
-        payable(_recipient).transfer(equivalentNativeToken);
+        if (_recipient != address(this)) {
+            payable(_recipient).transfer(equivalentNativeToken);
+        }
 
         return true;
     }

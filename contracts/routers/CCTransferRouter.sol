@@ -123,7 +123,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         address lockerBitcoinDecodedAddress
     ) external nonReentrant override returns (bool) {
         bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
-
+        
         require(
             !ccTransferRequests[txId].isUsed,
             "CCTransferRouter: CC transfer request has been used before"
@@ -232,7 +232,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         );
 
         // Extracts value and opreturn data from request
-        (request.inputAmount, arbitraryData) = NewTxHelper.parseAmountForP2PK(_vout, _lockerBitcoinDecodedAddress);
+        (request.inputAmount, arbitraryData) = NewTxHelper.parseValueAndData(_vout, _lockerBitcoinDecodedAddress);
         
         // Checks that input amount is not zero
         require(request.inputAmount > 0, "CCTransferRouter: input amount is zero");

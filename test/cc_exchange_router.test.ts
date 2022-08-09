@@ -43,11 +43,9 @@ describe("CCExchangeRouter", async () => {
 
     // Bitcoin public key (32 bytes)
     let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
-    let TELEPORTER1_PublicKeyHash = '0xe74e55c339726ee799877efc38cf43845b20ca5c';
-    let TELEPORTER2 = '0x03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626';
-    let TELEPORTER2_PublicKeyHash = '0xd191dbef3fa0b30f433157748c11cb93f08e839c';
-    let UNLOCK_FEE =  5; // percentage of bond that protocol receives
-    let UNLOCK_PERIOD = 2;
+    let TELEPORTER1_PublicKeyHash = '0x4062c8aeed4f81c2d73ff854a2957021191e20b6';
+    // let TELEPORTER2 = '0x03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626';
+    // let TELEPORTER2_PublicKeyHash = '0x41fb108446d66d1c049e30cc7c3044e7374e9856';
     let REQUIRED_LOCKED_AMOUNT =  1000; // amount of required TDT
 
     let telePortTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000);
@@ -237,7 +235,6 @@ describe("CCExchangeRouter", async () => {
         );
 
         const lockers = await lockerFactory.deploy(
-            ONE_ADDRESS,
             teleportDAOToken.address,
             mockExchangeRouter.address,
             mockPriceOracle.address,
@@ -270,7 +267,6 @@ describe("CCExchangeRouter", async () => {
 
         await lockers.addLocker(lockerAddress)
     }
-
 
     describe("#ccExchange", async () => {
         let oldReserveTeleBTC: BigNumber;

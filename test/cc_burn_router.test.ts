@@ -886,6 +886,7 @@ describe("CC Burn Router", async () => {
             await setLockersGetLockerRedeemScriptReturn(lockerRedeemScript);
             await setRelayLastSubmittedHeightReturn(theBlockNumber.add(30));
             await setLockersGetTargetAddressReturn(lockerTargetAddress);
+            await setLockersSlashLockerReturn();
 
             await expect(
                 ccBurnRouterSigner2.disputeLocker(

@@ -263,7 +263,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     /// @notice                                 Slashes a locker if they issue a tx that doesn't match any burn request
     /// @dev                        
-    /// @param _lockerScriptHash     Suspicious locker's target chain address
+    /// @param _lockerScriptHash                Suspicious locker's script hash
     /// @param _inputIndex                      Index of the input in vin that is from the locker
     /// @param _version                         Version of the malicious transaction
     /// @param _vin                             Inputs of the malicious transaction
@@ -274,19 +274,22 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _index                           Index of transaction containing the malicious tx
     /// @return                                 True if dispute is successfull
     function disputeLocker(
-            address _lockerScriptHash,
-            uint _inputIndex,
-            bytes4 _version,
-            bytes memory _vin,
-            bytes calldata _vout,
-            bytes4 _locktime,
-            uint256 _blockNumber,
-            bytes calldata _intermediateNodes,
-            uint _index
-        ) external nonReentrant override returns (bool) {
+        address _lockerScriptHash,
+        uint _inputIndex,
+        bytes4 _version,
+        bytes memory _vin,
+        bytes calldata _vout,
+        bytes4 _locktime,
+        uint256 _blockNumber,
+        bytes calldata _intermediateNodes,
+        uint _index
+    ) external nonReentrant override returns (bool) {
         // Checks if the locker address is valid
-        require(ILockers(lockers).isLocker(_lockerScriptHash),
-        "CCBurnRouter: locker address is not valid");
+        require(
+            ILockers(lockers).isLocker(_lockerScriptHash),
+            "CCBurnRouter: locker address is not valid"
+        );
+
         // Checks if the provided transaction is valid:
         // 1. Checks inclusion of transaction
         bytes32 txId = _calculateTxId(_version, _vin, _vout, _locktime);
@@ -299,26 +302,39 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             ),
             "CCBurnRouter: transaction is not finalized"
         );
+
         // 2. Check if the transaction belongs to the locker
         // First get the target address of the locker from its Bitcoin address
         address _lockerTargetAddress = ILockers(lockers)
             .lockerTargetAddress(_lockerScriptHash);
-        bytes memory lockerBitcoinAddress = ILockers(lockers)
+        bytes memory lockerRedeemScript = ILockers(lockers)
             .getLockerRedeemScript(_lockerTargetAddress);
-        require(_isTxFromLocker(_vin, _inputIndex, lockerBitcoinAddress));
+        require(
+            _isTxFromLocker(_vin, _inputIndex, lockerRedeemScript),
+            "CCBurnRouter: transaction doesn't belong to locker"
+        );
         
         // 3. Check if transaction is not for any burn request
         // note: if the deadline for the transaction has passed and no proof has been provided
         // for it so that isPaid is still false for it, we assume the transaction was malicious
-        require(!isPaid[txId] &&
-        (IBitcoinRelay(relay).lastSubmittedHeight() - _blockNumber) > transferDeadline);
+        require(
+            !isPaid[txId],
+            "CCBurnRouter: transaction has been paid before"
+        );
+        require(
+            IBitcoinRelay(relay).lastSubmittedHeight() > (transferDeadline + _blockNumber),
+            "CCBurnRouter: payback deadline has not passed yet"
+        );
 
-        // TODO Slashes the locker
-        // ILockers(lockers).slashLocker(
-        //     _lockerTargetAddress,
-        //     amount,
-        //     towho
-        // );
+        // Finds total outputs value
+        uint totalValue = NewTxHelper.parseTotalValue(_vout);
+
+        // Slashes locker
+        ILockers(lockers).slashLocker(
+            _lockerTargetAddress,
+            totalValue,
+            lockers
+        );
 
         // Emit the event
         emit LockerDispute(
@@ -326,6 +342,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             _blockNumber,
             txId
         );
+
         return true;
     }
 
@@ -352,7 +369,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
                 !burnRequests[_lockerTargetAddress][i].isTransferred &&
                 burnRequests[_lockerTargetAddress][i].deadline >= block.number
             ) {
-                (parsedAmount,) = NewTxHelper.parseAmountForP2PK( 
+                (parsedAmount,) = NewTxHelper.parseValueAndData( 
                     _vout, 
                     burnRequests[_lockerTargetAddress][i].userPubKeyHash
                 );
@@ -385,7 +402,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         bytes32 _txId
         ) internal {
         uint parsedAmount;
-        (parsedAmount,) = NewTxHelper.parseAmountForP2PK(_vout, _lockerScriptHash);
+        (parsedAmount,) = NewTxHelper.parseValueAndData(_vout, _lockerScriptHash);
         if (parsedAmount != 0 &&
             _paidOutputCounter + 1 == NewTxHelper.numberOfOutputs(_vout)) {
             isPaid[_txId] = true;
@@ -398,19 +415,23 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @notice                      Checks if the locker is among transaction senders
     /// @param _vin                  Inputs of the transaction     
     /// @param _inputIndex           Index of the input that is from the locker    
-    /// @param lockerBitcoinAddress  Address of the locker on Bitcoin    
+    /// @param _lockerRedeemScript   Address of the locker on Bitcoin    
     /// @return                      True if the transaction sender is the locker   
     function _isTxFromLocker(
         bytes memory _vin,
         uint _inputIndex,
-        bytes memory lockerBitcoinAddress
+        bytes memory _lockerRedeemScript
     ) internal returns (bool) {
         bytes memory scriptSig;
         bytes memory txInputAddress;
         scriptSig = NewTxHelper.parseInputScriptSig(_vin, _inputIndex);
-        txInputAddress = NewTxHelper.sliceBytes(scriptSig, scriptSig.length - lockerBitcoinAddress.length, scriptSig.length - 1);
-        return txInputAddress.length == lockerBitcoinAddress.length &&
-            keccak256(txInputAddress) == keccak256(lockerBitcoinAddress);
+        txInputAddress = NewTxHelper.sliceBytes(
+            scriptSig, 
+            scriptSig.length - _lockerRedeemScript.length, 
+            scriptSig.length - 1
+        );
+        return txInputAddress.length == _lockerRedeemScript.length &&
+            keccak256(txInputAddress) == keccak256(_lockerRedeemScript);
     }
 
     /// @notice                           Records burn request of user  

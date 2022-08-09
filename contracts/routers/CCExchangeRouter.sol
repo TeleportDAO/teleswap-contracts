@@ -126,7 +126,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     ) external nonReentrant override returns (bool) {
         // Calculates transaction id
         bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
-
+        
         // Checks that the request has not been processed before
         require(
             !ccExchangeRequests[txId].isUsed,
@@ -274,7 +274,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         );
         
         // Extracts value and opreturn data from request
-        (request.inputAmount, arbitraryData) = NewTxHelper.parseAmountForP2PK(_vout, _lockerBitcoinDecodedAddress);
+        (request.inputAmount, arbitraryData) = NewTxHelper.parseValueAndData(_vout, _lockerBitcoinDecodedAddress);
 
         // Checks that input amount is not zero
         require(request.inputAmount > 0, "CCExchangeRouter: input amount is zero");

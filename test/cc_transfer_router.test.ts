@@ -34,14 +34,12 @@ describe("CCTransferRouter", async () => {
 
     // Bitcoin public key (32 bytes)
     let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
-    let TELEPORTER1_PublicKeyHash = '0xe74e55c339726ee799877efc38cf43845b20ca5c';
-    let TELEPORTER2 = '0x03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626';
-    let TELEPORTER2_PublicKeyHash = '0xd191dbef3fa0b30f433157748c11cb93f08e839c';
-    let UNLOCK_FEE =  5; // percentage of bond that protocol receives
-    let UNLOCK_PERIOD = 2;
+    let TELEPORTER1_PublicKeyHash = '0x4062c8aeed4f81c2d73ff854a2957021191e20b6';
+    // let TELEPORTER2 = '0x03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626';
+    // let TELEPORTER2_PublicKeyHash = '0x41fb108446d66d1c049e30cc7c3044e7374e9856';
     let REQUIRED_LOCKED_AMOUNT =  1000; // amount of required TDT
 
-    let telePortTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000);
+    let teleportTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000);
     let requiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
     let btcAmountToSlash = BigNumber.from(10).pow(8).mul(1)
     let collateralRatio = 2;
@@ -77,7 +75,7 @@ describe("CCTransferRouter", async () => {
         signer1Address = await signer1.getAddress();
         lockerAddress = await locker.getAddress();
 
-        teleportDAOToken = await deployTelePortDaoToken();
+        teleportDAOToken = await deployTeleportDaoToken();
 
         // Mocks relay contract
         const bitcoinRelayContract = await deployments.getArtifact(
@@ -97,15 +95,6 @@ describe("CCTransferRouter", async () => {
         );
 
         await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
-
-        // Mocks teleporters contract
-        // const lockersContract = await deployments.getArtifact(
-        //     "ILockers"
-        // );
-        // mockLockers = await deployMockContract(
-        //     deployer,
-        //     lockersContract.abi
-        // );
 
         // Mocks instant router contract
         const instantRouterContract = await deployments.getArtifact(
@@ -176,7 +165,6 @@ describe("CCTransferRouter", async () => {
         );
 
         const lockers = await lockerFactory.deploy(
-            ONE_ADDRESS,
             teleportDAOToken.address,
             mockExchangeRouter.address,
             mockPriceOracle.address,
@@ -189,7 +177,7 @@ describe("CCTransferRouter", async () => {
         return lockers;
     };
 
-    const deployTelePortDaoToken = async (
+    const deployTeleportDaoToken = async (
         _signer?: Signer
     ): Promise<ERC20> => {
         const erc20Factory = new ERC20__factory(
@@ -199,22 +187,13 @@ describe("CCTransferRouter", async () => {
         const teleportDAOToken = await erc20Factory.deploy(
             "TelePortDAOToken",
             "TDT",
-            telePortTokenInitialSupply
+            teleportTokenInitialSupply
         );
 
         return teleportDAOToken;
     };
 
     async function setRelayReturn(request: any, isTrue: boolean): Promise<void> {
-        // await mockBitcoinRelay.mock.checkTxProof.withArgs(
-        //     request.txId,
-        //     request.blockNumber,
-        //     request.intermediateNodes,
-        //     request.index,
-        //     // false, // payWithTDT
-        //     // NORMAL_CONFIRMATION_PARAMETER
-        // ).returns(isTrue);
-
         await mockBitcoinRelay.mock.checkTxProof.returns(isTrue);
     }
 
@@ -238,11 +217,6 @@ describe("CCTransferRouter", async () => {
 
         await lockers.addLocker(lockerAddress)
     }
-
-    // async function setLockersReturn(request: any): Promise<void> {
-    //     await mockLockers.mock.redeemScriptHash
-    //         .returns(request.desiredRecipient);
-    // }
 
     describe("#ccTransfer", async () => {
         it("mints teleBTC for normal cc transfer request", async function () {
@@ -428,12 +402,14 @@ describe("CCTransferRouter", async () => {
     });
 
     describe("#isRequestUsed", async () => {
+
         it("checks if the request has been used before (unused)", async function () {
             await revertProvider(signer1.provider, beginning);
             expect(
                 await ccTransferRouter.isRequestUsed(CC_REQUESTS.normalCCTransfer.txId)
             ).to.equal(false);
         })
+
         it("checks if the request has been used before (used)", async function () {
             // Mocking that relay returns true for our request
             await setRelayReturn(CC_REQUESTS.normalCCTransfer, true);
@@ -454,6 +430,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer.desiredRecipient
                 )
             ).to.emit(ccTransferRouter, 'CCTransfer');
+            
             expect(
                 await ccTransferRouter.isRequestUsed(CC_REQUESTS.normalCCTransfer.txId)
             ).to.equal(true);
