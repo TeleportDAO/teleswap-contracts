@@ -69,6 +69,8 @@ interface ILockers {
 
     function teleBTC() external view returns (address);
 
+    function wrappedNativeToken() external view returns (address);
+
     function ccBurnRouter() external view returns (address);
 
     function exchangeConnector() external view returns (address);
@@ -129,6 +131,8 @@ interface ILockers {
     function setExchangeConnector(address _exchangeConnector) external;
 
     function setTeleBTC(address _teleBTC) external;
+
+    function setWrappedNativeToken(address _wrappedNativeToken) external;
 
     function setCollateralRatio(uint _collateralRatio) external;
 

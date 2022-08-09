@@ -16,6 +16,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     uint public override lockerPercentageFee;
     address public override TeleportDAOToken;
     address public override teleBTC;
+    address public override wrappedNativeToken;
     address public override ccBurnRouter;
     address public override exchangeConnector;
     // uint public override requiredLockedAmount;
@@ -120,6 +121,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
 
 
     constructor(
+        address _wrappedNativeToken,
         address _TeleportDAOToken,
         address _exchangeConnector,
         address _priceOracle,
@@ -128,6 +130,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         uint _collateralRatio,
         uint _lockerPercentageFee
     ) public {
+        wrappedNativeToken = _wrappedNativeToken;
         TeleportDAOToken = _TeleportDAOToken;
         exchangeConnector = _exchangeConnector;
         priceOracle = _priceOracle;
@@ -236,6 +239,13 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         teleBTC = _teleBTC;
     }
 
+    /// @notice                     Changes wrapped token contract address
+    /// @dev                        Only owner can call this
+    /// @param _wrappedNativeToken  The new wrapped token contract address
+    function setWrappedNativeToken(address _wrappedNativeToken) external override onlyOwner {
+        wrappedNativeToken = _wrappedNativeToken;
+    }
+
     /// @notice                     Changes collateral ratio
     /// @dev                        Only owner can call this
     /// @param _collateralRatio     The new collateral ratio
@@ -273,10 +283,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
             "Locker: low locking TDT amount"
         );
 
-        console.log("before checking msg.value");
-        console.log("msg.value");
-        console.log(msg.value);
-
         require(
             _lockedNativeTokenAmount >= requiredTNTLockedAmount && msg.value == _lockedNativeTokenAmount,
             "Locker: low locking TNT amount"
@@ -286,8 +292,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
             lockerTargetAddress[_candidateBitcoinDecodedAddress] == address(0),
             "Locker: bitcoin decoded address is used before"
         );
-
-        console.log("after all requires");
 
         require(IERC20(TeleportDAOToken).transferFrom(msg.sender, address(this), _lockedTDTAmount));
         locker memory locker_;
@@ -496,31 +500,47 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         );
 
         // TODO: slash only the determined locker
-        address[] memory path = new address[](2);
-        path[0] = TeleportDAOToken;
-        path[1] = teleBTC;
-        // Finds the needed input amount to buy _amount of output token
-        (bool theResult, uint neededTDT) = IExchangeConnector(exchangeConnector).getInputAmount(_amount, TeleportDAOToken, teleBTC);
+        // address[] memory path = new address[](2);
+        // path[0] = TeleportDAOToken;
+        // path[1] = teleBTC;
+        // // Finds the needed input amount to buy _amount of output token
+        // (bool theResult, uint neededTDT) = IExchangeConnector(exchangeConnector).getInputAmount(_amount, TeleportDAOToken, teleBTC);
 
-        if (!theResult) {
-            return false;
-        }
+        // if (!theResult) {
+        //     return false;
+        // }
+
+        uint equivalentNativeToekn = IPriceOracle(priceOracle).equivalentOutputAmount(
+            _amount,
+        // FIXME: get decimals from token contracts
+            8,
+            18,
+            teleBTC,
+            wrappedNativeToken
+        );
+
+        require(
+            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount >= equivalentNativeToekn,
+            "Locker: insufficient native token collateral"
+        );
 
         // TODO: use native token instead of teleport dao token
-        lockersMapping[_lockerTargetAddress].TDTLockedAmount = lockersMapping[_lockerTargetAddress].TDTLockedAmount - neededTDT;
+        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount= lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - equivalentNativeToekn;
 
-        IERC20(TeleportDAOToken).approve(exchangeConnector, neededTDT);
-        uint deadline = block.timestamp + 1000;
+        payable(_recipient).transfer(equivalentNativeToekn);
 
-        IExchangeConnector(exchangeConnector).swap(
-            _amount, // amount out
-            neededTDT, // amount in
-            path,
-            _recipient,
-            deadline,
-        // TODO: how to set the isFIxedToken
-            true
-        );
+        // IERC20(TeleportDAOToken).approve(exchangeConnector, neededTDT);
+        // uint deadline = block.timestamp + 1000;
+
+        // IExchangeConnector(exchangeConnector).swap(
+        //     _amount, // amount out
+        //     neededTDT, // amount in
+        //     path,
+        //     _recipient,
+        //     deadline,
+        // // TODO: how to set the isFIxedToken
+        //     true
+        // );
 
         return true;
     }
@@ -609,7 +629,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         uint remainedAmount = _amount - lockerFee;
         uint netMinted = lockersMapping[theLockerTargetAddress].netMinted;
 
-        // TODO: check if using price oracle is needed or not
         require(
             netMinted >= remainedAmount,
             "Lockers: locker doesn't have sufficient funds"

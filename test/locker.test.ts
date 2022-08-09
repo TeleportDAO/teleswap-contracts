@@ -182,6 +182,7 @@ describe("Locker", async () => {
         );
 
         const locker = await lockerFactory.deploy(
+            ONE_ADDRESS,
             teleportDAOToken.address,
             mockExchangeConnector.address,
             mockPriceOracle.address,
@@ -553,7 +554,6 @@ describe("Locker", async () => {
             await lockerCCBurnSigner.slashLocker(signer1Address, 10000, ccBurnSimulatorAddress)
 
         })
-
 
     });
 
