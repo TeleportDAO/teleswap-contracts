@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.0;
 
 interface IBitcoinRelay {
@@ -69,10 +70,6 @@ interface IBitcoinRelay {
 
     function submissionGasUsed() external view returns(uint);
 
-    function exchangeRouter() external view returns(address);
-
-    function wrappedNativeToken() external view returns(address);
-
     function getBlockHeaderHash(uint height, uint index) external view returns(bytes32);
 
     function getNumberOfSubmittedHeaders(uint height) external view returns (uint);
@@ -102,8 +99,6 @@ interface IBitcoinRelay {
     function setBaseQueries(uint _baseQueries) external;
 
     function setSubmissionGasUsed(uint _submissionGasUsed) external;
-
-    function setExchangeRouter(address _exchangeRouter) external;
 
     function checkTxProof(
         bytes32 txid,
