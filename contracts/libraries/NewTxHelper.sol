@@ -12,48 +12,17 @@ library NewTxHelper {
     using TypedMemView for bytes29;
     using ViewBTC for bytes29;
 
-    function parseAmountForP2SH (bytes memory vout, address desiredRecipient) internal returns(uint64, bytes memory) {
-        bytes29 voutView = vout.ref(0).tryAsVout();
-        bytes29 output;
-        uint64 bitcoinAmount;
-        bytes29 scriptPubkey;
-        bytes29 _arbitraryData;
-        address bitcoinRecipient;
-        bytes memory arbitraryData;
-        uint numberOfOutputs = uint256(ViewBTC.indexCompactInt(voutView, 0));
-        for(uint index = 0; index < numberOfOutputs; index++){
-            output = ViewBTC.indexVout(voutView, index);
-            scriptPubkey = ViewBTC.scriptPubkey(output);
-            _arbitraryData = ViewBTC.opReturnPayload(scriptPubkey);
-            // check whether the output is an arbitarary data or not
-            if(_arbitraryData == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
-                // output is not an arbitrary data
-                // indexAddress starts with 3, because the first 2 bytes are opcode.
-                bitcoinRecipient = scriptPubkey.indexAddress(3);
-                if (bitcoinRecipient == desiredRecipient) {
-                    bitcoinAmount = ViewBTC.value(output); // number of btc that user locked
-                }
-            } else {
-                // output is an arbitrary data
-                arbitraryData = _arbitraryData.clone(); // bytes29.clone() returns the whole bytes array
-            }
-        }
-        return (bitcoinAmount, arbitraryData);
-    }
-
-    function parseAmountForP2PK (
-        bytes memory vout,
-        address desiredRecipient
-    ) internal returns(uint64, bytes memory) {
-        bytes29 voutView = vout.ref(0).tryAsVout();
+    function parseValueAndData(
+        bytes memory _vout,
+        address _desiredRecipient
+    ) internal returns (uint64 bitcoinAmount, bytes memory arbitraryData) {
+        bytes29 voutView = _vout.ref(0).tryAsVout();
         bool isvoutViewNull = voutView.isNull();
 
         bytes29 output;
-        uint64 bitcoinAmount;
         bytes29 scriptPubkey;
         bytes29 _arbitraryData;
         address bitcoinRecipient;
-        bytes memory arbitraryData;
 
         uint numberOfOutputs = uint256(ViewBTC.indexCompactInt(voutView, 0));
 
@@ -62,25 +31,54 @@ library NewTxHelper {
             scriptPubkey = ViewBTC.scriptPubkey(output);
             _arbitraryData = ViewBTC.opReturnPayload(scriptPubkey);
 
-            // check whether the output is an arbitarary data or not
+            // Checks whether the output is an arbitarary data or not
             if(_arbitraryData == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
-                // output is not an arbitrary data
-                if (scriptPubkey.len() == 26) {
-                    bitcoinRecipient = scriptPubkey.indexAddress(4);
-                }
+                // Output is not an arbitrary data
+
                 if (scriptPubkey.len() == 23 || scriptPubkey.len() == 24) {
+                    // It is P2SH: OP_HASH160 ScriptHash OP_EQUAL
                     bitcoinRecipient = scriptPubkey.indexAddress(3);
                 }
-                if (bitcoinRecipient == desiredRecipient) {
-                    bitcoinAmount = ViewBTC.value(output); // number of btc that user locked
+
+                if (scriptPubkey.len() == 26) {
+                    // It is P2PKH: OP_DUP OP_HASH160 PubKeyHash OP_EQUALVERIFY OP_CHECKSIG
+                    bitcoinRecipient = scriptPubkey.indexAddress(4);
                 }
+
+                if (scriptPubkey.len() == 21) {
+                    // It is P2WPKH: 0 PubKeyHash
+                    bitcoinRecipient = scriptPubkey.indexAddress(2);
+                }
+
+                if (scriptPubkey.len() == 33) {
+                    // It is P2WSH: 0 ScriptHash
+                    bitcoinRecipient = scriptPubkey.indexAddress(2);
+                }
+
+                if (bitcoinRecipient == _desiredRecipient) {
+                    bitcoinAmount = ViewBTC.value(output);
+                }
+
             } else {
-                // output is an arbitrary data
                 arbitraryData = _arbitraryData.clone(); // bytes29.clone() returns the whole bytes array
             }
         }
         
         return (bitcoinAmount, arbitraryData);
+    }
+
+    function parseTotalValue(bytes memory vout) internal returns (uint64) {
+        bytes29 voutView = vout.ref(0).tryAsVout();
+        bytes29 output;
+        uint64 totalValue;
+
+        uint numberOfOutputs = uint256(ViewBTC.indexCompactInt(voutView, 0));
+        for (uint index = 0; index < numberOfOutputs; index++) {
+            output = ViewBTC.indexVout(voutView, index);
+            totalValue = totalValue + ViewBTC.value(output);
+        }
+
+        return totalValue;
     }
 
     function parseChainId(bytes memory arbitraryData) internal returns (uint8 parsedValue) {

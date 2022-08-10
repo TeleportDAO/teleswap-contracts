@@ -39,6 +39,7 @@
     "@liquality/bitcoin-rpc-provider": "^1.13.0",
     "@liquality/client": "^1.13.0",
     "@openzeppelin/contracts": "^4.3.3",
+    "@uniswap/v2-core": "^1.0.1",
     "base58check": "^2.0.0",
     "bech32-buffer": "^0.2.0",
     "bitcoin-address-validation": "^2.2.1",

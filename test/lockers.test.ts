@@ -20,7 +20,7 @@ import { ERC20__factory } from "../src/types/factories/ERC20__factory";
 
 import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
 
-describe("Locker", async () => {
+describe("Lockers", async () => {
 
     let snapshotId: any;
 
@@ -28,19 +28,17 @@ describe("Locker", async () => {
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     let ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
     let telePortTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000);
-    let requiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
-    let requiredNativeTokenLockedAmount = BigNumber.from(10).pow(18).mul(5);
+    let minRequiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
+    let minRequiredNativeTokenLockedAmount = BigNumber.from(10).pow(18).mul(5);
     let btcAmountToSlash = BigNumber.from(10).pow(8).mul(1)
     let collateralRatio = 2;
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
 
     // Bitcoin public key (32 bytes)
     let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
-    let TELEPORTER1_PublicKeyHash = '0xe74e55c339726ee799877efc38cf43845b20ca5c';
-    let TELEPORTER2 = '0x03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626';
-    let TELEPORTER2_PublicKeyHash = '0xd191dbef3fa0b30f433157748c11cb93f08e839c';
-    let UNLOCK_FEE =  5; // percentage of bond that protocol receives
-    let UNLOCK_PERIOD = 2;
+    let TELEPORTER1_PublicKeyHash = '0x4062c8aeed4f81c2d73ff854a2957021191e20b6';
+    // let TELEPORTER2 = '0x03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626';
+    // let TELEPORTER2_PublicKeyHash = '0x41fb108446d66d1c049e30cc7c3044e7374e9856';
     let REQUIRED_LOCKED_AMOUNT =  1000; // amount of required TDT
 
     // Accounts
@@ -90,29 +88,6 @@ describe("Locker", async () => {
         );
 
         await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
-
-        // Deploys liquidityPoolFactory
-        // const liquidityPoolFactoryFactory = new LiquidityPoolFactory__factory(deployer);
-        // liquidityPoolFactory = await liquidityPoolFactoryFactory.deploy(
-        //     deployerAddress
-        // );
-
-        // // Creates liquidityPool__factory object
-        // liquidityPool__factory = new LiquidityPool__factory(deployer);
-
-        // // Deploys exchangeRouter contract
-        // const exchangeRouterFactory = new ExchangeRouter__factory(deployer);
-        // exchangeRouter = await exchangeRouterFactory.deploy(
-        //     liquidityPoolFactory.address,
-        //     ZERO_ADDRESS // WAVAX
-        // );
-
-        // const exchangeConnectorFactory = new UniswapConnector__factory(deployer);
-        // exchangeConnector = await exchangeConnectorFactory.deploy(
-        //     "TheExchangeConnector",
-        //     mockExchangeRouter.address,
-        //     ZERO_ADDRESS // WAVAX
-        // );
 
         // Deploys bitcoinTeleporter contract
         locker = await deployLocker()
@@ -182,41 +157,17 @@ describe("Locker", async () => {
         );
 
         const locker = await lockerFactory.deploy(
-            ONE_ADDRESS,
             teleportDAOToken.address,
             mockExchangeConnector.address,
             mockPriceOracle.address,
-            requiredTDTLockedAmount,
-            requiredNativeTokenLockedAmount,
+            minRequiredTDTLockedAmount,
+            minRequiredNativeTokenLockedAmount,
             collateralRatio,
             LOCKER_PERCENTAGE_FEE
         );
 
         return locker;
     };
-
-    // async function addTeleporter(teleporterAddress: any, teleporterNumber: number) {
-    //     // Gives allowance to bitcoinTeleporter
-
-    //     let teleportDAOTokenSigner1 = await teleportDAOToken.connect(signer1);
-    //     await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount);
-    //     await teleportDAOTokenSigner1.approve(locker.address, requiredTDTLockedAmount);
-
-    //     // Adds teleporter
-    //     expect(
-    //         await bitcoinTeleporter.addTeleporter(teleporterAddress)
-    //     ).to.emit(bitcoinTeleporter, 'AddTeleporter');
-
-    //     // Checks bitcoinTeleporter TDT balance
-    //     expect(
-    //         await teleportDAOToken.balanceOf(bitcoinTeleporter.address)
-    //     ).to.equal(teleporterNumber*REQUIRED_LOCKED_AMOUNT);
-
-    //     // Checks number of teleporters
-    //     expect(await bitcoinTeleporter.numberOfTeleporters()).to.equal(teleporterNumber);
-
-    //     return true;
-    // }
 
     describe("#requestToBecomeLocker", async () => {
 
@@ -227,11 +178,11 @@ describe("Locker", async () => {
                 lockerSigner1.requestToBecomeLocker(
                     TELEPORTER1,
                     TELEPORTER1_PublicKeyHash,
-                    requiredTDTLockedAmount.sub(1),
-                    requiredNativeTokenLockedAmount,
-                    {value: requiredNativeTokenLockedAmount}
+                    minRequiredTDTLockedAmount.sub(1),
+                    minRequiredNativeTokenLockedAmount,
+                    {value: minRequiredNativeTokenLockedAmount}
                 )
-            ).to.be.revertedWith("Locker: low locking TDT amount")
+            ).to.be.revertedWith("Lockers: low locking TDT amount")
         })
 
         it("not approving TeleportDao token", async function () {
@@ -241,20 +192,20 @@ describe("Locker", async () => {
                 lockerSigner1.requestToBecomeLocker(
                     TELEPORTER1,
                     TELEPORTER1_PublicKeyHash,
-                    requiredTDTLockedAmount,
-                    requiredNativeTokenLockedAmount,
-                    {value: requiredNativeTokenLockedAmount}
+                    minRequiredTDTLockedAmount,
+                    minRequiredNativeTokenLockedAmount,
+                    {value: minRequiredNativeTokenLockedAmount}
                 )
             ).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
         })
 
         it("successful request to become locker", async function () {
 
-            await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount)
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, requiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
 
             let lockerSigner1 = locker.connect(signer1)
 
@@ -262,9 +213,9 @@ describe("Locker", async () => {
                 lockerSigner1.requestToBecomeLocker(
                     TELEPORTER1,
                     TELEPORTER1_PublicKeyHash,
-                    requiredTDTLockedAmount,
-                    requiredNativeTokenLockedAmount,
-                    {value: requiredNativeTokenLockedAmount}
+                    minRequiredTDTLockedAmount,
+                    minRequiredNativeTokenLockedAmount,
+                    {value: minRequiredNativeTokenLockedAmount}
                 )
             ).to.emit(locker, "RequestAddLocker")
 
@@ -287,25 +238,25 @@ describe("Locker", async () => {
 
             await expect(
                 lockerSigner1.revokeRequest()
-            ).to.be.revertedWith("Locker: request doesn't exit or already accepted")
+            ).to.be.revertedWith("Lockers: request doesn't exit or already accepted")
         })
 
         it("successful revoke", async function () {
 
-            await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount)
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, requiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
 
             let lockerSigner1 = locker.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
-                requiredTDTLockedAmount,
-                requiredNativeTokenLockedAmount,
-                {value: requiredNativeTokenLockedAmount}
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
             )
 
             let theCandidateMapping = await locker.candidatesMapping(signer1Address)
@@ -339,20 +290,20 @@ describe("Locker", async () => {
 
         it("adding a locker", async function () {
 
-            await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount)
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, requiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
 
             let lockerSigner1 = locker.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
-                requiredTDTLockedAmount,
-                requiredNativeTokenLockedAmount,
-                {value: requiredNativeTokenLockedAmount}
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
             )
 
             let theCandidateMapping = await locker.candidatesMapping(signer1Address)
@@ -387,25 +338,25 @@ describe("Locker", async () => {
 
             await expect(
                 lockerSigner1.requestToRemoveLocker()
-            ).to.be.revertedWith("Locker: Msg sender is not locker")
+            ).to.be.revertedWith("Lockers: Msg sender is not locker")
         })
 
         it("successfully request to be removed", async function () {
 
-            await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount)
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, requiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
 
             let lockerSigner1 = locker.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
-                requiredTDTLockedAmount,
-                requiredNativeTokenLockedAmount,
-                {value: requiredNativeTokenLockedAmount}
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
             )
 
             await locker.addLocker(signer1Address)
@@ -429,45 +380,45 @@ describe("Locker", async () => {
 
         it("can't remove a locker if it doesn't request to be removed", async function () {
 
-            await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount)
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, requiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
 
             let lockerSigner1 = locker.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
-                requiredTDTLockedAmount,
-                requiredNativeTokenLockedAmount,
-                {value: requiredNativeTokenLockedAmount}
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
             )
 
             await locker.addLocker(signer1Address)
 
             await expect(
                 locker.removeLocker(signer1Address)
-            ).to.be.revertedWith("Locker: locker didn't request to be removed")
+            ).to.be.revertedWith("Lockers: locker didn't request to be removed")
         })
 
         it("can't remove a locker if it doesn't request to be removed", async function () {
 
-            await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount)
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, requiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
 
             let lockerSigner1 = locker.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
-                requiredTDTLockedAmount,
-                requiredNativeTokenLockedAmount,
-                {value: requiredNativeTokenLockedAmount}
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
             )
 
             await locker.addLocker(signer1Address)
@@ -492,7 +443,7 @@ describe("Locker", async () => {
 
             await expect(
                 lockerSigner1.selfRemoveLocker()
-            ).to.be.revertedWith("Locker: no locker with this address")
+            ).to.be.revertedWith("Lockers: no locker with this address")
         })
 
     });
@@ -509,7 +460,7 @@ describe("Locker", async () => {
                     btcAmountToSlash,
                     ccBurnSimulatorAddress
                 )
-            ).to.be.revertedWith("Locker: Caller can't slash")
+            ).to.be.revertedWith("Lockers: Caller can't slash")
         })
 
         it("slash locker reverts when the target address is not locker", async function () {
@@ -521,28 +472,28 @@ describe("Locker", async () => {
                     btcAmountToSlash,
                     ccBurnSimulatorAddress
                 )
-            ).to.be.revertedWith("Locker: target is not locker")
+            ).to.be.revertedWith("Lockers: target address is not locker")
         })
 
         it("only admin can slash a locker", async function () {
 
-            await mockExchangeConnector.mock.getInputAmount.returns(true, requiredTDTLockedAmount.div(10))
+            await mockExchangeConnector.mock.getInputAmount.returns(true, minRequiredTDTLockedAmount.div(10))
             await mockExchangeConnector.mock.swap.returns(true, [2500, 5000])
 
-            await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount)
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, requiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
 
             let lockerSigner1 = locker.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
-                requiredTDTLockedAmount,
-                requiredNativeTokenLockedAmount,
-                {value: requiredNativeTokenLockedAmount}
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
             )
 
             expect(
@@ -572,20 +523,20 @@ describe("Locker", async () => {
 
         it("Mints tele BTC", async function () {
 
-            await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount)
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, requiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
 
             let lockerSigner1 = locker.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
-                requiredTDTLockedAmount,
-                requiredNativeTokenLockedAmount,
-                {value: requiredNativeTokenLockedAmount}
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
             );
 
             await locker.addLocker(signer1Address);
@@ -633,20 +584,20 @@ describe("Locker", async () => {
 
         it("Burns tele BTC", async function () {
 
-            await teleportDAOToken.transfer(signer1Address, requiredTDTLockedAmount)
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, requiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
 
             let lockerSigner1 = locker.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
-                requiredTDTLockedAmount,
-                requiredNativeTokenLockedAmount,
-                {value: requiredNativeTokenLockedAmount}
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
             )
 
             await locker.addLocker(signer1Address)

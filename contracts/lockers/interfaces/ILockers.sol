@@ -6,21 +6,20 @@ interface ILockers {
 
     /// @notice                             Structure for registering lockers
     /// @dev
-    /// @param lockerBitcoinAddress         Bitcoin address of locker
+    /// @param lockerRedeemScript           Locker redeem script
     /// @param TDTLockedAmount              Bond amount of locker in TDT
     /// @param nativeTokenLockedAmount      Bond amount of locker in native token of the target chain
     /// @param netMinted                    Total minted - total burnt
-    /// @param isScriptHash                 Determines if the locker Bitcoin address is PubKey script or Hash script
+    /// @param isScriptHash                 Determines if the lockerScriptHash is pub key hash or redeem script hash
     /// @param isActive                     Shows if a locker is active (has not requested for removal and
     ///                                     has enough collateral to accept more minting requests)
     struct locker {
-        // TODO: remove lockerBitcoinAddress
-        bytes lockerBitcoinAddress;
-        address lockerBitcoinDecodedAddress;
+        bytes lockerRedeemScript;
+        address lockerScriptHash;
         uint TDTLockedAmount;
         uint nativeTokenLockedAmount;
         uint netMinted;
-        bool isExisted;
+        bool isLocker;
         // TODO: isScriptHash is used for p2pkh and p2sh, but what about segwit
         bool isScriptHash;
         bool isActive;
@@ -30,7 +29,7 @@ interface ILockers {
 
     event RequestAddLocker(
         address indexed lockerTargetAddress,
-        bytes lockerBitcoinAddress,
+        bytes lockerRedeemScript,
         uint TDTLockedAmount,
         uint nativeTokenLockedAmount,
         bool indexed isScriptHash
@@ -38,7 +37,7 @@ interface ILockers {
 
     event RequestRemoveLocker(
         address indexed lockerTargetAddress,
-        bytes lockerBitcoinAddress,
+        bytes lockerRedeemScript,
         uint TDTUnlockedAmount,
         uint nativeTokenUnlockedAmount,
         uint netMinted        //   = totalMinted  - totalBurnt which needs to be burnt
@@ -46,7 +45,7 @@ interface ILockers {
 
     event LockerAdded(
         address indexed lockerTargetAddress,
-        bytes lockerBitcoinAddress,
+        bytes lockerRedeemScript,
         uint TDTLockedAmount,
         uint nativeTokenLockedAmount,
         bool isScriptHash
@@ -55,7 +54,7 @@ interface ILockers {
 
     event LockerRemoved(
         address indexed lockerTargetAddress,
-        bytes lockerBitcoinAddress,
+        bytes lockerRedeemScript,
         uint TDTUnlockedAmount,
         uint nativeTokenUnlockedAmount
     // uint removingTime
@@ -69,27 +68,25 @@ interface ILockers {
 
     function teleBTC() external view returns (address);
 
-    function wrappedNativeToken() external view returns (address);
-
     function ccBurnRouter() external view returns (address);
 
     function exchangeConnector() external view returns (address);
 
-    function requiredTDTLockedAmount() external view returns (uint);
+    function minRequiredTDTLockedAmount() external view returns (uint);
 
-    function requiredTNTLockedAmount() external view returns (uint);
+    function minRequiredTNTLockedAmount() external view returns (uint);
 
     function collateralRatio() external view returns (uint);
 
     function priceOracle() external view returns (address);
 
-    function lockerTargetAddress(address  _lockerBitcoinDecodedAddress) external view returns (address);
+    function lockerTargetAddress(address  _lockerScriptHash) external view returns (address);
 
-    function isLocker(address _lockerBitcoinDecodedAddress) external view returns (bool);
+    function isLocker(address _lockerScriptHash) external view returns (bool);
 
     function getNumberOfLockers() external view returns (uint);
 
-    function getLockerBitcoinAddress(address _lockerTargetAddress) external view returns (bytes memory);
+    function getLockerRedeemScript(address _lockerTargetAddress) external view returns (bytes memory);
 
     function isActive(address _lockerTargetAddress) external view returns (bool);
 
@@ -113,15 +110,15 @@ interface ILockers {
 
     function removeBurner(address _account) external;
 
-    function mint(address _lockerBitcoinDecodedAddress, address _receiver, uint _amount) external returns(uint);
+    function mint(address _lockerScriptHash, address _receiver, uint _amount) external returns(uint);
 
-    function burn(address _lockerBitcoinDecodedAddress, uint256 _amount) external returns(uint);
+    function burn(address _lockerScriptHash, uint256 _amount) external returns(uint);
 
     // function setRequiredLockedAmount(uint _requiredLockedAmount) external;
 
-    function setRequiredTDTLockedAmount(uint _requiredTDTLockedAmount) external;
+    function setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) external;
 
-    function setRequiredTNTLockedAmount(uint _requiredTNTLockedAmount) external;
+    function setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) external;
 
     function setPriceOracle(address _priceOracle) external;
 
@@ -131,8 +128,6 @@ interface ILockers {
     function setExchangeConnector(address _exchangeConnector) external;
 
     function setTeleBTC(address _teleBTC) external;
-
-    function setWrappedNativeToken(address _wrappedNativeToken) external;
 
     function setCollateralRatio(uint _collateralRatio) external;
 

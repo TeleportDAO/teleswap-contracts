@@ -13,6 +13,7 @@ contract PriceOracle is IPriceOracle, Ownable {
     mapping(address => address) public override exchangeConnector;
     address[] public override exchangeRoutersList;
     uint public override acceptableDelay;
+    address public constant NATIVE_TOKEN = address(1);
 
     constructor(uint _acceptableDelay) public {
         acceptableDelay = _acceptableDelay;
@@ -180,12 +181,28 @@ contract PriceOracle is IPriceOracle, Ownable {
         address _inputToken,
         address _outputToken
     ) internal view returns (bool _result, uint _outputAmount) {
+        if (_inputToken == NATIVE_TOKEN) {
+            address wrappedNativeToken = IExchangeConnector(exchangeConnector[_exchangeRouter]).wrappedNativeToken();
+            (_result, _outputAmount) = IExchangeConnector(exchangeConnector[_exchangeRouter]).getOutputAmount(
+                _inputAmount,
+                wrappedNativeToken,
+                _outputToken
+            );
+        } else if (_outputToken == NATIVE_TOKEN) {
+            address wrappedNativeToken = IExchangeConnector(exchangeConnector[_exchangeRouter]).wrappedNativeToken();
+            (_result, _outputAmount) = IExchangeConnector(exchangeConnector[_exchangeRouter]).getOutputAmount(
+                _inputAmount,
+                _inputToken,
+                wrappedNativeToken
+            );
+        } else {
+            (_result, _outputAmount) = IExchangeConnector(exchangeConnector[_exchangeRouter]).getOutputAmount(
+                _inputAmount,
+                _inputToken,
+                _outputToken
+            );
+        }
 
-        (_result, _outputAmount) = IExchangeConnector(exchangeConnector[_exchangeRouter]).getOutputAmount(
-            _inputAmount,
-            _inputToken,
-            _outputToken
-        );
     }
 
     /// @notice                         Finds amount of output token that is equal to the input amount of the input token

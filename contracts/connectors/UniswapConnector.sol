@@ -2,8 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IExchangeConnector.sol";
-import "../routers/interfaces/IExchangeRouter.sol";
-import "../pools/interfaces/ILiquidityPoolFactory.sol";
+import "../uniswap/v2-periphery/interfaces/IUniswapV2Router02.sol";
+// import "../pools/interfaces/IUniswapV2Pair.sol";
+// import "../pools/interfaces/IUniswapV2Factory.sol";
+import "../uniswap/v2-core/interfaces/IUniswapV2Pair.sol";
+import "../uniswap/v2-core/interfaces/IUniswapV2Factory.sol";
 import "../erc20/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -23,7 +26,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
     constructor(string memory _name, address _exchangeRouter, address _wrappedNativeToken) {
         name = _name;
         exchangeRouter = _exchangeRouter;
-        liquidityPoolFactory = IExchangeRouter(exchangeRouter).liquidityPoolFactory();
+        liquidityPoolFactory = IUniswapV2Router02(exchangeRouter).factory();
         wrappedNativeToken = _wrappedNativeToken;
     }
 
@@ -32,13 +35,13 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
     /// @param _exchangeRouter              Address of the exchange router contract
     function setExchangeRouter(address _exchangeRouter) external override onlyOwner {
         exchangeRouter = _exchangeRouter;
-        liquidityPoolFactory = IExchangeRouter(exchangeRouter).liquidityPoolFactory();
+        liquidityPoolFactory = IUniswapV2Router02(exchangeRouter).factory();
     }
 
     /// @notice            Setter for liquidity pool factory
     /// @dev               Gets address from exchange router
     function setLiquidityPoolFactory() external override onlyOwner {
-        liquidityPoolFactory = IExchangeRouter(exchangeRouter).liquidityPoolFactory();
+        liquidityPoolFactory = IUniswapV2Router02(exchangeRouter).factory();
     }
 
     /// @notice                              Setter for wrapped native token
@@ -55,18 +58,24 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
 
         // Checks that the liquidity pool exists
         if (
-            ILiquidityPoolFactory(liquidityPoolFactory).getLiquidityPool(_inputToken, _outputToken) == address(0)
+            IUniswapV2Factory(liquidityPoolFactory).getPair(_inputToken, _outputToken) == address(0)
         ) {
             return (false, 0);
         }
 
-        // Gets reserves of input token and output token
-        (uint reserveIn, uint reserveOut) = IExchangeRouter(exchangeRouter).getReserves(
-            _inputToken,
-            _outputToken
-        );
+        // // Gets reserves of input token and output token
+        // (uint reserveIn, uint reserveOut) = IUniswapV2Router02(exchangeRouter).getReserves(
+        //     _inputToken,
+        //     _outputToken
+        // );
 
-        return (true, IExchangeRouter(exchangeRouter).getAmountIn(_outputAmount, reserveIn, reserveOut));
+        // return (true, IUniswapV2Router02(exchangeRouter).getAmountIn(_outputAmount, reserveIn, reserveOut));
+        address[] memory path = new address[](2);
+        path[0] = _inputToken;
+        path[1] = _outputToken;
+        uint[] memory result = IUniswapV2Router02(exchangeRouter).getAmountsIn(_outputAmount, path);
+        
+        return (true, result[0]);
     }
 
     function getOutputAmount(
@@ -77,18 +86,25 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
 
         // Checks that the liquidity pool exists
         if (
-            ILiquidityPoolFactory(liquidityPoolFactory).getLiquidityPool(_inputToken, _outputToken) == address(0)
+            IUniswapV2Factory(liquidityPoolFactory).getPair(_inputToken, _outputToken) == address(0)
         ) {
             return (false, 0);
         }
 
-        // Gets reserves of input token and output token
-        (uint reserveIn, uint reserveOut) = IExchangeRouter(exchangeRouter).getReserves(
-            _inputToken,
-            _outputToken
-        );
+        // // Gets reserves of input token and output token
+        // (uint reserveIn, uint reserveOut) = IUniswapV2Router02(exchangeRouter).getReserves(
+        //     _inputToken,
+        //     _outputToken
+        // );
 
-        return (true, IExchangeRouter(exchangeRouter).getAmountOut(_inputAmount, reserveIn, reserveOut));
+        // return (true, IUniswapV2Router02(exchangeRouter).getAmountOut(_inputAmount, reserveIn, reserveOut));
+
+        address[] memory path = new address[](2);
+        path[0] = _inputToken;
+        path[1] = _outputToken;
+        uint[] memory result = IUniswapV2Router02(exchangeRouter).getAmountsOut(_inputAmount, path);
+
+        return (true, result[0]);
     }
 
     /// @notice                     Exchanges input token for output token through exchange router
@@ -125,7 +141,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
             IERC20(_path[0]).approve(exchangeRouter, neededInputAmount);
 
             if (_isFixedToken == false && _path[_path.length-1] != wrappedNativeToken) {
-                _amounts = IExchangeRouter(exchangeRouter).swapTokensForExactTokens(
+                _amounts = IUniswapV2Router02(exchangeRouter).swapTokensForExactTokens(
                     _outputAmount,
                     _inputAmount,
                     _path,
@@ -135,7 +151,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
             }
 
             if (_isFixedToken == false && _path[_path.length-1] == wrappedNativeToken) {
-                _amounts = IExchangeRouter(exchangeRouter).swapTokensForExactAVAX(
+                _amounts = IUniswapV2Router02(exchangeRouter).swapTokensForExactETH(
                     _outputAmount,
                     _inputAmount,
                     _path,
@@ -146,7 +162,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
 
             if (_isFixedToken == true && _path[_path.length-1] != wrappedNativeToken) {
                 // TODO: use the original uniswap router
-                (_amounts,) = IExchangeRouter(exchangeRouter).swapExactTokensForTokens(
+                _amounts = IUniswapV2Router02(exchangeRouter).swapExactTokensForTokens(
                     _inputAmount,
                     _outputAmount,
                     _path,
@@ -157,7 +173,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
 
             if (_isFixedToken == true && _path[_path.length-1] == wrappedNativeToken) {
                 // TODO: use the original uniswap router
-                (_amounts,) = IExchangeRouter(exchangeRouter).swapExactTokensForAVAX(
+                _amounts = IUniswapV2Router02(exchangeRouter).swapExactTokensForETH(
                     _inputAmount,
                     _outputAmount,
                     _path,
@@ -191,17 +207,14 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
         // }
 
         // Checks that the liquidity pool exists
-        if (
-            ILiquidityPoolFactory(liquidityPoolFactory).getLiquidityPool(_path[0], _path[_path.length-1]) == address(0)
-        ) {
+        address liquidityPool = 
+            IUniswapV2Factory(liquidityPoolFactory).getPair(_path[0], _path[_path.length-1]);
+        if (liquidityPool == address(0)) {
             return (false, 0);
         }
 
         // Gets reserves of input token and output token
-        (uint reserveIn, uint reserveOut) = IExchangeRouter(exchangeRouter).getReserves(
-            _path[0],
-            _path[1]
-        );
+        (uint reserveIn, uint reserveOut, /*timestamp*/) = IUniswapV2Pair(liquidityPool).getReserves();
 
         // Checks that enough liquidity for output token exists
         if (_outputAmount > reserveOut) {
@@ -210,7 +223,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
 
         if (_isFixedToken == false) {
             // Checks that the input amount is enough
-            uint requiredAmountIn = IExchangeRouter(exchangeRouter).getAmountIn(
+            uint requiredAmountIn = IUniswapV2Router02(exchangeRouter).getAmountIn(
                 _outputAmount,
                 reserveIn,
                 reserveOut
@@ -218,7 +231,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
             return (_inputAmount >= requiredAmountIn ? true : false, requiredAmountIn);
         } else {
             // Checks that the output amount is enough
-            uint exchangedAmountOut = IExchangeRouter(exchangeRouter).getAmountOut(
+            uint exchangedAmountOut = IUniswapV2Router02(exchangeRouter).getAmountOut(
                 _inputAmount,
                 reserveIn,
                 reserveOut

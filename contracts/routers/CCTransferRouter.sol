@@ -13,6 +13,7 @@ import "hardhat/console.sol";
 
 contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     // Public variables
+    uint public override startingBlockNumber;
     uint public override chainId;
     uint public override appId;
     uint public override protocolPercentageFee; // A number between 0 to 10000
@@ -33,6 +34,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _teleBTC                     TeleportDAO BTC ERC20 token address
     /// @param _treasury                    Address of treasury that collects fees
     constructor(
+        uint _startingBlockNumber,
         uint _protocolPercentageFee,
         uint _chainId,
         uint _appId,
@@ -41,6 +43,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         address _teleBTC,
         address _treasury
     ) public {
+        startingBlockNumber = _startingBlockNumber;
         protocolPercentageFee = _protocolPercentageFee;
         chainId = _chainId;
         appId = _appId;
@@ -122,8 +125,10 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         uint _index,
         address lockerBitcoinDecodedAddress
     ) external nonReentrant override returns (bool) {
+        require(_blockNumber >= startingBlockNumber, "CCTransferRouter: request is old");
+        
         bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
-
+        
         require(
             !ccTransferRequests[txId].isUsed,
             "CCTransferRouter: CC transfer request has been used before"
@@ -232,7 +237,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         );
 
         // Extracts value and opreturn data from request
-        (request.inputAmount, arbitraryData) = NewTxHelper.parseAmountForP2PK(_vout, _lockerBitcoinDecodedAddress);
+        (request.inputAmount, arbitraryData) = NewTxHelper.parseValueAndData(_vout, _lockerBitcoinDecodedAddress);
         
         // Checks that input amount is not zero
         require(request.inputAmount > 0, "CCTransferRouter: input amount is zero");

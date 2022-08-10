@@ -8,7 +8,7 @@ interface ICCBurnRouter {
     /// @param amount         		Amount of burnt tokens
     /// @param remainedAmount   	Amount that user gets (after paying fees)
     /// @param sender       		Address of user who requests burning
-    /// @param userBitcoinDecodedAddress   Public key hash of the user on Bitcoin
+    /// @param userPubKeyHash   Public key hash of the user on Bitcoin
     /// @param isScriptHash   		Whether the user's Bitcoin address is script hash or pubKey hash
     /// @param isSegwit			   	Whether the user's Bitcoin address is Segwit or nonSegwit
     /// @param deadline         	Deadline of lockers for executing the request
@@ -18,7 +18,7 @@ interface ICCBurnRouter {
 		uint amount;
 		uint remainedAmount;
 		address sender;
-		address userBitcoinDecodedAddress;
+		address userPubKeyHash;
 		bool isScriptHash;
 		bool isSegwit;
 		uint deadline;
@@ -29,7 +29,7 @@ interface ICCBurnRouter {
 
 	/// @notice                 		Emits when a burn request gets submitted
     /// @param userTargetAddress        Target address of the user
-    /// @param userBitcoinDecodedAddress       Public key hash of the user on Bitcoin
+    /// @param userPubKeyHash       Public key hash of the user on Bitcoin
 	/// @param isScriptHash   			Whether the user's Bitcoin address is script hash or pubKey hash
     /// @param isSegwit			   		Whether the user's Bitcoin address is Segwit or nonSegwit
     /// @param amount         			Amount of burnt tokens
@@ -39,7 +39,7 @@ interface ICCBurnRouter {
     /// @param deadline         		Deadline of lockers for executing the request
   	event CCBurn(
 		address indexed userTargetAddress,
-		address userBitcoinDecodedAddress,
+		address userPubKeyHash,
 		bool isScriptHash,
     	bool isSegwit,
 		uint amount, 
@@ -51,13 +51,13 @@ interface ICCBurnRouter {
 
 	/// @notice                 		Emits when a burn request gets executed
     /// @param userTargetAddress        Target address of the user
-    /// @param userBitcoinDecodedAddress       Public key hash of the user on Bitcoin
+    /// @param userPubKeyHash       Public key hash of the user on Bitcoin
     /// @param remainedAmount   		Amount that user gets (after paying fees)
 	/// @param lockerTargetAddress		Locker's address on the target chain
     /// @param index       				The index of a request for a locker
 	event PaidCCBurn(
 		address indexed userTargetAddress, 
-		address userBitcoinDecodedAddress, 
+		address userPubKeyHash, 
 		uint remainedAmount, 
 		address indexed lockerTargetAddress, 
 		uint index
@@ -109,7 +109,7 @@ interface ICCBurnRouter {
 
 	function ccBurn(
 		uint _amount, 
-		address _userBitcoinDecodedAddress,
+		address _userPubKeyHash,
 		bool _isScriptHash,
     	bool _isSegwit,
 		address _lockerTargetAddress

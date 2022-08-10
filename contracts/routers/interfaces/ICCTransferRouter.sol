@@ -31,7 +31,9 @@ interface ICCTransferRouter {
 	event CCTransfer(address indexed user, uint inputAmount, uint indexed speed, uint fee);
 
 	// Read-only functions
-
+	
+	function startingBlockNumber() external view returns (uint);
+	
 	function protocolPercentageFee() external view returns (uint);
 	
 	function chainId() external view returns (uint);

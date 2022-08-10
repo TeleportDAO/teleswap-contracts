@@ -16,13 +16,12 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     uint public override lockerPercentageFee;
     address public override TeleportDAOToken;
     address public override teleBTC;
-    address public override wrappedNativeToken;
     address public override ccBurnRouter;
     address public override exchangeConnector;
-    // uint public override requiredLockedAmount;
     // TODO: these are minimum amounts, so change their names
-    uint public override requiredTDTLockedAmount;
-    uint public override requiredTNTLockedAmount;
+    uint public override minRequiredTDTLockedAmount;
+    uint public override minRequiredTNTLockedAmount;
+    address public constant NATIVE_TOKEN = address(1);
 
     // 10000 means 100%
     uint public override collateralRatio;
@@ -37,16 +36,11 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     // remember to remove from candidates when becomes locker
     mapping(address => locker) public candidatesMapping;
 
-
     // TODO: Combining the 2 mapping into 1 mapping to a struct
     mapping(address => bool) public lockerLeavingRequests;
     mapping(address => bool) public lockerLeavingAcceptance;
 
     mapping(address => address) public override lockerTargetAddress;
-
-    // address public override redeemScriptHash;
-
-    // bytes constant ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 
     mapping(address => bool) minters;
     mapping(address => bool) burners;
@@ -121,22 +115,19 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
 
 
     constructor(
-        address _wrappedNativeToken,
         address _TeleportDAOToken,
         address _exchangeConnector,
         address _priceOracle,
-        uint _requiredTDTLockedAmount,
-        uint _requiredTNTLockedAmount,
+        uint _minRequiredTDTLockedAmount,
+        uint _minRequiredTNTLockedAmount,
         uint _collateralRatio,
         uint _lockerPercentageFee
     ) public {
-        wrappedNativeToken = _wrappedNativeToken;
         TeleportDAOToken = _TeleportDAOToken;
         exchangeConnector = _exchangeConnector;
         priceOracle = _priceOracle;
-        requiredTDTLockedAmount = _requiredTDTLockedAmount;
-        // requiredNativeTokenLockedAmount = _requiredNativeTokenLockedAmount;
-        requiredTNTLockedAmount = _requiredTNTLockedAmount;
+        minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
+        minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
         collateralRatio = _collateralRatio;
         lockerPercentageFee = _lockerPercentageFee;
     }
@@ -155,14 +146,13 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         _unpause();
     }
 
-
     /// @notice                           Checks whether an address is locker
     /// @dev
     /// @param _lockerTargetAddress       Address of locker on the target chain
     /// @return                           True if user is locker
-    function isLocker(address _lockerBitcoinDecodedAddress) external override view returns(bool) {
+    function isLocker(address _lockerScriptHash) external override view returns(bool) {
         // TODO: use the bitcoin decoed address or target address
-        return lockersMapping[lockerTargetAddress[_lockerBitcoinDecodedAddress]].isExisted;
+        return lockersMapping[lockerTargetAddress[_lockerScriptHash]].isLocker;
     }
 
     /// @notice                           Give number of lockers
@@ -176,8 +166,8 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     /// @dev
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             Bitcoin public key of locker
-    function getLockerBitcoinAddress(address _lockerTargetAddress) external view override returns (bytes memory) {
-        return lockersMapping[_lockerTargetAddress].lockerBitcoinAddress;
+    function getLockerRedeemScript(address _lockerTargetAddress) external view override returns (bytes memory) {
+        return lockersMapping[_lockerTargetAddress].lockerRedeemScript;
     }
 
     /// @notice                             Tells if a locker is active or not
@@ -199,16 +189,16 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
 
     /// @notice         Changes the required bond amount to become locker
     /// @dev            Only current owner can call this
-    /// @param _requiredTDTLockedAmount   The new required bond amount
-    function setRequiredTDTLockedAmount(uint _requiredTDTLockedAmount) external override onlyOwner {
-        requiredTDTLockedAmount = _requiredTDTLockedAmount;
+    /// @param _minRequiredTDTLockedAmount   The new required bond amount
+    function setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) external override onlyOwner {
+        minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
     }
 
     /// @notice         Changes the required bond amount to become locker
     /// @dev            Only current owner can call this
-    /// @param _requiredTNTLockedAmount   The new required bond amount
-    function setRequiredTNTLockedAmount(uint _requiredTNTLockedAmount) external override onlyOwner {
-        requiredTNTLockedAmount = _requiredTNTLockedAmount;
+    /// @param _minRequiredTNTLockedAmount   The new required bond amount
+    function setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) external override onlyOwner {
+        minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
     }
 
     /// @notice                 Changes the price oracle
@@ -239,13 +229,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         teleBTC = _teleBTC;
     }
 
-    /// @notice                     Changes wrapped token contract address
-    /// @dev                        Only owner can call this
-    /// @param _wrappedNativeToken  The new wrapped token contract address
-    function setWrappedNativeToken(address _wrappedNativeToken) external override onlyOwner {
-        wrappedNativeToken = _wrappedNativeToken;
-    }
-
     /// @notice                     Changes collateral ratio
     /// @dev                        Only owner can call this
     /// @param _collateralRatio     The new collateral ratio
@@ -255,51 +238,55 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
 
     /// @notice                                 Adds user to candidates list
     /// @dev
-    /// @param _candidateBitcoinAddress         Bitcoin address of the candidate
+    /// @param _candidateRedeemScript         Bitcoin address of the candidate
     /// @param _lockedTDTAmount                 Bond amount of locker in TDT
     /// @param _lockedNativeTokenAmount         Bond amount of locker in native token of the target chain
     /// @return                                 True if candidate is added successfully
     function requestToBecomeLocker(
-        bytes memory _candidateBitcoinAddress,
-        address _candidateBitcoinDecodedAddress,
+        bytes memory _candidateRedeemScript,
+        address _candidateScriptHash,
         uint _lockedTDTAmount,
         uint _lockedNativeTokenAmount
     ) external payable nonReentrant override returns (bool) {
         // TODO: interface has changed, change the inside to comply with it
-        // Locks user bond
 
         require(
-            !candidatesMapping[msg.sender].isExisted,
-            "Locker: already requested"
+            _doubleHash(_candidateRedeemScript) == _candidateScriptHash, 
+            "Lockers: redeem script hash is not correct"
         );
 
         require(
-            !lockersMapping[msg.sender].isExisted,
-            "Locker: already is locker"
+            !candidatesMapping[msg.sender].isLocker,
+            "Lockers: already requested"
         );
 
         require(
-            _lockedTDTAmount >= requiredTDTLockedAmount,
-            "Locker: low locking TDT amount"
+            !lockersMapping[msg.sender].isLocker,
+            "Lockers: already is locker"
         );
 
         require(
-            _lockedNativeTokenAmount >= requiredTNTLockedAmount && msg.value == _lockedNativeTokenAmount,
-            "Locker: low locking TNT amount"
+            _lockedTDTAmount >= minRequiredTDTLockedAmount,
+            "Lockers: low locking TDT amount"
         );
 
         require(
-            lockerTargetAddress[_candidateBitcoinDecodedAddress] == address(0),
-            "Locker: bitcoin decoded address is used before"
+            _lockedNativeTokenAmount >= minRequiredTNTLockedAmount && msg.value == _lockedNativeTokenAmount,
+            "Lockers: low locking TNT amount"
+        );
+
+        require(
+            lockerTargetAddress[_candidateScriptHash] == address(0),
+            "Lockers: bitcoin decoded address is used before"
         );
 
         require(IERC20(TeleportDAOToken).transferFrom(msg.sender, address(this), _lockedTDTAmount));
         locker memory locker_;
-        locker_.lockerBitcoinAddress = _candidateBitcoinAddress;
-        locker_.lockerBitcoinDecodedAddress = _candidateBitcoinDecodedAddress;
+        locker_.lockerRedeemScript = _candidateRedeemScript;
+        locker_.lockerScriptHash = _candidateScriptHash;
         locker_.TDTLockedAmount = _lockedTDTAmount;
         locker_.nativeTokenLockedAmount = _lockedNativeTokenAmount;
-        locker_.isExisted = true;
+        locker_.isLocker = true;
 
         candidatesMapping[msg.sender] = locker_;
 
@@ -307,7 +294,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
 
         emit RequestAddLocker(
             msg.sender,
-            _candidateBitcoinAddress,
+            _candidateRedeemScript,
             _lockedTDTAmount,
             0,
             false
@@ -321,8 +308,8 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     function revokeRequest() external nonReentrant override returns (bool) {
 
         require(
-            candidatesMapping[_msgSender()].isExisted,
-            "Locker: request doesn't exit or already accepted"
+            candidatesMapping[_msgSender()].isLocker,
+            "Lockers: request doesn't exit or already accepted"
         );
 
         locker memory theLockerRequest = candidatesMapping[_msgSender()];
@@ -347,8 +334,8 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     function addLocker(address _lockerTargetAddress) external nonReentrant onlyOwner override returns (bool) {
 
         require(
-            candidatesMapping[_lockerTargetAddress].isExisted,
-            "Locker: no request with this address"
+            candidatesMapping[_lockerTargetAddress].isLocker,
+            "Lockers: no request with this address"
         );
 
         // TODO
@@ -360,11 +347,11 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         totalNumberOfLockers = totalNumberOfLockers + 1;
         totalNumberOfCandidates = totalNumberOfCandidates -1;
 
-        lockerTargetAddress[lockersMapping[_lockerTargetAddress].lockerBitcoinDecodedAddress] = _lockerTargetAddress;
+        lockerTargetAddress[lockersMapping[_lockerTargetAddress].lockerScriptHash] = _lockerTargetAddress;
 
         emit LockerAdded(
             _lockerTargetAddress,
-            lockersMapping[_lockerTargetAddress].lockerBitcoinAddress,
+            lockersMapping[_lockerTargetAddress].lockerRedeemScript,
             lockersMapping[_lockerTargetAddress].TDTLockedAmount,
             lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
             lockersMapping[_lockerTargetAddress].isScriptHash
@@ -379,8 +366,8 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     /// @return                             True if deactivated successfully
     function requestToRemoveLocker() external nonReentrant override returns (bool) {
         require(
-            lockersMapping[_msgSender()].isExisted,
-            "Locker: Msg sender is not locker"
+            lockersMapping[_msgSender()].isLocker,
+            "Lockers: Msg sender is not locker"
         );
 
         lockersMapping[_msgSender()].isActive = false;
@@ -389,7 +376,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
 
         emit RequestRemoveLocker(
             msg.sender,
-            lockersMapping[_msgSender()].lockerBitcoinAddress,
+            lockersMapping[_msgSender()].lockerRedeemScript,
             lockersMapping[_msgSender()].TDTLockedAmount,
             lockersMapping[_msgSender()].nativeTokenLockedAmount,
             lockersMapping[_msgSender()].netMinted
@@ -403,18 +390,18 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     function removeLocker(address _lockerTargetAddress) external nonReentrant onlyOwner override returns (bool) {
         // TODO
         require(
-            lockersMapping[_lockerTargetAddress].isExisted,
-            "Locker: no locker with this address"
+            lockersMapping[_lockerTargetAddress].isLocker,
+            "Lockers: no locker with this address"
         );
 
         require(
             lockerLeavingRequests[_lockerTargetAddress],
-            "Locker: locker didn't request to be removed"
+            "Lockers: locker didn't request to be removed"
         );
 
         require(
             lockersMapping[_lockerTargetAddress].netMinted == 0,
-            "Locker: net minted is not zero"
+            "Lockers: net minted is not zero"
         );
 
         locker memory theRemovingLokcer = lockersMapping[_lockerTargetAddress];
@@ -431,7 +418,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
 
         emit LockerRemoved(
             _lockerTargetAddress,
-            theRemovingLokcer.lockerBitcoinAddress,
+            theRemovingLokcer.lockerRedeemScript,
             theRemovingLokcer.TDTLockedAmount,
             theRemovingLokcer.nativeTokenLockedAmount
         );
@@ -445,18 +432,18 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     function selfRemoveLocker() external nonReentrant whenNotPaused override returns (bool) {
         // TODO
         require(
-            lockersMapping[_msgSender()].isExisted,
-            "Locker: no locker with this address"
+            lockersMapping[_msgSender()].isLocker,
+            "Lockers: no locker with this address"
         );
 
         require(
             lockerLeavingRequests[_msgSender()],
-            "Locker: locker didn't request to be removed"
+            "Lockers: locker didn't request to be removed"
         );
 
         require(
             lockersMapping[_msgSender()].netMinted == 0,
-            "Locker: net minted is not zero"
+            "Lockers: net minted is not zero"
         );
 
         locker memory theRemovingLokcer = lockersMapping[_msgSender()];
@@ -474,7 +461,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
 
         emit LockerRemoved(
             _msgSender(),
-            theRemovingLokcer.lockerBitcoinAddress,
+            theRemovingLokcer.lockerRedeemScript,
             theRemovingLokcer.TDTLockedAmount,
             theRemovingLokcer.nativeTokenLockedAmount
         );
@@ -485,62 +472,45 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     /// @notice                           Slashes lockers
     /// @dev                              Only cc burn router can call this
     /// @param _lockerTargetAddress       Locker's target chain address
-    /// @param _amount                    Amount that is slashed from lockers
+    /// @param _amount                    Amount of teleBTC that is slashed from lockers
     /// @param _recipient                 Address of user who receives the slashed amount
     /// @return                           True if lockers are slashed successfully
-    function slashLocker(address _lockerTargetAddress, uint _amount, address _recipient) external nonReentrant whenNotPaused override returns (bool) {
+    function slashLocker(
+        address _lockerTargetAddress, 
+        uint _amount, 
+        address _recipient
+    ) external nonReentrant whenNotPaused override returns (bool) {
         require(
             msg.sender == ccBurnRouter,
-            "Locker: Caller can't slash"
+            "Lockers: Caller can't slash"
         );
 
         require(
-            lockersMapping[_lockerTargetAddress].isExisted,
-            "Locker: target is not locker"
+            lockersMapping[_lockerTargetAddress].isLocker,
+            "Lockers: target address is not locker"
         );
 
-        // TODO: slash only the determined locker
-        // address[] memory path = new address[](2);
-        // path[0] = TeleportDAOToken;
-        // path[1] = teleBTC;
-        // // Finds the needed input amount to buy _amount of output token
-        // (bool theResult, uint neededTDT) = IExchangeConnector(exchangeConnector).getInputAmount(_amount, TeleportDAOToken, teleBTC);
-
-        // if (!theResult) {
-        //     return false;
-        // }
-
-        uint equivalentNativeToekn = IPriceOracle(priceOracle).equivalentOutputAmount(
+        uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
             _amount,
         // FIXME: get decimals from token contracts
             8,
             18,
             teleBTC,
-            wrappedNativeToken
+            NATIVE_TOKEN
         );
 
         require(
-            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount >= equivalentNativeToekn,
-            "Locker: insufficient native token collateral"
+            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount >= equivalentNativeToken,
+            "Lockers: insufficient native token collateral"
         );
 
-        // TODO: use native token instead of teleport dao token
-        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount= lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - equivalentNativeToekn;
+        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount 
+            = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - equivalentNativeToken;
 
-        payable(_recipient).transfer(equivalentNativeToekn);
-
-        // IERC20(TeleportDAOToken).approve(exchangeConnector, neededTDT);
-        // uint deadline = block.timestamp + 1000;
-
-        // IExchangeConnector(exchangeConnector).swap(
-        //     _amount, // amount out
-        //     neededTDT, // amount in
-        //     path,
-        //     _recipient,
-        //     deadline,
-        // // TODO: how to set the isFIxedToken
-        //     true
-        // );
+        // Transfers slashed collateral to user
+        if (_recipient != address(this)) {
+            payable(_recipient).transfer(equivalentNativeToken);
+        }
 
         return true;
     }
@@ -549,7 +519,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     /// @dev                         Deletes and shifts the array
     /// @param _candidateAddress       Index of the element that will be deleted
     function _removeElementFromCandidatesMapping(address _candidateAddress) internal {
-        require(candidatesMapping[_candidateAddress].isExisted, "Locker: this candidate doesn't exist");
+        require(candidatesMapping[_candidateAddress].isLocker, "Lockers: this candidate doesn't exist");
 
         delete candidatesMapping[_candidateAddress];
 
@@ -559,7 +529,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     /// @dev                         Deletes and shifts the array
     /// @param _lockerAddress      Index of the element that will be deleted
     function _removeElementFromLockersMapping(address _lockerAddress) internal {
-        require(lockersMapping[_lockerAddress].isExisted, "Locker: this locker doesn't exist");
+        require(lockersMapping[_lockerAddress].isLocker, "Lockers: this locker doesn't exist");
 
         delete lockersMapping[_lockerAddress];
     }
@@ -583,13 +553,13 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
 
 
     function mint(
-        address _lockerBitcoinDecodedAddress,
+        address _lockerScriptHash,
         address _receiver,
         uint _amount
     ) external nonReentrant whenNotPaused onlyMinter override returns (uint) {
 
         // TODO: move the followoing lines of code to an internal function
-        address theLockerTargetAddress = lockerTargetAddress[_lockerBitcoinDecodedAddress];
+        address theLockerTargetAddress = lockerTargetAddress[_lockerScriptHash];
         locker memory theLocker = lockersMapping[theLockerTargetAddress];
 
         uint theLockerCollateral = _lockerCollateralInTeleBTC(theLockerTargetAddress);
@@ -615,12 +585,12 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     }
 
     function burn(
-        address _lockerBitcoinDecodedAddress,
+        address _lockerScriptHash,
         uint _amount
     ) external nonReentrant whenNotPaused onlyBurner override returns (uint) {
 
         // TODO: move the followoing lines of code to an internal function
-        address theLockerTargetAddress = lockerTargetAddress[_lockerBitcoinDecodedAddress];
+        address theLockerTargetAddress = lockerTargetAddress[_lockerScriptHash];
 
         // Transfers teleBTC from user
         ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), _amount);
@@ -639,5 +609,12 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         // Burns teleBTC and sends rest of it to locker
         ITeleBTC(teleBTC).burn(remainedAmount);
         ITeleBTC(teleBTC).transfer(theLockerTargetAddress, lockerFee);
+    }
+
+    // bitcoin double hash function
+    function _doubleHash (bytes memory input) internal returns(address) {
+        bytes32 inputHash1 = sha256(input);
+        bytes20 inputHash2 = ripemd160(abi.encodePacked(inputHash1));
+        return address(inputHash2);
     }
 }
