@@ -15,6 +15,7 @@ import "hardhat/console.sol";
 contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
     // Public variables
+    uint public override startingBlockNumber;
     uint public override chainId;
     uint public override protocolPercentageFee; // A number between 0 to 10000
     address public override relay;
@@ -28,6 +29,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     mapping(bytes32 => ccExchangeRequest) private ccExchangeRequests;
 
     constructor(
+        uint _startingBlockNumber,
         uint _protocolPercentageFee,
         uint _chainId, 
         address _lockers, 
@@ -124,6 +126,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         uint _index,
         address lockerBitcoinDecodedAddress
     ) external nonReentrant override returns (bool) {
+        require(_blockNumber >= startingBlockNumber, "CCTransferRouter: request is old");
+        
         // Calculates transaction id
         bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
         

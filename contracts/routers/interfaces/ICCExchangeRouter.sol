@@ -67,6 +67,8 @@ interface ICCExchangeRouter {
     );
 
     // Read-only functions
+    
+    function startingBlockNumber() external view returns (uint);
 
     function protocolPercentageFee() external view returns (uint);
     

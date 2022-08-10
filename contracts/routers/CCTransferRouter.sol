@@ -13,6 +13,7 @@ import "hardhat/console.sol";
 
 contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     // Public variables
+    uint public override startingBlockNumber;
     uint public override chainId;
     uint public override appId;
     uint public override protocolPercentageFee; // A number between 0 to 10000
@@ -33,6 +34,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _teleBTC                     TeleportDAO BTC ERC20 token address
     /// @param _treasury                    Address of treasury that collects fees
     constructor(
+        uint _startingBlockNumber,
         uint _protocolPercentageFee,
         uint _chainId,
         uint _appId,
@@ -41,6 +43,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         address _teleBTC,
         address _treasury
     ) public {
+        startingBlockNumber = _startingBlockNumber;
         protocolPercentageFee = _protocolPercentageFee;
         chainId = _chainId;
         appId = _appId;
@@ -122,6 +125,8 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         uint _index,
         address lockerBitcoinDecodedAddress
     ) external nonReentrant override returns (bool) {
+        require(_blockNumber >= startingBlockNumber, "CCTransferRouter: request is old");
+        
         bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
         
         require(

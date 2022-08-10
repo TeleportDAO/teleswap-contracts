@@ -31,6 +31,7 @@ describe("CCTransferRouter", async () => {
     const APP_ID = 0;
     const PROTOCOL_PERCENTAGE_FEE = 10; // Means %0.1
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
+    const STARTING_BLOCK_NUMBER = 0;
 
     // Bitcoin public key (32 bytes)
     let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
@@ -120,6 +121,7 @@ describe("CCTransferRouter", async () => {
         // Deploys ccTransferRouter contract
         const ccTransferRouterFactory = new CCTransferRouter__factory(deployer);
         ccTransferRouter = await ccTransferRouterFactory.deploy(
+            STARTING_BLOCK_NUMBER,
             PROTOCOL_PERCENTAGE_FEE,
             CHAIN_ID,
             APP_ID,
