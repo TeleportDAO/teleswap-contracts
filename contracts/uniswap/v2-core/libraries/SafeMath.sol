@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: <SPDX-License>
-pragma solidity 0.8.0;
+pragma solidity =0.5.16;
 
 // a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
 
@@ -14,9 +13,5 @@ library SafeMath {
 
     function mul(uint x, uint y) internal pure returns (uint z) {
         require(y == 0 || (z = x * y) / y == x, 'ds-math-mul-overflow');
-    }
-    
-    function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a / b; //TODO: edit it
     }
 }

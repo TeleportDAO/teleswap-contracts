@@ -5,8 +5,8 @@ import { Signer, BigNumber } from "ethers";
 
 import { UniswapConnector } from "../src/types/UniswapConnector";
 import { UniswapConnector__factory } from "../src/types/factories/UniswapConnector__factory";
-import { LiquidityPool } from "../src/types/LiquidityPool";
-import { LiquidityPool__factory } from "../src/types/factories/LiquidityPool__factory";
+import { UniswapV2Pair } from "../src/types/UniswapV2Pair";
+import { UniswapV2Pair__factory } from "../src/types/factories/UniswapV2Pair__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { ERC20__factory } from "../src/types/factories/ERC20__factory";
 import { WAVAX } from "../src/types/WAVAX";
@@ -26,11 +26,11 @@ describe("UniswapConnector", async () => {
 
     // Contracts
     let uniswapConnector: UniswapConnector;
-    let exchangeRouter: Contract;
-    let liquidityPoolAB: LiquidityPool; // non-WETH/non-WETH
-    let liquidityPoolCD: LiquidityPool; // non-WETH/WETH
-    let liquidityPoolFactory: Contract;
-    let liquidityPool__factory: LiquidityPool__factory;
+    let uniswapV2Router02: Contract;
+    let liquidityPoolAB: UniswapV2Pair; // non-WETH/non-WETH
+    let liquidityPoolCD: UniswapV2Pair; // non-WETH/WETH
+    let uniswapV2Factory: Contract;
+    let uniswapV2Pair__factory: UniswapV2Pair__factory;
     let erc20: ERC20;
     let _erc20: ERC20;
     let WETH: WAVAX;
@@ -43,8 +43,6 @@ describe("UniswapConnector", async () => {
     let oldDeployerBalanceERC20: BigNumber;
     let oldDeployerBalance_ERC20: BigNumber;
     let oldSigner1BalanceETH: BigNumber;
-
-    // let liquidityPool__factory: LiquidityPool__factory;
 
     before(async () => {
         // Sets accounts
@@ -59,27 +57,27 @@ describe("UniswapConnector", async () => {
             'WETH'
         );
 
-        // Deploys liquidityPoolFactory
-        const liquidityPoolFactoryFactory = await ethers.getContractFactory("LiquidityPoolFactory");
-        liquidityPoolFactory = await liquidityPoolFactoryFactory.deploy(
+        // Deploys uniswapV2Factory
+        const uniswapV2FactoryFactory = await ethers.getContractFactory("UniswapV2Factory");
+        uniswapV2Factory = await uniswapV2FactoryFactory.deploy(
             deployerAddress
         );
 
-        // Creates liquidityPool__factory object
-        liquidityPool__factory = new LiquidityPool__factory(deployer);
+        // Creates uniswapV2Pair__factory object
+        uniswapV2Pair__factory = new UniswapV2Pair__factory(deployer);
 
-        // Deploys exchangeRouter contract
-        const exchangeRouterFactory = await ethers.getContractFactory("ExchangeRouter");
-        exchangeRouter = await exchangeRouterFactory.deploy(
-            liquidityPoolFactory.address,
+        // Deploys uniswapV2Router02 contract
+        const uniswapV2Router02Factory = await ethers.getContractFactory("UniswapV2Router02");
+        uniswapV2Router02 = await uniswapV2Router02Factory.deploy(
+            uniswapV2Factory.address,
             WETH.address // WETH
         );
 
-        // Deploys exchangeRouter contract
+        // Deploys exchange connector contract
         const uniswapConnectorFactory = new UniswapConnector__factory(deployer);
         uniswapConnector = await uniswapConnectorFactory.deploy(
             "Uniswap-Connector",
-            exchangeRouter.address,
+            uniswapV2Router02.address,
             WETH.address
         );
 
@@ -105,9 +103,9 @@ describe("UniswapConnector", async () => {
         let addedLiquidityD = 10000; // WETH
 
         // Adds liquidity for non-WETH/non-WETH pool
-        await erc20.approve(exchangeRouter.address, addedLiquidityA);
-        await _erc20.approve(exchangeRouter.address, addedLiquidityB);
-        await exchangeRouter.addLiquidity(
+        await erc20.approve(uniswapV2Router02.address, addedLiquidityA);
+        await _erc20.approve(uniswapV2Router02.address, addedLiquidityB);
+        await uniswapV2Router02.addLiquidity(
             erc20.address,
             _erc20.address,
             addedLiquidityA,
@@ -115,15 +113,15 @@ describe("UniswapConnector", async () => {
             0, // Minimum added liquidity for first token
             0, // Minimum added liquidity for second token
             deployerAddress,
-            1000000000, // Long deadline
+            10000000000000, // Long deadline
         );
-        let liquidityPoolABAddress = await liquidityPoolFactory.getLiquidityPool(
+        let liquidityPoolABAddress = await uniswapV2Factory.getPair(
             erc20.address,
             _erc20.address
         );
 
         // Loads liquidity pool
-        liquidityPoolAB = await liquidityPool__factory.attach(liquidityPoolABAddress);
+        liquidityPoolAB = await uniswapV2Pair__factory.attach(liquidityPoolABAddress);
 
         // Records current reserves of teleBTC and TDT
         if (await liquidityPoolAB.token0() == erc20.address) {
@@ -133,24 +131,24 @@ describe("UniswapConnector", async () => {
         }
 
         // Adds liquidity for non-WETH/WETH pool
-        await erc20.approve(exchangeRouter.address, addedLiquidityA);
+        await erc20.approve(uniswapV2Router02.address, addedLiquidityA);
 
-        await exchangeRouter.addLiquidityAVAX(
+        await uniswapV2Router02.addLiquidityETH(
             erc20.address,
             addedLiquidityC,
             0, // Minimum added liquidity for first token
             0, // Minimum added liquidity for second token
             deployerAddress,
-            1000000000, // Long deadline
+            10000000000000, // Long deadline
             {value: addedLiquidityD}
         );
-        let liquidityPoolCDAddress = await liquidityPoolFactory.getLiquidityPool(
+        let liquidityPoolCDAddress = await uniswapV2Factory.getPair(
             erc20.address,
             WETH.address,
         );
 
         // Loads liquidity pool
-        liquidityPoolCD = await liquidityPool__factory.attach(liquidityPoolCDAddress);
+        liquidityPoolCD = await uniswapV2Pair__factory.attach(liquidityPoolCDAddress);
 
         // Records current reserves of teleBTC and TDT
         if (await liquidityPoolCD.token0() == erc20.address) {
@@ -170,7 +168,7 @@ describe("UniswapConnector", async () => {
 
         it("Finds needed input amount", async function () {
             let outputAmount = 1000;
-            let inputAmount = await exchangeRouter.getAmountIn(
+            let inputAmount = await uniswapV2Router02.getAmountIn(
                 outputAmount,
                 oldReserveC,
                 oldReserveD
@@ -202,7 +200,7 @@ describe("UniswapConnector", async () => {
 
         it("Finds output amount", async function () {
             let inputAmount = 1000;
-            let outputAmount = await exchangeRouter.getAmountOut(
+            let outputAmount = await uniswapV2Router02.getAmountOut(
                 inputAmount,
                 oldReserveC,
                 oldReserveD
@@ -245,14 +243,14 @@ describe("UniswapConnector", async () => {
         it("Swaps fixed non-WETH for non-WETH", async function () {
 
             let inputAmount = 1000;
-            let outputAmount = await exchangeRouter.getAmountOut(
+            let outputAmount = await uniswapV2Router02.getAmountOut(
                 inputAmount,
                 oldReserveA,
                 oldReserveB
             );
             let path = [erc20.address, _erc20.address];
             let to = deployerAddress;
-            let deadline = 2236955;
+            let deadline = 10000000000000;
             let isFixedToken = true;
 
             await erc20.approve(uniswapConnector.address, inputAmount);
@@ -283,14 +281,14 @@ describe("UniswapConnector", async () => {
         it("Swaps non-WETH for fixed non-WETH", async function () {
 
             let outputAmount = 1000;
-            let inputAmount = await exchangeRouter.getAmountIn(
+            let inputAmount = await uniswapV2Router02.getAmountIn(
                 outputAmount,
                 oldReserveA,
                 oldReserveB
             );
             let path = [erc20.address, _erc20.address];
             let to = deployerAddress;
-            let deadline = 2236955;
+            let deadline = 10000000000000;
             let isFixedToken = false;
 
             await erc20.approve(uniswapConnector.address, inputAmount);
@@ -321,14 +319,14 @@ describe("UniswapConnector", async () => {
         it("Swaps fixed non-WETH for WETH", async function () {
 
             let inputAmount = 1000;
-            let outputAmount = await exchangeRouter.getAmountOut(
+            let outputAmount = await uniswapV2Router02.getAmountOut(
                 inputAmount,
                 oldReserveC,
                 oldReserveD
             );
             let path = [erc20.address, WETH.address];
             let to = signer1Address;
-            let deadline = 2236955;
+            let deadline = 10000000000000;
             let isFixedToken = true;
             await erc20.approve(uniswapConnector.address, inputAmount);
             await expect(
@@ -358,14 +356,14 @@ describe("UniswapConnector", async () => {
         it("Swaps non-WETH for fixed WETH", async function () {
 
             let outputAmount = 1000;
-            let inputAmount = await exchangeRouter.getAmountIn(
+            let inputAmount = await uniswapV2Router02.getAmountIn(
                 outputAmount,
                 oldReserveC,
                 oldReserveD
             );
             let path = [erc20.address, WETH.address];
             let to = signer1Address;
-            let deadline = 2236955;
+            let deadline = 10000000000000;
             let isFixedToken = false;
 
             await erc20.approve(uniswapConnector.address, inputAmount);
@@ -396,14 +394,14 @@ describe("UniswapConnector", async () => {
         it("Should not exchange since expected output amount is high", async function () {
 
             let outputAmount = 1000;
-            let inputAmount = await exchangeRouter.getAmountIn(
+            let inputAmount = await uniswapV2Router02.getAmountIn(
                 outputAmount,
                 oldReserveA,
                 oldReserveB
             );
             let path = [erc20.address, _erc20.address];
             let to = deployerAddress;
-            let deadline = 2236955;
+            let deadline = 10000000000000;
             let isFixedToken = true;
 
             await erc20.approve(uniswapConnector.address, inputAmount);
@@ -422,14 +420,14 @@ describe("UniswapConnector", async () => {
         it("Should not exchange since input amount is not enough", async function () {
 
             let outputAmount = 1000;
-            let inputAmount = await exchangeRouter.getAmountIn(
+            let inputAmount = await uniswapV2Router02.getAmountIn(
                 outputAmount,
                 oldReserveA,
                 oldReserveB
             );
             let path = [erc20.address, _erc20.address];
             let to = deployerAddress;
-            let deadline = 2236955;
+            let deadline = 10000000000000;
             let isFixedToken = false;
 
             await erc20.approve(uniswapConnector.address, inputAmount);
@@ -448,7 +446,7 @@ describe("UniswapConnector", async () => {
         it("Should not exchange since deadline has passed", async function () {
 
             let outputAmount = 1000;
-            let inputAmount = await exchangeRouter.getAmountIn(
+            let inputAmount = await uniswapV2Router02.getAmountIn(
                 outputAmount,
                 oldReserveA,
                 oldReserveB
@@ -474,7 +472,7 @@ describe("UniswapConnector", async () => {
         it("Should not exchange since liquidity pool doesn't exist", async function () {
 
             let outputAmount = 1000;
-            let inputAmount = await exchangeRouter.getAmountIn(
+            let inputAmount = await uniswapV2Router02.getAmountIn(
                 outputAmount,
                 oldReserveA,
                 oldReserveB

@@ -5,16 +5,13 @@ import { assert, expect, use } from "chai";
 import { deployments, ethers } from "hardhat";
 import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
-import { Contract } from "@ethersproject/contracts";
 
-import { solidity } from "ethereum-waffle";
-
-import { LiquidityPool } from "../src/types/LiquidityPool";
-import { LiquidityPool__factory } from "../src/types/factories/LiquidityPool__factory";
-import { LiquidityPoolFactory } from "../src/types/LiquidityPoolFactory";
-import { LiquidityPoolFactory__factory } from "../src/types/factories/LiquidityPoolFactory__factory";
-import { ExchangeRouter } from "../src/types/ExchangeRouter";
-import { ExchangeRouter__factory } from "../src/types/factories/ExchangeRouter__factory";
+import { UniswapV2Pair } from "../src/types/UniswapV2Pair";
+import { UniswapV2Pair__factory } from "../src/types/factories/UniswapV2Pair__factory";
+import { UniswapV2Factory } from "../src/types/UniswapV2Factory";
+import { UniswapV2Factory__factory } from "../src/types/factories/UniswapV2Factory__factory";
+import { UniswapV2Router02 } from "../src/types/UniswapV2Router02";
+import { UniswapV2Router02__factory } from "../src/types/factories/UniswapV2Router02__factory";
 import { UniswapConnector } from "../src/types/UniswapConnector";
 import { UniswapConnector__factory } from "../src/types/factories/UniswapConnector__factory";
 import { CCExchangeRouter } from "../src/types/CCExchangeRouter";
@@ -64,9 +61,9 @@ describe("CCExchangeRouter", async () => {
 
     // Contracts
     let exchangeConnector: UniswapConnector;
-    let exchangeRouter: ExchangeRouter;
-    let liquidityPool: LiquidityPool;
-    let liquidityPoolFactory: LiquidityPoolFactory;
+    let uniswapV2Router02: UniswapV2Router02;
+    let uniswapV2Pair: UniswapV2Pair;
+    let uniswapV2Factory: UniswapV2Factory;
     let ccExchangeRouter: CCExchangeRouter;
     let lockers: Lockers;
     let teleBTC: TeleBTC;
@@ -75,14 +72,11 @@ describe("CCExchangeRouter", async () => {
 
     // Mock contracts
     let mockBitcoinRelay: MockContract;
-    // let mockLockers: MockContract;
-    // let mockBitcoinTeleporter: MockContract;
     let mockInstantRouter: MockContract;
-    let mockExchangeRouter: MockContract;
     let mockPriceOracle: MockContract;
 
     //
-    let liquidityPool__factory: LiquidityPool__factory;
+    let uniswapV2Pair__factory: UniswapV2Pair__factory;
 
     before(async () => {
         // Sets accounts
@@ -90,7 +84,6 @@ describe("CCExchangeRouter", async () => {
         deployerAddress = await deployer.getAddress();
         signer1Address = await signer1.getAddress();
         lockerAddress = await locker.getAddress();
-
 
         teleportDAOToken = await deployTelePortDaoToken();
 
@@ -129,15 +122,6 @@ describe("CCExchangeRouter", async () => {
 
         await mockInstantRouter.mock.payBackLoan.returns(true);
 
-
-        const exchangeRouterContract = await deployments.getArtifact(
-            "IExchangeRouter"
-        );
-        mockExchangeRouter = await deployMockContract(
-            deployer,
-            exchangeRouterContract.abi
-        );
-
         lockers = await deployLocker()
 
         // Deploys teleBTC contract
@@ -150,29 +134,29 @@ describe("CCExchangeRouter", async () => {
             ONE_ADDRESS
         );
 
-        // Deploys liquidityPoolFactory
-        const liquidityPoolFactoryFactory = new LiquidityPoolFactory__factory(deployer);
-        liquidityPoolFactory = await liquidityPoolFactoryFactory.deploy(
+        // Deploys uniswapV2Factory
+        const uniswapV2FactoryFactory = new UniswapV2Factory__factory(deployer);
+        uniswapV2Factory = await uniswapV2FactoryFactory.deploy(
             deployerAddress
         );
 
-        // Creates liquidityPool__factory object
-        liquidityPool__factory = new LiquidityPool__factory(deployer);
-
-        // Deploys exchangeRouter contract
-        const exchangeRouterFactory = new ExchangeRouter__factory(deployer);
-        exchangeRouter = await exchangeRouterFactory.deploy(
-            liquidityPoolFactory.address,
+        // Creates uniswapV2Pair__factory object
+        uniswapV2Pair__factory = new UniswapV2Pair__factory(deployer);
+        
+        // Deploys uniswapV2Router02 contract
+        const uniswapV2Router02Factory = new UniswapV2Router02__factory(deployer);
+        uniswapV2Router02 = await uniswapV2Router02Factory.deploy(
+            uniswapV2Factory.address,
             ZERO_ADDRESS // WAVAX
         );
-
+        
         const exchangeConnectorFactory = new UniswapConnector__factory(deployer);
         exchangeConnector = await exchangeConnectorFactory.deploy(
             "TheExchangeConnector",
-            exchangeRouter.address,
+            uniswapV2Router02.address,
             ZERO_ADDRESS // WAVAX
         );
-
+        
         // Deploys exchange token
         // We replace the exchangeToken address in ccExchangeRequests
         const erc20Factory = new ERC20__factory(deployer);
@@ -238,7 +222,7 @@ describe("CCExchangeRouter", async () => {
 
         const lockers = await lockerFactory.deploy(
             teleportDAOToken.address,
-            mockExchangeRouter.address,
+            ONE_ADDRESS,
             mockPriceOracle.address,
             requiredTDTLockedAmount,
             0,
@@ -331,11 +315,12 @@ describe("CCExchangeRouter", async () => {
 
             // Adds liquidity to teleBTC-TDT liquidity pool
             await teleBTC.mintTestToken();
-            await teleBTC.approve(exchangeRouter.address, 10000);
-            await exchangeToken.approve(exchangeRouter.address, 10000);
+            await teleBTC.approve(uniswapV2Router02.address, 10000);
+            await exchangeToken.approve(uniswapV2Router02.address, 10000);
             let addedLiquidityA = 10000;
             let addedLiquidityB = 10000;
-            await exchangeRouter.addLiquidity(
+
+            await uniswapV2Router02.addLiquidity(
                 teleBTC.address,
                 exchangeToken.address,
                 addedLiquidityA,
@@ -343,9 +328,10 @@ describe("CCExchangeRouter", async () => {
                 0, // Minimum added liquidity for first token
                 0, // Minimum added liquidity for second token
                 deployerAddress,
-                1000000000, // Long deadline
+                1000000000000000, // Long deadline
             );
-            let liquidityPoolAddress = await liquidityPoolFactory.getLiquidityPool(
+
+            let liquidityPoolAddress = await uniswapV2Factory.getPair(
                 teleBTC.address,
                 exchangeToken.address
             );
@@ -354,13 +340,13 @@ describe("CCExchangeRouter", async () => {
             oldTotalSupplyTeleBTC = await teleBTC.totalSupply();
 
             // Loads teleBTC-TDT liquidity pool
-            liquidityPool = await liquidityPool__factory.attach(liquidityPoolAddress);
+            uniswapV2Pair = await uniswapV2Pair__factory.attach(liquidityPoolAddress);
 
             // Records current reserves of teleBTC and TDT
-            if (await liquidityPool.token0() == teleBTC.address) {
-                [oldReserveTeleBTC, oldReserveExchangeToken] = await liquidityPool.getReserves();
+            if (await uniswapV2Pair.token0() == teleBTC.address) {
+                [oldReserveTeleBTC, oldReserveExchangeToken] = await uniswapV2Pair.getReserves();
             } else {
-                [oldReserveExchangeToken, oldReserveTeleBTC] = await liquidityPool.getReserves()
+                [oldReserveExchangeToken, oldReserveTeleBTC] = await uniswapV2Pair.getReserves()
             }
 
             // Records current teleBTC and TDT balances of user and teleporter
@@ -389,7 +375,7 @@ describe("CCExchangeRouter", async () => {
             // );
 
             // Finds expected output amount that user receives
-            let expectedOutputAmount = await exchangeRouter.getAmountOut(
+            let expectedOutputAmount = await uniswapV2Router02.getAmountOut(
                 CC_EXCHANGE_REQUESTS.normalCCExchange.bitcoinAmount -
                 CC_EXCHANGE_REQUESTS.normalCCExchange.teleporterFee,
                 oldReserveTeleBTC,
@@ -600,7 +586,7 @@ describe("CCExchangeRouter", async () => {
             // );
 
             // Finds expected output amount that user receives
-            let expectedOutputAmount = await exchangeRouter.getAmountOut(
+            let expectedOutputAmount = await uniswapV2Router02.getAmountOut(
                 CC_EXCHANGE_REQUESTS.instantCCExchange.bitcoinAmount -
                 CC_EXCHANGE_REQUESTS.instantCCExchange.teleporterFee,
                 oldReserveTeleBTC,
