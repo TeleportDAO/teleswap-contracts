@@ -35,13 +35,13 @@ contract BitcoinRelay is IBitcoinRelay {
     uint256 internal prevEpochDiff;
 
     // Reward parameters
-    uint public override currentFee;
     uint public override rewardAmountInTDT;
     address public override TeleportDAOToken;
     uint public override relayerPercentageFee; // Multiplied by 100 - greater than 100
     uint public override submissionGasUsed;
     uint public override epochLength;
     uint public override lastEpochQueries;
+    uint public override currentEpochQueries;
     uint public override baseQueries;
     address public override exchangeRouter;
     address public override wrappedNativeToken;
@@ -96,9 +96,10 @@ contract BitcoinRelay is IBitcoinRelay {
         // Reward parameters
         TeleportDAOToken = _TeleportDAOToken;
         relayerPercentageFee = 0; // TODO: edit it;
-        epochLength = 1;
+        epochLength = 5;
         baseQueries = epochLength;
         lastEpochQueries = baseQueries;
+        currentEpochQueries = 0;
         submissionGasUsed = 100000; // TODO: edit it
         exchangeRouter = _exchangeRouter;
         if (exchangeRouter != address(0)) {
@@ -237,7 +238,8 @@ contract BitcoinRelay is IBitcoinRelay {
                 bytes29 intermediateNodes = _intermediateNodes.ref(0).tryAsMerkleArray(); // Check for errors if any
                 bytes32 txIdLE = _revertBytes32(_txid);
                 if (ViewSPV.prove(txIdLE, _merkleRoot, intermediateNodes, _index)) {
-                    // _getFee();
+                    require(_getFee(), "BitcoinRelay: getting fee was not successful");
+                    currentEpochQueries += 1;
                     return true;
                 }
             }
@@ -346,12 +348,14 @@ contract BitcoinRelay is IBitcoinRelay {
     /// @return                 True if the fee payment was successful
     function _getFee() internal returns(bool){
         uint feeAmount;
-        feeAmount = (submissionGasUsed*(tx.gasprice)*(1+relayerPercentageFee)*(epochLength))/(100 * lastEpochQueries);
+        feeAmount = (submissionGasUsed*(tx.gasprice)*(1 + relayerPercentageFee)*(epochLength))/(100 * lastEpochQueries);
         require(msg.value >= feeAmount, "BitcoinRelay: fee is not enough");
-        address payable recipient = payable(msg.sender);
-        recipient.send(feeAmount);
-        return true;
+        bool sentFee;
+        bytes memory dataFee;
+        (sentFee, dataFee) = payable(msg.sender).call{value: (msg.value - feeAmount)}("");
+        return sentFee;
     }
+
 
     /// @notice             Adds headers to storage after validating
     /// @dev                We check integrity and consistency of the header chain
@@ -474,8 +478,18 @@ contract BitcoinRelay is IBitcoinRelay {
         newBlockHeader.relayer = msg.sender;
         chain[_height].push(newBlockHeader);
         if(_height > lastSubmittedHeight){
-            lastSubmittedHeight++;
+            lastSubmittedHeight += 1;
             _pruneChain();
+            _updateFee();
+        }
+    }
+
+    /// @notice                     Reset the number of users in an epoch when a new epoch starts
+    /// @dev                        This parameter is used when calculating the fee that relay gets from a user in the next epoch
+    function _updateFee() internal {
+        if (lastSubmittedHeight % epochLength == 0) {
+            lastEpochQueries = (currentEpochQueries < baseQueries) ? baseQueries : currentEpochQueries;
+            currentEpochQueries = 0;
         }
     }
 
@@ -536,7 +550,7 @@ contract BitcoinRelay is IBitcoinRelay {
         uint idx = 1;
         while(idx < chain[_height].length){
             delete chain[_height][idx]; // TODO: check if it should be backwards?
-            idx++;
+            idx += 1;
         }
     }
 
@@ -584,10 +598,6 @@ contract BitcoinRelay is IBitcoinRelay {
     }
 
     // TODO why commented?
-
-    // function setFeeRatio(uint _feeRatio) external override onlyOwner {
-    //     feeRatio = _feeRatio;
-    // }
 
     // /// @notice     Getter for currentEpochDiff
     // /// @dev        This is updated when a new heavist header has a new diff
