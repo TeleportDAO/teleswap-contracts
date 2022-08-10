@@ -63,6 +63,8 @@ interface IBitcoinRelay {
 
     function lastEpochQueries() external view returns(uint);
 
+    function currentEpochQueries() external view returns(uint);
+
     function baseQueries() external view returns(uint);
 
     function submissionGasUsed() external view returns(uint);
@@ -84,8 +86,6 @@ interface IBitcoinRelay {
     function findAncestor(bytes32 _hash, uint256 _offset) external view returns (bytes32); // see if it's needed
 
     function isAncestor(bytes32 _ancestor, bytes32 _descendant, uint256 _limit) external view returns (bool); // see if it's needed
-
-    function currentFee() external view returns (uint);
 
     function rewardAmountInTDT() external view returns (uint);
     
