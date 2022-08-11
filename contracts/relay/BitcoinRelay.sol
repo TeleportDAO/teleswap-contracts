@@ -113,12 +113,12 @@ contract BitcoinRelay is IBitcoinRelay {
         return _revertBytes32(chain[_height][_index].selfHash);
     }
 
-    /// @notice             Getter for an specific block header's submission gas price in the stored chain
+    /// @notice             Getter for an specific block header's fee price for a query
     /// @param  _height     The height of the desired block header
     /// @param  _index      The index of the desired block header in that height
-    /// @return             Block header's submission gas price
-    function getBlockHeaderGasPrice (uint _height, uint _index) external view override returns(bytes32) {
-        return chain[_height][_index].gasPrice;
+    /// @return             Block header's fee price for a query
+    function getBlockHeaderFee (uint _height, uint _index) external view override returns(uint) {
+        return (submissionGasUsed * chain[_height][_index].gasPrice * (1 + relayerPercentageFee) * (epochLength)) / (100 * lastEpochQueries);
     }
 
     /// @notice             Getter for the number of block headers in the same height
