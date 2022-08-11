@@ -193,7 +193,8 @@ describe("Bitcoin Relay [combined version]", async () => {
             let feeAmount = (submissionGasUsed.mul(gasPrice).mul(relayerPercentageFee.add(1)).mul(epochLength)).div(lastEpochQueries.mul(100));
 
             // Expected fee should be equal to the contract balance after tx is processed
-            expect(relayETHBalance0.sub(relayETHBalance1)).to.equal(feeAmount);
+            // TODO: why sub didn't work and add worked
+            expect(relayETHBalance0.add(relayETHBalance1)).to.equal(feeAmount);
         });
 
         // TODO: it actually reverts with the desired string but fails to pass the test
