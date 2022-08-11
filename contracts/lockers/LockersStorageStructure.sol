@@ -2,7 +2,6 @@ pragma solidity 0.8.0;
 
 import "../oracle/interfaces/IPriceOracle.sol";
 import "./interfaces/ILockers.sol";
-import "../routers/interfaces/IExchangeRouter.sol";
 import "../connectors/interfaces/IExchangeConnector.sol";
 import "../erc20/interfaces/IERC20.sol";
 import "../erc20/interfaces/ITeleBTC.sol";

@@ -5,7 +5,6 @@ import "../libraries/TypedMemView.sol";
 import "../libraries/ViewBTC.sol";
 import "../libraries/ViewSPV.sol";
 import "./interfaces/IBitcoinRelay.sol";
-import "../routers/interfaces/IExchangeRouter.sol";
 import "../erc20/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
@@ -105,7 +104,8 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
         submissionGasUsed = 100000; // TODO: edit it
         exchangeRouter = _exchangeRouter;
         if (exchangeRouter != address(0)) {
-            wrappedNativeToken = IExchangeRouter(exchangeRouter).WAVAX(); // call exchangeRouter to get wrappedNativeToken address
+            // TODO: get wrappedNativeToken from another way
+            // wrappedNativeToken = IExchangeRouter(exchangeRouter).WAVAX(); // call exchangeRouter to get wrappedNativeToken address
         }
 
         // owner = msg.sender;
@@ -140,7 +140,9 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
     /// @param  _height     The height of the desired block header
     /// @return             Block header's fee price for a query
     function getFinalizedHeaderFee(uint _height) external view override returns (uint) {
-        return (submissionGasUsed * chain[_height][0].gasPrice * (1 + relayerPercentageFee) * (epochLength)) / (100 * lastEpochQueries);
+        // TODO: fix it
+        return 0;
+        // return (submissionGasUsed * chain[_height][0].gasPrice * (1 + relayerPercentageFee) * (epochLength)) / (100 * lastEpochQueries);
     }
 
     /// @notice             Getter for the number of block headers in the same height
