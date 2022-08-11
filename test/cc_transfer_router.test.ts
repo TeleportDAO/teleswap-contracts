@@ -42,8 +42,10 @@ describe("CCTransferRouter", async () => {
 
     let teleportTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000);
     let requiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
+    let minRequiredNativeTokenLockedAmount = BigNumber.from(10).pow(18).mul(5);
     let btcAmountToSlash = BigNumber.from(10).pow(8).mul(1)
-    let collateralRatio = 2;
+    let collateralRatio = 20000;
+    let liquidationRatio = 15000;
 
     // Accounts
     let deployer: Signer;
@@ -93,7 +95,7 @@ describe("CCTransferRouter", async () => {
             priceOracleContract.abi
         );
 
-        await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
+        await mockPriceOracle.mock.equivalentOutputAmount.returns(100000)
 
         // Mocks instant router contract
         const instantRouterContract = await deployments.getArtifact(
@@ -161,6 +163,7 @@ describe("CCTransferRouter", async () => {
             requiredTDTLockedAmount,
             0,
             collateralRatio,
+            liquidationRatio,
             LOCKER_PERCENTAGE_FEE
         );
 
@@ -202,7 +205,8 @@ describe("CCTransferRouter", async () => {
             // TELEPORTER1_PublicKeyHash,
             CC_REQUESTS.normalCCTransfer.desiredRecipient,
             requiredTDTLockedAmount,
-            0
+            minRequiredNativeTokenLockedAmount,
+            {value: minRequiredNativeTokenLockedAmount}
         )
 
         await lockers.addLocker(lockerAddress)
@@ -420,7 +424,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer.desiredRecipient
                 )
             ).to.emit(ccTransferRouter, 'CCTransfer');
-            
+
             expect(
                 await ccTransferRouter.isRequestUsed(CC_REQUESTS.normalCCTransfer.txId)
             ).to.equal(true);
