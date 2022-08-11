@@ -78,6 +78,7 @@ contract BitcoinRelay is IBitcoinRelay {
         newBlockHeader.selfHash = _genesisHash;
         newBlockHeader.merkleRoot = _genesisView.merkleRoot();
         newBlockHeader.relayer = msg.sender;
+        newBlockHeader.gasPrice = tx.gasprice;
         chain[_height].push(newBlockHeader);
 
         // require(
@@ -110,6 +111,14 @@ contract BitcoinRelay is IBitcoinRelay {
     /// @return             Block header's hash
     function getBlockHeaderHash (uint _height, uint _index) external view override returns(bytes32) {
         return _revertBytes32(chain[_height][_index].selfHash);
+    }
+
+    /// @notice             Getter for an specific block header's submission gas price in the stored chain
+    /// @param  _height     The height of the desired block header
+    /// @param  _index      The index of the desired block header in that height
+    /// @return             Block header's submission gas price
+    function getBlockHeaderGasPrice (uint _height, uint _index) external view override returns(bytes32) {
+        return chain[_height][_index].gasPrice;
     }
 
     /// @notice             Getter for the number of block headers in the same height
@@ -220,7 +229,7 @@ contract BitcoinRelay is IBitcoinRelay {
                 bytes29 intermediateNodes = _intermediateNodes.ref(0).tryAsMerkleArray(); // Check for errors if any
                 bytes32 txIdLE = _revertBytes32(_txid);
                 if (ViewSPV.prove(txIdLE, _merkleRoot, intermediateNodes, _index)) {
-                    require(_getFee(), "BitcoinRelay: getting fee was not successful");
+                    require(_getFee(chain[_blockHeight][i].gasPrice), "BitcoinRelay: getting fee was not successful");
                     currentEpochQueries += 1;
                     return true;
                 }
@@ -329,9 +338,9 @@ contract BitcoinRelay is IBitcoinRelay {
     /// @notice                 Gets fee from the user
     /// @dev                    Fee is paid in target blockchain native token
     /// @return                 True if the fee payment was successful
-    function _getFee() internal returns(bool){
+    function _getFee(uint gasPrice) internal returns(bool){
         uint feeAmount;
-        feeAmount = (submissionGasUsed*(tx.gasprice)*(1 + relayerPercentageFee)*(epochLength))/(100 * lastEpochQueries);
+        feeAmount = (submissionGasUsed * gasPrice * (1 + relayerPercentageFee) * (epochLength)) / (100 * lastEpochQueries);
         require(msg.value >= feeAmount, "BitcoinRelay: fee is not enough");
         bool sentFee;
         bytes memory dataFee;
@@ -459,6 +468,7 @@ contract BitcoinRelay is IBitcoinRelay {
         newBlockHeader.parentHash = _header.parent();
         newBlockHeader.merkleRoot = _header.merkleRoot();
         newBlockHeader.relayer = msg.sender;
+        newBlockHeader.gasPrice = tx.gasprice;
         chain[_height].push(newBlockHeader);
         if(_height > lastSubmittedHeight){
             lastSubmittedHeight += 1;
