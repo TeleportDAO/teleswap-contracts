@@ -1,4 +1,5 @@
-pragma solidity 0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
 import "../oracle/interfaces/IPriceOracle.sol";
 import "./interfaces/ILockers.sol";
@@ -89,8 +90,8 @@ contract LockersStorageStructure is OwnableUpgradeable, ReentrancyGuardUpgradeab
     address public priceOracle;
 
     uint public totalNumberOfLockers;
-    // lockerTargetAddress -> locker structure
-    mapping(address => locker) public lockersMapping;
+    
+    mapping(address => locker) public lockersMapping; // lockerTargetAddress -> locker structure
 
     uint public totalNumberOfCandidates;
     // remember to remove from candidates when becomes locker

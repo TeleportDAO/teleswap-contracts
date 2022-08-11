@@ -1,75 +1,61 @@
-pragma solidity 0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
 import "./LockersStorageStructure.sol";
 import "hardhat/console.sol";
 
 contract LockersLogic is LockersStorageStructure {
+
+    modifier nonZeroAddress(address _address) {
+        require(_address != address(0), "Lockers: address is zero");
+        _;
+    }
+
+    modifier nonZeroValue(uint _value) {
+        require(_value > 0, "Lockers: value is zero");
+        _;
+    }
+
     modifier onlyMinter() {
-        require(isMinter(_msgSender()), "Lockers: only minters can mint");
+        require(_isMinter(_msgSender()), "Lockers: only minters can mint");
         _;
     }
 
     /**
      * @dev Give an account access to mint.
      */
-    function addMinter(address account) external onlyOwner {
-        require(!isMinter(account), "Lockers: account already has role");
-        minters[account] = true;
+    function addMinter(address _account) external nonZeroAddress(_account) onlyOwner {
+        require(!_isMinter(_account), "Lockers: account already has role");
+        minters[_account] = true;
     }
 
     /**
      * @dev Remove an account's access to mint.
      */
-    function removeMinter(address account) external onlyOwner {
-        require(isMinter(account), "Lockers: account does not have role");
-        minters[account] = false;
-    }
-
-    /**
-     * @dev Check if an account is minter.
-     * @return bool
-     */
-    function isMinter(address account)
-    internal
-    view
-    returns (bool)
-    {
-        require(account != address(0), "Lockers: account is the zero address");
-        return minters[account];
+    function removeMinter(address _account) external nonZeroAddress(_account) onlyOwner {
+        require(_isMinter(_account), "Lockers: account does not have role");
+        minters[_account] = false;
     }
 
     modifier onlyBurner() {
-        require(isBurner(_msgSender()), "Lockers: only burners can burn");
+        require(_isBurner(_msgSender()), "Lockers: only burners can burn");
         _;
     }
 
     /**
      * @dev Give an account access to burn.
      */
-    function addBurner(address account) external onlyOwner {
-        require(!isBurner(account), "Lockers: account already has role");
-        burners[account] = true;
+    function addBurner(address _account) external nonZeroAddress(_account) onlyOwner {
+        require(!_isBurner(_account), "Lockers: account already has role");
+        burners[_account] = true;
     }
 
     /**
      * @dev Remove an account's access to burn.
      */
-    function removeBurner(address account) external onlyOwner {
-        require(isBurner(account), "Lockers: account does not have role");
-        burners[account] = false;
-    }
-
-    /**
-     * @dev Check if an account is burner.
-     * @return bool
-     */
-    function isBurner(address account)
-    internal
-    view
-    returns (bool)
-    {
-        require(account != address(0), "Lockers: account is the zero address");
-        return burners[account];
+    function removeBurner(address _account) external nonZeroAddress(_account) onlyOwner {
+        require(_isBurner(_account), "Lockers: account does not have role");
+        burners[_account] = false;
     }
 
     /// @notice                 Pause the locker, so only the functions can be called which are whenPaused
@@ -90,8 +76,7 @@ contract LockersLogic is LockersStorageStructure {
     /// @dev
     /// @param _lockerTargetAddress       Address of locker on the target chain
     /// @return                           True if user is locker
-    function isLocker(address _lockerScriptHash) external view returns(bool) {
-        // TODO: use the bitcoin decoed address or target address
+    function isLocker(address _lockerScriptHash) external view nonZeroAddress(_lockerScriptHash) returns(bool) {
         return lockersMapping[lockerTargetAddress[_lockerScriptHash]].isLocker;
     }
 
@@ -106,7 +91,9 @@ contract LockersLogic is LockersStorageStructure {
     /// @dev
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             Bitcoin public key of locker
-    function getLockerRedeemScript(address _lockerTargetAddress) external view returns (bytes memory) {
+    function getLockerRedeemScript(
+        address _lockerTargetAddress
+    ) external view nonZeroAddress(_lockerTargetAddress) returns (bytes memory) {
         return lockersMapping[_lockerTargetAddress].lockerRedeemScript;
     }
 
@@ -115,7 +102,9 @@ contract LockersLogic is LockersStorageStructure {
     /// capacity to mint more tokens (minted - burnt << their collateral)
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             True if the locker is active and accepts mint requests
-    function isActive(address _lockerTargetAddress) external view returns (bool) {
+    function isActive(
+        address _lockerTargetAddress
+    ) external view nonZeroAddress(_lockerTargetAddress) returns (bool) {
         return lockersMapping[_lockerTargetAddress].isActive;
     }
 
@@ -123,7 +112,9 @@ contract LockersLogic is LockersStorageStructure {
     /// @dev                                Net minted amount is total minted minus total burnt for the locker
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             The net minted of the locker
-    function getLockerCapacity(address _lockerTargetAddress) public view returns (uint) {
+    function getLockerCapacity(
+        address _lockerTargetAddress
+    ) public view nonZeroAddress(_lockerTargetAddress) returns (uint) {
         return (_lockerCollateralInTeleBTC(_lockerTargetAddress)*10000/collateralRatio) - lockersMapping[_lockerTargetAddress].netMinted;
     }
 
@@ -144,28 +135,28 @@ contract LockersLogic is LockersStorageStructure {
     /// @notice                 Changes the price oracle
     /// @dev                    Only current owner can call this
     /// @param _priceOracle     The new price oracle
-    function setPriceOracle(address _priceOracle) external onlyOwner {
+    function setPriceOracle(address _priceOracle) external nonZeroAddress(_priceOracle) onlyOwner {
         priceOracle = _priceOracle;
     }
 
     /// @notice                Changes cc burn router contract
     /// @dev                   Only current owner can call this
     /// @param _ccBurnRouter   The new cc burn router contract address
-    function setCCBurnRouter(address _ccBurnRouter) external onlyOwner {
+    function setCCBurnRouter(address _ccBurnRouter) external nonZeroAddress(_ccBurnRouter) onlyOwner {
         ccBurnRouter = _ccBurnRouter;
     }
 
     /// @notice                 Changes exchange router contract address and updates wrapped avax addresses
     /// @dev                    Only owner can call this
     /// @param _exchangeConnector  The new exchange router contract address
-    function setExchangeConnector(address _exchangeConnector) external onlyOwner {
+    function setExchangeConnector(address _exchangeConnector) external nonZeroAddress(_exchangeConnector) onlyOwner {
         exchangeConnector = _exchangeConnector;
     }
 
     /// @notice                 Changes wrapped token contract address
     /// @dev                    Only owner can call this
     /// @param _teleBTC         The new wrapped token contract address
-    function setTeleBTC(address _teleBTC) external onlyOwner {
+    function setTeleBTC(address _teleBTC) external nonZeroAddress(_teleBTC) onlyOwner {
         teleBTC = _teleBTC;
     }
 
@@ -187,12 +178,11 @@ contract LockersLogic is LockersStorageStructure {
         address _candidateScriptHash,
         uint _lockedTDTAmount,
         uint _lockedNativeTokenAmount
-    ) external payable nonReentrant returns (bool) {
-        // TODO: interface has changed, change the inside to comply with it
+    ) external payable nonZeroAddress(_candidateScriptHash) nonReentrant returns (bool) {
 
         require(
             _doubleHash(_candidateRedeemScript) == _candidateScriptHash,
-            "Lockers: redeem script hash is not correct"
+            "Lockers: redeem script hash doesn't match with redeem script"
         );
 
         require(
@@ -217,7 +207,7 @@ contract LockersLogic is LockersStorageStructure {
 
         require(
             lockerTargetAddress[_candidateScriptHash] == address(0),
-            "Lockers: bitcoin decoded address is used before"
+            "Lockers: redeem script hash is used before"
         );
 
         require(IERC20(TeleportDAOToken).transferFrom(msg.sender, address(this), _lockedTDTAmount));
@@ -249,21 +239,24 @@ contract LockersLogic is LockersStorageStructure {
 
         require(
             candidatesMapping[_msgSender()].isLocker,
-            "Lockers: request doesn't exit or already accepted"
+            "Lockers: request doesn't exist or already accepted"
         );
 
-        locker memory theLockerRequest = candidatesMapping[_msgSender()];
+        // Loads locker's information
+        locker memory lockerRequest = candidatesMapping[_msgSender()];
 
-        IERC20(TeleportDAOToken).transfer(_msgSender(), theLockerRequest.TDTLockedAmount);
-
-        // TODO: consider all possible attacks
-        address payable targetLockerAddress = payable(_msgSender());
-        targetLockerAddress.transfer(theLockerRequest.nativeTokenLockedAmount);
-
-        // Removes candidate from candidate list
+        // Removes locker from candidate list
         _removeElementFromCandidatesMapping(_msgSender());
-
         totalNumberOfCandidates = totalNumberOfCandidates -1;
+
+        // Removes locker from candidatesMapping
+        locker memory emptyLocker;
+        candidatesMapping[_msgSender()] = emptyLocker;
+
+        // Sends back TDT and TNT collateral
+        IERC20(TeleportDAOToken).transfer(_msgSender(), lockerRequest.TDTLockedAmount);
+        payable(_msgSender()).transfer(lockerRequest.nativeTokenLockedAmount);
+
         return true;
     }
 
@@ -271,7 +264,9 @@ contract LockersLogic is LockersStorageStructure {
     /// @dev                                  Only owner can call this
     /// @param _lockerTargetAddress           Locker's target chain address
     /// @return                               True if candidate is added successfully
-    function addLocker(address _lockerTargetAddress) external nonReentrant onlyOwner returns (bool) {
+    function addLocker(
+        address _lockerTargetAddress
+    ) external nonZeroAddress(_lockerTargetAddress) nonReentrant onlyOwner returns (bool) {
 
         require(
             candidatesMapping[_lockerTargetAddress].isLocker,
@@ -327,8 +322,10 @@ contract LockersLogic is LockersStorageStructure {
 
     /// @notice                           Removes a locker from lockers pool
     /// @return                           True if locker is removed successfully
-    function removeLocker(address _lockerTargetAddress) external nonReentrant onlyOwner returns (bool) {
-        // TODO
+    function removeLocker(
+        address _lockerTargetAddress
+    ) external nonZeroAddress(_lockerTargetAddress) nonReentrant onlyOwner returns (bool) {
+
         require(
             lockersMapping[_lockerTargetAddress].isLocker,
             "Lockers: no locker with this address"
@@ -344,13 +341,13 @@ contract LockersLogic is LockersStorageStructure {
             "Lockers: net minted is not zero"
         );
 
-        locker memory theRemovingLokcer = lockersMapping[_lockerTargetAddress];
+        locker memory _removingLokcer = lockersMapping[_lockerTargetAddress];
 
-        IERC20(TeleportDAOToken).transfer(_lockerTargetAddress, theRemovingLokcer.TDTLockedAmount);
+        IERC20(TeleportDAOToken).transfer(_lockerTargetAddress, _removingLokcer.TDTLockedAmount);
 
         // TODO: consider all possible attacks
         address payable targetLockerAddress = payable(_lockerTargetAddress);
-        targetLockerAddress.transfer(theRemovingLokcer.nativeTokenLockedAmount);
+        targetLockerAddress.transfer(_removingLokcer.nativeTokenLockedAmount);
 
         _removeElementFromLockersMapping(_lockerTargetAddress);
 
@@ -358,9 +355,9 @@ contract LockersLogic is LockersStorageStructure {
 
         emit LockerRemoved(
             _lockerTargetAddress,
-            theRemovingLokcer.lockerRedeemScript,
-            theRemovingLokcer.TDTLockedAmount,
-            theRemovingLokcer.nativeTokenLockedAmount
+            _removingLokcer.lockerRedeemScript,
+            _removingLokcer.TDTLockedAmount,
+            _removingLokcer.nativeTokenLockedAmount
         );
 
         return true;
@@ -370,7 +367,7 @@ contract LockersLogic is LockersStorageStructure {
     /// @notice                           Removes a locker from lockers pool
     /// @return                           True if locker is removed successfully
     function selfRemoveLocker() external nonReentrant whenNotPaused returns (bool) {
-        // TODO
+        
         require(
             lockersMapping[_msgSender()].isLocker,
             "Lockers: no locker with this address"
@@ -386,14 +383,14 @@ contract LockersLogic is LockersStorageStructure {
             "Lockers: net minted is not zero"
         );
 
-        locker memory theRemovingLokcer = lockersMapping[_msgSender()];
+        locker memory _removingLokcer = lockersMapping[_msgSender()];
 
-        IERC20(TeleportDAOToken).transfer(_msgSender(), theRemovingLokcer.TDTLockedAmount);
+        IERC20(TeleportDAOToken).transfer(_msgSender(), _removingLokcer.TDTLockedAmount);
 
 
         // TODO: consider all possible attacks
         address payable targetLockerAddress = payable(_msgSender());
-        targetLockerAddress.transfer(theRemovingLokcer.nativeTokenLockedAmount);
+        targetLockerAddress.transfer(_removingLokcer.nativeTokenLockedAmount);
 
         _removeElementFromLockersMapping(_msgSender());
 
@@ -401,9 +398,9 @@ contract LockersLogic is LockersStorageStructure {
 
         emit LockerRemoved(
             _msgSender(),
-            theRemovingLokcer.lockerRedeemScript,
-            theRemovingLokcer.TDTLockedAmount,
-            theRemovingLokcer.nativeTokenLockedAmount
+            _removingLokcer.lockerRedeemScript,
+            _removingLokcer.TDTLockedAmount,
+            _removingLokcer.nativeTokenLockedAmount
         );
 
         return true;
@@ -412,15 +409,16 @@ contract LockersLogic is LockersStorageStructure {
     /// @notice                           Slashes lockers
     /// @dev                              Only cc burn router can call this
     /// @param _lockerTargetAddress       Locker's target chain address
-    /// @param _amount                    Amount of teleBTC that is slashed from lockers
+    /// @param _btcAmount                 Amount of teleBTC that is slashed from lockers
     /// @param _recipient                 Address of user who receives the slashed amount
     /// @return                           True if lockers are slashed successfully
     function slashLocker(
         address _lockerTargetAddress,
-    // TODO: change the name to btcAmount
-        uint _amount,
+        uint _btcAmount,
         address _recipient
-    ) external nonReentrant whenNotPaused returns (bool) {
+    ) external nonZeroAddress(_lockerTargetAddress) nonZeroAddress(_recipient) 
+    nonZeroValue(_btcAmount) nonReentrant whenNotPaused returns (bool) {
+
         require(
             msg.sender == ccBurnRouter,
             "Lockers: Caller can't slash"
@@ -432,7 +430,7 @@ contract LockersLogic is LockersStorageStructure {
         );
 
         uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
-            _amount,
+            _btcAmount,
         // FIXME: get decimals from token contracts
             8,
             18,
@@ -456,68 +454,36 @@ contract LockersLogic is LockersStorageStructure {
         return true;
     }
 
-    /// @notice                      Removes an element of array of candidates
-    /// @dev                         Deletes and shifts the array
-    /// @param _candidateAddress       Index of the element that will be deleted
-    function _removeElementFromCandidatesMapping(address _candidateAddress) internal {
-        require(candidatesMapping[_candidateAddress].isLocker, "Lockers: this candidate doesn't exist");
-
-        delete candidatesMapping[_candidateAddress];
-
-    }
-
-    /// @notice                      Removes an element of lockers list
-    /// @dev                         Deletes and shifts the array
-    /// @param _lockerAddress      Index of the element that will be deleted
-    function _removeElementFromLockersMapping(address _lockerAddress) internal {
-        require(lockersMapping[_lockerAddress].isLocker, "Lockers: this locker doesn't exist");
-
-        delete lockersMapping[_lockerAddress];
-    }
-
-    /// @notice                             Get the locker collateral in terms of TeleBTC
-    /// @dev
-    /// @param _lockerTargetAddress         Address of locker on the target chain
-    /// @return                             The locker collateral in TeleBTC
-    function _lockerCollateralInTeleBTC(address _lockerTargetAddress) internal view returns (uint) {
-
-        // TODO: shall we get the equivalent amount of tdt token and native token and adding up them?
-        return IPriceOracle(priceOracle).equivalentOutputAmount(
-            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
-        // FIXME: get decimals from token contracts
-            18,
-            8,
-            NATIVE_TOKEN,
-            teleBTC
-        );
-        // return lockersMapping[_lockerTargetAddress].TDTLockedAmount;
-    }
-
-
-    function luquidateLocker(
+    function liquidateLocker(
         address _lockerTargetAddress,
         uint _btcAmount
-    ) external nonReentrant whenNotPaused returns (bool result) {
+    ) external nonZeroAddress(_lockerTargetAddress) nonZeroValue(_btcAmount) 
+    nonReentrant whenNotPaused returns (bool result) {
 
         require(
             lockersMapping[_lockerTargetAddress].isLocker,
             "Lockers: target address is not locker"
         );
 
-        locker memory theLuquidatingLokcer = lockersMapping[_lockerTargetAddress];
+        locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
         uint theLockerCollateralBTCequivalent = _lockerCollateralInTeleBTC(_lockerTargetAddress);
 
         require(
-            (theLuquidatingLokcer.netMinted*liquidationRatio/10000) > theLockerCollateralBTCequivalent,
+            (theLiquidatingLocker.netMinted*liquidationRatio/10000) > theLockerCollateralBTCequivalent,
             "Lockers: this locker is above luquidation ratio"
         );
 
-        // Maximum buyable amount of collateral comes from ((BtcWorthOfCollateral - x)/(netMinted -x ) = collateralRatio/10000)
+        /*
+            Maximum buyable amount of collateral comes from: 
+            (BtcWorthOfCollateral - x)/(netMinted -x) = collateralRatio/10000
+        */
 
-        uint maxBuyable = ((theLuquidatingLokcer.netMinted*collateralRatio/10000) - theLockerCollateralBTCequivalent)/((collateralRatio-10000)/10000);
+        uint maxBuyable = 
+            ((theLiquidatingLocker.netMinted*collateralRatio/10000) - 
+            theLockerCollateralBTCequivalent)/((collateralRatio-10000)/10000);
 
-        if (maxBuyable > theLuquidatingLokcer.netMinted) {
-            maxBuyable = theLuquidatingLokcer.netMinted;
+        if (maxBuyable > theLiquidatingLocker.netMinted) {
+            maxBuyable = theLiquidatingLocker.netMinted;
         }
 
         require(
@@ -544,30 +510,30 @@ contract LockersLogic is LockersStorageStructure {
 
     }
 
-
     function mint(
         address _lockerScriptHash,
         address _receiver,
         uint _amount
-    ) external nonReentrant whenNotPaused onlyMinter returns (uint) {
+    ) external nonZeroAddress(_lockerScriptHash) nonZeroAddress(_receiver)
+    nonZeroValue(_amount) nonReentrant whenNotPaused onlyMinter returns (uint) {
 
         // TODO: move the followoing lines of code to an internal function
-        address theLockerTargetAddress = lockerTargetAddress[_lockerScriptHash];
-        locker memory theLocker = lockersMapping[theLockerTargetAddress];
+        address _lockerTargetAddress = lockerTargetAddress[_lockerScriptHash];
 
-        uint theLockerCapacity = getLockerCapacity(theLockerTargetAddress);
+        uint theLockerCapacity = getLockerCapacity(_lockerTargetAddress);
 
         require(
             theLockerCapacity >= _amount,
             "Lockers: this locker hasn't sufficient capacity"
         );
 
-        lockersMapping[theLockerTargetAddress].netMinted = lockersMapping[theLockerTargetAddress].netMinted + _amount;
+        lockersMapping[_lockerTargetAddress].netMinted = 
+            lockersMapping[_lockerTargetAddress].netMinted + _amount;
 
         // Mints locker fee
         uint lockerFee = _amount*lockerPercentageFee/10000;
         if (lockerFee > 0) {
-            ITeleBTC(teleBTC).mint(theLockerTargetAddress, lockerFee);
+            ITeleBTC(teleBTC).mint(_lockerTargetAddress, lockerFee);
         }
 
         // Mints tokens for receiver
@@ -579,34 +545,93 @@ contract LockersLogic is LockersStorageStructure {
     function burn(
         address _lockerScriptHash,
         uint _amount
-    ) external nonReentrant whenNotPaused onlyBurner returns (uint) {
+    ) external nonZeroAddress(_lockerScriptHash) nonZeroValue(_amount) 
+    nonReentrant whenNotPaused onlyBurner returns (uint) {
 
         // TODO: move the followoing lines of code to an internal function
-        address theLockerTargetAddress = lockerTargetAddress[_lockerScriptHash];
+        address _lockerTargetAddress = lockerTargetAddress[_lockerScriptHash];
 
         // Transfers teleBTC from user
         ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), _amount);
 
         uint lockerFee = _amount*lockerPercentageFee/10000;
         uint remainedAmount = _amount - lockerFee;
-        uint netMinted = lockersMapping[theLockerTargetAddress].netMinted;
+        uint netMinted = lockersMapping[_lockerTargetAddress].netMinted;
 
         require(
             netMinted >= remainedAmount,
             "Lockers: locker doesn't have sufficient funds"
         );
 
-        lockersMapping[theLockerTargetAddress].netMinted = netMinted - remainedAmount;
+        lockersMapping[_lockerTargetAddress].netMinted = netMinted - remainedAmount;
 
         // Burns teleBTC and sends rest of it to locker
         ITeleBTC(teleBTC).burn(remainedAmount);
-        ITeleBTC(teleBTC).transfer(theLockerTargetAddress, lockerFee);
+        ITeleBTC(teleBTC).transfer(_lockerTargetAddress, lockerFee);
+
+        return remainedAmount;
     }
 
     // bitcoin double hash function
-    function _doubleHash (bytes memory input) internal returns(address) {
+    function _doubleHash(bytes memory input) internal pure returns(address) {
         bytes32 inputHash1 = sha256(input);
         bytes20 inputHash2 = ripemd160(abi.encodePacked(inputHash1));
         return address(inputHash2);
+    }
+
+    /**
+     * @dev Check if an account is minter.
+     * @return bool
+     */
+    function _isMinter(address account) internal view nonZeroAddress(account) returns (bool) {
+        return minters[account];
+    }
+
+    /**
+     * @dev Check if an account is burner.
+     * @return bool
+     */
+    function _isBurner(address account) internal view nonZeroAddress(account) returns (bool) {
+        return burners[account];
+    }
+
+    /// @notice                      Removes an element of array of candidates
+    /// @dev                         Deletes and shifts the array
+    /// @param _candidateAddress     Index of the element that will be deleted
+    function _removeElementFromCandidatesMapping(address _candidateAddress) internal {
+        require(
+            candidatesMapping[_candidateAddress].isLocker, 
+            "Lockers: this candidate doesn't exist"
+        );
+        delete candidatesMapping[_candidateAddress];
+    }
+
+    /// @notice                      Removes an element of lockers list
+    /// @dev                         Deletes and shifts the array
+    /// @param _lockerAddress      Index of the element that will be deleted
+    function _removeElementFromLockersMapping(address _lockerAddress) internal {
+        require(
+            lockersMapping[_lockerAddress].isLocker, 
+            "Lockers: this locker doesn't exist"
+        );
+        delete lockersMapping[_lockerAddress];
+    }
+
+    /// @notice                             Get the locker collateral in terms of TeleBTC
+    /// @dev
+    /// @param _lockerTargetAddress         Address of locker on the target chain
+    /// @return                             The locker collateral in TeleBTC
+    function _lockerCollateralInTeleBTC(address _lockerTargetAddress) internal view returns (uint) {
+
+        // TODO: shall we get the equivalent amount of tdt token and native token and adding up them?
+        return IPriceOracle(priceOracle).equivalentOutputAmount(
+            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
+        // FIXME: get decimals from token contracts
+            18,
+            8,
+            NATIVE_TOKEN,
+            teleBTC
+        );
+        // return lockersMapping[_lockerTargetAddress].TDTLockedAmount;
     }
 }
