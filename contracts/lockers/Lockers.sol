@@ -25,6 +25,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
 
     // 10000 means 100%
     uint public override collateralRatio;
+    uint public override liquidationRatio;
     // ^ this is because of price volitility and making minted coins for some collateral secure
     address public override priceOracle;
 
@@ -121,14 +122,17 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         uint _minRequiredTDTLockedAmount,
         uint _minRequiredTNTLockedAmount,
         uint _collateralRatio,
+        uint _liquidationRatio,
         uint _lockerPercentageFee
     ) public {
+        // TODO: add some requires for the amounts of _collateralRatio and _liquidationRatio
         TeleportDAOToken = _TeleportDAOToken;
         exchangeConnector = _exchangeConnector;
         priceOracle = _priceOracle;
         minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
         minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
         collateralRatio = _collateralRatio;
+        liquidationRatio = _liquidationRatio;
         lockerPercentageFee = _lockerPercentageFee;
     }
 
@@ -183,7 +187,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     /// @dev                                Net minted amount is total minted minus total burnt for the locker
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             The net minted of the locker
-    function getLockerCapacity(address _lockerTargetAddress) external view override returns (uint) {
+    function getLockerCapacity(address _lockerTargetAddress) public view override returns (uint) {
         return (_lockerCollateralInTeleBTC(_lockerTargetAddress)*10000/collateralRatio) - lockersMapping[_lockerTargetAddress].netMinted;
     }
 
@@ -251,7 +255,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         // TODO: interface has changed, change the inside to comply with it
 
         require(
-            _doubleHash(_candidateRedeemScript) == _candidateScriptHash, 
+            _doubleHash(_candidateRedeemScript) == _candidateScriptHash,
             "Lockers: redeem script hash is not correct"
         );
 
@@ -476,8 +480,9 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     /// @param _recipient                 Address of user who receives the slashed amount
     /// @return                           True if lockers are slashed successfully
     function slashLocker(
-        address _lockerTargetAddress, 
-        uint _amount, 
+        address _lockerTargetAddress,
+    // TODO: change the name to btcAmount
+        uint _amount,
         address _recipient
     ) external nonReentrant whenNotPaused override returns (bool) {
         require(
@@ -504,8 +509,8 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
             "Lockers: insufficient native token collateral"
         );
 
-        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount 
-            = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - equivalentNativeToken;
+        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount
+        = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - equivalentNativeToken;
 
         // Transfers slashed collateral to user
         if (_recipient != address(this)) {
@@ -540,15 +545,67 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     /// @return                             The locker collateral in TeleBTC
     function _lockerCollateralInTeleBTC(address _lockerTargetAddress) internal view returns (uint) {
 
+        // TODO: shall we get the equivalent amount of tdt token and native token and adding up them?
         return IPriceOracle(priceOracle).equivalentOutputAmount(
-            lockersMapping[_lockerTargetAddress].TDTLockedAmount,
+            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
         // FIXME: get decimals from token contracts
             18,
             8,
-            TeleportDAOToken,
+            NATIVE_TOKEN,
             teleBTC
         );
         // return lockersMapping[_lockerTargetAddress].TDTLockedAmount;
+    }
+
+
+    function luquidateLocker(
+        address _lockerTargetAddress,
+        uint _btcAmount
+    ) external nonReentrant whenNotPaused override returns (bool result) {
+
+        require(
+            lockersMapping[_lockerTargetAddress].isLocker,
+            "Lockers: target address is not locker"
+        );
+
+        locker memory theLuquidatingLokcer = lockersMapping[_lockerTargetAddress];
+        uint theLockerCollateralBTCequivalent = _lockerCollateralInTeleBTC(_lockerTargetAddress);
+
+        require(
+            (theLuquidatingLokcer.netMinted*liquidationRatio/10000) < theLockerCollateralBTCequivalent,
+            "Lockers: this locker is above luquidation ratio"
+        );
+
+        // Maximum buyable amount of collateral comes from ((BtcWorthOfCollateral - x)/(netMinted -x ) = collateralRatio/10000)
+
+        uint maxBuyable = (theLockerCollateralBTCequivalent - (theLuquidatingLokcer.netMinted*collateralRatio/10000))/((collateralRatio-10000)/10000);
+
+        if (maxBuyable > theLuquidatingLokcer.netMinted) {
+            maxBuyable = theLuquidatingLokcer.netMinted;
+        }
+
+        require(
+            _btcAmount <= maxBuyable,
+            "Lockers: above the locker's luquidation penalty"
+        );
+
+        IERC20(teleBTC).transferFrom(_msgSender(), address(this), _btcAmount);
+
+        uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
+            _btcAmount,
+        // FIXME: get decimals from token contracts
+            8,
+            18,
+            teleBTC,
+            NATIVE_TOKEN
+        );
+
+        lockersMapping[_lockerTargetAddress].netMinted = lockersMapping[_lockerTargetAddress].netMinted - _btcAmount;
+
+        payable(_msgSender()).transfer(equivalentNativeToken);
+
+        result = true;
+
     }
 
 
@@ -562,15 +619,14 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         address theLockerTargetAddress = lockerTargetAddress[_lockerScriptHash];
         locker memory theLocker = lockersMapping[theLockerTargetAddress];
 
-        uint theLockerCollateral = _lockerCollateralInTeleBTC(theLockerTargetAddress);
-        uint netMinted = lockersMapping[theLockerTargetAddress].netMinted;
+        uint theLockerCapacity = getLockerCapacity(theLockerTargetAddress);
 
         require(
-            theLockerCollateral >= _amount + netMinted,
-            "Lockers: this locker hasn't sufficient funds"
+            theLockerCapacity >= _amount,
+            "Lockers: this locker hasn't sufficient capacity"
         );
 
-        lockersMapping[theLockerTargetAddress].netMinted = netMinted + _amount;
+        lockersMapping[theLockerTargetAddress].netMinted = lockersMapping[theLockerTargetAddress].netMinted + _amount;
 
         // Mints locker fee
         uint lockerFee = _amount*lockerPercentageFee/10000;

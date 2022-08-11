@@ -78,6 +78,8 @@ interface ILockers {
 
     function collateralRatio() external view returns (uint);
 
+    function liquidationRatio() external view returns (uint);
+
     function priceOracle() external view returns (address);
 
     function lockerTargetAddress(address  _lockerScriptHash) external view returns (address);
@@ -130,6 +132,11 @@ interface ILockers {
     function setTeleBTC(address _teleBTC) external;
 
     function setCollateralRatio(uint _collateralRatio) external;
+
+    function luquidateLocker(
+        address _lockerTargetAddress,
+        uint _btcAmount
+    ) external returns (bool);
 
     function requestToBecomeLocker(
         bytes memory _candidateBitcoinAddress,
