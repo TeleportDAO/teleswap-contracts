@@ -31,7 +31,8 @@ describe("Lockers", async () => {
     let minRequiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
     let minRequiredNativeTokenLockedAmount = BigNumber.from(10).pow(18).mul(5);
     let btcAmountToSlash = BigNumber.from(10).pow(8).mul(1)
-    let collateralRatio = 2;
+    let collateralRatio = 20000;
+    let liquidationRatio = 15000;
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
 
     // Bitcoin public key (32 bytes)
@@ -163,6 +164,7 @@ describe("Lockers", async () => {
             minRequiredTDTLockedAmount,
             minRequiredNativeTokenLockedAmount,
             collateralRatio,
+            liquidationRatio,
             LOCKER_PERCENTAGE_FEE
         );
 
@@ -565,6 +567,37 @@ describe("Lockers", async () => {
             expect(
                 await teleBTC.balanceOf(signer1Address)
             ).to.equal(lockerFee);
+        })
+
+
+        it("can't mint tele BTC above capacity", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = locker.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            );
+
+            await locker.addLocker(signer1Address);
+
+            await locker.addMinter(signer2Address);
+
+            let lockerSigner2 = locker.connect(signer2)
+
+            await expect(
+                lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, minRequiredNativeTokenLockedAmount)
+            ).to.be.revertedWith("Lockers: this locker hasn't sufficient capacity")
+
         })
 
     });
