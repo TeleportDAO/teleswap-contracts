@@ -197,15 +197,16 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint _startIndex,
         uint _endIndex
     ) external payable nonReentrant override returns (bool) {
-        // Get the target address of the locker from its Bitcoin address
+        // Get the target address of the locker from its script hash
         address _lockerTargetAddress = ILockers(lockers)
             .lockerTargetAddress(_lockerScriptHash);
-        // Checks the correction of input indices
+
+        // Checks the correctness of input indices
         require(
-            _startIndex >= 0 && 
             _endIndex < burnRequests[_lockerTargetAddress].length && 
             _startIndex<= _endIndex,
-            'CCBurnRouter: burnProof wrong index input');
+            'CCBurnRouter: burnProof wrong index input'
+        );
 
         // Checks if the locker address is valid
         require(
@@ -225,7 +226,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             "CCBurnRouter: transaction has not finalized yet"
         );
 
-        // Check the paid burn requests
+        // Checks the paid burn requests
         uint paidOutputCounter = _checkPaidBurnRequests(
             _lockerTargetAddress, 
             _vout,
@@ -233,7 +234,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             _endIndex
         );
 
-        // Check if there is an output that goes back to the locker
+        // Checks if there is an output that goes back to the locker
         _updateIsPaid(paidOutputCounter, _vout, _lockerScriptHash, txId);
         
         return true;
@@ -408,7 +409,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @dev                                    One output might return the remaining value to the locker
     /// @param _paidOutputCounter               Number of the outputs that pay a burn request   
     /// @param _vout                            Outputs of a transaction   
-    /// @param _lockerScriptHash     Address of the locker on Bitcoin    
+    /// @param _lockerScriptHash                Address of the locker on Bitcoin    
     /// @param _txId                            Transaction Id of the transaction    
     function _updateIsPaid(
         uint _paidOutputCounter, 
@@ -490,7 +491,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint256 _blockNumber,
         bytes memory _intermediateNodes,
         uint _index
-    ) internal returns (bool) {
+    ) private returns (bool) {
         // Finds fee amount
         uint feeAmount = IBitcoinRelay(relay).getFinalizedHeaderFee(_blockNumber);
         require(msg.value >= feeAmount, "CCTransferRouter: relay fee is not sufficient");

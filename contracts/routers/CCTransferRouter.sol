@@ -58,7 +58,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _protocolPercentageFee       Percentage amount of protocol fee
     function setProtocolPercentageFee(uint _protocolPercentageFee) external override onlyOwner {
         require(
-            _protocolPercentageFee >= 0 && 10000 >= _protocolPercentageFee, 
+            10000 >= _protocolPercentageFee, 
             "CCTransferRouter: fee is out of range"
         );
         protocolPercentageFee = _protocolPercentageFee;
@@ -250,7 +250,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
 
         // Calculates fee
         percentageFee = NewTxHelper.parsePercentageFee(arbitraryData);
-        require(percentageFee >= 0 && percentageFee < 10000, "CCTransferRouter: percentage fee is not correct");
+        require(percentageFee < 10000, "CCTransferRouter: percentage fee is not correct");
         request.fee = percentageFee*request.inputAmount/10000;
 
         request.recipientAddress = NewTxHelper.parseRecipientAddress(arbitraryData);

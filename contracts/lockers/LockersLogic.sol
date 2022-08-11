@@ -245,13 +245,9 @@ contract LockersLogic is LockersStorageStructure {
         // Loads locker's information
         locker memory lockerRequest = candidatesMapping[_msgSender()];
 
-        // Removes locker from candidate list
+        // Removes locker from candidatesMapping
         _removeElementFromCandidatesMapping(_msgSender());
         totalNumberOfCandidates = totalNumberOfCandidates -1;
-
-        // Removes locker from candidatesMapping
-        locker memory emptyLocker;
-        candidatesMapping[_msgSender()] = emptyLocker;
 
         // Sends back TDT and TNT collateral
         IERC20(TeleportDAOToken).transfer(_msgSender(), lockerRequest.TDTLockedAmount);
@@ -385,16 +381,13 @@ contract LockersLogic is LockersStorageStructure {
 
         locker memory _removingLokcer = lockersMapping[_msgSender()];
 
-        IERC20(TeleportDAOToken).transfer(_msgSender(), _removingLokcer.TDTLockedAmount);
-
-
-        // TODO: consider all possible attacks
-        address payable targetLockerAddress = payable(_msgSender());
-        targetLockerAddress.transfer(_removingLokcer.nativeTokenLockedAmount);
-
+        // Removes locker from lockersMapping
         _removeElementFromLockersMapping(_msgSender());
-
         totalNumberOfLockers = totalNumberOfLockers - 1;
+
+        // Sends back TDT and TNT collateral
+        IERC20(TeleportDAOToken).transfer(_msgSender(), _removingLokcer.TDTLockedAmount);
+        payable(_msgSender()).transfer(_removingLokcer.nativeTokenLockedAmount);
 
         emit LockerRemoved(
             _msgSender(),
