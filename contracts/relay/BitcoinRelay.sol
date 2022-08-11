@@ -225,7 +225,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
         uint _blockHeight,
         bytes calldata _intermediateNodes, // In LE form
         uint _index
-    ) external payable whenNotPaused override returns (bool) {
+    ) external payable nonReentrant whenNotPaused override returns (bool) {
         // Check for block confirmation
         // FIXME: change 6 with something different
         if (_blockHeight + 6 < lastSubmittedHeight + 1) {
@@ -251,7 +251,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
     /// @param  _anchor     The header immediately preceeding the new chain
     /// @param  _headers    A tightly-packed list of 80-byte Bitcoin headers
     /// @return             True if successfully written, error otherwise
-    function addHeaders(bytes calldata _anchor, bytes calldata _headers) external whenNotPaused override returns (bool) {
+    function addHeaders(bytes calldata _anchor, bytes calldata _headers) external nonReentrant whenNotPaused override returns (bool) {
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
         bytes29 _anchorView = _anchor.ref(0).tryAsHeader();
 
@@ -271,7 +271,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
         bytes calldata _oldPeriodStartHeader,
         bytes calldata _oldPeriodEndHeader,
         bytes calldata _headers
-    ) external whenNotPaused override returns (bool) {
+    ) external nonReentrant whenNotPaused override returns (bool) {
         bytes29 _oldStart = _oldPeriodStartHeader.ref(0).tryAsHeader();
         bytes29 _oldEnd = _oldPeriodEndHeader.ref(0).tryAsHeader();
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
@@ -385,8 +385,13 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
             _height = _anchorHeight + i + 1;
             _currentHash = _header.hash256();
 
+            // This requires submitting multiplies of 2016 with retarget and avoids accepting
+            // a new epoch with no retarget
+            require(_internal || _height % 2016 != 0, 
+            "BitcoinRelay: headers should be submitted by calling addHeadersWithRetarget");
+
             /* NB: we do still need to make chain level checks tho */
-            // require(_header.target() == _target, "BitcoinRelay: target changed unexpectedly");
+            require(_header.target() == _target, "BitcoinRelay: target changed unexpectedly");
             require(_header.checkParent(_previousHash), "BitcoinRelay: headers do not form a consistent chain");
 
             require(_height + finalizationParameter > lastSubmittedHeight, "BitcoinRelay: block header is too old"); // TODO: test
