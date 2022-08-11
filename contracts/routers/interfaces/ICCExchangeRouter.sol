@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: <SPDX-License>
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.0;
 
 interface ICCExchangeRouter {
@@ -116,5 +116,5 @@ interface ICCExchangeRouter {
         bytes calldata intermediateNodes,
         uint index,
         address lockerBitcoinDecodedAddress
-    ) external returns(bool);
+    ) external payable returns(bool);
 }

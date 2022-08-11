@@ -1,7 +1,5 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.0;
-
-/** @title BitcoinSPV */
-/** @author Summa (https://summa.one) */
 
 import "./TypedMemView.sol";
 import "./SafeMath.sol";
@@ -185,12 +183,12 @@ library ViewBTC {
     // @notice             extracts the scriptPubkey from an output
     // @param _output      the output
     // @return             the scriptPubkey
-    function scriptPubkey(bytes29 _output) internal typeAssert(_output, BTCTypes.TxOut) returns (bytes29) {
+    function scriptPubkey(bytes29 _output) internal pure typeAssert(_output, BTCTypes.TxOut) returns (bytes29) {
         uint64 scriptLength = indexCompactInt(_output, 8);
         return _output.slice(8, compactIntLength(scriptLength) + scriptLength, uint40(BTCTypes.ScriptPubkey));
     }
 
-    function scriptPubkeyBytes(bytes29 _output) internal typeAssert(_output, BTCTypes.TxOut) returns (bytes32) {
+    function scriptPubkeyBytes(bytes29 _output) internal pure typeAssert(_output, BTCTypes.TxOut) returns (bytes32) {
         uint64 scriptLength = indexCompactInt(_output, 8);
         bytes29 scriptPubkeyView = _output.slice(8, compactIntLength(scriptLength) + scriptLength, uint40(BTCTypes.ScriptPubkey));
         return scriptPubkeyView.index(compactIntLength(scriptLength), uint8(scriptLength));
@@ -545,7 +543,7 @@ library ViewBTC {
         return revertBytes32(_current) == _root;
     }
 
-    function revertBytes32 (bytes32 input) internal view returns(bytes32) {
+    function revertBytes32(bytes32 input) internal pure returns(bytes32) {
         bytes memory temp;
         bytes32 result;
         for (uint i = 0; i < 32; i++) {

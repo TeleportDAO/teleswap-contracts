@@ -1,8 +1,8 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.0;
 
 import "../oracle/interfaces/IPriceOracle.sol";
 import "./interfaces/ILockers.sol";
-import "../routers/interfaces/IExchangeRouter.sol";
 import "../connectors/interfaces/IExchangeConnector.sol";
 import "../erc20/interfaces/IERC20.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
@@ -122,7 +122,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         uint _minRequiredTNTLockedAmount,
         uint _collateralRatio,
         uint _lockerPercentageFee
-    ) public {
+    ) {
         TeleportDAOToken = _TeleportDAOToken;
         exchangeConnector = _exchangeConnector;
         priceOracle = _priceOracle;
@@ -477,6 +477,8 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     /// @return                           True if lockers are slashed successfully
     function slashLocker(
         address _lockerTargetAddress, 
+        uint _rewardAmount,
+        address _rewardRecipient,
         uint _amount, 
         address _recipient
     ) external nonReentrant whenNotPaused override returns (bool) {
@@ -491,10 +493,9 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         );
 
         uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
-            _amount,
-        // FIXME: get decimals from token contracts
-            8,
-            18,
+            _rewardAmount + _amount,
+            8, // Decimal of teleBTC
+            18, // Decimal of TNT
             teleBTC,
             NATIVE_TOKEN
         );
@@ -509,9 +510,17 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
 
         // Transfers slashed collateral to user
         if (_recipient != address(this)) {
-            payable(_recipient).transfer(equivalentNativeToken);
+            // Transfers TNT to user
+            payable(_recipient).transfer(equivalentNativeToken*_amount/(_amount + _rewardAmount));
+            // Transfers TNT to slasher
+            payable(_rewardRecipient).transfer(equivalentNativeToken*_rewardAmount/(_amount + _rewardAmount));
+        } else {
+            // Slasher can't be address(this)
+            payable(_rewardRecipient).transfer(equivalentNativeToken*_rewardAmount/(_amount + _rewardAmount));
         }
 
+        emit LockerSlashed(_lockerTargetAddress, equivalentNativeToken);
+        
         return true;
     }
 
@@ -560,7 +569,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
 
         // TODO: move the followoing lines of code to an internal function
         address theLockerTargetAddress = lockerTargetAddress[_lockerScriptHash];
-        locker memory theLocker = lockersMapping[theLockerTargetAddress];
 
         uint theLockerCollateral = _lockerCollateralInTeleBTC(theLockerTargetAddress);
         uint netMinted = lockersMapping[theLockerTargetAddress].netMinted;
@@ -581,7 +589,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         // Mints tokens for receiver
         ITeleBTC(teleBTC).mint(_receiver, _amount - lockerFee);
 
-        return _amount - lockerFee;
+        return (_amount - lockerFee);
     }
 
     function burn(
@@ -609,10 +617,12 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         // Burns teleBTC and sends rest of it to locker
         ITeleBTC(teleBTC).burn(remainedAmount);
         ITeleBTC(teleBTC).transfer(theLockerTargetAddress, lockerFee);
+
+        return remainedAmount;
     }
 
     // bitcoin double hash function
-    function _doubleHash (bytes memory input) internal returns(address) {
+    function _doubleHash (bytes memory input) internal pure returns(address) {
         bytes32 inputHash1 = sha256(input);
         bytes20 inputHash2 = ripemd160(abi.encodePacked(inputHash1));
         return address(inputHash2);

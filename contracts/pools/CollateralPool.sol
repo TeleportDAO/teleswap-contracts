@@ -20,7 +20,7 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
         string memory _symbol,
         address _collateralToken,
         uint _collateralizationRatio
-    ) ERC20(_name, _symbol, 0) public {
+    ) ERC20(_name, _symbol, 0) {
         collateralToken = _collateralToken;
         collateralizationRatio = _collateralizationRatio;
     }
