@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.0;
 
 import "../libraries/SafeMath.sol";
@@ -21,8 +22,6 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
     using BTCUtils for bytes;
     using ValidateSPV for bytes; */
 
-    // address public owner;
-
     uint public override initialHeight;
     uint public override lastSubmittedHeight;
     uint public override finalizationParameter;
@@ -44,8 +43,6 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
     uint public override lastEpochQueries;
     uint public override currentEpochQueries;
     uint public override baseQueries;
-    address public override exchangeRouter;
-    address public override wrappedNativeToken;
     mapping (uint => uint) private numberOfQueries;
 
     // TODO: prevent reverting when treasury (to pay relayers) gets empty but a relayer still wants to submit
@@ -58,11 +55,6 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
     // the user fee in TNT. If treasury is out of TNT, relayers should be able to continue with no fee if they'd like to.
     // TODO: add MMR for the first block submitted on the relay and add check proof function so users can use previous data
 
-    // modifier onlyOwner {
-    //     require(msg.sender == owner);
-    //     _;
-    // }
-
     /// @notice                   Gives a starting point for the relay
     /// @param  _genesisHeader    The starting header
     /// @param  _height           The starting height
@@ -71,9 +63,8 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
         bytes memory _genesisHeader,
         uint256 _height,
         bytes32 _periodStart,
-        address _TeleportDAOToken,
-        address _exchangeRouter
-    ) public {
+        address _TeleportDAOToken
+    ) {
         bytes29 _genesisView = _genesisHeader.ref(0).tryAsHeader();
         require(_genesisView.notNull(), "BitcoinRelay: stop being dumb");
         bytes32 _genesisHash = _genesisView.hash256();
@@ -82,6 +73,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
         newBlockHeader.selfHash = _genesisHash;
         newBlockHeader.merkleRoot = _genesisView.merkleRoot();
         newBlockHeader.relayer = msg.sender;
+        newBlockHeader.gasPrice = tx.gasprice;
         chain[_height].push(newBlockHeader);
 
         // require(
@@ -102,31 +94,21 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
         lastEpochQueries = baseQueries;
         currentEpochQueries = 0;
         submissionGasUsed = 100000; // TODO: edit it
-        exchangeRouter = _exchangeRouter;
-        if (exchangeRouter != address(0)) {
-            // TODO: get wrappedNativeToken from another way
-            // wrappedNativeToken = IExchangeRouter(exchangeRouter).WAVAX(); // call exchangeRouter to get wrappedNativeToken address
-        }
-
-        // owner = msg.sender;
     }
 
-    /// @notice                 Pause the locker, so only the functions can be called which are whenPaused
+    /// @notice                 Pause the relay, so only the functions can be called which are whenPaused
     /// @dev
     /// @param
     function pauseRelay() external override onlyOwner {
         _pause();
     }
 
-    /// @notice                 Un-pause the locker, so only the functions can be called which are whenNotPaused
+    /// @notice                 Un-pause the relay, so only the functions can be called which are whenNotPaused
     /// @dev
     /// @param
     function unPauseRelay() external override onlyOwner {
         _unpause();
     }
-
-    // fallback () external payable {
-    // }
 
     /// @notice             Getter for an specific block header's hash in the stored chain
     /// @param  _height     The height of the desired block header
@@ -136,13 +118,12 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
         return _revertBytes32(chain[_height][_index].selfHash);
     }
 
-    /// @notice             Getter for a finalized block header's fee price for a query
+    /// @notice             Getter for an specific block header's fee price for a query
     /// @param  _height     The height of the desired block header
+    /// @param  _index      The index of the desired block header in that height
     /// @return             Block header's fee price for a query
-    function getFinalizedHeaderFee(uint _height) external view override returns (uint) {
-        // TODO: fix it
-        return 0;
-        // return (submissionGasUsed * chain[_height][0].gasPrice * (1 + relayerPercentageFee) * (epochLength)) / (100 * lastEpochQueries);
+    function getBlockHeaderFee (uint _height, uint _index) external view override returns(uint) {
+        return (submissionGasUsed * chain[_height][_index].gasPrice * (1 + relayerPercentageFee) * (epochLength)) / (100 * lastEpochQueries);
     }
 
     /// @notice             Getter for the number of block headers in the same height
@@ -156,15 +137,13 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
     /// @notice             Getter for available TDT in treasury
     /// @return             Amount of TDT available in Relay treasury
     function availableTDT() external view override returns(uint) {
-        // TODO
-        return 0;
+        return IERC20(TeleportDAOToken).balanceOf(address(this));
     }
 
     /// @notice             Getter for available target native token in treasury
     /// @return             Amount of target blockchain native token available in Relay treasury
     function availableTNT() external view override returns(uint) {
-        // TODO
-        return 0;
+        return address(this).balance;
     }
 
     /// @notice         Finds the height of a header by its hash
@@ -234,14 +213,6 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
         submissionGasUsed = _submissionGasUsed;
     }
 
-    /// @notice                             Setter for exchangeRouter
-    /// @dev                                This is updated when we want to use another exchange
-    /// @param _exchangeRouter              The contract address to use for exchanging tokens and
-    ///                                     reading prices (for buyback and paying fees)
-    function setExchangeRouter(address _exchangeRouter) external override onlyOwner {
-        exchangeRouter = _exchangeRouter;
-    }
-
     /// @notice                         Checks if a tx is included and finalized on the source blockchain
     /// @dev                            Checks if the block is finalized, and Merkle proof is correct
     /// @param  _txid                   Desired transaction's tx Id
@@ -263,12 +234,13 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
                 bytes29 intermediateNodes = _intermediateNodes.ref(0).tryAsMerkleArray(); // Check for errors if any
                 bytes32 txIdLE = _revertBytes32(_txid);
                 if (ViewSPV.prove(txIdLE, _merkleRoot, intermediateNodes, _index)) {
-                    require(_getFee(), "BitcoinRelay: getting fee was not successful");
+                    require(_getFee(chain[_blockHeight][i].gasPrice), "BitcoinRelay: getting fee was not successful");
                     currentEpochQueries += 1;
                     return true;
                 }
             }
             require(false, "BitcoinRelay: tx has not been included");
+            return false;
         } else {
             return false;
         }
@@ -356,7 +328,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
         return false;
     }
 
-    function _revertBytes32(bytes32 _input) internal view returns(bytes32) {
+    function _revertBytes32(bytes32 _input) internal pure returns(bytes32) {
         bytes memory temp;
         bytes32 result;
         for (uint256 i = 0; i < 32; i++) {
@@ -371,9 +343,9 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
     /// @notice                 Gets fee from the user
     /// @dev                    Fee is paid in target blockchain native token
     /// @return                 True if the fee payment was successful
-    function _getFee() internal returns(bool){
+    function _getFee(uint gasPrice) internal returns(bool){
         uint feeAmount;
-        feeAmount = (submissionGasUsed*(tx.gasprice)*(1 + relayerPercentageFee)*(epochLength))/(100 * lastEpochQueries);
+        feeAmount = (submissionGasUsed * gasPrice * (1 + relayerPercentageFee) * (epochLength)) / (100 * lastEpochQueries);
         require(msg.value >= feeAmount, "BitcoinRelay: fee is not enough");
         bool sentFee;
         bytes memory dataFee;
@@ -441,15 +413,15 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
     }
 
     /// @notice                     Sends reward and compensation to the relayer
-    /// @dev                        We pay the block submission cost in Eth and the extra reward in TDT
+    /// @dev                        We pay the block submission cost in TNT and the extra reward in TDT
     /// @param  _relayer            The relayer address
     /// @return                     True if the amount is paid and False if treasury is empty
     function _sendReward(address _relayer) internal returns (uint, uint) {
         // FIXME: adding _getRewardAmountInTDT function
 
-        // Reward in ETH
-        uint rewardAmountInEth = submissionGasUsed * tx.gasprice * (1 + relayerPercentageFee) / 100;
-
+        // Reward in TNT
+        uint rewardAmountInTNT = submissionGasUsed * tx.gasprice * (1 + relayerPercentageFee) / 100;
+        
         // Reward in TDT
         uint contractTDTBalance;
         if (TeleportDAOToken != address(0)) {
@@ -464,20 +436,20 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
             // Call ERC20 token contract to transfer reward tokens to the relayer
             sentTDT = IERC20(TeleportDAOToken).transfer(_relayer, rewardAmountInTDT);
         }
-
-        // Send reward in ETH
-        bool sentETH;
-        bytes memory dataETH;
-        if (address(this).balance > rewardAmountInEth && rewardAmountInEth > 0) {
+        
+        // Send reward in TNT
+        bool sentTNT;
+        bytes memory dataTNT;
+        if (address(this).balance > rewardAmountInTNT && rewardAmountInTNT > 0) {
             // note no need to revert if failed
-            (sentETH, dataETH) = payable(_relayer).call{value: rewardAmountInEth}(""); // TODO check if this is the best way
+            (sentTNT, dataTNT) = payable(_relayer).call{value: rewardAmountInTNT}(""); // TODO check if this is the best way
         }
-
-        if (sentETH) {
+        
+        if (sentTNT) {
             if (sentTDT) {
-                return (rewardAmountInEth, rewardAmountInTDT);
+                return (rewardAmountInTNT, rewardAmountInTDT);
             } else {
-                return (rewardAmountInEth, 0);
+                return (rewardAmountInTNT, 0);
             }
         } else {
             if (sentTDT) {
@@ -501,6 +473,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
         newBlockHeader.parentHash = _header.parent();
         newBlockHeader.merkleRoot = _header.merkleRoot();
         newBlockHeader.relayer = msg.sender;
+        newBlockHeader.gasPrice = tx.gasprice;
         chain[_height].push(newBlockHeader);
         if(_height > lastSubmittedHeight){
             lastSubmittedHeight += 1;
@@ -538,18 +511,18 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
             if(chain[currentHeight].length > 1){
                 _pruneHeight(currentHeight);
                 // A new block has been finalized, we send its relayer's reward
-                uint rewardAmountETH;
+                uint rewardAmountTNT;
                 uint rewardAmountTDT;
-                (rewardAmountETH, rewardAmountTDT) = _sendReward(chain[currentHeight][0].relayer);
-                // TODO: then uncomment below event
-                // emit BlockFinalized(
-                //     currentHeight,
-                //     chain[currentHeight][0].selfHash,
-                //     chain[currentHeight][0].parentHash,
-                //     chain[currentHeight][0].relayer,
-                //     rewardAmountTNT,
-                //     rewardAmountTDT
-                // );
+                (rewardAmountTNT, rewardAmountTDT) = _sendReward(chain[currentHeight][0].relayer); 
+
+                emit BlockFinalized(
+                    currentHeight,
+                    chain[currentHeight][0].selfHash,
+                    chain[currentHeight][0].parentHash,
+                    chain[currentHeight][0].relayer,
+                    rewardAmountTNT,
+                    rewardAmountTDT
+                );
             }
         }
     }
@@ -559,7 +532,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
     /// @param  _headerHash         The block header hash
     /// @param  _height             The height of the block header
     /// @return                     Index of the block header
-    function _findIndex(bytes32 _headerHash, uint _height) internal returns(uint) {
+    function _findIndex(bytes32 _headerHash, uint _height) internal view returns(uint) {
         for(uint256 index = 0; index < chain[_height].length; index++) {
             if(_headerHash == chain[_height][index].selfHash) {
                 return index;
@@ -642,27 +615,6 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
     // /// @return     The hash of the first block of the relay
     // function getRelayGenesis() public view override returns (bytes32) {
     //     return relayGenesis;
-    // }
-
-    // function sendReward (address relayer, uint numberOfBlocks) internal returns (uint, bool) {
-    //     uint rewardAmountInEth = numberOfBlocks*submissionGasUsed*tx.gasprice*feeRatio/100; // TNT is target native token
-    //     uint rewardAmountInTDT = getRewardAmountInTDT(rewardAmountInEth);
-    //     uint contractTDTBalance;
-    //     if (TeleportDAOToken != address(0)) {
-    //         contractTDTBalance = IERC20(TeleportDAOToken).balanceOf(address(this));
-    //     } else {
-    //         contractTDTBalance = 0;
-    //     }
-    //     uint contractTNTBalance = address(this).balance;
-    //     if (rewardAmountInTDT <= contractTDTBalance && rewardAmountInTDT > 0) {
-    //         // call ERC20 token contract to transfer reward tokens to the relayer
-    //         IERC20(TeleportDAOToken).transfer(relayer, rewardAmountInTDT);
-    //         return (rewardAmountInTDT, true);
-    //     } else if (rewardAmountInEth <= contractTNTBalance && rewardAmountInEth > 0) {
-    //         // transfer TNT from relay to relayer
-    //         msg.sender.transfer(rewardAmountInEth);
-    //         return (rewardAmountInEth, false);
-    //     }
     // }
 
 }

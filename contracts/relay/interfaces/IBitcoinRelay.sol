@@ -13,6 +13,7 @@ interface IBitcoinRelay {
         bytes32 parentHash;
         bytes32 merkleRoot;
         address relayer;
+        uint gasPrice;
     }
 
     // events
