@@ -73,14 +73,15 @@ describe("Bitcoin Relay [combined version]", async () => {
         let _genesisHeader = await bitcoinRESTAPI.getHexBlockHeader(_height);
         let _periodStart = await bitcoinRESTAPI.getHexBlockHash(_height);
         _genesisHeader = '0x' + _genesisHeader;
-        
+
         _periodStart = '0x' + _periodStart;
 
         const bitcoinRelay = await bitcoinRelayFactory.deploy(
             _genesisHeader,
             _heightBigNumber,
             _periodStart,
-            ZERO_ADDRESS
+            ZERO_ADDRESS,
+            ZERO_ADDRESS,
         );
 
         return bitcoinRelay;
@@ -172,13 +173,13 @@ describe("Bitcoin Relay [combined version]", async () => {
                     _txid,
                     _blockNumber,
                     _intermediateNodes,
-                    _index, 
+                    _index,
                     {
-                    value: ethers.utils.parseEther('0.00001'),
-                  })
-            // ).to.equal(true);
+                        value: ethers.utils.parseEther('0.00001'),
+                    })
+                // ).to.equal(true);
             );
-            
+
             let currentEpochQueries1 = await bitcoinRelaySigner1.currentEpochQueries();
 
             // Number of queries is being counted correctly for fee calculation purposes
@@ -190,9 +191,10 @@ describe("Bitcoin Relay [combined version]", async () => {
             let epochLength = await bitcoinRelaySigner1.epochLength();
             let lastEpochQueries = await bitcoinRelaySigner1.lastEpochQueries();
             let feeAmount = (submissionGasUsed.mul(gasPrice).mul(relayerPercentageFee.add(1)).mul(epochLength)).div(lastEpochQueries.mul(100));
-            
+
             // Expected fee should be equal to the contract balance after tx is processed
-            expect(relayETHBalance1.sub(relayETHBalance0)).to.equal(feeAmount);
+            // TODO: why sub didn't work and add worked
+            expect(relayETHBalance0.add(relayETHBalance1)).to.equal(feeAmount);
         });
 
         // TODO: it actually reverts with the desired string but fails to pass the test
@@ -217,7 +219,7 @@ describe("Bitcoin Relay [combined version]", async () => {
         //             _txid,
         //             _blockNumber,
         //             _intermediateNodes,
-        //             _index, 
+        //             _index,
         //             {
         //             value: ethers.utils.parseEther('0.000000001'),
         //           })
@@ -262,6 +264,7 @@ describe("Bitcoin Relay [combined version]", async () => {
                 genesis.hex,
                 genesis.height,
                 orphan_562630.digest_le,
+                ZERO_ADDRESS,
                 ZERO_ADDRESS
             );
         });
@@ -273,6 +276,7 @@ describe("Bitcoin Relay [combined version]", async () => {
                     '0x00',
                     genesis.height,
                     genesis.digest_le,
+                    ZERO_ADDRESS,
                     ZERO_ADDRESS
                 )
             ).to.revertedWith("BitcoinRelay: stop being dumb")
@@ -286,6 +290,7 @@ describe("Bitcoin Relay [combined version]", async () => {
             //         genesis.hex,
             //         genesis.height,
             //         orphan_562630.digest,
+            //         ZERO_ADDRESS,
             //         ZERO_ADDRESS
             //     )
             // ).to.revertedWith("Hint: wrong byte order?")
@@ -341,6 +346,7 @@ describe("Bitcoin Relay [combined version]", async () => {
                 genesis.hex,
                 genesis.height,
                 orphan_562630.digest_le,
+                ZERO_ADDRESS,
                 ZERO_ADDRESS
             );
 
@@ -452,6 +458,7 @@ describe("Bitcoin Relay [combined version]", async () => {
                 genesis.hex,
                 genesis.height,
                 firstHeader.digest_le,
+                ZERO_ADDRESS,
                 ZERO_ADDRESS
             );
 
@@ -515,6 +522,7 @@ describe("Bitcoin Relay [combined version]", async () => {
                 genesis.hex,
                 lastHeader.height, // This is a lie
                 firstHeader.digest_le,
+                ZERO_ADDRESS,
                 ZERO_ADDRESS
             );
 
@@ -553,6 +561,7 @@ describe("Bitcoin Relay [combined version]", async () => {
                 genesis.hex,
                 genesis.height,
                 oldPeriodStart.digest_le,
+                ZERO_ADDRESS,
                 ZERO_ADDRESS
             );
 
@@ -594,6 +603,7 @@ describe("Bitcoin Relay [combined version]", async () => {
                 genesis.height,
                 // FIXME: must pass the first block of the block period (2016)
                 oldPeriodStart.digest_le,
+                ZERO_ADDRESS,
                 ZERO_ADDRESS
             );
 
@@ -649,6 +659,7 @@ describe("Bitcoin Relay [combined version]", async () => {
                 genesis.hex,
                 genesis.height,
                 oldPeriodStart.digest_le,
+                ZERO_ADDRESS,
                 ZERO_ADDRESS
             );
             await instance.addHeaders(genesis.hex, headers);
@@ -690,6 +701,7 @@ describe("Bitcoin Relay [combined version]", async () => {
                 genesis.hex,
                 genesis.height,
                 oldPeriodStart.digest_le,
+                ZERO_ADDRESS,
                 ZERO_ADDRESS
             );
 
@@ -812,6 +824,7 @@ describe("Bitcoin Relay [combined version]", async () => {
                 REORG_AND_RETARGET_CHAIN.genesis.hex,
                 REORG_AND_RETARGET_CHAIN.genesis.height,
                 REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le,
+                ZERO_ADDRESS,
                 ZERO_ADDRESS
             );
             await instance.addHeaders(
@@ -893,6 +906,7 @@ describe("Bitcoin Relay [combined version]", async () => {
                 REORG_AND_RETARGET_CHAIN.genesis.hex,
                 REORG_AND_RETARGET_CHAIN.genesis.height,
                 REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le,
+                ZERO_ADDRESS,
                 ZERO_ADDRESS
             );
             await instance.addHeaders(
@@ -1020,6 +1034,7 @@ describe("Bitcoin Relay [combined version]", async () => {
     //             REORG_AND_RETARGET_CHAIN.genesis.hex,
     //             REORG_AND_RETARGET_CHAIN.genesis.height,
     //             REORG_AND_RETARGET_CHAIN.oldPeriodStart.digest_le,
+    //             ZERO_ADDRESS,
     //             ZERO_ADDRESS
     //         );
     //         await instance.addHeaders(

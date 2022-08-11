@@ -10,8 +10,12 @@ import { Address } from "hardhat-deploy/types";
 import { solidity } from "ethereum-waffle";
 
 import { isBytesLike } from "ethers/lib/utils";
-import { Lockers } from "../src/types/Lockers";
-import { Lockers__factory } from "../src/types/factories/Lockers__factory";
+import { LockersProxy } from "../src/types/LockersProxy";
+import { LockersProxy__factory } from "../src/types/factories/LockersProxy__factory";
+
+import { LockersLogic } from "../src/types/LockersLogic";
+import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
+
 import { TeleBTC } from "../src/types/TeleBTC";
 import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
 import { ERC20 } from "../src/types/ERC20";
@@ -53,7 +57,9 @@ describe("Lockers", async () => {
     let ccBurnSimulatorAddress: Address;
 
     // Contracts
-    let locker: Lockers;
+    let locker: Contract;
+    let lockersProxy: LockersProxy;
+    let lockersLogic: LockersLogic;
     let teleportDAOToken: ERC20;
     let teleBTC: TeleBTC;
 
@@ -88,8 +94,14 @@ describe("Lockers", async () => {
             priceOracleContract.abi
         );
 
+        lockersLogic = await deployLockeLogic()
+
         // Deploys bitcoinTeleporter contract
-        locker = await deployLocker()
+        lockersProxy = await deployLockerProxy()
+
+        locker = await lockersLogic.attach(
+            lockersProxy.address
+        )
 
         // Sets ccBurnRouter address
         await locker.setCCBurnRouter(ccBurnSimulatorAddress);
@@ -148,14 +160,30 @@ describe("Lockers", async () => {
         return wrappedToken;
     };
 
-    const deployLocker = async (
+    const deployLockeLogic = async (
         _signer?: Signer
-    ): Promise<Lockers> => {
-        const lockerFactory = new Lockers__factory(
+    ): Promise<LockersLogic> => {
+        const lockersLogicFactory = new LockersLogic__factory(
             _signer || deployer
         );
 
-        const locker = await lockerFactory.deploy(
+        const lockersLogic = await lockersLogicFactory.deploy();
+
+        return lockersLogic;
+    };
+
+    const deployLockerProxy = async (
+        _signer?: Signer
+    ): Promise<LockersProxy> => {
+        const lockerFactory = new LockersProxy__factory(
+            _signer || deployer
+        );
+
+        const lockerProxy = await lockerFactory.deploy(
+            lockersLogic.address
+        )
+
+        await lockerProxy.initialize(
             teleportDAOToken.address,
             mockExchangeConnector.address,
             mockPriceOracle.address,
@@ -164,9 +192,9 @@ describe("Lockers", async () => {
             collateralRatio,
             liquidationRatio,
             LOCKER_PERCENTAGE_FEE
-        );
+        )
 
-        return locker;
+        return lockerProxy;
     };
 
     describe("#requestToBecomeLocker", async () => {
@@ -457,8 +485,6 @@ describe("Lockers", async () => {
             await expect(
                 lockerSigner1.slashLocker(
                     signer1Address,
-                    0,
-                    deployerAddress,
                     btcAmountToSlash,
                     ccBurnSimulatorAddress
                 )
@@ -471,8 +497,6 @@ describe("Lockers", async () => {
             await expect(
                 lockerCCBurnSimulator.slashLocker(
                     signer1Address,
-                    0,
-                    deployerAddress,
                     btcAmountToSlash,
                     ccBurnSimulatorAddress
                 )
@@ -507,12 +531,7 @@ describe("Lockers", async () => {
 
             let lockerCCBurnSigner = await locker.connect(ccBurnSimulator)
 
-            await lockerCCBurnSigner.slashLocker(
-                signer1Address, 0,
-                deployerAddress,
-                10000, 
-                ccBurnSimulatorAddress
-            )
+            await lockerCCBurnSigner.slashLocker(signer1Address, 10000, ccBurnSimulatorAddress)
 
         })
 

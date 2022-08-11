@@ -48,8 +48,10 @@ describe("CCExchangeRouter", async () => {
 
     let telePortTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000);
     let requiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
+    let minRequiredNativeTokenLockedAmount = BigNumber.from(10).pow(18).mul(5);
     let btcAmountToSlash = BigNumber.from(10).pow(8).mul(1)
-    let collateralRatio = 2;
+    let collateralRatio = 20000;
+    let liquidationRatio = 15000;
 
     // Accounts
     let deployer: Signer;
@@ -104,7 +106,7 @@ describe("CCExchangeRouter", async () => {
             priceOracleContract.abi
         );
 
-        await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
+        await mockPriceOracle.mock.equivalentOutputAmount.returns(100000)
 
         // Mocks checkTxProof of bitcoinRelay
         // We don't pass arguments since the request was modified and the txId is not valid
@@ -143,21 +145,21 @@ describe("CCExchangeRouter", async () => {
 
         // Creates uniswapV2Pair__factory object
         uniswapV2Pair__factory = new UniswapV2Pair__factory(deployer);
-        
+
         // Deploys uniswapV2Router02 contract
         const uniswapV2Router02Factory = new UniswapV2Router02__factory(deployer);
         uniswapV2Router02 = await uniswapV2Router02Factory.deploy(
             uniswapV2Factory.address,
             ZERO_ADDRESS // WETH
         );
-        
+
         const exchangeConnectorFactory = new UniswapConnector__factory(deployer);
         exchangeConnector = await exchangeConnectorFactory.deploy(
             "TheExchangeConnector",
             uniswapV2Router02.address,
             ZERO_ADDRESS // WETH
         );
-        
+
         // Deploys exchange token
         // We replace the exchangeToken address in ccExchangeRequests
         const erc20Factory = new ERC20__factory(deployer);
@@ -228,6 +230,7 @@ describe("CCExchangeRouter", async () => {
             requiredTDTLockedAmount,
             0,
             collateralRatio,
+            liquidationRatio,
             LOCKER_PERCENTAGE_FEE
         );
 
@@ -249,7 +252,8 @@ describe("CCExchangeRouter", async () => {
             // TELEPORTER1_PublicKeyHash,
             CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient,
             requiredTDTLockedAmount,
-            0
+            minRequiredNativeTokenLockedAmount,
+            {value: minRequiredNativeTokenLockedAmount}
         )
 
         await lockers.addLocker(lockerAddress)
