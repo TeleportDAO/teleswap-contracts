@@ -572,13 +572,13 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         uint theLockerCollateralBTCequivalent = _lockerCollateralInTeleBTC(_lockerTargetAddress);
 
         require(
-            (theLuquidatingLokcer.netMinted*liquidationRatio/10000) < theLockerCollateralBTCequivalent,
+            (theLuquidatingLokcer.netMinted*liquidationRatio/10000) > theLockerCollateralBTCequivalent,
             "Lockers: this locker is above luquidation ratio"
         );
 
         // Maximum buyable amount of collateral comes from ((BtcWorthOfCollateral - x)/(netMinted -x ) = collateralRatio/10000)
 
-        uint maxBuyable = (theLockerCollateralBTCequivalent - (theLuquidatingLokcer.netMinted*collateralRatio/10000))/((collateralRatio-10000)/10000);
+        uint maxBuyable = ((theLuquidatingLokcer.netMinted*collateralRatio/10000) - theLockerCollateralBTCequivalent)/((collateralRatio-10000)/10000);
 
         if (maxBuyable > theLuquidatingLokcer.netMinted) {
             maxBuyable = theLuquidatingLokcer.netMinted;

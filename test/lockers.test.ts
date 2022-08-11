@@ -88,8 +88,6 @@ describe("Lockers", async () => {
             priceOracleContract.abi
         );
 
-        await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
-
         // Deploys bitcoinTeleporter contract
         locker = await deployLocker()
 
@@ -479,6 +477,7 @@ describe("Lockers", async () => {
 
         it("only admin can slash a locker", async function () {
 
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
             await mockExchangeConnector.mock.getInputAmount.returns(true, minRequiredTDTLockedAmount.div(10))
             await mockExchangeConnector.mock.swap.returns(true, [2500, 5000])
 
@@ -595,7 +594,7 @@ describe("Lockers", async () => {
             let lockerSigner2 = locker.connect(signer2)
 
             await expect(
-                lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, minRequiredNativeTokenLockedAmount)
+                lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5001)
             ).to.be.revertedWith("Lockers: this locker hasn't sufficient capacity")
 
         })
@@ -670,4 +669,126 @@ describe("Lockers", async () => {
 
     });
 
-});
+    describe("#luquidateLocker", async () => {
+
+        beforeEach(async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+        });
+
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("can't liquidate because it's above liquidation ratio", async function () {
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = locker.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            );
+
+            await locker.addLocker(signer1Address);
+
+            await locker.addMinter(signer2Address);
+
+            let lockerSigner2 = locker.connect(signer2)
+
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5000);
+
+            await expect(
+                lockerSigner2.luquidateLocker(signer1Address, 5000)
+            ).to.be.revertedWith("Lockers: this locker is above luquidation ratio")
+
+        });
+
+        it("can't liquidate because it's above the liquidated amount", async function () {
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = locker.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            );
+
+            await locker.addLocker(signer1Address);
+
+            await locker.addMinter(signer2Address);
+
+            let lockerSigner2 = locker.connect(signer2)
+
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5000);
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(6000);
+
+            await expect(
+                lockerSigner2.luquidateLocker(signer1Address, 5000)
+            ).to.be.revertedWith("Lockers: above the locker's luquidation penalty")
+
+        });
+
+        it("successfully liquidate the locker", async function () {
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = locker.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            );
+
+            await locker.addLocker(signer1Address);
+
+            await locker.addMinter(signer2Address);
+
+            let lockerSigner2 = locker.connect(signer2)
+
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, signer2Address, 5000);
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(6000);
+
+            let teleBTCSigner2 = await teleBTC.connect(signer2);
+
+            await teleBTCSigner2.approve(locker.address, 3500)
+
+            // let nativeTokenBalanceOfSigner2BeforeLiquidatingLocker =
+
+            await lockerSigner2.luquidateLocker(signer1Address, 3500)
+
+        });
+
+    });
+
+})
