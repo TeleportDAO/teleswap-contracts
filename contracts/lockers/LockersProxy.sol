@@ -1,4 +1,5 @@
-pragma solidity 0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
 import "./LockersStorageStructure.sol";
 import "hardhat/console.sol";
@@ -7,7 +8,7 @@ contract LockersProxy is LockersStorageStructure {
 
     constructor(
         address _lockersLogic
-    ) public {
+    ) {
         lockersLogic = _lockersLogic;
     }
 

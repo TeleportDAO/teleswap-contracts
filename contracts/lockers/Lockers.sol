@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.0;
+pragma solidity ^0.8.0;
 
 import "../oracle/interfaces/IPriceOracle.sol";
 import "./interfaces/ILockers.sol";
@@ -124,7 +124,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         uint _collateralRatio,
         uint _liquidationRatio,
         uint _lockerPercentageFee
-    ) public {
+    ) {
         // TODO: add some requires for the amounts of _collateralRatio and _liquidationRatio
         TeleportDAOToken = _TeleportDAOToken;
         exchangeConnector = _exchangeConnector;
@@ -567,7 +567,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     }
 
 
-    function luquidateLocker(
+    function liquidateLocker(
         address _lockerTargetAddress,
         uint _btcAmount
     ) external nonReentrant whenNotPaused override returns (bool result) {

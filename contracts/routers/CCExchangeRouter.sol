@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.0;
+pragma solidity ^0.8.0;
 
 import "./interfaces/ICCExchangeRouter.sol";
 import "../connectors/interfaces/IExchangeConnector.sol";
@@ -87,7 +87,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _protocolPercentageFee       Percentage amount of protocol fee
     function setProtocolPercentageFee(uint _protocolPercentageFee) external override onlyOwner {
         require(
-            _protocolPercentageFee >= 0 && 10000 >= _protocolPercentageFee, 
+            10000 >= _protocolPercentageFee, 
             "CCTransferRouter: fee is out of range"
         );
         protocolPercentageFee = _protocolPercentageFee;
@@ -313,7 +313,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
         // Calculates fee
         percentageFee = NewTxHelper.parsePercentageFee(arbitraryData);
-        require(percentageFee >= 0 && percentageFee < 10000, "CCExchangeRouter: percentage fee is not correct");
+        require(percentageFee < 10000, "CCExchangeRouter: percentage fee is not correct");
         request.fee = percentageFee*request.inputAmount/10000;
 
         request.speed = NewTxHelper.parseSpeed(arbitraryData);
