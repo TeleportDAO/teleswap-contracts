@@ -77,6 +77,8 @@ interface IBitcoinRelay {
 
     function getNumberOfSubmittedHeaders(uint height) external view returns (uint);
 
+    function getFinalizedHeaderFee(uint _height) external view returns (uint);
+
     function availableTDT() external view returns(uint);
 
     function availableTNT() external view returns(uint);

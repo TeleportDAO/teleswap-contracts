@@ -19,6 +19,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     mapping(bytes32 => bool) private isPaid;
     uint public override transferDeadline;
     uint public override protocolPercentageFee; // min amount is %0.01
+    uint public override slasherPercentageReward; // min amount is %1
     uint public override bitcoinFee;
 
     /// @notice                             Handles cross-chain burn requests
@@ -35,13 +36,15 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         address _treasury,
         uint _transferDeadline,
         uint _protocolPercentageFee,
+        uint _slasherPercentageReward,
         uint _bitcoinFee
-    ) public {
+    ) {
         relay = _relay;
         lockers = _lockers;
         treasury = _treasury;
         transferDeadline = _transferDeadline;
         protocolPercentageFee = _protocolPercentageFee;
+        slasherPercentageReward = _slasherPercentageReward;
         bitcoinFee = _bitcoinFee;
     }
 
@@ -92,6 +95,13 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _protocolPercentageFee       The new protocol percentage fee
     function setProtocolPercentageFee(uint _protocolPercentageFee) external override onlyOwner {
         protocolPercentageFee = _protocolPercentageFee;
+    }
+
+    /// @notice                            Changes slasher percentage reward for disputing lockers
+    /// @dev                               Only owner can call this
+    /// @param _slasherPercentageReward    The new slasher percentage reward
+    function setSlasherPercentageReward(uint _slasherPercentageReward) external override onlyOwner {
+        slasherPercentageReward = _slasherPercentageReward;
     }
 
     /// @notice                       Changes Bitcoin transaction fee
@@ -186,7 +196,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         address _lockerScriptHash,
         uint _startIndex,
         uint _endIndex
-    ) external nonReentrant override returns (bool) {
+    ) external payable nonReentrant override returns (bool) {
         // Get the target address of the locker from its Bitcoin address
         address _lockerTargetAddress = ILockers(lockers)
             .lockerTargetAddress(_lockerScriptHash);
@@ -251,9 +261,12 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
                 burnRequests[_lockerTargetAddress][_indices[i]].deadline < IBitcoinRelay(relay).lastSubmittedHeight(),
                 "CCBurnRouter: payback deadline has not passed yet"
             );
+
             // Slashes locker and sends the slashed amount to the user
             ILockers(lockers).slashLocker(
                 _lockerTargetAddress,
+                burnRequests[_lockerTargetAddress][_indices[i]].amount*slasherPercentageReward/100, // Slasher reward
+                msg.sender, // Slasher address
                 burnRequests[_lockerTargetAddress][_indices[i]].amount,
                 burnRequests[_lockerTargetAddress][_indices[i]].sender
             );
@@ -283,7 +296,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint256 _blockNumber,
         bytes calldata _intermediateNodes,
         uint _index
-    ) external nonReentrant override returns (bool) {
+    ) external payable nonReentrant override returns (bool) {
         // Checks if the locker address is valid
         require(
             ILockers(lockers).isLocker(_lockerScriptHash),
@@ -332,6 +345,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         // Slashes locker
         ILockers(lockers).slashLocker(
             _lockerTargetAddress,
+            totalValue*slasherPercentageReward/100, // Slasher reward
+            msg.sender, // Slasher address
             totalValue,
             lockers
         );
@@ -421,7 +436,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         bytes memory _vin,
         uint _inputIndex,
         bytes memory _lockerRedeemScript
-    ) internal returns (bool) {
+    ) internal view returns (bool) {
         bytes memory scriptSig;
         bytes memory txInputAddress;
         scriptSig = NewTxHelper.parseInputScriptSig(_vin, _inputIndex);
@@ -476,12 +491,34 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         bytes memory _intermediateNodes,
         uint _index
     ) internal returns (bool) {
-        return IBitcoinRelay(relay).checkTxProof(
-            _txId,
-            _blockNumber,
-            _intermediateNodes,
-            _index
+        // Finds fee amount
+        uint feeAmount = IBitcoinRelay(relay).getFinalizedHeaderFee(_blockNumber);
+        require(msg.value >= feeAmount, "CCTransferRouter: relay fee is not sufficient");
+        
+        // Calls relay with msg.value
+        (bool success, bytes memory data) = payable(relay).call{value: msg.value}(
+            abi.encodeWithSignature(
+                "checkTxProof(bytes32,uint256,bytes,uint256)", 
+                _txId, 
+                _blockNumber,
+                _intermediateNodes,
+                _index
+            )
         );
+
+        // Checks that call was successful
+        require(success, "CCTransferRouter: calling relay was not successful");
+
+        // Sends extra ETH back to msg.sender
+        (bool _success,) = payable(msg.sender).call{value: (msg.value - feeAmount)}("");
+        require(_success, "CCTransferRouter: sending remained ETH was not successful");
+
+        // Returns result
+        bytes32 _data;
+        assembly {
+            _data := mload(add(data, 32))
+        }
+        return _data == bytes32(0) ? false : true;
     }
 
     /// @notice                      Checks inclusion of the transaction in the specified block 
@@ -520,7 +557,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         bytes memory _vin,
         bytes calldata _vout,
         bytes4 _locktime
-    ) internal returns (bytes32) {
+    ) internal pure returns (bytes32) {
         bytes32 inputHash1 = sha256(abi.encodePacked(_version, _vin, _vout, _locktime));
         bytes32 inputHash2 = sha256(abi.encodePacked(inputHash1));
         return _revertBytes32(inputHash2);
@@ -529,7 +566,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @notice                      Reverts a Bytes32 input
     /// @param _input                Bytes32 input that we want to revert    
     /// @return                      Reverted bytes32   
-    function _revertBytes32(bytes32 _input) internal returns (bytes32) {
+    function _revertBytes32(bytes32 _input) internal pure returns (bytes32) {
         bytes memory temp;
         bytes32 result;
         for (uint i = 0; i < 32; i++) {

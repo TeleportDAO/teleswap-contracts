@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: <SPDX-License>
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.0;
 
 import "./interfaces/ICCExchangeRouter.sol";
@@ -36,7 +36,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         address _relay, 
         address _teleBTC,
         address _treasury
-    ) public {
+    ) {
+        startingBlockNumber = _startingBlockNumber;
         protocolPercentageFee = _protocolPercentageFee;
         chainId = _chainId;
         relay = _relay;
@@ -125,7 +126,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         bytes calldata _intermediateNodes,
         uint _index,
         address lockerBitcoinDecodedAddress
-    ) external nonReentrant override returns (bool) {
+    ) external payable nonReentrant override returns (bool) {
         require(_blockNumber >= startingBlockNumber, "CCTransferRouter: request is old");
         
         // Calculates transaction id
@@ -168,6 +169,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             );
             return true;
         }
+
+        return false;
     }
 
     /// @notice            Executes a normal cross-chain exchange request
@@ -267,7 +270,6 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
         ccExchangeRequest memory request; // Defines it to save gas
         bytes memory arbitraryData;
-        address desiredRecipient;
         address exchangeToken;
         uint percentageFee;
         
@@ -338,15 +340,34 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         bytes memory _intermediateNodes,
         uint _index
     ) internal returns (bool) {
-        // TODO: uncomment it
-        // uint feeAmount;
-        // IERC20(feeTokenAddress).transferFrom(_teleporterAddress, address(this), feeAmount);
-        return IBitcoinRelay(relay).checkTxProof(
-            _txId,
-            _blockNumber,
-            _intermediateNodes,
-            _index
+        // Finds fee amount
+        uint feeAmount = IBitcoinRelay(relay).getFinalizedHeaderFee(_blockNumber);
+        require(msg.value >= feeAmount, "CCTransferRouter: relay fee is not sufficient");
+        
+        // Calls relay with msg.value
+        (bool success, bytes memory data) = payable(relay).call{value: msg.value}(
+            abi.encodeWithSignature(
+                "checkTxProof(bytes32,uint256,bytes,uint256)", 
+                _txId, 
+                _blockNumber,
+                _intermediateNodes,
+                _index
+            )
         );
+
+        // Checks that call was successful
+        require(success, "CCTransferRouter: calling relay was not successful");
+
+        // Sends extra ETH back to msg.sender
+        (bool _success,) = payable(msg.sender).call{value: (msg.value - feeAmount)}("");
+        require(_success, "CCTransferRouter: sending remained ETH was not successful");
+
+        // Returns result
+        bytes32 _data;
+        assembly {
+            _data := mload(add(data, 32))
+        }
+        return _data == bytes32(0) ? false : true;
     }
 
     /// @notice                               Checks if the request tx is included and confirmed on source chain

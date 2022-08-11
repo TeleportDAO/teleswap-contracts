@@ -13,7 +13,7 @@ contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGua
     address[] public override allCollateralPools;
     address public override instantRouter;
 
-    constructor(address _instantRouter) public {
+    constructor(address _instantRouter) {
         instantRouter = _instantRouter;
     }
 

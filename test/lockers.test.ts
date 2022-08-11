@@ -457,6 +457,8 @@ describe("Lockers", async () => {
             await expect(
                 lockerSigner1.slashLocker(
                     signer1Address,
+                    0,
+                    deployerAddress,
                     btcAmountToSlash,
                     ccBurnSimulatorAddress
                 )
@@ -469,6 +471,8 @@ describe("Lockers", async () => {
             await expect(
                 lockerCCBurnSimulator.slashLocker(
                     signer1Address,
+                    0,
+                    deployerAddress,
                     btcAmountToSlash,
                     ccBurnSimulatorAddress
                 )
@@ -503,7 +507,12 @@ describe("Lockers", async () => {
 
             let lockerCCBurnSigner = await locker.connect(ccBurnSimulator)
 
-            await lockerCCBurnSigner.slashLocker(signer1Address, 10000, ccBurnSimulatorAddress)
+            await lockerCCBurnSigner.slashLocker(
+                signer1Address, 0,
+                deployerAddress,
+                10000, 
+                ccBurnSimulatorAddress
+            )
 
         })
 

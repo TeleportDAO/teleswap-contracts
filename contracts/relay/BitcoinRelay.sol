@@ -136,6 +136,13 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
         return _revertBytes32(chain[_height][_index].selfHash);
     }
 
+    /// @notice             Getter for a finalized block header's fee price for a query
+    /// @param  _height     The height of the desired block header
+    /// @return             Block header's fee price for a query
+    function getFinalizedHeaderFee(uint _height) external view override returns (uint) {
+        return (submissionGasUsed * chain[_height][0].gasPrice * (1 + relayerPercentageFee) * (epochLength)) / (100 * lastEpochQueries);
+    }
+
     /// @notice             Getter for the number of block headers in the same height
     /// @dev                This shows the number of temporary forks in that specific height
     /// @param  _height     The desired height of the blockchain

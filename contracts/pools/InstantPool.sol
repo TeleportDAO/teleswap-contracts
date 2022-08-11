@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0; 
 
 import './interfaces/IInstantPool.sol'; 
@@ -20,7 +21,7 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
         uint _instantPercentageFee, 
         string memory _name, 
         string memory _symbol
-    ) ERC20(_name, _symbol, 0) public { 
+    ) ERC20(_name, _symbol, 0) { 
         teleBTC = _teleBTC; 
         instantRouter = _instantRouter;
         instantPercentageFee = _instantPercentageFee; 
@@ -88,7 +89,6 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
     /// @return               True if liquidity is added successfully
     function addLiquidityWithoutMint(uint _amount) external nonReentrant override returns (bool) {
         require(_amount > 0, "InstantPool: input amount is zero"); 
-        uint instantPoolTokenAmount; 
         // Transfers teleBTC from user 
         IERC20(teleBTC).transferFrom(msg.sender, address(this), _amount); 
         totalAddedTeleBTC = totalAddedTeleBTC + _amount; 

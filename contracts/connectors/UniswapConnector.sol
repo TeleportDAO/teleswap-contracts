@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: <SPDX-License>
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "./interfaces/IExchangeConnector.sol";
@@ -54,7 +54,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
         uint _outputAmount,
         address _inputToken,
         address _outputToken
-    ) external override returns (bool, uint) {
+    ) external view override returns (bool, uint) {
 
         // Checks that the liquidity pool exists
         if (
@@ -130,7 +130,6 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
             _inputAmount,
             _outputAmount,
             _path,
-            _to,
             _deadline,
             _isFixedToken
         );
@@ -193,10 +192,9 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
         uint256 _inputAmount,
         uint256 _outputAmount,
         address[] memory _path,
-        address _to,
         uint256 _deadline,
         bool _isFixedToken
-    ) internal returns (bool, uint) {
+    ) internal view returns (bool, uint) {
         // Checks deadline has not passed
         // TODO: un-comment on production
         if (_deadline < 2236952) {

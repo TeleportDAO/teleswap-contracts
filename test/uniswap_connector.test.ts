@@ -9,8 +9,8 @@ import { UniswapV2Pair } from "../src/types/UniswapV2Pair";
 import { UniswapV2Pair__factory } from "../src/types/factories/UniswapV2Pair__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { ERC20__factory } from "../src/types/factories/ERC20__factory";
-import { WAVAX } from "../src/types/WAVAX";
-import { WAVAX__factory } from "../src/types/factories/WAVAX__factory";
+import { WETH } from "../src/types/WETH";
+import { WETH__factory } from "../src/types/factories/WETH__factory";
 
 import { takeSnapshot, revertProvider } from "./block_utils";
 
@@ -33,7 +33,7 @@ describe("UniswapConnector", async () => {
     let uniswapV2Pair__factory: UniswapV2Pair__factory;
     let erc20: ERC20;
     let _erc20: ERC20;
-    let WETH: WAVAX;
+    let WETH: WETH;
 
     // Variables
     let oldReserveA: BigNumber;
@@ -51,7 +51,7 @@ describe("UniswapConnector", async () => {
         signer1Address = await signer1.getAddress();
 
         // Deploys WETH
-        const WETHFactory = new WAVAX__factory(deployer);
+        const WETHFactory = new WETH__factory(deployer);
         WETH = await WETHFactory.deploy(
             'Wrapped-Ethereum',
             'WETH'

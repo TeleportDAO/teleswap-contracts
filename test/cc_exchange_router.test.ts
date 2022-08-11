@@ -110,6 +110,7 @@ describe("CCExchangeRouter", async () => {
 
         // Mocks checkTxProof of bitcoinRelay
         // We don't pass arguments since the request was modified and the txId is not valid
+        await mockBitcoinRelay.mock.getFinalizedHeaderFee.returns(0); // Fee of relay
         await mockBitcoinRelay.mock.checkTxProof.returns(true);
 
 
@@ -149,14 +150,14 @@ describe("CCExchangeRouter", async () => {
         const uniswapV2Router02Factory = new UniswapV2Router02__factory(deployer);
         uniswapV2Router02 = await uniswapV2Router02Factory.deploy(
             uniswapV2Factory.address,
-            ZERO_ADDRESS // WAVAX
+            ZERO_ADDRESS // WETH
         );
 
         const exchangeConnectorFactory = new UniswapConnector__factory(deployer);
         exchangeConnector = await exchangeConnectorFactory.deploy(
             "TheExchangeConnector",
             uniswapV2Router02.address,
-            ZERO_ADDRESS // WAVAX
+            ZERO_ADDRESS // WETH
         );
 
         // Deploys exchange token
