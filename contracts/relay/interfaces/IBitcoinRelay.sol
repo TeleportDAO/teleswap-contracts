@@ -70,15 +70,11 @@ interface IBitcoinRelay {
 
     function submissionGasUsed() external view returns(uint);
 
-    function exchangeRouter() external view returns(address);
-
-    function wrappedNativeToken() external view returns(address);
-
     function getBlockHeaderHash(uint height, uint index) external view returns(bytes32);
 
-    function getNumberOfSubmittedHeaders(uint height) external view returns (uint);
+    function getBlockHeaderFee (uint _height, uint _index) external view returns(uint);
 
-    function getFinalizedHeaderFee(uint _height) external view returns (uint);
+    function getNumberOfSubmittedHeaders(uint height) external view returns (uint);
 
     function availableTDT() external view returns(uint);
 
@@ -109,8 +105,6 @@ interface IBitcoinRelay {
     function setBaseQueries(uint _baseQueries) external;
 
     function setSubmissionGasUsed(uint _submissionGasUsed) external;
-
-    function setExchangeRouter(address _exchangeRouter) external;
 
     function checkTxProof(
         bytes32 txid,

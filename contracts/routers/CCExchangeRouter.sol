@@ -341,7 +341,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         uint _index
     ) internal returns (bool) {
         // Finds fee amount
-        uint feeAmount = IBitcoinRelay(relay).getFinalizedHeaderFee(_blockNumber);
+        uint feeAmount = IBitcoinRelay(relay).getBlockHeaderFee(_blockNumber, 0);
         require(msg.value >= feeAmount, "CCTransferRouter: relay fee is not sufficient");
         
         // Calls relay with msg.value
