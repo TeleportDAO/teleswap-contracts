@@ -275,11 +275,10 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         bytes memory _intermediateNodes,
         uint _index
     ) internal returns (bool) {
-        // // Finds fee amount
-        // uint feeAmount = IBitcoinRelay(relay).getFeeOfBlock(_blockNumber);
-        // require(msg.value >= feeAmount, "CCTransferRouter: relay fee is not sufficient");
-        uint feeAmount = 0;
-
+        // Finds fee amount
+        uint feeAmount = IBitcoinRelay(relay).getFinalizedHeaderFee(_blockNumber);
+        require(msg.value >= feeAmount, "CCTransferRouter: relay fee is not sufficient");
+        
         // Calls relay with msg.value
         (bool success, bytes memory data) = payable(relay).call{value: msg.value}(
             abi.encodeWithSignature(
@@ -294,15 +293,15 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         // Checks that call was successful
         require(success, "CCTransferRouter: calling relay was not successful");
 
+        // Sends extra ETH back to msg.sender
+        payable(msg.sender).call{value: (msg.value - feeAmount)}("");
+
+        // Returns result
         bytes32 _data;
         assembly {
             _data := mload(add(data, 32))
         }
-
         return _data == bytes32(0) ? false : true;
-
-        // // Sends extra ETH back to msg.sender
-        // payable(msg.sender).call{value: (msg.value - feeAmount)}("");
     }
 
     /// @notice                               Checks if the request tx is included and confirmed on source chain

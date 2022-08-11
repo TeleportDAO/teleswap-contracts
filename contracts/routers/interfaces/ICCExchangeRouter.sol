@@ -116,5 +116,5 @@ interface ICCExchangeRouter {
         bytes calldata intermediateNodes,
         uint index,
         address lockerBitcoinDecodedAddress
-    ) external returns(bool);
+    ) external payable returns(bool);
 }

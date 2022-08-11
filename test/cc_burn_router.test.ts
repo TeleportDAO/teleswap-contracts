@@ -187,6 +187,7 @@ describe("CC Burn Router", async () => {
     }
 
     async function setRelayCheckTxProofReturn(isFinal: boolean): Promise<void> {
+        await mockBitcoinRelay.mock.getFinalizedHeaderFee.returns(0); // Fee of relay
         await mockBitcoinRelay.mock.checkTxProof
             .returns(isFinal);
     }

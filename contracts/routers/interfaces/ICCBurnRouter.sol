@@ -126,9 +126,13 @@ interface ICCBurnRouter {
 		address _lockerTargetAddress,
 		uint _startIndex,
 		uint _endIndex
+	) external payable returns (bool);
+
+	function disputeBurn(
+		address _lockerTargetAddress, 
+		uint[] memory _indices
 	) external returns (bool);
 
-	function disputeBurn(address _lockerTargetAddress, uint[] memory _indices) external returns (bool);
 	function disputeLocker(
 		address _lockerTargetAddress,
         uint _inputIndex,
@@ -139,5 +143,5 @@ interface ICCBurnRouter {
 		uint256 _blockNumber,
 		bytes calldata _intermediateNodes,
 		uint _index
-	) external returns (bool);
+	) external payable returns (bool);
 }

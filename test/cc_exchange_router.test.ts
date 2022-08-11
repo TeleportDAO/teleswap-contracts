@@ -108,6 +108,7 @@ describe("CCExchangeRouter", async () => {
 
         // Mocks checkTxProof of bitcoinRelay
         // We don't pass arguments since the request was modified and the txId is not valid
+        await mockBitcoinRelay.mock.getFinalizedHeaderFee.returns(0); // Fee of relay
         await mockBitcoinRelay.mock.checkTxProof.returns(true);
 
 

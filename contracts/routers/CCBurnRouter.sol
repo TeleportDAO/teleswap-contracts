@@ -186,7 +186,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         address _lockerScriptHash,
         uint _startIndex,
         uint _endIndex
-    ) external nonReentrant override returns (bool) {
+    ) external payable nonReentrant override returns (bool) {
         // Get the target address of the locker from its Bitcoin address
         address _lockerTargetAddress = ILockers(lockers)
             .lockerTargetAddress(_lockerScriptHash);
@@ -283,7 +283,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint256 _blockNumber,
         bytes calldata _intermediateNodes,
         uint _index
-    ) external nonReentrant override returns (bool) {
+    ) external payable nonReentrant override returns (bool) {
         // Checks if the locker address is valid
         require(
             ILockers(lockers).isLocker(_lockerScriptHash),
@@ -476,12 +476,33 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         bytes memory _intermediateNodes,
         uint _index
     ) internal returns (bool) {
-        return IBitcoinRelay(relay).checkTxProof(
-            _txId,
-            _blockNumber,
-            _intermediateNodes,
-            _index
+        // Finds fee amount
+        uint feeAmount = IBitcoinRelay(relay).getFinalizedHeaderFee(_blockNumber);
+        require(msg.value >= feeAmount, "CCTransferRouter: relay fee is not sufficient");
+        
+        // Calls relay with msg.value
+        (bool success, bytes memory data) = payable(relay).call{value: msg.value}(
+            abi.encodeWithSignature(
+                "checkTxProof(bytes32,uint256,bytes,uint256)", 
+                _txId, 
+                _blockNumber,
+                _intermediateNodes,
+                _index
+            )
         );
+
+        // Checks that call was successful
+        require(success, "CCTransferRouter: calling relay was not successful");
+
+        // Sends extra ETH back to msg.sender
+        payable(msg.sender).call{value: (msg.value - feeAmount)}("");
+
+        // Returns result
+        bytes32 _data;
+        assembly {
+            _data := mload(add(data, 32))
+        }
+        return _data == bytes32(0) ? false : true;
     }
 
     /// @notice                      Checks inclusion of the transaction in the specified block 
