@@ -1,7 +1,5 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.0;
-
-/** @title ViewSPV */
-/** @author Summa (https://summa.one) */
 
 import "./TypedMemView.sol";
 import "./ViewBTC.sol";
@@ -73,7 +71,7 @@ library ViewSPV {
         return ViewBTC.checkMerkle(_txid, _intermediateNodes, _merkleRoot, _index);
     }
 
-    function revertBytes32 (bytes32 input) internal view returns(bytes32) {
+    function revertBytes32(bytes32 input) internal pure returns(bytes32) {
         bytes memory temp;
         bytes32 result;
         for (uint i = 0; i < 32; i++) {

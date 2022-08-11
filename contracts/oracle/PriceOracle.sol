@@ -15,7 +15,7 @@ contract PriceOracle is IPriceOracle, Ownable {
     uint public override acceptableDelay;
     address public constant NATIVE_TOKEN = address(1);
 
-    constructor(uint _acceptableDelay) public {
+    constructor(uint _acceptableDelay) {
         acceptableDelay = _acceptableDelay;
     }
 

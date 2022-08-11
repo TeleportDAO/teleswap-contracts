@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.0;
 
 import "../libraries/NewTxHelper.sol";
@@ -42,7 +43,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         address _lockers, 
         address _teleBTC,
         address _treasury
-    ) public {
+    ) {
         startingBlockNumber = _startingBlockNumber;
         protocolPercentageFee = _protocolPercentageFee;
         chainId = _chainId;
@@ -172,6 +173,8 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
             );
             return true;
         }
+
+        return false;
     }
 
     /// @notice                             Mints the equivalent amount of locked tokens
@@ -180,9 +183,9 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _txId                        The transaction ID of the request
     /// @return                             True if minting and sending tokens passes
     // TODO: maybe its better to add lokerBitcoinDecodedAddress to the transfer request struct
-    function _mintAndSend(address _lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
+    function _mintAndSend(address _lockerScriptHash, bytes32 _txId) internal returns (bool) {
         // Gets remained amount after reducing fees
-        uint remainedAmount = _mintAndReduceFees(_lockerBitcoinDecodedAddress, _txId);
+        uint remainedAmount = _mintAndReduceFees(_lockerScriptHash, _txId);
         
         // Transfers rest of tokens to recipient
         ITeleBTC(teleBTC).transfer(
@@ -197,10 +200,10 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @dev                                The check amount for Teleporter fee can be adjusted
     /// @param _txId                        The transaction ID of the request
     /// @return                             True if paying back passes
-    function _payBackInstantLoan(address _lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
+    function _payBackInstantLoan(address _lockerScriptHash, bytes32 _txId) internal returns (bool) {
         
         // Gets remained amount after reducing fees
-        uint remainedAmount = _mintAndReduceFees(_lockerBitcoinDecodedAddress, _txId);
+        uint remainedAmount = _mintAndReduceFees(_lockerScriptHash, _txId);
 
         // Gives allowance to instant router to transfer remained teleBTC
         ITeleBTC(teleBTC).approve(
@@ -222,22 +225,21 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _vout                        The outputs of the request tx
     /// @param _txId                        The tx ID of the request
     function _saveCCTransferRequest(
-        address _lockerBitcoinDecodedAddress,
+        address _lockerScriptHash,
         bytes memory _vout,
         bytes32 _txId
     ) internal {
         bytes memory arbitraryData;
         ccTransferRequest memory request; // Defines it to save gas
-        address desiredRecipient;
         uint percentageFee;
 
         require(
-            ILockers(lockers).isLocker(_lockerBitcoinDecodedAddress),
-            "CCTransferRouter: no locker with the bitcoin decoded addresss exists"
+            ILockers(lockers).isLocker(_lockerScriptHash),
+            "CCTransferRouter: no locker with the given script hash exists"
         );
 
         // Extracts value and opreturn data from request
-        (request.inputAmount, arbitraryData) = NewTxHelper.parseValueAndData(_vout, _lockerBitcoinDecodedAddress);
+        (request.inputAmount, arbitraryData) = NewTxHelper.parseValueAndData(_vout, _lockerScriptHash);
         
         // Checks that input amount is not zero
         require(request.inputAmount > 0, "CCTransferRouter: input amount is zero");
@@ -294,7 +296,8 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         require(success, "CCTransferRouter: calling relay was not successful");
 
         // Sends extra ETH back to msg.sender
-        payable(msg.sender).call{value: (msg.value - feeAmount)}("");
+        (bool _success,) = payable(msg.sender).call{value: (msg.value - feeAmount)}("");
+        require(_success, "CCTransferRouter: sending remained ETH was not successful");
 
         // Returns result
         bytes32 _data;
@@ -305,17 +308,17 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     }
 
     /// @notice                               Checks if the request tx is included and confirmed on source chain
-    /// @param _lockerBitcoinDecodedAddress    The request tx
+    /// @param _lockerScriptHash    The request tx
     /// @param _txId                          The request tx
     /// @return _remainedAmount               True if the tx is confirmed on the source chain
     function _mintAndReduceFees(
-        address _lockerBitcoinDecodedAddress, 
+        address _lockerScriptHash, 
         bytes32 _txId
     ) internal returns (uint _remainedAmount) {
 
         // Mints teleBTC for cc transfer router
         uint mintedAmount = ILockers(lockers).mint(
-            _lockerBitcoinDecodedAddress,
+            _lockerScriptHash,
             address(this),
             ccTransferRequests[_txId].inputAmount
         );

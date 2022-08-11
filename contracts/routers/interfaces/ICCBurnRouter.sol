@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 interface ICCBurnRouter {
@@ -87,6 +88,8 @@ interface ICCBurnRouter {
 
 	function protocolPercentageFee() external view returns (uint);
 
+	function slasherPercentageReward() external view returns (uint);
+
 	function bitcoinFee() external view returns (uint); // Bitcoin transaction fee
 
 	function isTransferred(address _lockerTargetAddress, uint _index) external view returns (bool);
@@ -104,6 +107,8 @@ interface ICCBurnRouter {
 	function setTransferDeadline(uint _transferDeadline) external;
 
 	function setProtocolPercentageFee(uint _protocolPercentageFee) external;
+
+	function setSlasherPercentageReward(uint _slasherPercentageReward) external;
 
 	function setBitcoinFee(uint _bitcoinFee) external;
 

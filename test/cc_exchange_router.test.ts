@@ -148,14 +148,14 @@ describe("CCExchangeRouter", async () => {
         const uniswapV2Router02Factory = new UniswapV2Router02__factory(deployer);
         uniswapV2Router02 = await uniswapV2Router02Factory.deploy(
             uniswapV2Factory.address,
-            ZERO_ADDRESS // WAVAX
+            ZERO_ADDRESS // WETH
         );
         
         const exchangeConnectorFactory = new UniswapConnector__factory(deployer);
         exchangeConnector = await exchangeConnectorFactory.deploy(
             "TheExchangeConnector",
             uniswapV2Router02.address,
-            ZERO_ADDRESS // WAVAX
+            ZERO_ADDRESS // WETH
         );
         
         // Deploys exchange token

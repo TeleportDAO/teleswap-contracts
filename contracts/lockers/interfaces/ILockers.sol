@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.0;
 
 interface ILockers {
@@ -57,7 +58,11 @@ interface ILockers {
         bytes lockerRedeemScript,
         uint TDTUnlockedAmount,
         uint nativeTokenUnlockedAmount
-    // uint removingTime
+    );
+
+    event LockerSlashed(
+        address indexed lockerTargetAddress,
+        uint slashedCollateralAmount
     );
 
     // Read-only functions
@@ -148,6 +153,12 @@ interface ILockers {
 
     function selfRemoveLocker() external returns (bool);
 
-    function slashLocker(address _lockerTargetAddress, uint _amount, address _recipient) external returns(bool);
+    function slashLocker(
+        address _lockerTargetAddress, 
+        uint _rewardAmount,
+        address _rewardRecipient,
+        uint _amount, 
+        address _recipient
+    ) external returns(bool);
 
 }

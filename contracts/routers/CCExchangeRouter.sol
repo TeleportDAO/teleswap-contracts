@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: <SPDX-License>
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.0;
 
 import "./interfaces/ICCExchangeRouter.sol";
@@ -36,7 +36,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         address _relay, 
         address _teleBTC,
         address _treasury
-    ) public {
+    ) {
+        startingBlockNumber = _startingBlockNumber;
         protocolPercentageFee = _protocolPercentageFee;
         chainId = _chainId;
         relay = _relay;
@@ -168,6 +169,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             );
             return true;
         }
+
+        return false;
     }
 
     /// @notice            Executes a normal cross-chain exchange request
@@ -267,7 +270,6 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
         ccExchangeRequest memory request; // Defines it to save gas
         bytes memory arbitraryData;
-        address desiredRecipient;
         address exchangeToken;
         uint percentageFee;
         
@@ -357,7 +359,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         require(success, "CCTransferRouter: calling relay was not successful");
 
         // Sends extra ETH back to msg.sender
-        payable(msg.sender).call{value: (msg.value - feeAmount)}("");
+        (bool _success,) = payable(msg.sender).call{value: (msg.value - feeAmount)}("");
+        require(_success, "CCTransferRouter: sending remained ETH was not successful");
 
         // Returns result
         bytes32 _data;

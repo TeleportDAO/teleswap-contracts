@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import './interfaces/IInstantRouter.sol';
@@ -38,7 +39,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
 		address _collateralPoolFactory,
         uint _slasherPercentageReward,
         uint _paybackDeadline
-    ) public {
+    ) {
         teleBTC = _teleBTC;
         relay = _relay;
 		priceOracle = _priceOracle;
@@ -409,5 +410,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         request.collateralToken = _collateralToken;
         request.deadline = IBitcoinRelay(relay).lastSubmittedHeight() + paybackDeadline;
         instantRequests[_user].push(request);
+
+        return true;
     }
 }

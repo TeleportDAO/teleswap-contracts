@@ -4,23 +4,19 @@ import { assert, expect, use } from "chai";
 import { deployments, ethers } from "hardhat";
 import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
-import { Contract } from "@ethersproject/contracts";
 import { Address } from "hardhat-deploy/types";
 
-import { solidity } from "ethereum-waffle";
-
-import { isBytesLike } from "ethers/lib/utils";
 import {TeleBTC} from "../src/types/TeleBTC";
 import {TeleBTC__factory} from "../src/types/factories/TeleBTC__factory";
 import {CCBurnRouter} from "../src/types/CCBurnRouter";
 import {CCBurnRouter__factory} from "../src/types/factories/CCBurnRouter__factory";
 
 import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
-import { address } from "bitcoinjs-lib";
 
 describe("CC Burn Router", async () => {
     let snapshotId: any;
 
+    // Accounts
     let deployer: Signer;
     let signer1: Signer;
     let signer2: Signer;
@@ -28,28 +24,28 @@ describe("CC Burn Router", async () => {
     let signer1Address: Address;
     let signer2Address: Address;
 
+    // Contracts
     let teleBTC: TeleBTC;
+    let ccBurnRouter: CCBurnRouter;
 
+    // Mock contracts
     let mockBitcoinRelay: MockContract;
     let mockLockers: MockContract;
 
-    let ccBurnRouter: CCBurnRouter;
-
+    // Constants
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     let ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
-
-    // let telePortTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000)
     let ten = BigNumber.from(10).pow(8).mul(10)
     let oneHundred = BigNumber.from(10).pow(8).mul(100)
-
-    // This one is set so that:
-    // userRequestAmount * (1 - lockerFee / 10000 - PROTOCOL_PERCENTAGE_FEE / 10000) - bitcoinFee = 100000000
+    /* 
+        This one is set so that:
+        userRequestAmount * (1 - lockerFee / 10000 - PROTOCOL_PERCENTAGE_FEE / 10000) - BITCOIN_FEE = 100000000
+    */
     let userRequestAmount = BigNumber.from(100060030);
-
-    let transferDeadline = 20
+    let TRANSFER_DEADLINE = 20
     let PROTOCOL_PERCENTAGE_FEE = 5 // means 0.05%
-    let bitcoinFee = 10000 // estimation of Bitcoin transaction fee in Satoshi
-
+    let SLASHER_PERCENTAGE_REWARD = 5 // means 0.05%
+    let BITCOIN_FEE = 10000 // estimation of Bitcoin transaction fee in Satoshi
 
     let btcPublicKey = "03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd"
     let btcAddress = "mmPPsxXdtqgHFrxZdtFCtkwhHynGTiTsVh"
@@ -143,9 +139,10 @@ describe("CC Burn Router", async () => {
             mockBitcoinRelay.address,
             mockLockers.address,
             ONE_ADDRESS,
-            transferDeadline,
+            TRANSFER_DEADLINE,
             PROTOCOL_PERCENTAGE_FEE,
-            bitcoinFee
+            SLASHER_PERCENTAGE_REWARD,
+            BITCOIN_FEE
         );
 
         return ccBurnRouter;
@@ -218,7 +215,7 @@ describe("CC Burn Router", async () => {
 
         let burntAmount: number;
         let protocolFee = Math.floor(_userRequestAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
-        burntAmount = _userRequestAmount.toNumber() - bitcoinFee - protocolFee;
+        burntAmount = _userRequestAmount.toNumber() - BITCOIN_FEE - protocolFee;
         await setLockersBurnReturn(burntAmount);
         await setLockersReturn();
 
@@ -251,7 +248,7 @@ describe("CC Burn Router", async () => {
 
         let burntAmount: number;
         let protocolFee = Math.floor(userRequestAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
-        burntAmount = userRequestAmount.toNumber() - bitcoinFee - protocolFee;
+        burntAmount = userRequestAmount.toNumber() - BITCOIN_FEE - protocolFee;
         await setLockersBurnReturn(burntAmount);
         await setLockersReturn();
 
@@ -308,7 +305,7 @@ describe("CC Burn Router", async () => {
 
             let burntAmount: number;
             let protocolFee = Math.floor(userRequestAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
-            burntAmount = userRequestAmount.toNumber() - bitcoinFee - protocolFee;
+            burntAmount = userRequestAmount.toNumber() - BITCOIN_FEE - protocolFee;
             await setLockersBurnReturn(burntAmount);
             await setLockersReturn();
 
@@ -370,7 +367,7 @@ describe("CC Burn Router", async () => {
 
             let burntAmount: number;
             let protocolFee = Math.floor(userRequestAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
-            burntAmount = userRequestAmount.toNumber() - bitcoinFee - protocolFee;
+            burntAmount = userRequestAmount.toNumber() - BITCOIN_FEE - protocolFee;
             await setLockersBurnReturn(burntAmount);
             await setLockersReturn();
             
@@ -427,7 +424,7 @@ describe("CC Burn Router", async () => {
 
             let burntAmount: number;
             let protocolFee = Math.floor(userRequestAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
-            burntAmount = userRequestAmount.toNumber() - bitcoinFee - protocolFee;
+            burntAmount = userRequestAmount.toNumber() - BITCOIN_FEE - protocolFee;
             await setLockersBurnReturn(burntAmount);
             await setLockersReturn();
             
