@@ -1,1 +1,1 @@
-# BTC_EVM_TS_Smart_Contracts
+# BTC-EVM-smart-contracts
