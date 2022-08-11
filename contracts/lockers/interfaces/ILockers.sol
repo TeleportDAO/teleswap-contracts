@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.0;
+pragma solidity ^0.8.0;
 
 interface ILockers {
 
@@ -121,8 +121,6 @@ interface ILockers {
 
     function burn(address _lockerScriptHash, uint256 _amount) external returns(uint);
 
-    // function setRequiredLockedAmount(uint _requiredLockedAmount) external;
-
     function setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) external;
 
     function setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) external;
@@ -138,7 +136,7 @@ interface ILockers {
 
     function setCollateralRatio(uint _collateralRatio) external;
 
-    function luquidateLocker(
+    function liquidateLocker(
         address _lockerTargetAddress,
         uint _btcAmount
     ) external returns (bool);

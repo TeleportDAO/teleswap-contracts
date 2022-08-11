@@ -678,7 +678,7 @@ describe("Lockers", async () => {
 
     });
 
-    describe("#luquidateLocker", async () => {
+    describe("#liquidateLocker", async () => {
 
         beforeEach(async () => {
             snapshotId = await takeSnapshot(signer1.provider);
@@ -717,7 +717,7 @@ describe("Lockers", async () => {
             await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5000);
 
             await expect(
-                lockerSigner2.luquidateLocker(signer1Address, 5000)
+                lockerSigner2.liquidateLocker(signer1Address, 5000)
             ).to.be.revertedWith("Lockers: this locker is above luquidation ratio")
 
         });
@@ -753,7 +753,7 @@ describe("Lockers", async () => {
             await mockPriceOracle.mock.equivalentOutputAmount.returns(6000);
 
             await expect(
-                lockerSigner2.luquidateLocker(signer1Address, 5000)
+                lockerSigner2.liquidateLocker(signer1Address, 5000)
             ).to.be.revertedWith("Lockers: above the locker's luquidation penalty")
 
         });
@@ -794,7 +794,7 @@ describe("Lockers", async () => {
 
             // let nativeTokenBalanceOfSigner2BeforeLiquidatingLocker =
 
-            await lockerSigner2.luquidateLocker(signer1Address, 3500)
+            await lockerSigner2.liquidateLocker(signer1Address, 3500)
 
         });
 
