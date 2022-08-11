@@ -113,18 +113,18 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _index                       Part of the Merkle proof for the request tx
     /// @return                             True if the transfer is successful
     function ccTransfer(
-    // Bitcoin tx
+        // Bitcoin tx
         bytes4 _version,
         bytes memory _vin,
         bytes calldata _vout,
         bytes4 _locktime,
-    // Bitcoin block number
+        // Bitcoin block number
         uint256 _blockNumber,
-    // Merkle proof
+        // Merkle proof
         bytes calldata _intermediateNodes,
         uint _index,
         address lockerBitcoinDecodedAddress
-    ) external nonReentrant override returns (bool) {
+    ) external payable nonReentrant override returns (bool) {
         require(_blockNumber >= startingBlockNumber, "CCTransferRouter: request is old");
         
         bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
@@ -275,15 +275,34 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         bytes memory _intermediateNodes,
         uint _index
     ) internal returns (bool) {
-        // TODO: uncomment it
-        // uint feeAmount;
-        // IERC20(feeTokenAddress).transferFrom(msg.sender, address(this), feeAmount);
-        return IBitcoinRelay(relay).checkTxProof(
-            _txId,
-            _blockNumber,
-            _intermediateNodes,
-            _index
+        // // Finds fee amount
+        // uint feeAmount = IBitcoinRelay(relay).getFeeOfBlock(_blockNumber);
+        // require(msg.value >= feeAmount, "CCTransferRouter: relay fee is not sufficient");
+        uint feeAmount = 0;
+
+        // Calls relay with msg.value
+        (bool success, bytes memory data) = payable(relay).call{value: msg.value}(
+            abi.encodeWithSignature(
+                "checkTxProof(bytes32,uint256,bytes,uint256)", 
+                _txId, 
+                _blockNumber,
+                _intermediateNodes,
+                _index
+            )
         );
+
+        // Checks that call was successful
+        require(success, "CCTransferRouter: calling relay was not successful");
+
+        bytes32 _data;
+        assembly {
+            _data := mload(add(data, 32))
+        }
+
+        return _data == bytes32(0) ? false : true;
+
+        // // Sends extra ETH back to msg.sender
+        // payable(msg.sender).call{value: (msg.value - feeAmount)}("");
     }
 
     /// @notice                               Checks if the request tx is included and confirmed on source chain

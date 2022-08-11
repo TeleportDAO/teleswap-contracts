@@ -78,5 +78,5 @@ interface ICCTransferRouter {
 		bytes calldata _intermediateNodes,
 		uint _index,
 		address lockerBitcoinDecodedAddress
-	) external returns (bool);
+	) external payable returns (bool);
 }
