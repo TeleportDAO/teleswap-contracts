@@ -9,6 +9,7 @@ import "../erc20/interfaces/ITeleBTC.sol";
 import "../lockers/interfaces/ILockers.sol";
 import "../libraries/NewTxHelper.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";
 
@@ -88,7 +89,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     function setProtocolPercentageFee(uint _protocolPercentageFee) external override onlyOwner {
         require(
             10000 >= _protocolPercentageFee, 
-            "CCTransferRouter: fee is out of range"
+            "CCExchangeRouter: fee is out of range"
         );
         protocolPercentageFee = _protocolPercentageFee;
     }
@@ -125,9 +126,9 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         uint256 _blockNumber,
         bytes calldata _intermediateNodes,
         uint _index,
-        address lockerBitcoinDecodedAddress
+        address _lockerScriptHash
     ) external payable nonReentrant override returns (bool) {
-        require(_blockNumber >= startingBlockNumber, "CCTransferRouter: request is old");
+        require(_blockNumber >= startingBlockNumber, "CCExchangeRouter: request is old");
         
         // Calculates transaction id
         bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
@@ -139,7 +140,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         );
 
         // Extracts information from the request
-        _saveCCExchangeRequest(lockerBitcoinDecodedAddress, _vout, txId);
+        _saveCCExchangeRequest(_lockerScriptHash, _vout, txId);
 
         // Check if transaction has been confirmed on source chain
         require(
@@ -155,7 +156,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         // Normal cc exchange request
         if (ccExchangeRequests[txId].speed == 0) {
             require(
-                _normalCCExchange(lockerBitcoinDecodedAddress, txId), 
+                _normalCCExchange(_lockerScriptHash, txId), 
                 "CCExchangeRouter: normal cc exchange was not successful"
             );
             return true;
@@ -164,7 +165,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         // Pay back instant loan
         if (ccExchangeRequests[txId].speed == 1) {
             require(
-                _payBackInstantLoan(lockerBitcoinDecodedAddress, txId), 
+                _payBackInstantLoan(_lockerScriptHash, txId), 
                 "CCExchangeRouter: paying back instant loan was not successful"
             );
             return true;
@@ -177,9 +178,9 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @dev               Mints wrapped token for user if exchanging is not successful
     /// @param _txId       Id of the transaction containing the user request
     /// @return
-    function _normalCCExchange(address _lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
+    function _normalCCExchange(address _lockerScriptHash, bytes32 _txId) internal returns (bool) {
         // Gets remained amount after reducing fees
-        uint remainedInputAmount = _mintAndReduceFees(_lockerBitcoinDecodedAddress, _txId);
+        uint remainedInputAmount = _mintAndReduceFees(_lockerScriptHash, _txId);
         
         bool result;
         uint[] memory amounts;
@@ -238,9 +239,9 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @dev               Mints wrapped token for instant router contract
     /// @param _txId       Id of the transaction containing the user request
     /// @return            True if paying back loan is successful
-    function _payBackInstantLoan(address _lockerBitcoinDecodedAddress, bytes32 _txId) internal returns (bool) {
+    function _payBackInstantLoan(address _lockerScriptHash, bytes32 _txId) internal returns (bool) {
         // Gets remained amount after reducing fees
-        uint remainedAmount = _mintAndReduceFees(_lockerBitcoinDecodedAddress, _txId);
+        uint remainedAmount = _mintAndReduceFees(_lockerScriptHash, _txId);
         
         // Gives allowance to instant router to transfer minted wrapped tokens
         ITeleBTC(teleBTC).approve(
@@ -263,7 +264,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _txId       Id of the transaction containing the user request
     /// @return            True if recording the request is successful
     function _saveCCExchangeRequest(
-        address _lockerBitcoinDecodedAddress,
+        address _lockerScriptHash,
         bytes memory _vout,
         bytes32 _txId
     ) internal returns (bool) {
@@ -275,12 +276,12 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         
         // Checks that given bitcoin address is locker
         require(
-            ILockers(lockers).isLocker(_lockerBitcoinDecodedAddress),
+            ILockers(lockers).isLocker(_lockerScriptHash),
             "CCExchangeRouter: no locker with the bitcoin decoded addresss exists"
         );
         
         // Extracts value and opreturn data from request
-        (request.inputAmount, arbitraryData) = NewTxHelper.parseValueAndData(_vout, _lockerBitcoinDecodedAddress);
+        (request.inputAmount, arbitraryData) = NewTxHelper.parseValueAndData(_vout, _lockerScriptHash);
 
         // Checks that input amount is not zero
         require(request.inputAmount > 0, "CCExchangeRouter: input amount is zero");
@@ -334,40 +335,33 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _intermediateNodes       Merkle inclusion proof for the transaction
     /// @param _index                   Index of transaction in the block
     /// @return                         True if the transaction was included in the block
-    function _isConfirmed (
+    function _isConfirmed(
         bytes32 _txId,
         uint256 _blockNumber,
         bytes memory _intermediateNodes,
         uint _index
-    ) internal returns (bool) {
+    ) private returns (bool) {
         // Finds fee amount
         uint feeAmount = IBitcoinRelay(relay).getBlockHeaderFee(_blockNumber, 0);
-        require(msg.value >= feeAmount, "CCTransferRouter: relay fee is not sufficient");
-        
-        // Calls relay with msg.value
-        (bool success, bytes memory data) = payable(relay).call{value: msg.value}(
+        require(msg.value >= feeAmount, "CCExchangeRouter: relay fee is not sufficient");
+
+        // Calls relay contract
+        bytes memory data = Address.functionCallWithValue(
+            relay,
             abi.encodeWithSignature(
                 "checkTxProof(bytes32,uint256,bytes,uint256)", 
                 _txId, 
                 _blockNumber,
                 _intermediateNodes,
                 _index
-            )
+            ),
+            msg.value
         );
 
-        // Checks that call was successful
-        require(success, "CCTransferRouter: calling relay was not successful");
-
         // Sends extra ETH back to msg.sender
-        (bool _success,) = payable(msg.sender).call{value: (msg.value - feeAmount)}("");
-        require(_success, "CCTransferRouter: sending remained ETH was not successful");
+        Address.sendValue(payable(msg.sender), msg.value - feeAmount);
 
-        // Returns result
-        bytes32 _data;
-        assembly {
-            _data := mload(add(data, 32))
-        }
-        return _data == bytes32(0) ? false : true;
+        return abi.decode(data, (bool));
     }
 
     /// @notice                               Checks if the request tx is included and confirmed on source chain

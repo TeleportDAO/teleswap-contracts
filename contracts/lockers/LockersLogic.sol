@@ -251,7 +251,7 @@ contract LockersLogic is LockersStorageStructure {
 
         // Sends back TDT and TNT collateral
         IERC20(TeleportDAOToken).transfer(_msgSender(), lockerRequest.TDTLockedAmount);
-        payable(_msgSender()).transfer(lockerRequest.nativeTokenLockedAmount);
+        Address.sendValue(payable(_msgSender()), lockerRequest.nativeTokenLockedAmount);
 
         return true;
     }
@@ -341,9 +341,7 @@ contract LockersLogic is LockersStorageStructure {
 
         IERC20(TeleportDAOToken).transfer(_lockerTargetAddress, _removingLokcer.TDTLockedAmount);
 
-        // TODO: consider all possible attacks
-        address payable targetLockerAddress = payable(_lockerTargetAddress);
-        targetLockerAddress.transfer(_removingLokcer.nativeTokenLockedAmount);
+        Address.sendValue(payable(_lockerTargetAddress), _removingLokcer.nativeTokenLockedAmount);
 
         _removeElementFromLockersMapping(_lockerTargetAddress);
 
@@ -387,7 +385,7 @@ contract LockersLogic is LockersStorageStructure {
 
         // Sends back TDT and TNT collateral
         IERC20(TeleportDAOToken).transfer(_msgSender(), _removingLokcer.TDTLockedAmount);
-        payable(_msgSender()).transfer(_removingLokcer.nativeTokenLockedAmount);
+        Address.sendValue(payable(_msgSender()), _removingLokcer.nativeTokenLockedAmount);
 
         emit LockerRemoved(
             _msgSender(),
@@ -441,7 +439,7 @@ contract LockersLogic is LockersStorageStructure {
 
         // Transfers slashed collateral to user
         if (_recipient != address(this)) {
-            payable(_recipient).transfer(equivalentNativeToken);
+            Address.sendValue(payable(_recipient), equivalentNativeToken);
         }
 
         return true;
@@ -497,7 +495,7 @@ contract LockersLogic is LockersStorageStructure {
 
         lockersMapping[_lockerTargetAddress].netMinted = lockersMapping[_lockerTargetAddress].netMinted - _btcAmount;
 
-        payable(_msgSender()).transfer(equivalentNativeToken);
+        Address.sendValue(payable(_msgSender()), equivalentNativeToken);
 
         result = true;
 

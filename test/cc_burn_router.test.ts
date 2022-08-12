@@ -13,7 +13,7 @@ import {CCBurnRouter__factory} from "../src/types/factories/CCBurnRouter__factor
 
 import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
 
-describe("CC Burn Router", async () => {
+describe("CCBurnRouter", async () => {
     let snapshotId: any;
 
     // Accounts
@@ -184,7 +184,7 @@ describe("CC Burn Router", async () => {
     }
 
     async function setRelayCheckTxProofReturn(isFinal: boolean): Promise<void> {
-        await mockBitcoinRelay.mock.getFinalizedHeaderFee.returns(0); // Fee of relay
+        await mockBitcoinRelay.mock.getBlockHeaderFee.returns(0); // Fee of relay
         await mockBitcoinRelay.mock.checkTxProof
             .returns(isFinal);
     }
