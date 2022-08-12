@@ -76,6 +76,10 @@ interface IBitcoinRelay {
 
     function getNumberOfSubmittedHeaders(uint height) external view returns (uint);
 
+    function getCurrentEpochDifficulty() external view returns (uint256);
+
+    function getPrevEpochDifficulty() external view returns (uint256);
+
     function availableTDT() external view returns(uint);
 
     function availableTNT() external view returns(uint);

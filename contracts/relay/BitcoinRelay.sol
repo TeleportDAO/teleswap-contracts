@@ -135,6 +135,19 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         return chain[_height].length;
     }
 
+    /// @notice     Getter for currentEpochDiff
+    /// @dev        This is updated when a new heavist header has a new diff
+    /// @return     The difficulty of the bestKnownDigest
+    function getCurrentEpochDifficulty() external view override returns (uint256) {
+        return currentEpochDiff;
+    }
+    /// @notice     Getter for prevEpochDiff
+    /// @dev        This is updated when a difficulty change is accepted
+    /// @return     The difficulty of the previous epoch
+    function getPrevEpochDifficulty() external view override returns (uint256) {
+        return prevEpochDiff;
+    }
+
     /// @notice             Getter for available TDT in treasury
     /// @return             Amount of TDT available in Relay treasury
     function availableTDT() external view override returns(uint) {
@@ -600,27 +613,4 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         // Pass all but the first through to be added
         return _addHeaders(_oldEnd, _headers, true);
     }
-
-    // TODO why commented?
-
-    // /// @notice     Getter for currentEpochDiff
-    // /// @dev        This is updated when a new heavist header has a new diff
-    // /// @return     The difficulty of the bestKnownDigest
-    // function getCurrentEpochDifficulty() external view override returns (uint256) {
-    //     return currentEpochDiff;
-    // }
-    // /// @notice     Getter for prevEpochDiff
-    // /// @dev        This is updated when a difficulty change is accepted
-    // /// @return     The difficulty of the previous epoch
-    // function getPrevEpochDifficulty() external view override returns (uint256) {
-    //     return prevEpochDiff;
-    // }
-
-    // /// @notice     Getter for relayGenesis
-    // /// @dev        This is an initialization parameter
-    // /// @return     The hash of the first block of the relay
-    // function getRelayGenesis() public view override returns (bytes32) {
-    //     return relayGenesis;
-    // }
-
 }
