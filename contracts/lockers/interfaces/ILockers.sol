@@ -3,29 +3,6 @@ pragma solidity ^0.8.0;
 
 interface ILockers {
 
-    // Structures
-
-    /// @notice                             Structure for registering lockers
-    /// @dev
-    /// @param lockerRedeemScript           Locker redeem script
-    /// @param TDTLockedAmount              Bond amount of locker in TDT
-    /// @param nativeTokenLockedAmount      Bond amount of locker in native token of the target chain
-    /// @param netMinted                    Total minted - total burnt
-    /// @param isScriptHash                 Determines if the lockerScriptHash is pub key hash or redeem script hash
-    /// @param isActive                     Shows if a locker is active (has not requested for removal and
-    ///                                     has enough collateral to accept more minting requests)
-    struct locker {
-        bytes lockerRedeemScript;
-        address lockerScriptHash;
-        uint TDTLockedAmount;
-        uint nativeTokenLockedAmount;
-        uint netMinted;
-        bool isLocker;
-        // TODO: isScriptHash is used for p2pkh and p2sh, but what about segwit
-        bool isScriptHash;
-        bool isActive;
-    }
-
     // Events
 
     event RequestAddLocker(
@@ -67,27 +44,7 @@ interface ILockers {
 
     // Read-only functions
 
-    function lockerPercentageFee() external view returns (uint);
-
-    function TeleportDAOToken() external view returns(address);
-
-    function teleBTC() external view returns (address);
-
-    function ccBurnRouter() external view returns (address);
-
-    function exchangeConnector() external view returns (address);
-
-    function minRequiredTDTLockedAmount() external view returns (uint);
-
-    function minRequiredTNTLockedAmount() external view returns (uint);
-
-    function collateralRatio() external view returns (uint);
-
-    function liquidationRatio() external view returns (uint);
-
-    function priceOracle() external view returns (address);
-
-    function lockerTargetAddress(address  _lockerScriptHash) external view returns (address);
+    function getLockerTargetAddress(address  _lockerScriptHash) external view returns (address);
 
     function isLocker(address _lockerScriptHash) external view returns (bool);
 
@@ -98,10 +55,6 @@ interface ILockers {
     function isActive(address _lockerTargetAddress) external view returns (bool);
 
     function getLockerCapacity(address _lockerTargetAddress) external view returns (uint);
-
-    function totalNumberOfLockers() external view returns (uint);
-
-    function totalNumberOfCandidates() external view returns (uint);
 
     // State-changing functions
 
@@ -127,7 +80,6 @@ interface ILockers {
 
     function setPriceOracle(address _priceOracle) external;
 
-    // TODO: add minter and add burner
     function setCCBurnRouter(address _ccBurnRouter) external;
 
     function setExchangeConnector(address _exchangeConnector) external;

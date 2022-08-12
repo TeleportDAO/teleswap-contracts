@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../libraries/NewTxHelper.sol";
+import "../libraries/TxHelper.sol";
 import "./interfaces/ICCBurnRouter.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../relay/interfaces/IBitcoinRelay.sol";
@@ -138,7 +138,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         uint remainedAmount = _getFee(
             _amount,
-            ILockers(lockers).lockerTargetAddress(_lockerScriptHash)
+            ILockers(lockers).getLockerTargetAddress(_lockerScriptHash)
         );
 
         // Burns remained wrapped tokens
@@ -147,7 +147,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         // Get the target address of the locker from its Bitcoin address
         address _lockerTargetAddress = ILockers(lockers)
-        .lockerTargetAddress(_lockerScriptHash);
+        .getLockerTargetAddress(_lockerScriptHash);
 
         _saveBurnRequest(
             _amount,
@@ -200,7 +200,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     ) external payable nonReentrant override returns (bool) {
         // Get the target address of the locker from its script hash
         address _lockerTargetAddress = ILockers(lockers)
-        .lockerTargetAddress(_lockerScriptHash);
+        .getLockerTargetAddress(_lockerScriptHash);
 
         // Checks the correctness of input indices
         require(
@@ -252,7 +252,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             "CCBurnRouter: locker address is not valid");
         // Get the target address of the locker from its Bitcoin address
         address _lockerTargetAddress = ILockers(lockers)
-        .lockerTargetAddress(_lockerScriptHash);
+        .getLockerTargetAddress(_lockerScriptHash);
         // Goes through provided indexes of burn requests to see if locker should be slashed
         for (uint i = 0; i < _indices.length; i++) {
             require(
@@ -321,7 +321,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         // 2. Check if the transaction belongs to the locker
         // First get the target address of the locker from its Bitcoin address
         address _lockerTargetAddress = ILockers(lockers)
-        .lockerTargetAddress(_lockerScriptHash);
+        .getLockerTargetAddress(_lockerScriptHash);
         bytes memory lockerRedeemScript = ILockers(lockers)
         .getLockerRedeemScript(_lockerTargetAddress);
         require(
@@ -342,7 +342,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         );
 
         // Finds total outputs value
-        uint totalValue = NewTxHelper.parseTotalValue(_vout);
+        uint totalValue = TxHelper.parseTotalValue(_vout);
 
         // Slashes locker
         ILockers(lockers).slashLocker(
@@ -386,7 +386,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
                 !burnRequests[_lockerTargetAddress][i].isTransferred &&
             burnRequests[_lockerTargetAddress][i].deadline >= block.number
             ) {
-                (parsedAmount,) = NewTxHelper.parseValueAndData(
+                (parsedAmount,) = TxHelper.parseValueAndData(
                     _vout,
                     burnRequests[_lockerTargetAddress][i].userPubKeyHash
                 );
@@ -419,12 +419,12 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         bytes32 _txId
     ) internal {
         uint parsedAmount;
-        (parsedAmount,) = NewTxHelper.parseValueAndData(_vout, _lockerScriptHash);
+        (parsedAmount,) = TxHelper.parseValueAndData(_vout, _lockerScriptHash);
         if (parsedAmount != 0 &&
-            _paidOutputCounter + 1 == NewTxHelper.numberOfOutputs(_vout)) {
+            _paidOutputCounter + 1 == TxHelper.numberOfOutputs(_vout)) {
             isPaid[_txId] = true;
         } else if (parsedAmount == 0 &&
-            _paidOutputCounter == NewTxHelper.numberOfOutputs(_vout)) {
+            _paidOutputCounter == TxHelper.numberOfOutputs(_vout)) {
             isPaid[_txId] = true;
         }
     }
@@ -441,8 +441,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     ) internal view returns (bool) {
         bytes memory scriptSig;
         bytes memory txInputAddress;
-        scriptSig = NewTxHelper.parseInputScriptSig(_vin, _inputIndex);
-        txInputAddress = NewTxHelper.sliceBytes(
+        scriptSig = TxHelper.parseInputScriptSig(_vin, _inputIndex);
+        txInputAddress = TxHelper.sliceBytes(
             scriptSig,
             scriptSig.length - _lockerRedeemScript.length,
             scriptSig.length - 1

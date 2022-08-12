@@ -7,7 +7,7 @@ import "./interfaces/IInstantRouter.sol";
 import "../relay/interfaces/IBitcoinRelay.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../lockers/interfaces/ILockers.sol";
-import "../libraries/NewTxHelper.sol";
+import "../libraries/TxHelper.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -131,7 +131,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         require(_blockNumber >= startingBlockNumber, "CCExchangeRouter: request is old");
 
         // Calculates transaction id
-        bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
+        bytes32 txId = TxHelper.calculateTxId(_version, _vin, _vout, _locktime);
 
         // Checks that the request has not been processed before
         require(
@@ -281,26 +281,26 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         );
 
         // Extracts value and opreturn data from request
-        (request.inputAmount, arbitraryData) = NewTxHelper.parseValueAndData(_vout, _lockerScriptHash);
+        (request.inputAmount, arbitraryData) = TxHelper.parseValueAndData(_vout, _lockerScriptHash);
 
         // Checks that input amount is not zero
         require(request.inputAmount > 0, "CCExchangeRouter: input amount is zero");
 
         // Checks that the request belongs to this chain
-        require(chainId == NewTxHelper.parseChainId(arbitraryData), "CCExchangeRouter: chain id is not correct");
+        require(chainId == TxHelper.parseChainId(arbitraryData), "CCExchangeRouter: chain id is not correct");
 
-        request.appId = NewTxHelper.parseAppId(arbitraryData);
-        require(NewTxHelper.parseExchangeToken(arbitraryData) != address(0), "CCExchangeRouter: request is transfer request");
-        request.outputAmount = NewTxHelper.parseExchangeOutputAmount(arbitraryData);
+        request.appId = TxHelper.parseAppId(arbitraryData);
+        require(TxHelper.parseExchangeToken(arbitraryData) != address(0), "CCExchangeRouter: request is transfer request");
+        request.outputAmount = TxHelper.parseExchangeOutputAmount(arbitraryData);
 
-        if (NewTxHelper.parseIsFixedToken(arbitraryData) == 0) {
+        if (TxHelper.parseIsFixedToken(arbitraryData) == 0) {
             request.isFixedToken = false ;
         } else {
             request.isFixedToken = true ;
         }
 
-        request.recipientAddress = NewTxHelper.parseRecipientAddress(arbitraryData);
-        exchangeToken = NewTxHelper.parseExchangeToken(arbitraryData);
+        request.recipientAddress = TxHelper.parseRecipientAddress(arbitraryData);
+        exchangeToken = TxHelper.parseExchangeToken(arbitraryData);
 
         // We assume that the path length is two
         address[] memory thePath = new address[](2);
@@ -308,14 +308,14 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         thePath[1] = exchangeToken;
         request.path = thePath;
 
-        request.deadline = NewTxHelper.parseDeadline(arbitraryData);
+        request.deadline = TxHelper.parseDeadline(arbitraryData);
 
         // Calculates fee
-        percentageFee = NewTxHelper.parsePercentageFee(arbitraryData);
+        percentageFee = TxHelper.parsePercentageFee(arbitraryData);
         require(percentageFee < 10000, "CCExchangeRouter: percentage fee is not correct");
         request.fee = percentageFee*request.inputAmount/10000;
 
-        request.speed = NewTxHelper.parseSpeed(arbitraryData);
+        request.speed = TxHelper.parseSpeed(arbitraryData);
         require(request.speed == 0 || request.speed == 1, "CCExchangeRouter: speed is not correct");
 
         request.isUsed = true;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../libraries/NewTxHelper.sol";
+import "../libraries/TxHelper.sol";
 import "./interfaces/ICCTransferRouter.sol";
 import "../erc20/interfaces/IWrappedToken.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
@@ -129,7 +129,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     ) external payable nonReentrant override returns (bool) {
         require(_blockNumber >= startingBlockNumber, "CCTransferRouter: request is old");
 
-        bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
+        bytes32 txId = TxHelper.calculateTxId(_version, _vin, _vout, _locktime);
 
         require(
             !ccTransferRequests[txId].isUsed,
@@ -239,22 +239,22 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         );
 
         // Extracts value and opreturn data from request
-        (request.inputAmount, arbitraryData) = NewTxHelper.parseValueAndData(_vout, _lockerScriptHash);
+        (request.inputAmount, arbitraryData) = TxHelper.parseValueAndData(_vout, _lockerScriptHash);
 
         // Checks that input amount is not zero
         require(request.inputAmount > 0, "CCTransferRouter: input amount is zero");
 
         // Checks chain id and app id
-        require(NewTxHelper.parseChainId(arbitraryData) == chainId, "CCTransferRouter: chain id is not correct");
-        require(NewTxHelper.parseAppId(arbitraryData) == appId, "CCTransferRouter: app id is not correct");
+        require(TxHelper.parseChainId(arbitraryData) == chainId, "CCTransferRouter: chain id is not correct");
+        require(TxHelper.parseAppId(arbitraryData) == appId, "CCTransferRouter: app id is not correct");
 
         // Calculates fee
-        percentageFee = NewTxHelper.parsePercentageFee(arbitraryData);
+        percentageFee = TxHelper.parsePercentageFee(arbitraryData);
         require(percentageFee < 10000, "CCTransferRouter: percentage fee is not correct");
         request.fee = percentageFee*request.inputAmount/10000;
 
-        request.recipientAddress = NewTxHelper.parseRecipientAddress(arbitraryData);
-        request.speed = NewTxHelper.parseSpeed(arbitraryData);
+        request.recipientAddress = TxHelper.parseRecipientAddress(arbitraryData);
+        request.speed = TxHelper.parseSpeed(arbitraryData);
         require(request.speed == 0 || request.speed == 1, "CCTransferRouter: speed is not correct");
 
         // Marks the request as used
