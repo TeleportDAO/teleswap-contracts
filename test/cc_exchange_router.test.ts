@@ -12,8 +12,8 @@ import { UniswapV2Factory } from "../src/types/UniswapV2Factory";
 import { UniswapV2Factory__factory } from "../src/types/factories/UniswapV2Factory__factory";
 import { UniswapV2Router02 } from "../src/types/UniswapV2Router02";
 import { UniswapV2Router02__factory } from "../src/types/factories/UniswapV2Router02__factory";
-import { UniswapConnector } from "../src/types/UniswapConnector";
-import { UniswapConnector__factory } from "../src/types/factories/UniswapConnector__factory";
+import { UniswapV2Connector } from "../src/types/UniswapV2Connector";
+import { UniswapV2Connector__factory } from "../src/types/factories/UniswapV2Connector__factory";
 import { CCExchangeRouter } from "../src/types/CCExchangeRouter";
 import { CCExchangeRouter__factory } from "../src/types/factories/CCExchangeRouter__factory";
 import { Lockers } from "../src/types/Lockers";
@@ -62,7 +62,7 @@ describe("CCExchangeRouter", async () => {
     let lockerAddress: string;
 
     // Contracts
-    let exchangeConnector: UniswapConnector;
+    let exchangeConnector: UniswapV2Connector;
     let uniswapV2Router02: UniswapV2Router02;
     let uniswapV2Pair: UniswapV2Pair;
     let uniswapV2Factory: UniswapV2Factory;
@@ -153,7 +153,7 @@ describe("CCExchangeRouter", async () => {
             ZERO_ADDRESS // WETH
         );
 
-        const exchangeConnectorFactory = new UniswapConnector__factory(deployer);
+        const exchangeConnectorFactory = new UniswapV2Connector__factory(deployer);
         exchangeConnector = await exchangeConnectorFactory.deploy(
             "TheExchangeConnector",
             uniswapV2Router02.address,
