@@ -240,10 +240,6 @@ describe("Lockers", async () => {
                 await lockers.totalNumberOfCandidates()
             ).to.equal(1)
 
-            let theCandidateMapping = await lockers.candidatesMapping(signer1Address)
-            expect(
-                theCandidateMapping[0]
-            ).to.equal(TELEPORTER1)
         })
 
     });
@@ -276,21 +272,12 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            let theCandidateMapping = await lockers.candidatesMapping(signer1Address)
-            expect(
-                theCandidateMapping[0]
-            ).to.equal(TELEPORTER1)
-
             await lockerSigner1.revokeRequest()
 
             expect(
                 await lockers.totalNumberOfCandidates()
             ).to.equal(0)
-
-            theCandidateMapping = await lockers.candidatesMapping(signer1Address)
-            expect(
-                theCandidateMapping[0]
-            ).to.equal("0x")
+            
         })
 
     });
@@ -322,11 +309,6 @@ describe("Lockers", async () => {
                 minRequiredNativeTokenLockedAmount,
                 {value: minRequiredNativeTokenLockedAmount}
             )
-
-            let theCandidateMapping = await lockers.candidatesMapping(signer1Address)
-            expect(
-                theCandidateMapping[0]
-            ).to.equal(TELEPORTER1)
 
             expect(
                 await lockers.addLocker(signer1Address)

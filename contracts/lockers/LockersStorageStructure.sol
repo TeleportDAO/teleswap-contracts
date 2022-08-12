@@ -31,6 +31,7 @@ contract LockersStorageStructure is OwnableUpgradeable, ReentrancyGuardUpgradeab
         uint nativeTokenLockedAmount;
         uint netMinted;
         bool isLocker;
+        bool isCandidate;
         bool isScriptHash;
         bool isActive;
     }
@@ -53,14 +54,11 @@ contract LockersStorageStructure is OwnableUpgradeable, ReentrancyGuardUpgradeab
     // ^ this is because of price volitility and making minted coins for some collateral secure
     address public priceOracle;
 
-    uint public totalNumberOfLockers;
-
     mapping(address => locker) public lockersMapping; // lockerTargetAddress -> locker structure
 
     uint public totalNumberOfCandidates;
+    uint public totalNumberOfLockers;
     
-    mapping(address => locker) public candidatesMapping;
-
     mapping(address => bool) public lockerLeavingRequests;
     mapping(address => bool) public lockerLeavingAcceptance;
 

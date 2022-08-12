@@ -191,13 +191,13 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         );
 
         require(
-            !candidatesMapping[msg.sender].isLocker,
-            "Lockers: already requested"
+            !lockersMapping[msg.sender].isCandidate,
+            "Lockers: user is already a candidate"
         );
 
         require(
             !lockersMapping[msg.sender].isLocker,
-            "Lockers: already is locker"
+            "Lockers: user is already a locker"
         );
 
         require(
@@ -221,9 +221,9 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         locker_.lockerScriptHash = _candidateScriptHash;
         locker_.TDTLockedAmount = _lockedTDTAmount;
         locker_.nativeTokenLockedAmount = _lockedNativeTokenAmount;
-        locker_.isLocker = true;
+        locker_.isCandidate = true;
 
-        candidatesMapping[msg.sender] = locker_;
+        lockersMapping[msg.sender] = locker_;
 
         totalNumberOfCandidates = totalNumberOfCandidates + 1;
 
@@ -243,15 +243,15 @@ contract LockersLogic is LockersStorageStructure, ILockers {
     function revokeRequest() external override nonReentrant returns (bool) {
 
         require(
-            candidatesMapping[_msgSender()].isLocker,
+            lockersMapping[_msgSender()].isCandidate,
             "Lockers: request doesn't exist or already accepted"
         );
 
         // Loads locker's information
-        locker memory lockerRequest = candidatesMapping[_msgSender()];
+        locker memory lockerRequest = lockersMapping[_msgSender()];
 
-        // Removes locker from candidatesMapping
-        _removeElementFromCandidatesMapping(_msgSender());
+        // Removes candidate from lockersMapping
+        _removeCandidateFromLockersMapping(_msgSender());
         totalNumberOfCandidates = totalNumberOfCandidates -1;
 
         // Sends back TDT and TNT collateral
@@ -270,17 +270,18 @@ contract LockersLogic is LockersStorageStructure, ILockers {
     ) external override nonZeroAddress(_lockerTargetAddress) nonReentrant onlyOwner returns (bool) {
 
         require(
-            candidatesMapping[_lockerTargetAddress].isLocker,
+            lockersMapping[_lockerTargetAddress].isCandidate,
             "Lockers: no request with this address"
         );
 
-        lockersMapping[_lockerTargetAddress] = candidatesMapping[_lockerTargetAddress];
+        // Updates locker's status
+        lockersMapping[_lockerTargetAddress].isCandidate = false;
+        lockersMapping[_lockerTargetAddress].isLocker = true;
         lockersMapping[_lockerTargetAddress].isActive = true;
 
-        _removeElementFromCandidatesMapping(_lockerTargetAddress);
-
-        totalNumberOfLockers = totalNumberOfLockers + 1;
+        // Updates number of candidates and lockers
         totalNumberOfCandidates = totalNumberOfCandidates -1;
+        totalNumberOfLockers = totalNumberOfLockers + 1;
 
         lockerTargetAddress[lockersMapping[_lockerTargetAddress].lockerScriptHash] = _lockerTargetAddress;
 
@@ -347,7 +348,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
 
         Address.sendValue(payable(_lockerTargetAddress), _removingLokcer.nativeTokenLockedAmount);
 
-        _removeElementFromLockersMapping(_lockerTargetAddress);
+        _removeLockerFromLockersMapping(_lockerTargetAddress);
 
         totalNumberOfLockers = totalNumberOfLockers - 1;
 
@@ -384,7 +385,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         locker memory _removingLokcer = lockersMapping[_msgSender()];
 
         // Removes locker from lockersMapping
-        _removeElementFromLockersMapping(_msgSender());
+        _removeLockerFromLockersMapping(_msgSender());
         totalNumberOfLockers = totalNumberOfLockers - 1;
 
         // Sends back TDT and TNT collateral
@@ -400,54 +401,6 @@ contract LockersLogic is LockersStorageStructure, ILockers {
 
         return true;
     }
-
-    // /// @notice                           Slashes lockers
-    // /// @dev                              Only cc burn router can call this
-    // /// @param _lockerTargetAddress       Locker's target chain address
-    // /// @param _btcAmount                 Amount of teleBTC that is slashed from lockers
-    // /// @param _recipient                 Address of user who receives the slashed amount
-    // /// @return                           True if lockers are slashed successfully
-    // function slashLocker(
-    //     address _lockerTargetAddress,
-    //     uint _btcAmount,
-    //     address _recipient
-    // ) external override nonZeroAddress(_lockerTargetAddress) nonZeroAddress(_recipient)
-    // nonZeroValue(_btcAmount) nonReentrant whenNotPaused returns (bool) {
-
-    //     require(
-    //         msg.sender == ccBurnRouter,
-    //         "Lockers: Caller can't slash"
-    //     );
-
-    //     require(
-    //         lockersMapping[_lockerTargetAddress].isLocker,
-    //         "Lockers: target address is not locker"
-    //     );
-
-    //     uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
-    //         _btcAmount,
-    //     // TODO: get decimals from token contracts
-    //         8,
-    //         18,
-    //         teleBTC,
-    //         NATIVE_TOKEN
-    //     );
-
-    //     require(
-    //         lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount >= equivalentNativeToken,
-    //         "Lockers: insufficient native token collateral"
-    //     );
-
-    //     lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount
-    //     = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - equivalentNativeToken;
-
-    //     // Transfers slashed collateral to user
-    //     if (_recipient != address(this)) {
-    //         Address.sendValue(payable(_recipient), equivalentNativeToken);
-    //     }
-
-    //     return true;
-    // }
 
     /// @notice                           Slashes lockers
     /// @dev                              Only cc burn router can call this
@@ -643,26 +596,26 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         return burners[account];
     }
 
-    /// @notice                      Removes an element of array of candidates
+    /// @notice                      Removes an element of lockers list
     /// @dev                         Deletes and shifts the array
-    /// @param _candidateAddress     Index of the element that will be deleted
-    function _removeElementFromCandidatesMapping(address _candidateAddress) internal {
+    /// @param _lockerAddress      Index of the element that will be deleted
+    function _removeLockerFromLockersMapping(address _lockerAddress) internal {
         require(
-            candidatesMapping[_candidateAddress].isLocker,
-            "Lockers: this candidate doesn't exist"
+            lockersMapping[_lockerAddress].isLocker,
+            "Lockers: locker doesn't exist"
         );
-        delete candidatesMapping[_candidateAddress];
+        delete lockersMapping[_lockerAddress];
     }
 
     /// @notice                      Removes an element of lockers list
     /// @dev                         Deletes and shifts the array
-    /// @param _lockerAddress      Index of the element that will be deleted
-    function _removeElementFromLockersMapping(address _lockerAddress) internal {
+    /// @param _candidateAddress     Index of the element that will be deleted
+    function _removeCandidateFromLockersMapping(address _candidateAddress) internal {
         require(
-            lockersMapping[_lockerAddress].isLocker,
-            "Lockers: this locker doesn't exist"
+            lockersMapping[_candidateAddress].isCandidate,
+            "Lockers: candidate doesn't exist"
         );
-        delete lockersMapping[_lockerAddress];
+        delete lockersMapping[_candidateAddress];
     }
 
     /// @notice                             Get the locker collateral in terms of TeleBTC
