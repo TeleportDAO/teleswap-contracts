@@ -9,9 +9,10 @@ import "./interfaces/IBitcoinRelay.sol";
 import "../erc20/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";
 
-contract BitcoinRelay is IBitcoinRelay, Ownable, Pausable {
+contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     using SafeMath for uint256;
     using TypedMemView for bytes;
     using TypedMemView for bytes29;

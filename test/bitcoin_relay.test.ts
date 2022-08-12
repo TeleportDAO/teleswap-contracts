@@ -384,7 +384,7 @@ describe("Bitcoin Relay [combined version]", async () => {
                 )
             // ).to.revertedWith("BitcoinRelay: headers do not form a consistent chain")
             ).to.reverted; // above should be uncommented when a proper input is given
-            // now it reverts before being catched in the expect that we want
+            // now it reverts before being catched in the expect that we want -> it has invalid target
 
         });
 
