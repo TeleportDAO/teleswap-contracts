@@ -9,6 +9,7 @@ import "../relay/interfaces/IBitcoinRelay.sol";
 import "./interfaces/IInstantRouter.sol";
 import "../lockers/interfaces/ILockers.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";
 
@@ -124,7 +125,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         // Merkle proof
         bytes calldata _intermediateNodes,
         uint _index,
-        address lockerBitcoinDecodedAddress
+        address _lockerScriptHash
     ) external payable nonReentrant override returns (bool) {
         require(_blockNumber >= startingBlockNumber, "CCTransferRouter: request is old");
         
@@ -136,7 +137,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         );
         
         // Extracts information from the request
-        _saveCCTransferRequest(lockerBitcoinDecodedAddress, _vout, txId);
+        _saveCCTransferRequest(_lockerScriptHash, _vout, txId);
 
         // Check if tx has been confirmed on source chain
         require(
@@ -152,7 +153,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         // Normal cc transfer request
         if (ccTransferRequests[txId].speed == 0) {
             require(
-                _mintAndSend(lockerBitcoinDecodedAddress, txId), 
+                _mintAndSend(_lockerScriptHash, txId), 
                 "CCTransferRouter: normal cc transfer was not successful"
             );
             emit CCTransfer(
@@ -168,7 +169,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         // Pays back instant loan
         if (ccTransferRequests[txId].speed == 1) {
             require(
-                _payBackInstantLoan(lockerBitcoinDecodedAddress, txId), 
+                _payBackInstantLoan(_lockerScriptHash, txId), 
                 "CCTransferRouter: pay back was not successful"
             );
             return true;
@@ -280,26 +281,23 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         // Finds fee amount
         uint feeAmount = IBitcoinRelay(relay).getBlockHeaderFee(_blockNumber, 0);
         require(msg.value >= feeAmount, "CCTransferRouter: relay fee is not sufficient");
-        
-        // Calls relay with msg.value
-        (bool success, bytes memory data) = payable(relay).call{value: msg.value}(
+
+        // Calls relay contract
+        bytes memory data = Address.functionCallWithValue(
+            relay,
             abi.encodeWithSignature(
                 "checkTxProof(bytes32,uint256,bytes,uint256)", 
                 _txId, 
                 _blockNumber,
                 _intermediateNodes,
                 _index
-            )
+            ),
+            msg.value
         );
 
-        // Checks that call was successful
-        require(success, "CCTransferRouter: calling relay was not successful");
-
         // Sends extra ETH back to msg.sender
-        (bool _success,) = payable(msg.sender).call{value: (msg.value - feeAmount)}("");
-        require(_success, "CCTransferRouter: sending remained ETH was not successful");
+        Address.sendValue(payable(msg.sender), msg.value - feeAmount);
 
-        // Decodes returned data
         return abi.decode(data, (bool));
     }
 

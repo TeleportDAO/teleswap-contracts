@@ -486,41 +486,15 @@ library ViewBTC {
     }
 
     // @notice         verifies a merkle proof
-    // @param _leaf    the leaf
-    // @param _proof   the merkle proof
-    // @param _root    the merkle root
+    // @param _leaf    the leaf in LE format
+    // @param _proof   the proof nodes in LE format
+    // @param _root    the merkle root in BE format (same as the merkle root that is stored in the block header)
     // @param _index   the index
     // @return         true if valid, false if otherwise
-    // function checkMerkle(
-    //     bytes32 _leaf,
-    //     bytes29 _proof,
-    //     bytes32 _root,
-    //     uint256 _index
-    // ) internal view typeAssert(_proof, BTCTypes.MerkleArray) returns (bool) {
-    //     uint256 nodes = _proof.len() / 32;
-    //     if (nodes == 0) {
-    //         return _leaf == _root;
-    //     }
-
-    //     uint256 _idx = _index;
-    //     bytes32 _current = _leaf;
-
-    //     for (uint i = 0; i < nodes; i++) {
-    //         bytes32 _next = _proof.index(i * 32, 32);
-    //         if (_idx % 2 == 1) {
-    //             _current = _merkleStep(_next, _current);
-    //         } else {
-    //             _current = _merkleStep(_current, _next);
-    //         }
-    //         _idx >>= 1;
-    //     }
-
-    //     return _current == _root;
-    // }
     function checkMerkle(
-        bytes32 _leaf, // _leaf is LE
-        bytes29 _proof, // _proof nodes are LE
-        bytes32 _root, // _root is BE (same as the merkle root that is stored in the block header)
+        bytes32 _leaf,
+        bytes29 _proof,
+        bytes32 _root, 
         uint256 _index
     ) internal view returns (bool) {
         uint256 nodes = _proof.len() / 32;

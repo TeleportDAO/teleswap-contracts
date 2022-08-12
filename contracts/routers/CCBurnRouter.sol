@@ -7,6 +7,7 @@ import "../erc20/interfaces/ITeleBTC.sol";
 import "../relay/interfaces/IBitcoinRelay.sol";
 import "../lockers/interfaces/ILockers.sol";
 import '@openzeppelin/contracts/access/Ownable.sol';
+import "@openzeppelin/contracts/utils/Address.sol";
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import "hardhat/console.sol";
 
@@ -494,27 +495,24 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     ) private returns (bool) {
         // Finds fee amount
         uint feeAmount = IBitcoinRelay(relay).getBlockHeaderFee(_blockNumber, 0);
-        require(msg.value >= feeAmount, "CCTransferRouter: relay fee is not sufficient");
-        
-        // Calls relay with msg.value
-        (bool success, bytes memory data) = payable(relay).call{value: msg.value}(
+        require(msg.value >= feeAmount, "CCBurnRouter: relay fee is not sufficient");
+
+        // Calls relay contract
+        bytes memory data = Address.functionCallWithValue(
+            relay,
             abi.encodeWithSignature(
                 "checkTxProof(bytes32,uint256,bytes,uint256)", 
                 _txId, 
                 _blockNumber,
                 _intermediateNodes,
                 _index
-            )
+            ),
+            msg.value
         );
 
-        // Checks that call was successful
-        require(success, "CCTransferRouter: calling relay was not successful");
-
         // Sends extra ETH back to msg.sender
-        (bool _success,) = payable(msg.sender).call{value: (msg.value - feeAmount)}("");
-        require(_success, "CCTransferRouter: sending remained ETH was not successful");
+        Address.sendValue(payable(msg.sender), msg.value - feeAmount);
 
-        // Decodes returned data
         return abi.decode(data, (bool));
     }
 
