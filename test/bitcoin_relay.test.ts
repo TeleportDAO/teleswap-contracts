@@ -382,7 +382,7 @@ describe("Bitcoin Relay [combined version]", async () => {
                     genesis.hex,
                     badHeaders
                 )
-            // ).to.revertedWith("BitcoinRelay: headers do not form a consistent chain")
+            // ).to.revertedWith("BitcoinRelay: header work is insufficient")
             ).to.reverted; // above should be uncommented when a proper input is given
             // now it reverts before being catched in the expect that we want -> it has invalid target
 
@@ -397,9 +397,7 @@ describe("Bitcoin Relay [combined version]", async () => {
                     genesis.hex,
                     badHeaders
                 )
-            // ).to.revertedWith("BitcoinRelay: headers do not form a consistent chain")
-            ).to.reverted; // above should be uncommented when a proper input is given
-            // now it reverts before being catched in the expect that we want
+            ).to.revertedWith("BitcoinRelay: target changed unexpectedly")
 
         });
 
