@@ -1,17 +1,18 @@
 require('dotenv').config({path:"../../.env"});
 
-import { assert, expect, use } from "chai";
+import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
 import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
 import { Contract } from "@ethersproject/contracts";
 import { Address } from "hardhat-deploy/types";
 
-import { solidity } from "ethereum-waffle";
+import { LockersProxy } from "../src/types/LockersProxy";
+import { LockersProxy__factory } from "../src/types/factories/LockersProxy__factory";
 
-import { isBytesLike } from "ethers/lib/utils";
-import { Lockers } from "../src/types/Lockers";
-import { Lockers__factory } from "../src/types/factories/Lockers__factory";
+import { LockersLogic } from "../src/types/LockersLogic";
+import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
+
 import { TeleBTC } from "../src/types/TeleBTC";
 import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
 import { ERC20 } from "../src/types/ERC20";
@@ -53,7 +54,7 @@ describe("Lockers", async () => {
     let ccBurnSimulatorAddress: Address;
 
     // Contracts
-    let locker: Lockers;
+    let lockers: Contract;
     let teleportDAOToken: ERC20;
     let teleBTC: TeleBTC;
 
@@ -87,19 +88,19 @@ describe("Lockers", async () => {
             deployer,
             priceOracleContract.abi
         );
-
-        // Deploys bitcoinTeleporter contract
-        locker = await deployLocker()
+        
+        // Deploys lockers contract
+        lockers = await deployLockers();
 
         // Sets ccBurnRouter address
-        await locker.setCCBurnRouter(ccBurnSimulatorAddress);
+        await lockers.setCCBurnRouter(ccBurnSimulatorAddress);
 
         teleBTC = await deployTeleBTC()
 
-        await teleBTC.addMinter(locker.address)
-        await teleBTC.addBurner(locker.address)
+        await teleBTC.addMinter(lockers.address)
+        await teleBTC.addBurner(lockers.address)
 
-        await locker.setTeleBTC(teleBTC.address)
+        await lockers.setTeleBTC(teleBTC.address)
 
     });
 
@@ -148,14 +149,26 @@ describe("Lockers", async () => {
         return wrappedToken;
     };
 
-    const deployLocker = async (
+    const deployLockers = async (
         _signer?: Signer
-    ): Promise<Lockers> => {
-        const lockerFactory = new Lockers__factory(
+    ): Promise<Contract> => {
+
+        // Deploys lockers logic
+        const lockersLogicFactory = new LockersLogic__factory(
             _signer || deployer
         );
-
-        const locker = await lockerFactory.deploy(
+        const lockersLogic = await lockersLogicFactory.deploy();
+        
+        // Deploys lockers proxy
+        const lockersProxyFactory = new LockersProxy__factory(
+            _signer || deployer
+        );
+        const lockersProxy = await lockersProxyFactory.deploy(
+            lockersLogic.address
+        )
+        
+        // Initializes lockers proxy
+        await lockersProxy.initialize(
             teleportDAOToken.address,
             mockExchangeConnector.address,
             mockPriceOracle.address,
@@ -164,15 +177,19 @@ describe("Lockers", async () => {
             collateralRatio,
             liquidationRatio,
             LOCKER_PERCENTAGE_FEE
+        )
+
+        const lockers = await lockersLogic.attach(
+            lockersProxy.address
         );
 
-        return locker;
+        return lockers;
     };
 
     describe("#requestToBecomeLocker", async () => {
 
         it("setting low TeleportDao token", async function () {
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
                 lockerSigner1.requestToBecomeLocker(
@@ -186,7 +203,7 @@ describe("Lockers", async () => {
         })
 
         it("not approving TeleportDao token", async function () {
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
                 lockerSigner1.requestToBecomeLocker(
@@ -205,9 +222,9 @@ describe("Lockers", async () => {
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
 
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
                 lockerSigner1.requestToBecomeLocker(
@@ -217,13 +234,13 @@ describe("Lockers", async () => {
                     minRequiredNativeTokenLockedAmount,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
-            ).to.emit(locker, "RequestAddLocker")
+            ).to.emit(lockers, "RequestAddLocker")
 
             expect(
-                await locker.totalNumberOfCandidates()
+                await lockers.totalNumberOfCandidates()
             ).to.equal(1)
 
-            let theCandidateMapping = await locker.candidatesMapping(signer1Address)
+            let theCandidateMapping = await lockers.candidatesMapping(signer1Address)
             expect(
                 theCandidateMapping[0]
             ).to.equal(TELEPORTER1)
@@ -234,11 +251,11 @@ describe("Lockers", async () => {
     describe("#revokeRequest", async () => {
 
         it("trying to revoke a non existing request", async function () {
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
                 lockerSigner1.revokeRequest()
-            ).to.be.revertedWith("Lockers: request doesn't exit or already accepted")
+            ).to.be.revertedWith("Lockers: request doesn't exist or already accepted")
         })
 
         it("successful revoke", async function () {
@@ -247,9 +264,9 @@ describe("Lockers", async () => {
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
 
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
@@ -259,7 +276,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            let theCandidateMapping = await locker.candidatesMapping(signer1Address)
+            let theCandidateMapping = await lockers.candidatesMapping(signer1Address)
             expect(
                 theCandidateMapping[0]
             ).to.equal(TELEPORTER1)
@@ -267,10 +284,10 @@ describe("Lockers", async () => {
             await lockerSigner1.revokeRequest()
 
             expect(
-                await locker.totalNumberOfCandidates()
+                await lockers.totalNumberOfCandidates()
             ).to.equal(0)
 
-            theCandidateMapping = await locker.candidatesMapping(signer1Address)
+            theCandidateMapping = await lockers.candidatesMapping(signer1Address)
             expect(
                 theCandidateMapping[0]
             ).to.equal("0x")
@@ -281,7 +298,7 @@ describe("Lockers", async () => {
     describe("#addLocker", async () => {
 
         it("trying to add a non existing request as a locker", async function () {
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
                 lockerSigner1.addLocker(signer1Address)
@@ -294,9 +311,9 @@ describe("Lockers", async () => {
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
 
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
@@ -306,24 +323,24 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            let theCandidateMapping = await locker.candidatesMapping(signer1Address)
+            let theCandidateMapping = await lockers.candidatesMapping(signer1Address)
             expect(
                 theCandidateMapping[0]
             ).to.equal(TELEPORTER1)
 
             expect(
-                await locker.addLocker(signer1Address)
-            ).to.emit(locker, "LockerAdded")
+                await lockers.addLocker(signer1Address)
+            ).to.emit(lockers, "LockerAdded")
 
             expect(
-                await locker.totalNumberOfCandidates()
+                await lockers.totalNumberOfCandidates()
             ).to.equal(0)
 
             expect(
-                await locker.totalNumberOfLockers()
+                await lockers.totalNumberOfLockers()
             ).to.equal(1)
 
-            let theLockerMapping = await locker.lockersMapping(signer1Address)
+            let theLockerMapping = await lockers.lockersMapping(signer1Address)
             expect(
                 theLockerMapping[0]
             ).to.equal(TELEPORTER1)
@@ -334,7 +351,7 @@ describe("Lockers", async () => {
     describe("#requestToRemoveLocker", async () => {
 
         it("trying to request to remove a non existing locker", async function () {
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
                 lockerSigner1.requestToRemoveLocker()
@@ -347,9 +364,9 @@ describe("Lockers", async () => {
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
 
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
@@ -359,11 +376,11 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            await locker.addLocker(signer1Address)
+            await lockers.addLocker(signer1Address)
 
             expect(
                 await lockerSigner1.requestToRemoveLocker()
-            ).to.emit(locker, "RequestRemoveLocker")
+            ).to.emit(lockers, "RequestRemoveLocker")
         })
 
     });
@@ -371,7 +388,7 @@ describe("Lockers", async () => {
     describe("#removeLocker", async () => {
 
         it("only admin can call remove locker function", async function () {
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
                 lockerSigner1.removeLocker(signer1Address)
@@ -384,9 +401,9 @@ describe("Lockers", async () => {
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
 
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
@@ -396,10 +413,10 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            await locker.addLocker(signer1Address)
+            await lockers.addLocker(signer1Address)
 
             await expect(
-                locker.removeLocker(signer1Address)
+                lockers.removeLocker(signer1Address)
             ).to.be.revertedWith("Lockers: locker didn't request to be removed")
         })
 
@@ -409,9 +426,9 @@ describe("Lockers", async () => {
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
 
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
@@ -421,16 +438,16 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            await locker.addLocker(signer1Address)
+            await lockers.addLocker(signer1Address)
 
             await lockerSigner1.requestToRemoveLocker()
 
             expect(
-                await locker.removeLocker(signer1Address)
-            ).to.emit(locker, "LockerRemoved")
+                await lockers.removeLocker(signer1Address)
+            ).to.emit(lockers, "LockerRemoved")
 
             expect(
-                await locker.totalNumberOfLockers()
+                await lockers.totalNumberOfLockers()
             ).to.equal(0)
         })
 
@@ -439,7 +456,7 @@ describe("Lockers", async () => {
     describe("#selfRemoveLocker", async () => {
 
         it("only admin can call remove locker function", async function () {
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
                 lockerSigner1.selfRemoveLocker()
@@ -452,7 +469,7 @@ describe("Lockers", async () => {
     describe("#slashLocker", async () => {
 
         it("only admin can call slash locker function", async function () {
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
                 lockerSigner1.slashLocker(
@@ -466,7 +483,7 @@ describe("Lockers", async () => {
         })
 
         it("slash locker reverts when the target address is not locker", async function () {
-            let lockerCCBurnSimulator = locker.connect(ccBurnSimulator)
+            let lockerCCBurnSimulator = lockers.connect(ccBurnSimulator)
 
             await expect(
                 lockerCCBurnSimulator.slashLocker(
@@ -489,9 +506,9 @@ describe("Lockers", async () => {
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
 
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
@@ -502,17 +519,18 @@ describe("Lockers", async () => {
             )
 
             expect(
-                await locker.addLocker(signer1Address)
-            ).to.emit(locker, "LockerAdded")
+                await lockers.addLocker(signer1Address)
+            ).to.emit(lockers, "LockerAdded")
 
-            let lockerCCBurnSigner = await locker.connect(ccBurnSimulator)
+            let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
 
             await lockerCCBurnSigner.slashLocker(
-                signer1Address, 0,
+                signer1Address, 
+                0,
                 deployerAddress,
                 10000, 
                 ccBurnSimulatorAddress
-            )
+            );
 
         })
 
@@ -537,9 +555,9 @@ describe("Lockers", async () => {
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
 
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
@@ -549,18 +567,18 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await locker.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address);
 
-            await locker.addMinter(signer2Address);
+            await lockers.addMinter(signer2Address);
 
-            let lockerSigner2 = locker.connect(signer2)
+            let lockerSigner2 = lockers.connect(signer2)
 
             amount = 1000;
             let lockerFee = Math.floor(amount*LOCKER_PERCENTAGE_FEE/10000);
 
             await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, amount);
 
-            let theLockerMapping = await locker.lockersMapping(signer1Address);
+            let theLockerMapping = await lockers.lockersMapping(signer1Address);
 
             expect(
                 theLockerMapping[4]
@@ -584,9 +602,9 @@ describe("Lockers", async () => {
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
 
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
@@ -596,11 +614,11 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await locker.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address);
 
-            await locker.addMinter(signer2Address);
+            await lockers.addMinter(signer2Address);
 
-            let lockerSigner2 = locker.connect(signer2)
+            let lockerSigner2 = lockers.connect(signer2)
 
             await expect(
                 lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5001)
@@ -629,9 +647,9 @@ describe("Lockers", async () => {
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
 
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
@@ -641,16 +659,16 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            await locker.addLocker(signer1Address)
+            await lockers.addLocker(signer1Address)
 
-            await locker.addMinter(signer2Address)
-            await locker.addBurner(signer2Address)
+            await lockers.addMinter(signer2Address)
+            await lockers.addBurner(signer2Address)
 
-            let lockerSigner2 = locker.connect(signer2)
+            let lockerSigner2 = lockers.connect(signer2)
 
             await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, signer2Address, 1000)
 
-            let theLockerMapping = await locker.lockersMapping(signer1Address);
+            let theLockerMapping = await lockers.lockersMapping(signer1Address);
 
             expect(
                 theLockerMapping[4]
@@ -663,11 +681,11 @@ describe("Lockers", async () => {
             amount = 900;
             let lockerFee = Math.floor(amount*LOCKER_PERCENTAGE_FEE/10000);
 
-            await teleBTCSigner2.approve(locker.address, amount);
+            await teleBTCSigner2.approve(lockers.address, amount);
 
             await lockerSigner2.burn(TELEPORTER1_PublicKeyHash, amount);
 
-            theLockerMapping = await locker.lockersMapping(signer1Address);
+            theLockerMapping = await lockers.lockersMapping(signer1Address);
 
             expect(
                 theLockerMapping[4]
@@ -696,9 +714,9 @@ describe("Lockers", async () => {
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
 
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
@@ -708,11 +726,11 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await locker.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address);
 
-            await locker.addMinter(signer2Address);
+            await lockers.addMinter(signer2Address);
 
-            let lockerSigner2 = locker.connect(signer2)
+            let lockerSigner2 = lockers.connect(signer2)
 
             await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5000);
 
@@ -730,9 +748,9 @@ describe("Lockers", async () => {
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
 
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
@@ -742,11 +760,11 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await locker.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address);
 
-            await locker.addMinter(signer2Address);
+            await lockers.addMinter(signer2Address);
 
-            let lockerSigner2 = locker.connect(signer2)
+            let lockerSigner2 = lockers.connect(signer2)
 
             await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5000);
 
@@ -766,9 +784,9 @@ describe("Lockers", async () => {
 
             let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
 
-            await teleportDAOTokenSigner1.approve(locker.address, minRequiredTDTLockedAmount)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
 
-            let lockerSigner1 = locker.connect(signer1)
+            let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
                 TELEPORTER1,
@@ -778,11 +796,11 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await locker.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address);
 
-            await locker.addMinter(signer2Address);
+            await lockers.addMinter(signer2Address);
 
-            let lockerSigner2 = locker.connect(signer2)
+            let lockerSigner2 = lockers.connect(signer2)
 
             await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, signer2Address, 5000);
 
@@ -790,7 +808,7 @@ describe("Lockers", async () => {
 
             let teleBTCSigner2 = await teleBTC.connect(signer2);
 
-            await teleBTCSigner2.approve(locker.address, 3500)
+            await teleBTCSigner2.approve(lockers.address, 3500)
 
             // let nativeTokenBalanceOfSigner2BeforeLiquidatingLocker =
 

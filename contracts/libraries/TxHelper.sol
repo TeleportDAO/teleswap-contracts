@@ -7,7 +7,7 @@ import "hardhat/console.sol";
 
 
 // A library for parsing bitcoin transactions
-library NewTxHelper {
+library TxHelper {
 
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
