@@ -15,7 +15,6 @@ deployments/localhost
 deployments/*/solcInputs/*.json
 dist
 src/types
-# test/*/
 .vscode
 .nodn
 *.abe*
@@ -27,3 +26,4 @@ build
 /export
 vendor
 
+yarn-error.log

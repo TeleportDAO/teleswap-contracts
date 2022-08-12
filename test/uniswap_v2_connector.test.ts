@@ -3,8 +3,8 @@ import { ethers } from "hardhat";
 import { Contract } from "ethers";
 import { Signer, BigNumber } from "ethers";
 
-import { UniswapConnector } from "../src/types/UniswapConnector";
-import { UniswapConnector__factory } from "../src/types/factories/UniswapConnector__factory";
+import { UniswapV2Connector } from "../src/types/UniswapV2Connector";
+import { UniswapV2Connector__factory } from "../src/types/factories/UniswapV2Connector__factory";
 import { UniswapV2Pair } from "../src/types/UniswapV2Pair";
 import { UniswapV2Pair__factory } from "../src/types/factories/UniswapV2Pair__factory";
 import { ERC20 } from "../src/types/ERC20";
@@ -14,7 +14,7 @@ import { WETH__factory } from "../src/types/factories/WETH__factory";
 
 import { takeSnapshot, revertProvider } from "./block_utils";
 
-describe("UniswapConnector", async () => {
+describe("UniswapV2Connector", async () => {
 
     let snapshotId: any;
 
@@ -25,7 +25,7 @@ describe("UniswapConnector", async () => {
     let signer1Address: string;
 
     // Contracts
-    let uniswapConnector: UniswapConnector;
+    let uniswapV2Connector: UniswapV2Connector;
     let uniswapV2Router02: Contract;
     let liquidityPoolAB: UniswapV2Pair; // non-WETH/non-WETH
     let liquidityPoolCD: UniswapV2Pair; // non-WETH/WETH
@@ -74,8 +74,8 @@ describe("UniswapConnector", async () => {
         );
 
         // Deploys exchange connector contract
-        const uniswapConnectorFactory = new UniswapConnector__factory(deployer);
-        uniswapConnector = await uniswapConnectorFactory.deploy(
+        const uniswapV2ConnectorFactory = new UniswapV2Connector__factory(deployer);
+        uniswapV2Connector = await uniswapV2ConnectorFactory.deploy(
             "Uniswap-Connector",
             uniswapV2Router02.address,
             WETH.address
@@ -175,7 +175,7 @@ describe("UniswapConnector", async () => {
             );
 
             await expect(
-                uniswapConnector.getInputAmount(
+                uniswapV2Connector.getInputAmount(
                     outputAmount,
                     erc20.address,
                     _erc20.address
@@ -187,7 +187,7 @@ describe("UniswapConnector", async () => {
             let outputAmount = 1000;
 
             await expect(
-                uniswapConnector.getInputAmount(
+                uniswapV2Connector.getInputAmount(
                     outputAmount,
                     deployerAddress,
                     _erc20.address
@@ -207,7 +207,7 @@ describe("UniswapConnector", async () => {
             );
 
             await expect(
-                uniswapConnector.getOutputAmount(
+                uniswapV2Connector.getOutputAmount(
                     inputAmount,
                     erc20.address,
                     _erc20.address
@@ -219,7 +219,7 @@ describe("UniswapConnector", async () => {
             let inputAmount = 1000;
 
             await expect(
-                uniswapConnector.getInputAmount(
+                uniswapV2Connector.getInputAmount(
                     inputAmount,
                     deployerAddress,
                     _erc20.address
@@ -253,9 +253,9 @@ describe("UniswapConnector", async () => {
             let deadline = 10000000000000;
             let isFixedToken = true;
 
-            await erc20.approve(uniswapConnector.address, inputAmount);
+            await erc20.approve(uniswapV2Connector.address, inputAmount);
             await expect(
-                uniswapConnector.swap(
+                uniswapV2Connector.swap(
                     inputAmount,
                     outputAmount,
                     path,
@@ -263,7 +263,7 @@ describe("UniswapConnector", async () => {
                     deadline,
                     isFixedToken
                 )
-            ).to.emit(uniswapConnector, 'Swap');
+            ).to.emit(uniswapV2Connector, 'Swap');
 
             // Records new balances of deployer
             let newDeployerBalanceA = await erc20.balanceOf(deployerAddress);
@@ -291,9 +291,9 @@ describe("UniswapConnector", async () => {
             let deadline = 10000000000000;
             let isFixedToken = false;
 
-            await erc20.approve(uniswapConnector.address, inputAmount);
+            await erc20.approve(uniswapV2Connector.address, inputAmount);
             await expect(
-                uniswapConnector.swap(
+                uniswapV2Connector.swap(
                     inputAmount,
                     outputAmount,
                     path,
@@ -301,7 +301,7 @@ describe("UniswapConnector", async () => {
                     deadline,
                     isFixedToken
                 )
-            ).to.emit(uniswapConnector, 'Swap');
+            ).to.emit(uniswapV2Connector, 'Swap');
 
             // Records new balances of deployer
             let newDeployerBalanceA = await erc20.balanceOf(deployerAddress);
@@ -328,9 +328,9 @@ describe("UniswapConnector", async () => {
             let to = signer1Address;
             let deadline = 10000000000000;
             let isFixedToken = true;
-            await erc20.approve(uniswapConnector.address, inputAmount);
+            await erc20.approve(uniswapV2Connector.address, inputAmount);
             await expect(
-                uniswapConnector.swap(
+                uniswapV2Connector.swap(
                     inputAmount,
                     outputAmount,
                     path,
@@ -338,7 +338,7 @@ describe("UniswapConnector", async () => {
                     deadline,
                     isFixedToken
                 )
-            ).to.emit(uniswapConnector, 'Swap');
+            ).to.emit(uniswapV2Connector, 'Swap');
 
             // Records new balances of deployer
             let newDeployerBalanceC = await erc20.balanceOf(deployerAddress);
@@ -366,9 +366,9 @@ describe("UniswapConnector", async () => {
             let deadline = 10000000000000;
             let isFixedToken = false;
 
-            await erc20.approve(uniswapConnector.address, inputAmount);
+            await erc20.approve(uniswapV2Connector.address, inputAmount);
             await expect(
-                uniswapConnector.swap(
+                uniswapV2Connector.swap(
                     inputAmount,
                     outputAmount,
                     path,
@@ -376,7 +376,7 @@ describe("UniswapConnector", async () => {
                     deadline,
                     isFixedToken
                 )
-            ).to.emit(uniswapConnector, 'Swap');
+            ).to.emit(uniswapV2Connector, 'Swap');
 
             // Records new balances of deployer
             let newDeployerBalanceC = await erc20.balanceOf(deployerAddress);
@@ -404,9 +404,9 @@ describe("UniswapConnector", async () => {
             let deadline = 10000000000000;
             let isFixedToken = true;
 
-            await erc20.approve(uniswapConnector.address, inputAmount);
+            await erc20.approve(uniswapV2Connector.address, inputAmount);
             await expect(
-                uniswapConnector.swap(
+                uniswapV2Connector.swap(
                     inputAmount,
                     outputAmount*2,
                     path,
@@ -414,7 +414,7 @@ describe("UniswapConnector", async () => {
                     deadline,
                     isFixedToken
                 )
-            ).to.not.emit(uniswapConnector, 'Swap');
+            ).to.not.emit(uniswapV2Connector, 'Swap');
         })
 
         it("Should not exchange since input amount is not enough", async function () {
@@ -430,9 +430,9 @@ describe("UniswapConnector", async () => {
             let deadline = 10000000000000;
             let isFixedToken = false;
 
-            await erc20.approve(uniswapConnector.address, inputAmount);
+            await erc20.approve(uniswapV2Connector.address, inputAmount);
             await expect(
-                uniswapConnector.swap(
+                uniswapV2Connector.swap(
                     Math.floor(inputAmount.toNumber()/2),
                     outputAmount,
                     path,
@@ -440,7 +440,7 @@ describe("UniswapConnector", async () => {
                     deadline,
                     isFixedToken
                 )
-            ).to.not.emit(uniswapConnector, 'Swap');
+            ).to.not.emit(uniswapV2Connector, 'Swap');
         })
 
         it("Should not exchange since deadline has passed", async function () {
@@ -456,9 +456,9 @@ describe("UniswapConnector", async () => {
             let deadline = 0;
             let isFixedToken = true;
 
-            await erc20.approve(uniswapConnector.address, inputAmount);
+            await erc20.approve(uniswapV2Connector.address, inputAmount);
             await expect(
-                uniswapConnector.swap(
+                uniswapV2Connector.swap(
                     inputAmount,
                     outputAmount,
                     path,
@@ -466,7 +466,7 @@ describe("UniswapConnector", async () => {
                     deadline,
                     isFixedToken
                 )
-            ).to.not.emit(uniswapConnector, 'Swap');
+            ).to.not.emit(uniswapV2Connector, 'Swap');
         })
 
         it("Should not exchange since liquidity pool doesn't exist", async function () {
@@ -482,9 +482,9 @@ describe("UniswapConnector", async () => {
             let deadline = 0;
             let isFixedToken = true;
 
-            await erc20.approve(uniswapConnector.address, inputAmount);
+            await erc20.approve(uniswapV2Connector.address, inputAmount);
             await expect(
-                uniswapConnector.swap(
+                uniswapV2Connector.swap(
                     inputAmount,
                     outputAmount,
                     path,
@@ -492,7 +492,7 @@ describe("UniswapConnector", async () => {
                     deadline,
                     isFixedToken
                 )
-            ).to.not.emit(uniswapConnector, 'Swap');
+            ).to.not.emit(uniswapV2Connector, 'Swap');
         })
 
     });

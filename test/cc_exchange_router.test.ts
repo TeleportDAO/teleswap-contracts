@@ -3,7 +3,7 @@ require('dotenv').config({path:"../../.env"});
 
 import { assert, expect, use } from "chai";
 import { deployments, ethers } from "hardhat";
-import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
+import { Signer, BigNumber, BigNumberish, BytesLike, Contract } from "ethers";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
 
 import { UniswapV2Pair } from "../src/types/UniswapV2Pair";
@@ -16,8 +16,10 @@ import { UniswapV2Connector } from "../src/types/UniswapV2Connector";
 import { UniswapV2Connector__factory } from "../src/types/factories/UniswapV2Connector__factory";
 import { CCExchangeRouter } from "../src/types/CCExchangeRouter";
 import { CCExchangeRouter__factory } from "../src/types/factories/CCExchangeRouter__factory";
-import { Lockers } from "../src/types/Lockers";
-import { Lockers__factory } from "../src/types/factories/Lockers__factory";
+
+import { LockersProxy__factory } from "../src/types/factories/LockersProxy__factory";
+import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
+
 import { TeleBTC } from "../src/types/TeleBTC";
 import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
 import { ERC20 } from "../src/types/ERC20";
@@ -67,7 +69,7 @@ describe("CCExchangeRouter", async () => {
     let uniswapV2Pair: UniswapV2Pair;
     let uniswapV2Factory: UniswapV2Factory;
     let ccExchangeRouter: CCExchangeRouter;
-    let lockers: Lockers;
+    let lockers: Contract;
     let teleBTC: TeleBTC;
     let teleportDAOToken: ERC20;
     let exchangeToken: ERC20;
@@ -125,7 +127,7 @@ describe("CCExchangeRouter", async () => {
 
         await mockInstantRouter.mock.payBackLoan.returns(true);
 
-        lockers = await deployLocker()
+        lockers = await deployLockers();
 
         // Deploys teleBTC contract
         const teleBTCFactory = new TeleBTC__factory(deployer);
@@ -216,14 +218,26 @@ describe("CCExchangeRouter", async () => {
         return teleportDAOToken;
     };
 
-    const deployLocker = async (
+    const deployLockers = async (
         _signer?: Signer
-    ): Promise<Lockers> => {
-        const lockerFactory = new Lockers__factory(
+    ): Promise<Contract> => {
+
+        // Deploys lockers logic
+        const lockersLogicFactory = new LockersLogic__factory(
             _signer || deployer
         );
-
-        const lockers = await lockerFactory.deploy(
+        const lockersLogic = await lockersLogicFactory.deploy();
+        
+        // Deploys lockers proxy
+        const lockersProxyFactory = new LockersProxy__factory(
+            _signer || deployer
+        );
+        const lockersProxy = await lockersProxyFactory.deploy(
+            lockersLogic.address
+        )
+        
+        // Initializes lockers proxy
+        await lockersProxy.initialize(
             teleportDAOToken.address,
             ONE_ADDRESS,
             mockPriceOracle.address,
@@ -232,6 +246,10 @@ describe("CCExchangeRouter", async () => {
             collateralRatio,
             liquidationRatio,
             LOCKER_PERCENTAGE_FEE
+        )
+
+        const lockers = await lockersLogic.attach(
+            lockersProxy.address
         );
 
         return lockers;

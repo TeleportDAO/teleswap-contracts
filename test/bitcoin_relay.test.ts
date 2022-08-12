@@ -73,7 +73,7 @@ describe("Bitcoin Relay [combined version]", async () => {
         let _genesisHeader = await bitcoinRESTAPI.getHexBlockHeader(_height);
         let _periodStart = await bitcoinRESTAPI.getHexBlockHash(_height);
         _genesisHeader = '0x' + _genesisHeader;
-        
+
         _periodStart = '0x' + _periodStart;
 
         const bitcoinRelay = await bitcoinRelayFactory.deploy(
@@ -171,13 +171,13 @@ describe("Bitcoin Relay [combined version]", async () => {
                     _txid,
                     _blockNumber,
                     _intermediateNodes,
-                    _index, 
+                    _index,
                     {
                     value: ethers.utils.parseEther('0.00001'),
                   })
             // ).to.equal(true);
             );
-            
+
             let currentEpochQueries1 = await bitcoinRelaySigner1.currentEpochQueries();
 
             // Number of queries is being counted correctly for fee calculation purposes
@@ -185,7 +185,7 @@ describe("Bitcoin Relay [combined version]", async () => {
 
             let relayETHBalance1 = await bitcoinRelay.provider.getBalance(bitcoinRelay.address);
             let feeAmount = await bitcoinRelaySigner1.getBlockHeaderFee(_blockNumber, 0);
-            
+
             // Expected fee should be equal to the contract balance after tx is processed
             expect(relayETHBalance1.sub(relayETHBalance0)).to.equal(feeAmount);
         });
@@ -212,7 +212,7 @@ describe("Bitcoin Relay [combined version]", async () => {
         //             _txid,
         //             _blockNumber,
         //             _intermediateNodes,
-        //             _index, 
+        //             _index,
         //             {
         //             value: ethers.utils.parseEther('0.000000001'),
         //           })

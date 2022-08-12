@@ -85,7 +85,7 @@ describe("CCBurnRouter", async () => {
         )
 
         const lockers = await deployments.getArtifact(
-            "Lockers"
+            "LockersLogic"
         );
         mockLockers = await deployMockContract(
             deployer,
@@ -168,8 +168,8 @@ describe("CCBurnRouter", async () => {
             .returns(lockerRedeemScript);
     }
 
-    async function setLockersGetTargetAddressReturn(lockerTargetAddress: string): Promise<void> {
-        await mockLockers.mock.lockerTargetAddress
+    async function setLockersGetLockerTargetAddressReturn(lockerTargetAddress: string): Promise<void> {
+        await mockLockers.mock.getLockerTargetAddress
             .returns(lockerTargetAddress);
     }
 
@@ -220,7 +220,7 @@ describe("CCBurnRouter", async () => {
         await setLockersReturn();
 
         let lockerTargetAddress = ONE_ADDRESS
-        await setLockersGetTargetAddressReturn(lockerTargetAddress);
+        await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 
         // Burn some test tokens using ccBurn
         await expect(
@@ -252,7 +252,7 @@ describe("CCBurnRouter", async () => {
         await setLockersBurnReturn(burntAmount);
         await setLockersReturn();
 
-        await setLockersGetTargetAddressReturn(lockerTargetAddress);
+        await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 
         // Provide proof that the locker has paid the burnt amount to the user(s)
         await expect(
@@ -310,7 +310,7 @@ describe("CCBurnRouter", async () => {
             await setLockersReturn();
 
             let lockerTargetAddress = ONE_ADDRESS
-            await setLockersGetTargetAddressReturn(lockerTargetAddress);
+            await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 
 
             // let totalSupplyBefore = await TeleBTCSigner1.totalSupply();
@@ -372,7 +372,7 @@ describe("CCBurnRouter", async () => {
             await setLockersReturn();
             
             let lockerTargetAddress = ONE_ADDRESS
-            await setLockersGetTargetAddressReturn(lockerTargetAddress);
+            await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 
             // let totalSupplyBefore = await TeleBTCSigner1.totalSupply();
 
@@ -429,7 +429,7 @@ describe("CCBurnRouter", async () => {
             await setLockersReturn();
             
             let lockerTargetAddress = ONE_ADDRESS
-            await setLockersGetTargetAddressReturn(lockerTargetAddress);
+            await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 
             // Burn some test tokens using ccBurn
             await expect(
@@ -466,7 +466,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLockerReturn(false);
             // let lockerTargetAddress = await mockLockers.redeemScriptHash();
             let lockerTargetAddress = ONE_ADDRESS
-            await setLockersGetTargetAddressReturn(lockerTargetAddress);
+            await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 
             // Burn some test tokens using ccBurn
             await expect(
@@ -505,7 +505,7 @@ describe("CCBurnRouter", async () => {
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(true);
             await setLockersIsLockerReturn(true);
-            await setLockersGetTargetAddressReturn(lockerTargetAddress);
+            await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 
             await expect(
                 ccBurnRouterSigner2.burnProof(
@@ -543,7 +543,7 @@ describe("CCBurnRouter", async () => {
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(true);
             await setLockersIsLockerReturn(true);
-            await setLockersGetTargetAddressReturn(lockerTargetAddress);
+            await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 
             // Should revert
             await expect(
@@ -598,7 +598,7 @@ describe("CCBurnRouter", async () => {
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(true);
             await setLockersIsLockerReturn(false);
-            await setLockersGetTargetAddressReturn(lockerTargetAddress);
+            await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 
             // Should revert
             await expect(
@@ -637,7 +637,7 @@ describe("CCBurnRouter", async () => {
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(false);
             await setLockersIsLockerReturn(true);
-            await setLockersGetTargetAddressReturn(lockerTargetAddress);
+            await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 
             // Should revert
             await expect(
@@ -676,7 +676,7 @@ describe("CCBurnRouter", async () => {
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(true);
             await setLockersIsLockerReturn(true);
-            await setLockersGetTargetAddressReturn(lockerTargetAddress);
+            await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 
             // Should revert with a wrong start index
             await expect(
@@ -716,7 +716,7 @@ describe("CCBurnRouter", async () => {
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(true);
             await setLockersIsLockerReturn(true);
-            await setLockersGetTargetAddressReturn(lockerTargetAddress);
+            await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 
             // Should revert with a wrong start index
             await expect(
@@ -883,7 +883,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLockerReturn(true);
             await setLockersGetLockerRedeemScriptReturn(lockerRedeemScript);
             await setRelayLastSubmittedHeightReturn(theBlockNumber.add(30));
-            await setLockersGetTargetAddressReturn(lockerTargetAddress);
+            await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
             await setLockersSlashLockerReturn();
 
             await expect(

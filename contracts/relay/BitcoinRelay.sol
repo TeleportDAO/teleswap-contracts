@@ -47,15 +47,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     uint public override baseQueries;
     mapping (uint => uint) private numberOfQueries;
 
-    // TODO: prevent reverting when treasury (to pay relayers) gets empty but a relayer still wants to submit
-    // TODO: manual buyback (called only by owner)
-    // TODO: handle the case when TDT is not released yet (and to start incentive program when is released)
-    // TODO: relayer incentive program (to release like 2% of TDTs in like 10 years)
-    // TODO: users pay fees only using TNT for now (otherwise, cuz TDT is voletile and has low price, we should release
-    // lots of TDT to compensate Relayers and give them the fees)
-    // TODO: extra relayer fee is paid in TDT (incentive program) but the main relayer submission cost gets compensated with
-    // the user fee in TNT. If treasury is out of TNT, relayers should be able to continue with no fee if they'd like to.
-    // TODO: add MMR for the first block submitted on the relay and add check proof function so users can use previous data
+
 
     /// @notice                   Gives a starting point for the relay
     /// @param  _genesisHeader    The starting header
@@ -85,17 +77,17 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         blockHeight[_genesisHash] = _height;
         blockHeight[_periodStart] = _height - (_height % 2016);
         // Added parameters
-        finalizationParameter = 1; // TODO: edit it
+        finalizationParameter = 1;
         lastSubmittedHeight = _height;
         initialHeight = _height;
         // Reward parameters
         TeleportDAOToken = _TeleportDAOToken;
-        relayerPercentageFee = 0; // TODO: edit it;
+        relayerPercentageFee = 0;
         epochLength = 5;
         baseQueries = epochLength;
         lastEpochQueries = baseQueries;
         currentEpochQueries = 0;
-        submissionGasUsed = 100000; // TODO: edit it
+        submissionGasUsed = 100000;
     }
 
     /// @notice                 Pause the relay, so only the functions can be called which are whenPaused
@@ -242,7 +234,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         uint _index
     ) external payable nonReentrant whenNotPaused override returns (bool) {
         // Check for block confirmation
-        // FIXME: change 6 with something different
+        // TODO: change 6 with something different
         if (_blockHeight + 6 < lastSubmittedHeight + 1) {
             for (uint256 i = 0; i < chain[_blockHeight].length; i++) {
                 bytes32 _merkleRoot = _revertBytes32(chain[_blockHeight][i].merkleRoot);
@@ -401,14 +393,14 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
 
             // This requires submitting multiplies of 2016 with retarget and avoids accepting
             // a new epoch with no retarget
-            require(_internal || _height % 2016 != 0, 
-            "BitcoinRelay: headers should be submitted by calling addHeadersWithRetarget");
+            require(_internal || _height % 2016 != 0,
+                "BitcoinRelay: headers should be submitted by calling addHeadersWithRetarget");
 
             /* NB: we do still need to make chain level checks tho */
             require(_header.target() == _target, "BitcoinRelay: target changed unexpectedly");
             require(_header.checkParent(_previousHash), "BitcoinRelay: headers do not form a consistent chain");
 
-            require(_height + finalizationParameter > lastSubmittedHeight, "BitcoinRelay: block header is too old"); // TODO: test
+            require(_height + finalizationParameter > lastSubmittedHeight, "BitcoinRelay: block header is too old");
             /*
             NB:
             if the block is already authenticated, we don't need to a work check
@@ -436,11 +428,10 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param  _relayer            The relayer address
     /// @return                     True if the amount is paid and False if treasury is empty
     function _sendReward(address _relayer) internal returns (uint, uint) {
-        // FIXME: adding _getRewardAmountInTDT function
 
         // Reward in TNT
         uint rewardAmountInTNT = submissionGasUsed * tx.gasprice * (1 + relayerPercentageFee) / 100;
-        
+
         // Reward in TDT
         uint contractTDTBalance;
         if (TeleportDAOToken != address(0)) {
@@ -455,14 +446,14 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
             // Call ERC20 token contract to transfer reward tokens to the relayer
             sentTDT = IERC20(TeleportDAOToken).transfer(_relayer, rewardAmountInTDT);
         }
-        
+
         // Send reward in TNT
         bool sentTNT;
         if (address(this).balance > rewardAmountInTNT && rewardAmountInTNT > 0) {
             // note: no need to revert if failed
             (sentTNT,) = payable(_relayer).call{value: rewardAmountInTNT}("");
         }
-        
+
         if (sentTNT) {
             if (sentTDT) {
                 return (rewardAmountInTNT, rewardAmountInTDT);
@@ -484,8 +475,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param  _height             The height of the new block header
     function _addToChain(bytes29 _header, uint _height) internal {
         // Prevent relayers to submit too old block headers
-        // TODO: replace 6 with a correct number
-        require(_height + finalizationParameter > lastSubmittedHeight, "BitcoinRelay: block header is too old"); // TODO: test
+        require(_height + finalizationParameter > lastSubmittedHeight, "BitcoinRelay: block header is too old");
         blockHeader memory newBlockHeader;
         newBlockHeader.selfHash = _header.hash256();
         newBlockHeader.parentHash = _header.parent();
@@ -531,7 +521,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
                 // A new block has been finalized, we send its relayer's reward
                 uint rewardAmountTNT;
                 uint rewardAmountTDT;
-                (rewardAmountTNT, rewardAmountTDT) = _sendReward(chain[currentHeight][0].relayer); 
+                (rewardAmountTNT, rewardAmountTDT) = _sendReward(chain[currentHeight][0].relayer);
 
                 emit BlockFinalized(
                     currentHeight,
@@ -565,7 +555,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     function _pruneHeight(uint _height) internal {
         uint idx = 1;
         while(idx < chain[_height].length){
-            delete chain[_height][idx]; // TODO: check if it should be backwards?
+            delete chain[_height][idx]; // check if it should be backwards?
             idx += 1;
         }
     }
@@ -606,7 +596,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
             _oldEnd.time()
         );
         require(
-            (_actualTarget & _expectedTarget) == _actualTarget, // TODO: shouldn't it be == _expected??
+            (_actualTarget & _expectedTarget) == _actualTarget, // shouldn't it be == _expected??
             "BitcoinRelay: invalid retarget provided");
 
         // Pass all but the first through to be added

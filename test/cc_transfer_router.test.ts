@@ -1,20 +1,19 @@
 const CC_REQUESTS = require('./test_fixtures/ccTransferRequests.json');
 require('dotenv').config({path:"../../.env"});
 
-import { assert, expect, use } from "chai";
+import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
 import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
 import { Contract } from "@ethersproject/contracts";
 import { Address } from "hardhat-deploy/types";
 
-import { solidity } from "ethereum-waffle";
-
-import { isBytesLike } from "ethers/lib/utils";
 import { CCTransferRouter } from "../src/types/CCTransferRouter";
 import { CCTransferRouter__factory } from "../src/types/factories/CCTransferRouter__factory";
-import { Lockers } from "../src/types/Lockers";
-import { Lockers__factory } from "../src/types/factories/Lockers__factory";
+
+import { LockersProxy__factory } from "../src/types/factories/LockersProxy__factory";
+import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
+
 import { TeleBTC } from "../src/types/TeleBTC";
 import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
 import { ERC20 } from "../src/types/ERC20";
@@ -59,7 +58,8 @@ describe("CCTransferRouter", async () => {
     let ccTransferRouter: CCTransferRouter;
     let teleBTC: TeleBTC;
     let teleportDAOToken: ERC20;
-    let lockers: Lockers;
+    // let lockers: Lockers;
+    let lockers: Contract;
 
     // Mock contracts
     let mockBitcoinRelay: MockContract;
@@ -137,7 +137,8 @@ describe("CCTransferRouter", async () => {
         await teleBTC.setCCTransferRouter(ccTransferRouter.address)
 
 
-        lockers = await deployLocker()
+        // lockers = await deployLocker()
+        lockers = await deployLockers();
 
         await lockers.setTeleBTC(teleBTC.address)
         await lockers.addMinter(ccTransferRouter.address)
@@ -149,14 +150,26 @@ describe("CCTransferRouter", async () => {
         await ccTransferRouter.setInstantRouter(mockInstantRouter.address)
     });
 
-    const deployLocker = async (
+    const deployLockers = async (
         _signer?: Signer
-    ): Promise<Lockers> => {
-        const lockerFactory = new Lockers__factory(
+    ): Promise<Contract> => {
+
+        // Deploys lockers logic
+        const lockersLogicFactory = new LockersLogic__factory(
             _signer || deployer
         );
-
-        const lockers = await lockerFactory.deploy(
+        const lockersLogic = await lockersLogicFactory.deploy();
+        
+        // Deploys lockers proxy
+        const lockersProxyFactory = new LockersProxy__factory(
+            _signer || deployer
+        );
+        const lockersProxy = await lockersProxyFactory.deploy(
+            lockersLogic.address
+        )
+        
+        // Initializes lockers proxy
+        await lockersProxy.initialize(
             teleportDAOToken.address,
             ONE_ADDRESS,
             mockPriceOracle.address,
@@ -165,6 +178,10 @@ describe("CCTransferRouter", async () => {
             collateralRatio,
             liquidationRatio,
             LOCKER_PERCENTAGE_FEE
+        )
+
+        const lockers = await lockersLogic.attach(
+            lockersProxy.address
         );
 
         return lockers;
