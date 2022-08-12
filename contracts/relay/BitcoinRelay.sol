@@ -8,6 +8,7 @@ import "../libraries/ViewSPV.sol";
 import "./interfaces/IBitcoinRelay.sol";
 import "../erc20/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";
@@ -357,14 +358,13 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @notice                 Gets fee from the user
     /// @dev                    Fee is paid in target blockchain native token
     /// @return                 True if the fee payment was successful
-    function _getFee(uint gasPrice) internal returns(bool){
+    function _getFee(uint gasPrice) internal returns (bool){
         uint feeAmount;
         feeAmount = (submissionGasUsed * gasPrice * (1 + relayerPercentageFee) * (epochLength)) / (100 * lastEpochQueries);
         require(msg.value >= feeAmount, "BitcoinRelay: fee is not enough");
-        bool sentFee;
-        bytes memory dataFee;
-        (sentFee, dataFee) = payable(msg.sender).call{value: (msg.value - feeAmount)}("");
-        return sentFee;
+        // (sentFee, dataFee) = payable(msg.sender).call{value: (msg.value - feeAmount)}("");
+        Address.sendValue(payable(msg.sender), msg.value - feeAmount);
+        return true;
     }
 
 
@@ -458,10 +458,9 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         
         // Send reward in TNT
         bool sentTNT;
-        bytes memory dataTNT;
         if (address(this).balance > rewardAmountInTNT && rewardAmountInTNT > 0) {
-            // note no need to revert if failed
-            (sentTNT, dataTNT) = payable(_relayer).call{value: rewardAmountInTNT}(""); // TODO check if this is the best way
+            // note: no need to revert if failed
+            (sentTNT,) = payable(_relayer).call{value: rewardAmountInTNT}("");
         }
         
         if (sentTNT) {

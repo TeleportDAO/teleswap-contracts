@@ -68,6 +68,63 @@ library NewTxHelper {
         return (bitcoinAmount, arbitraryData);
     }
 
+    function _parseValueAndData(
+        bytes memory _vout,
+        bytes memory _desiredRecipient
+    ) internal view returns (uint64 bitcoinAmount, bytes memory arbitraryData) {
+        bytes29 voutView = _vout.ref(0).tryAsVout();
+        require(!voutView.isNull(), "TxHelper: vout is null");
+
+        bytes29 output;
+        bytes29 scriptPubkey;
+        bytes29 _arbitraryData;
+        bytes memory bitcoinRecipient;
+
+        uint _numberOfOutputs = uint256(ViewBTC.indexCompactInt(voutView, 0));
+
+        for (uint index = 0; index < _numberOfOutputs; index++) {
+            output = ViewBTC.indexVout(voutView, index);
+            scriptPubkey = ViewBTC.scriptPubkey(output);
+            _arbitraryData = ViewBTC.opReturnPayload(scriptPubkey);
+
+            // Checks whether the output is an arbitarary data or not
+            if(_arbitraryData == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
+                // Output is not an arbitrary data
+
+                if (scriptPubkey.len() == 23 || scriptPubkey.len() == 24) {
+                    // It is P2SH: OP_HASH160 ScriptHash OP_EQUAL (20 bytes)
+                    bitcoinRecipient = abi.encodePacked(scriptPubkey.indexAddress(3));
+                }
+
+                if (scriptPubkey.len() == 26) {
+                    // It is P2PKH: OP_DUP OP_HASH160 PubKeyHash OP_EQUALVERIFY OP_CHECKSIG (20 bytes)
+                    bitcoinRecipient = abi.encodePacked(scriptPubkey.indexAddress(4));
+                }
+
+                if (scriptPubkey.len() == 21) {
+                    // It is P2WPKH: 0 PubKeyHash (20 bytes)
+                    bitcoinRecipient = abi.encodePacked(scriptPubkey.indexAddress(2));
+                }
+
+                if (scriptPubkey.len() == 33) {
+                    // It is P2WSH: 0 ScriptHash (32 bytes)
+                    bitcoinRecipient = abi.encodePacked(scriptPubkey.index(2, 32));
+                }
+
+                if (
+                    keccak256(abi.encodePacked(bitcoinRecipient)) == keccak256(abi.encodePacked(_desiredRecipient))
+                ) {
+                    bitcoinAmount = ViewBTC.value(output);
+                }
+
+            } else {
+                arbitraryData = _arbitraryData.clone(); // bytes29.clone() returns the whole bytes array
+            }
+        }
+        
+        return (bitcoinAmount, arbitraryData);
+    }
+
     function parseTotalValue(bytes memory vout) internal pure returns (uint64) {
         bytes29 voutView = vout.ref(0).tryAsVout();
         bytes29 output;
