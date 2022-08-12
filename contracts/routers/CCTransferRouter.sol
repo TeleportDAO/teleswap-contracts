@@ -28,7 +28,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     mapping(bytes32 => ccTransferRequest) public ccTransferRequests;
 
     /// @notice                             Gives default params to initiate cc transfer router
-    /// @param _protocolPercentageFee       Percentage amount of protocol fee (min: %0.01) 
+    /// @param _protocolPercentageFee       Percentage amount of protocol fee (min: %0.01)
     /// @param _chainId                     Id of the underlying chain
     /// @param _appId                       Id of ccTransfer dApp
     /// @param _relay                       The Relay address to get data from source chain
@@ -40,8 +40,8 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         uint _protocolPercentageFee,
         uint _chainId,
         uint _appId,
-        address _relay, 
-        address _lockers, 
+        address _relay,
+        address _lockers,
         address _teleBTC,
         address _treasury
     ) {
@@ -59,7 +59,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _protocolPercentageFee       Percentage amount of protocol fee
     function setProtocolPercentageFee(uint _protocolPercentageFee) external override onlyOwner {
         require(
-            10000 >= _protocolPercentageFee, 
+            10000 >= _protocolPercentageFee,
             "CCTransferRouter: fee is out of range"
         );
         protocolPercentageFee = _protocolPercentageFee;
@@ -115,27 +115,27 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _index                       Part of the Merkle proof for the request tx
     /// @return                             True if the transfer is successful
     function ccTransfer(
-        // Bitcoin tx
+    // Bitcoin tx
         bytes4 _version,
         bytes memory _vin,
         bytes calldata _vout,
         bytes4 _locktime,
-        // Bitcoin block number
+    // Bitcoin block number
         uint256 _blockNumber,
-        // Merkle proof
+    // Merkle proof
         bytes calldata _intermediateNodes,
         uint _index,
         address _lockerScriptHash
     ) external payable nonReentrant override returns (bool) {
         require(_blockNumber >= startingBlockNumber, "CCTransferRouter: request is old");
-        
+
         bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
-        
+
         require(
             !ccTransferRequests[txId].isUsed,
             "CCTransferRouter: CC transfer request has been used before"
         );
-        
+
         // Extracts information from the request
         _saveCCTransferRequest(_lockerScriptHash, _vout, txId);
 
@@ -153,14 +153,14 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         // Normal cc transfer request
         if (ccTransferRequests[txId].speed == 0) {
             require(
-                _mintAndSend(_lockerScriptHash, txId), 
+                _mintAndSend(_lockerScriptHash, txId),
                 "CCTransferRouter: normal cc transfer was not successful"
             );
             emit CCTransfer(
                 ccTransferRequests[txId].recipientAddress,
                 ccTransferRequests[txId].inputAmount,
                 ccTransferRequests[txId].speed,
-            // FIXME: set the correct fee in the event
+            // TODO: set the correct fee in the event
                 0
             );
             return true;
@@ -169,7 +169,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         // Pays back instant loan
         if (ccTransferRequests[txId].speed == 1) {
             require(
-                _payBackInstantLoan(_lockerScriptHash, txId), 
+                _payBackInstantLoan(_lockerScriptHash, txId),
                 "CCTransferRouter: pay back was not successful"
             );
             return true;
@@ -183,11 +183,10 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @dev                                The check amount for Teleporter fee can be adjusted
     /// @param _txId                        The transaction ID of the request
     /// @return                             True if minting and sending tokens passes
-    // TODO: maybe its better to add lokerBitcoinDecodedAddress to the transfer request struct
     function _mintAndSend(address _lockerScriptHash, bytes32 _txId) internal returns (bool) {
         // Gets remained amount after reducing fees
         uint remainedAmount = _mintAndReduceFees(_lockerScriptHash, _txId);
-        
+
         // Transfers rest of tokens to recipient
         ITeleBTC(teleBTC).transfer(
             ccTransferRequests[_txId].recipientAddress,
@@ -202,7 +201,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _txId                        The transaction ID of the request
     /// @return                             True if paying back passes
     function _payBackInstantLoan(address _lockerScriptHash, bytes32 _txId) internal returns (bool) {
-        
+
         // Gets remained amount after reducing fees
         uint remainedAmount = _mintAndReduceFees(_lockerScriptHash, _txId);
 
@@ -241,10 +240,10 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
 
         // Extracts value and opreturn data from request
         (request.inputAmount, arbitraryData) = NewTxHelper.parseValueAndData(_vout, _lockerScriptHash);
-        
+
         // Checks that input amount is not zero
         require(request.inputAmount > 0, "CCTransferRouter: input amount is zero");
-        
+
         // Checks chain id and app id
         require(NewTxHelper.parseChainId(arbitraryData) == chainId, "CCTransferRouter: chain id is not correct");
         require(NewTxHelper.parseAppId(arbitraryData) == appId, "CCTransferRouter: app id is not correct");
@@ -257,7 +256,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         request.recipientAddress = NewTxHelper.parseRecipientAddress(arbitraryData);
         request.speed = NewTxHelper.parseSpeed(arbitraryData);
         require(request.speed == 0 || request.speed == 1, "CCTransferRouter: speed is not correct");
-        
+
         // Marks the request as used
         request.isUsed = true;
 
@@ -286,8 +285,8 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         bytes memory data = Address.functionCallWithValue(
             relay,
             abi.encodeWithSignature(
-                "checkTxProof(bytes32,uint256,bytes,uint256)", 
-                _txId, 
+                "checkTxProof(bytes32,uint256,bytes,uint256)",
+                _txId,
                 _blockNumber,
                 _intermediateNodes,
                 _index
@@ -306,7 +305,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _txId                          The request tx
     /// @return _remainedAmount               True if the tx is confirmed on the source chain
     function _mintAndReduceFees(
-        address _lockerScriptHash, 
+        address _lockerScriptHash,
         bytes32 _txId
     ) internal returns (uint _remainedAmount) {
 

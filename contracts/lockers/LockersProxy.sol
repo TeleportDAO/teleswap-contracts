@@ -31,7 +31,6 @@ contract LockersProxy is LockersStorageStructure {
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
         PausableUpgradeable.__Pausable_init();
 
-        // TODO: add some requires for the amounts of _collateralRatio and _liquidationRatio
         TeleportDAOToken = _TeleportDAOToken;
         exchangeConnector = _exchangeConnector;
         priceOracle = _priceOracle;

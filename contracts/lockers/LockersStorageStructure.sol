@@ -32,7 +32,6 @@ contract LockersStorageStructure is OwnableUpgradeable, ReentrancyGuardUpgradeab
         uint nativeTokenLockedAmount;
         uint netMinted;
         bool isLocker;
-        // TODO: isScriptHash is used for p2pkh and p2sh, but what about segwit
         bool isScriptHash;
         bool isActive;
     }
@@ -79,7 +78,6 @@ contract LockersStorageStructure is OwnableUpgradeable, ReentrancyGuardUpgradeab
     address public teleBTC;
     address public ccBurnRouter;
     address public exchangeConnector;
-    // TODO: these are minimum amounts, so change their names
     uint public minRequiredTDTLockedAmount;
     uint public minRequiredTNTLockedAmount;
     address public NATIVE_TOKEN = address(1);
@@ -91,14 +89,13 @@ contract LockersStorageStructure is OwnableUpgradeable, ReentrancyGuardUpgradeab
     address public priceOracle;
 
     uint public totalNumberOfLockers;
-    
+
     mapping(address => locker) public lockersMapping; // lockerTargetAddress -> locker structure
 
     uint public totalNumberOfCandidates;
     // remember to remove from candidates when becomes locker
     mapping(address => locker) public candidatesMapping;
 
-    // TODO: Combining the 2 mapping into 1 mapping to a struct
     mapping(address => bool) public lockerLeavingRequests;
     mapping(address => bool) public lockerLeavingAcceptance;
 

@@ -269,7 +269,6 @@ contract LockersLogic is LockersStorageStructure {
             "Lockers: no request with this address"
         );
 
-        // TODO
         lockersMapping[_lockerTargetAddress] = candidatesMapping[_lockerTargetAddress];
         lockersMapping[_lockerTargetAddress].isActive = true;
 
@@ -361,7 +360,7 @@ contract LockersLogic is LockersStorageStructure {
     /// @notice                           Removes a locker from lockers pool
     /// @return                           True if locker is removed successfully
     function selfRemoveLocker() external nonReentrant whenNotPaused returns (bool) {
-        
+
         require(
             lockersMapping[_msgSender()].isLocker,
             "Lockers: no locker with this address"
@@ -407,7 +406,7 @@ contract LockersLogic is LockersStorageStructure {
         address _lockerTargetAddress,
         uint _btcAmount,
         address _recipient
-    ) external nonZeroAddress(_lockerTargetAddress) nonZeroAddress(_recipient) 
+    ) external nonZeroAddress(_lockerTargetAddress) nonZeroAddress(_recipient)
     nonZeroValue(_btcAmount) nonReentrant whenNotPaused returns (bool) {
 
         require(
@@ -422,7 +421,7 @@ contract LockersLogic is LockersStorageStructure {
 
         uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
             _btcAmount,
-        // FIXME: get decimals from token contracts
+        // TODO: get decimals from token contracts
             8,
             18,
             teleBTC,
@@ -448,7 +447,7 @@ contract LockersLogic is LockersStorageStructure {
     function liquidateLocker(
         address _lockerTargetAddress,
         uint _btcAmount
-    ) external nonZeroAddress(_lockerTargetAddress) nonZeroValue(_btcAmount) 
+    ) external nonZeroAddress(_lockerTargetAddress) nonZeroValue(_btcAmount)
     nonReentrant whenNotPaused returns (bool result) {
 
         require(
@@ -465,13 +464,13 @@ contract LockersLogic is LockersStorageStructure {
         );
 
         /*
-            Maximum buyable amount of collateral comes from: 
+            Maximum buyable amount of collateral comes from:
             (BtcWorthOfCollateral - x)/(netMinted -x) = collateralRatio/10000
         */
 
-        uint maxBuyable = 
-            ((theLiquidatingLocker.netMinted*collateralRatio/10000) - 
-            theLockerCollateralBTCequivalent)/((collateralRatio-10000)/10000);
+        uint maxBuyable =
+        ((theLiquidatingLocker.netMinted*collateralRatio/10000) -
+        theLockerCollateralBTCequivalent)/((collateralRatio-10000)/10000);
 
         if (maxBuyable > theLiquidatingLocker.netMinted) {
             maxBuyable = theLiquidatingLocker.netMinted;
@@ -486,7 +485,7 @@ contract LockersLogic is LockersStorageStructure {
 
         uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
             _btcAmount,
-        // FIXME: get decimals from token contracts
+        // TODO: get decimals from token contracts
             8,
             18,
             teleBTC,
@@ -508,7 +507,6 @@ contract LockersLogic is LockersStorageStructure {
     ) external nonZeroAddress(_lockerScriptHash) nonZeroAddress(_receiver)
     nonZeroValue(_amount) nonReentrant whenNotPaused onlyMinter returns (uint) {
 
-        // TODO: move the followoing lines of code to an internal function
         address _lockerTargetAddress = lockerTargetAddress[_lockerScriptHash];
 
         uint theLockerCapacity = getLockerCapacity(_lockerTargetAddress);
@@ -518,8 +516,8 @@ contract LockersLogic is LockersStorageStructure {
             "Lockers: this locker hasn't sufficient capacity"
         );
 
-        lockersMapping[_lockerTargetAddress].netMinted = 
-            lockersMapping[_lockerTargetAddress].netMinted + _amount;
+        lockersMapping[_lockerTargetAddress].netMinted =
+        lockersMapping[_lockerTargetAddress].netMinted + _amount;
 
         // Mints locker fee
         uint lockerFee = _amount*lockerPercentageFee/10000;
@@ -536,10 +534,9 @@ contract LockersLogic is LockersStorageStructure {
     function burn(
         address _lockerScriptHash,
         uint _amount
-    ) external nonZeroAddress(_lockerScriptHash) nonZeroValue(_amount) 
+    ) external nonZeroAddress(_lockerScriptHash) nonZeroValue(_amount)
     nonReentrant whenNotPaused onlyBurner returns (uint) {
 
-        // TODO: move the followoing lines of code to an internal function
         address _lockerTargetAddress = lockerTargetAddress[_lockerScriptHash];
 
         // Transfers teleBTC from user
@@ -591,7 +588,7 @@ contract LockersLogic is LockersStorageStructure {
     /// @param _candidateAddress     Index of the element that will be deleted
     function _removeElementFromCandidatesMapping(address _candidateAddress) internal {
         require(
-            candidatesMapping[_candidateAddress].isLocker, 
+            candidatesMapping[_candidateAddress].isLocker,
             "Lockers: this candidate doesn't exist"
         );
         delete candidatesMapping[_candidateAddress];
@@ -602,7 +599,7 @@ contract LockersLogic is LockersStorageStructure {
     /// @param _lockerAddress      Index of the element that will be deleted
     function _removeElementFromLockersMapping(address _lockerAddress) internal {
         require(
-            lockersMapping[_lockerAddress].isLocker, 
+            lockersMapping[_lockerAddress].isLocker,
             "Lockers: this locker doesn't exist"
         );
         delete lockersMapping[_lockerAddress];
@@ -614,10 +611,9 @@ contract LockersLogic is LockersStorageStructure {
     /// @return                             The locker collateral in TeleBTC
     function _lockerCollateralInTeleBTC(address _lockerTargetAddress) internal view returns (uint) {
 
-        // TODO: shall we get the equivalent amount of tdt token and native token and adding up them?
         return IPriceOracle(priceOracle).equivalentOutputAmount(
             lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
-        // FIXME: get decimals from token contracts
+        // TODO: get decimals from token contracts
             18,
             8,
             NATIVE_TOKEN,

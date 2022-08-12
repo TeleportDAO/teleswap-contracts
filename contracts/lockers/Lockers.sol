@@ -18,7 +18,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     address public override teleBTC;
     address public override ccBurnRouter;
     address public override exchangeConnector;
-    // TODO: these are minimum amounts, so change their names
     uint public override minRequiredTDTLockedAmount;
     uint public override minRequiredTNTLockedAmount;
     address public constant NATIVE_TOKEN = address(1);
@@ -37,7 +36,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     // remember to remove from candidates when becomes locker
     mapping(address => locker) public candidatesMapping;
 
-    // TODO: Combining the 2 mapping into 1 mapping to a struct
     mapping(address => bool) public lockerLeavingRequests;
     mapping(address => bool) public lockerLeavingAcceptance;
 
@@ -125,7 +123,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         uint _liquidationRatio,
         uint _lockerPercentageFee
     ) {
-        // TODO: add some requires for the amounts of _collateralRatio and _liquidationRatio
         TeleportDAOToken = _TeleportDAOToken;
         exchangeConnector = _exchangeConnector;
         priceOracle = _priceOracle;
@@ -155,7 +152,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     /// @param _lockerTargetAddress       Address of locker on the target chain
     /// @return                           True if user is locker
     function isLocker(address _lockerScriptHash) external override view returns(bool) {
-        // TODO: use the bitcoin decoed address or target address
         return lockersMapping[lockerTargetAddress[_lockerScriptHash]].isLocker;
     }
 
@@ -252,7 +248,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         uint _lockedTDTAmount,
         uint _lockedNativeTokenAmount
     ) external payable nonReentrant override returns (bool) {
-        // TODO: interface has changed, change the inside to comply with it
 
         require(
             _doubleHash(_candidateRedeemScript) == _candidateScriptHash,
@@ -342,7 +337,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
             "Lockers: no request with this address"
         );
 
-        // TODO
         lockersMapping[_lockerTargetAddress] = candidatesMapping[_lockerTargetAddress];
         lockersMapping[_lockerTargetAddress].isActive = true;
 
@@ -392,7 +386,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     /// @notice                           Removes a locker from lockers pool
     /// @return                           True if locker is removed successfully
     function removeLocker(address _lockerTargetAddress) external nonReentrant onlyOwner override returns (bool) {
-        // TODO
         require(
             lockersMapping[_lockerTargetAddress].isLocker,
             "Lockers: no locker with this address"
@@ -434,7 +427,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     /// @notice                           Removes a locker from lockers pool
     /// @return                           True if locker is removed successfully
     function selfRemoveLocker() external nonReentrant whenNotPaused override returns (bool) {
-        // TODO
         require(
             lockersMapping[_msgSender()].isLocker,
             "Lockers: no locker with this address"
@@ -480,11 +472,10 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     /// @param _recipient                 Address of user who receives the slashed amount
     /// @return                           True if lockers are slashed successfully
     function slashLocker(
-    // TODO: change the name to btcAmount
-        address _lockerTargetAddress, 
+        address _lockerTargetAddress,
         uint _rewardAmount,
         address _rewardRecipient,
-        uint _amount, 
+        uint _amount,
         address _recipient
     ) external nonReentrant whenNotPaused override returns (bool) {
         require(
@@ -525,7 +516,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         }
 
         emit LockerSlashed(_lockerTargetAddress, equivalentNativeToken);
-        
+
         return true;
     }
 
@@ -553,11 +544,9 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             The locker collateral in TeleBTC
     function _lockerCollateralInTeleBTC(address _lockerTargetAddress) internal view returns (uint) {
-
-        // TODO: shall we get the equivalent amount of tdt token and native token and adding up them?
         return IPriceOracle(priceOracle).equivalentOutputAmount(
             lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
-        // FIXME: get decimals from token contracts
+        // TODO: get decimals from token contracts
             18,
             8,
             NATIVE_TOKEN,
@@ -602,7 +591,7 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
 
         uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
             _btcAmount,
-        // FIXME: get decimals from token contracts
+        // TODO: get decimals from token contracts
             8,
             18,
             teleBTC,
@@ -623,8 +612,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         address _receiver,
         uint _amount
     ) external nonReentrant whenNotPaused onlyMinter override returns (uint) {
-
-        // TODO: move the followoing lines of code to an internal function
         address theLockerTargetAddress = lockerTargetAddress[_lockerScriptHash];
 
         uint theLockerCapacity = getLockerCapacity(theLockerTargetAddress);
@@ -652,8 +639,6 @@ contract Lockers is ILockers, Ownable, ReentrancyGuard, Pausable {
         address _lockerScriptHash,
         uint _amount
     ) external nonReentrant whenNotPaused onlyBurner override returns (uint) {
-
-        // TODO: move the followoing lines of code to an internal function
         address theLockerTargetAddress = lockerTargetAddress[_lockerScriptHash];
 
         // Transfers teleBTC from user

@@ -13,6 +13,12 @@ library NewTxHelper {
     using TypedMemView for bytes29;
     using ViewBTC for bytes29;
 
+    /// @notice                           Parse the bitcoin amount and the op_return of a transaction as data
+    /// @dev                              Support 3 types of transaction outputs, p2pkh, p2sh and p2wpkh
+    /// @param _vout                      The vout of a bitcoin transaction
+    /// @param _desiredRecipient          20 bytes, public_key hash or redeem_script hash which is using in bitcoin locking script
+    /// @return                           bitcoinAmount of the _desiredRecipient (20 bytes, public_key hash or redeem_script hash)
+    /// @return                           arbitraryData or the op_return of the transaction
     function parseValueAndData(
         bytes memory _vout,
         address _desiredRecipient
@@ -64,7 +70,7 @@ library NewTxHelper {
                 arbitraryData = _arbitraryData.clone(); // bytes29.clone() returns the whole bytes array
             }
         }
-        
+
         return (bitcoinAmount, arbitraryData);
     }
 
@@ -121,7 +127,7 @@ library NewTxHelper {
                 arbitraryData = _arbitraryData.clone(); // bytes29.clone() returns the whole bytes array
             }
         }
-        
+
         return (bitcoinAmount, arbitraryData);
     }
 
@@ -221,8 +227,8 @@ library NewTxHelper {
     // }
 
     function sliceBytes(
-        bytes memory data, 
-        uint start, 
+        bytes memory data,
+        uint start,
         uint end
     ) internal pure returns (bytes memory result) {
         bytes1 temp;

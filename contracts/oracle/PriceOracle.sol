@@ -254,7 +254,6 @@ contract PriceOracle is IPriceOracle, Ownable {
             // Gets number of decimals
             decimals = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken][_inputToken]).decimals();
 
-            // TODO: check the logic again
             _outputAmount = (10**(decimals + 1))*_inputAmount*(10**(_outputDecimals + 1))/10/(10**(_inputDecimals + 1))/uint(price);
             _result = true;
         } else {

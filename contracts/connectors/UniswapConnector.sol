@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IExchangeConnector.sol";
+// TODO: use the original uniswap router
 import "../uniswap/v2-periphery/interfaces/IUniswapV2Router02.sol";
 // import "../pools/interfaces/IUniswapV2Pair.sol";
 // import "../pools/interfaces/IUniswapV2Factory.sol";
@@ -74,7 +75,7 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
         path[0] = _inputToken;
         path[1] = _outputToken;
         uint[] memory result = IUniswapV2Router02(exchangeRouter).getAmountsIn(_outputAmount, path);
-        
+
         return (true, result[0]);
     }
 
@@ -160,7 +161,6 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
             }
 
             if (_isFixedToken == true && _path[_path.length-1] != wrappedNativeToken) {
-                // TODO: use the original uniswap router
                 _amounts = IUniswapV2Router02(exchangeRouter).swapExactTokensForTokens(
                     _inputAmount,
                     _outputAmount,
@@ -171,7 +171,6 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
             }
 
             if (_isFixedToken == true && _path[_path.length-1] == wrappedNativeToken) {
-                // TODO: use the original uniswap router
                 _amounts = IUniswapV2Router02(exchangeRouter).swapExactTokensForETH(
                     _inputAmount,
                     _outputAmount,
@@ -205,8 +204,8 @@ contract UniswapConnector is IExchangeConnector, Ownable, ReentrancyGuard {
         // }
 
         // Checks that the liquidity pool exists
-        address liquidityPool = 
-            IUniswapV2Factory(liquidityPoolFactory).getPair(_path[0], _path[_path.length-1]);
+        address liquidityPool =
+        IUniswapV2Factory(liquidityPoolFactory).getPair(_path[0], _path[_path.length-1]);
         if (liquidityPool == address(0)) {
             return (false, 0);
         }

@@ -32,9 +32,9 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     constructor(
         uint _startingBlockNumber,
         uint _protocolPercentageFee,
-        uint _chainId, 
-        address _lockers, 
-        address _relay, 
+        uint _chainId,
+        address _lockers,
+        address _relay,
         address _teleBTC,
         address _treasury
     ) {
@@ -88,7 +88,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _protocolPercentageFee       Percentage amount of protocol fee
     function setProtocolPercentageFee(uint _protocolPercentageFee) external override onlyOwner {
         require(
-            10000 >= _protocolPercentageFee, 
+            10000 >= _protocolPercentageFee,
             "CCExchangeRouter: fee is out of range"
         );
         protocolPercentageFee = _protocolPercentageFee;
@@ -129,10 +129,10 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         address _lockerScriptHash
     ) external payable nonReentrant override returns (bool) {
         require(_blockNumber >= startingBlockNumber, "CCExchangeRouter: request is old");
-        
+
         // Calculates transaction id
         bytes32 txId = NewTxHelper.calculateTxId(_version, _vin, _vout, _locktime);
-        
+
         // Checks that the request has not been processed before
         require(
             !ccExchangeRequests[txId].isUsed,
@@ -156,7 +156,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         // Normal cc exchange request
         if (ccExchangeRequests[txId].speed == 0) {
             require(
-                _normalCCExchange(_lockerScriptHash, txId), 
+                _normalCCExchange(_lockerScriptHash, txId),
                 "CCExchangeRouter: normal cc exchange was not successful"
             );
             return true;
@@ -165,7 +165,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         // Pay back instant loan
         if (ccExchangeRequests[txId].speed == 1) {
             require(
-                _payBackInstantLoan(_lockerScriptHash, txId), 
+                _payBackInstantLoan(_lockerScriptHash, txId),
                 "CCExchangeRouter: paying back instant loan was not successful"
             );
             return true;
@@ -181,7 +181,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     function _normalCCExchange(address _lockerScriptHash, bytes32 _txId) internal returns (bool) {
         // Gets remained amount after reducing fees
         uint remainedInputAmount = _mintAndReduceFees(_lockerScriptHash, _txId);
-        
+
         bool result;
         uint[] memory amounts;
 
@@ -242,7 +242,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     function _payBackInstantLoan(address _lockerScriptHash, bytes32 _txId) internal returns (bool) {
         // Gets remained amount after reducing fees
         uint remainedAmount = _mintAndReduceFees(_lockerScriptHash, _txId);
-        
+
         // Gives allowance to instant router to transfer minted wrapped tokens
         ITeleBTC(teleBTC).approve(
             instantRouter,
@@ -273,13 +273,13 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         bytes memory arbitraryData;
         address exchangeToken;
         uint percentageFee;
-        
+
         // Checks that given bitcoin address is locker
         require(
             ILockers(lockers).isLocker(_lockerScriptHash),
             "CCExchangeRouter: no locker with the bitcoin decoded addresss exists"
         );
-        
+
         // Extracts value and opreturn data from request
         (request.inputAmount, arbitraryData) = NewTxHelper.parseValueAndData(_vout, _lockerScriptHash);
 
@@ -291,8 +291,6 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
         request.appId = NewTxHelper.parseAppId(arbitraryData);
         require(NewTxHelper.parseExchangeToken(arbitraryData) != address(0), "CCExchangeRouter: request is transfer request");
-        // FIXME: adding the following method to the txHelper library
-        // request.outputAmount = TxHelper.parseOutputAmount(arbitraryData);
         request.outputAmount = NewTxHelper.parseExchangeOutputAmount(arbitraryData);
 
         if (NewTxHelper.parseIsFixedToken(arbitraryData) == 0) {
@@ -349,8 +347,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         bytes memory data = Address.functionCallWithValue(
             relay,
             abi.encodeWithSignature(
-                "checkTxProof(bytes32,uint256,bytes,uint256)", 
-                _txId, 
+                "checkTxProof(bytes32,uint256,bytes,uint256)",
+                _txId,
                 _blockNumber,
                 _intermediateNodes,
                 _index
@@ -369,7 +367,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _txId                          The request tx
     /// @return _remainedAmount               True if the tx is confirmed on the source chain
     function _mintAndReduceFees(
-        address _lokerBitcoinDecodedAddress, 
+        address _lokerBitcoinDecodedAddress,
         bytes32 _txId
     ) internal returns (uint _remainedAmount) {
 
