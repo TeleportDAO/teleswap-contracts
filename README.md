@@ -1,46 +1,30 @@
-# Advanced Sample Hardhat Project
+# TeleportDAO Protocol V1
 
-This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
+This repository contains the smart contracts for the TeleportDAO bridge, cross-chain transfer, and cross-chain exchange. The codes belong to connecting Bitcoin to EVM-based blockchains. The repository uses Hardhat as development environment for compilation, testing and deployment tasks.
 
-The project comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts. It also comes with a variety of other tools, preconfigured to work with the project code.
+## What is Teleport?
 
-Try running some of the following tasks:
+Teleport is a trustless and universal protocol that provides an infrastructure for developers to build cross-chain applications. In other words, Teleport helps blockchains communicate with each other. Applications on one blockchain can access the latest data on other blockchains using Teleport relay smart contract.
 
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-npx hardhat help
-REPORT_GAS=true npx hardhat test
-npx hardhat coverage
-npx hardhat run scripts/deploy.ts
-TS_NODE_FILES=true npx ts-node scripts/deploy.ts
-npx eslint '**/*.{js,ts}'
-npx eslint '**/*.{js,ts}' --fix
-npx prettier '**/*.{json,sol,md}' --check
-npx prettier '**/*.{json,sol,md}' --write
-npx solhint 'contracts/**/*.sol'
-npx solhint 'contracts/**/*.sol' --fix
-```
+## Documentation
 
-# Etherscan verification
+See the link below: 
+- [Documentation](https://docs.teleportdao.xyz/introduction/what-is-teleportdao)
 
-To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
+## Community
 
-In this project, copy the .env.example file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
+You can join the discord channel [here](https://discord.com/invite/6RSsgfQgcb).
 
-```shell
-hardhat run --network ropsten scripts/deploy.ts
-```
+## Getting Started
 
-Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
+To start, clone the codes and install the needed packages using:
 
-```shell
-npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
-```
+`yarn add`
 
-# Performance optimizations
+If you only want to compile the codes enter the below command:
 
-For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
+`npx hardhat compile`
+
+You can also run the full test suite with the following command:
+
+`npx hardhat test`
