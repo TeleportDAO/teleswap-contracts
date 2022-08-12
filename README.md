@@ -19,7 +19,7 @@ You can join the discord channel [here](https://discord.com/invite/6RSsgfQgcb).
 
 To start, clone the codes and install the needed packages using:
 
-`yarn add`
+`yarn install`
 
 If you only want to compile the codes enter the below command:
 
