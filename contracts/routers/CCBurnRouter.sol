@@ -514,12 +514,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         (bool _success,) = payable(msg.sender).call{value: (msg.value - feeAmount)}("");
         require(_success, "CCTransferRouter: sending remained ETH was not successful");
 
-        // Returns result
-        bytes32 _data;
-        assembly {
-            _data := mload(add(data, 32))
-        }
-        return _data == bytes32(0) ? false : true;
+        // Decodes returned data
+        return abi.decode(data, (bool));
     }
 
     /// @notice                      Checks inclusion of the transaction in the specified block 

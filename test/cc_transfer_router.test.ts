@@ -187,7 +187,7 @@ describe("CCTransferRouter", async () => {
     };
 
     async function setRelayReturn(request: any, isTrue: boolean): Promise<void> {
-        await mockBitcoinRelay.mock.getFinalizedHeaderFee.returns(0); // Fee of relay
+        await mockBitcoinRelay.mock.getBlockHeaderFee.returns(0); // Fee of relay
         await mockBitcoinRelay.mock.checkTxProof.returns(isTrue); // Result of check tx proof
     }
 

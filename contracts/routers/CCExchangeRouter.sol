@@ -334,12 +334,12 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _intermediateNodes       Merkle inclusion proof for the transaction
     /// @param _index                   Index of transaction in the block
     /// @return                         True if the transaction was included in the block
-    function _isConfirmed (
+    function _isConfirmed(
         bytes32 _txId,
         uint256 _blockNumber,
         bytes memory _intermediateNodes,
         uint _index
-    ) internal returns (bool) {
+    ) private returns (bool) {
         // Finds fee amount
         uint feeAmount = IBitcoinRelay(relay).getBlockHeaderFee(_blockNumber, 0);
         require(msg.value >= feeAmount, "CCTransferRouter: relay fee is not sufficient");
@@ -362,12 +362,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         (bool _success,) = payable(msg.sender).call{value: (msg.value - feeAmount)}("");
         require(_success, "CCTransferRouter: sending remained ETH was not successful");
 
-        // Returns result
-        bytes32 _data;
-        assembly {
-            _data := mload(add(data, 32))
-        }
-        return _data == bytes32(0) ? false : true;
+        // Decodes returned data
+        return abi.decode(data, (bool));
     }
 
     /// @notice                               Checks if the request tx is included and confirmed on source chain
