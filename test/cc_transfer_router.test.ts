@@ -298,7 +298,7 @@ describe("CCTransferRouter", async () => {
                     // false // payWithTDT,
                     TELEPORTER1_PublicKeyHash
                 )
-            ).to.revertedWith("CCTransferRouter: CC transfer request has been used before");
+            ).to.revertedWith("CCTransferRouter: request has been used before");
         })
 
         it("Reverts if the request has not been finalized on the relay", async function () {

@@ -6,10 +6,9 @@ interface ICCTransferRouter {
 	// Structures
 
 	/// @notice                    Structure for recording cross-chain transfer requests
-	/// @dev
-	/// @param inputAmount         Amount of locked tokens on source chain
+	/// @param inputAmount         Amount of locked BTC on source chain
 	/// @param recipientAddress    Address of transfer recipient
-	/// @param fee                 Transfer fee (aggregated, paid to Teleporter)
+	/// @param fee                 Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
 	/// @param speed               Speed of the request (normal or instant)
 	/// @param isUsed              Whether the tx is used or not
 	struct ccTransferRequest {
@@ -17,18 +16,26 @@ interface ICCTransferRouter {
 		address recipientAddress;
 		uint fee;
 		uint256 speed;
-		uint64 deadline;
 		bool isUsed;
 	}
 
 	// Events
 
 	/// @notice                    Emits when a cc transfer request gets done
-	/// @param user                User recipient Address
-	/// @param inputAmount         Amount of locked tokens on source chain
+	/// @param user                Address of teleBTC recipient
+	/// @param inputAmount         Amount of tokens that user locked on source chain
+	/// @param receivedAmount      Amount of tokens that user receives
 	/// @param speed               Speed of the request (normal or instant)
-	/// @param fee                 Transfer fee (aggregated, paid to Teleporter) paid by the user
-	event CCTransfer(address indexed user, uint inputAmount, uint indexed speed, uint fee);
+	/// @param teleporter          Address of teleporter who submitted the request
+	/// @param teleporterFee       Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
+	event CCTransfer(
+		address indexed user, 
+		uint inputAmount, 
+		uint receivedAmount,
+		uint indexed speed,
+		address teleporter,
+		uint teleporterFee
+	);
 
 	// Read-only functions
 	
