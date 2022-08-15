@@ -19,11 +19,6 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         _;
     }
 
-    modifier nonZeroValue(uint _value) {
-        require(_value > 0, "CCTransferRouter: value is zero");
-        _;
-    }
-
     // Public variables
     uint public override startingBlockNumber;
     uint public override chainId;
@@ -72,7 +67,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     function setProtocolPercentageFee(uint _protocolPercentageFee) external override onlyOwner {
         require(
             10000 >= _protocolPercentageFee,
-            "CCTransferRouter: fee is out of range"
+            "CCTransferRouter: protocol fee is out of range"
         );
         protocolPercentageFee = _protocolPercentageFee;
     }
@@ -178,10 +173,8 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
                 ccTransferRequests[txId].fee
             );
             return true;
-        }
-
-        // Pays back instant loan
-        if (ccTransferRequests[txId].speed == 1) {
+        } else {
+            // Pays back instant loan (ccTransferRequests[txId].speed == 1)
             uint receivedAmount = _payBackInstantLoan(_lockerScriptHash, txId);
             emit CCTransfer(
                 ccTransferRequests[txId].recipientAddress,
@@ -193,8 +186,6 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
             );
             return true;
         }
-
-        return false;
     }
 
     /// @notice                             Sends minted teleBTC to the user
@@ -273,6 +264,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         // Parses recipient address and request speed
         request.recipientAddress = TxHelper.parseRecipientAddress(arbitraryData);
         request.speed = TxHelper.parseSpeed(arbitraryData);
+        require(request.speed == 0 || request.speed == 1, "CCTransferRouter: speed is out of range");
 
         // Marks the request as used
         request.isUsed = true;
@@ -308,9 +300,9 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
                 _intermediateNodes,
                 _index
             ),
-            msg.value
+            feeAmount
         );
-
+        
         // Sends extra ETH back to msg.sender
         Address.sendValue(payable(msg.sender), msg.value - feeAmount);
 
