@@ -11,14 +11,6 @@ interface ITeleBTC is IERC20 {
 
     event Burn(address indexed to, uint value);
 
-    // read-only functions
-
-    function ccTransferRouter() external view returns(address);
-
-    function ccExchangeRouter() external view returns(address);
-
-    function ccBurnRouter() external view returns(address);
-
     // state-changing functions
 
     function addMinter(address account) external;
@@ -28,12 +20,6 @@ interface ITeleBTC is IERC20 {
     function addBurner(address account) external;
 
     function removeBurner(address account) external;
-
-    function setCCTransferRouter(address _ccTransferRouter) external;
-
-    function setCCExchangeRouter(address _ccExchangeRouter) external;
-
-    function setCCBurnRouter(address _ccBurnRouter) external;
 
     function mint(address receiver, uint amount) external returns(bool);
 

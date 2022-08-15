@@ -273,7 +273,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         // Parses recipient address and request speed
         request.recipientAddress = TxHelper.parseRecipientAddress(arbitraryData);
         request.speed = TxHelper.parseSpeed(arbitraryData);
-        require(request.speed == 0 || request.speed == 1, "CCTransferRouter: speed is not correct");
+        require(request.speed == 0 || request.speed == 1, "CCTransferRouter: speed is out of range");
 
         // Marks the request as used
         request.isUsed = true;
@@ -342,6 +342,11 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         // Pays Teleporter fee
         if (teleporterFee > 0) {
             ITeleBTC(teleBTC).transfer(msg.sender, teleporterFee);
+        }
+
+        // Pays protocol fee
+        if (protocolFee > 0) {
+            ITeleBTC(teleBTC).transfer(treasury, protocolFee);
         }
 
         _remainedAmount = mintedAmount - protocolFee - teleporterFee;

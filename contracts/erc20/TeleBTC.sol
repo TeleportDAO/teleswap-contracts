@@ -11,12 +11,8 @@ import "hardhat/console.sol"; // Just for test
 contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
 
     using SafeMath for uint;
-    address public override ccTransferRouter;
-    address public override ccExchangeRouter;
-    address public override ccBurnRouter;
-
-    mapping(address => bool) minters;
-    mapping(address => bool) burners;
+    mapping(address => bool) public minters;
+    mapping(address => bool) public burners;
 
     modifier onlyMinter() {
         require(isMinter(_msgSender()), "TeleBTC: only minters can mint");
@@ -43,11 +39,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
      * @dev Check if an account is minter.
      * @return bool
      */
-    function isMinter(address account)
-    internal
-    view
-    returns (bool)
-    {
+    function isMinter(address account) internal view returns (bool) {
         require(account != address(0), "TeleBTC: account is the zero address");
         return minters[account];
     }
@@ -77,26 +69,15 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
      * @dev Check if an account is burner.
      * @return bool
      */
-    function isBurner(address account)
-    internal
-    view
-    returns (bool)
-    {
+    function isBurner(address account) internal view returns (bool) {
         require(account != address(0), "TeleBTC: account is the zero address");
         return burners[account];
     }
 
     constructor(
         string memory _name,
-        string memory _symbol,
-        address _ccTransferRouter,
-        address _ccExchangeRouter,
-        address _ccBurnRouter
+        string memory _symbol
     ) ERC20(_name, _symbol, 0) {
-        ccTransferRouter = _ccTransferRouter;
-        ccExchangeRouter = _ccExchangeRouter;
-        ccBurnRouter = _ccBurnRouter;
-
 
     }
 
@@ -105,39 +86,13 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
         _mint(msg.sender, 10000000000); // mint 100 teleBTC
     }
 
-    /// @notice                     Changes cc transfer router contract address
-    /// @dev                        Only owner can call this
-    /// @param _ccTransferRouter    The new cc transfer router contract address
-    function setCCTransferRouter(address _ccTransferRouter) external override onlyOwner {
-        minters[_ccTransferRouter] = true;
-    }
-
-    /// @notice                     Changes cc exchange router contract address
-    /// @dev                        Only owner can call this
-    /// @param _ccExchangeRouter    The new cc exchange router contract address
-    function setCCExchangeRouter(address _ccExchangeRouter) external override onlyOwner {
-        minters[_ccExchangeRouter] = true;
-    }
-
-    /// @notice                 Changes cc burn router contract address
-    /// @dev                    Only owner can call this
-    /// @param _ccBurnRouter    The new cc burn router contract address
-    function setCCBurnRouter(address _ccBurnRouter) external override onlyOwner {
-        burners[_ccBurnRouter] = true;
-    }
-
     function burn(uint amount) external nonReentrant onlyBurner override returns (bool) {
-        // require(msg.sender == ccBurnRouter, "TeleBTC: Message sender is not CCBurnRouter");
         _burn(msg.sender, amount);
         emit Burn(msg.sender, amount);
         return true;
     }
 
     function mint(address receiver, uint amount) external nonReentrant onlyMinter override returns (bool) {
-        // require(
-        //     msg.sender == ccTransferRouter || msg.sender == ccExchangeRouter,
-        //     "TeleBTC: Message sender is not CCTransferRouter or CCExchangeRouter"
-        // );
         _mint(receiver, amount);
         emit Mint(receiver, amount);
         return true;
