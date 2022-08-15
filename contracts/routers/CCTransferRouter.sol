@@ -273,7 +273,6 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         // Parses recipient address and request speed
         request.recipientAddress = TxHelper.parseRecipientAddress(arbitraryData);
         request.speed = TxHelper.parseSpeed(arbitraryData);
-        require(request.speed == 0 || request.speed == 1, "CCTransferRouter: speed is out of range");
 
         // Marks the request as used
         request.isUsed = true;
