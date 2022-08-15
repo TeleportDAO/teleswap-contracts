@@ -19,7 +19,7 @@ import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { ERC20__factory } from "../src/types/factories/ERC20__factory";
 
-import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
+import { takeSnapshot, revertProvider } from "./block_utils";
 
 describe("CCTransferRouter", async () => {
 
@@ -217,6 +217,7 @@ describe("CCTransferRouter", async () => {
     }
 
     async function checkFees(
+        recipientAddress: string,
         receivedAmount: number, 
         teleporterFee: number, 
         protocolFee: number, 
@@ -226,7 +227,7 @@ describe("CCTransferRouter", async () => {
     ): Promise<void> {
         // Checks that enough teleBTC has been minted for user
         expect(
-            await teleBTC.balanceOf(CC_REQUESTS.normalCCTransfer.recipientAddress)
+            await teleBTC.balanceOf(recipientAddress)
         ).to.equal(receivedAmount);
 
         // Checks that enough teleBTC has been minted for teleporter
@@ -261,7 +262,7 @@ describe("CCTransferRouter", async () => {
             await revertProvider(signer1.provider, beginning);
         });
 
-        it("Mints teleBTC for normal cc transfer request", async function () {
+        it("Mints teleBTC for normal cc transfer request (relay fee is zero)", async function () {
             let prevSupply = await teleBTC.totalSupply();
             // Mocks relay to return true after checking tx proof
             await setRelayReturn(true);
@@ -302,6 +303,85 @@ describe("CCTransferRouter", async () => {
             );
 
             await checkFees(
+                CC_REQUESTS.normalCCTransfer.recipientAddress,
+                receivedAmount, 
+                teleporterFee, 
+                protocolFee, 
+                lockerFee, 
+                prevSupply.toNumber(), 
+                CC_REQUESTS.normalCCTransfer.bitcoinAmount
+            );
+        })
+
+        it("Mints teleBTC for normal cc transfer request (relay fee is non-zero)", async function () {
+            let prevSupply = await teleBTC.totalSupply();
+            
+            let relayFee = 1;
+            let msgValue = 1;
+
+            // Mocks relay to return true after checking tx proof
+            await setRelayReturn(true);
+            // Sets fee of using relay
+            await mockBitcoinRelay.mock.getBlockHeaderFee.returns(relayFee); 
+
+            // Calculates fees
+            let lockerFee = Math.floor(
+                CC_REQUESTS.normalCCTransfer.bitcoinAmount*LOCKER_PERCENTAGE_FEE/10000
+            );
+            let teleporterFee = Math.floor(
+                CC_REQUESTS.normalCCTransfer.bitcoinAmount*CC_REQUESTS.normalCCTransfer.teleporterFee/10000
+            );
+            let protocolFee = Math.floor(
+                CC_REQUESTS.normalCCTransfer.bitcoinAmount*PROTOCOL_PERCENTAGE_FEE/10000
+            );
+            
+            // Calculates amount that user should have received
+            let receivedAmount = CC_REQUESTS.normalCCTransfer.bitcoinAmount - lockerFee - teleporterFee - protocolFee;
+            
+            // Gets deployer ETH balance before sending request
+            let prevETHBalance = await deployer.getBalance();
+
+            // Checks that ccTransfer is executed successfully
+
+            let tx = await ccTransferRouter.ccTransfer(
+                CC_REQUESTS.normalCCTransfer.version,
+                CC_REQUESTS.normalCCTransfer.vin,
+                CC_REQUESTS.normalCCTransfer.vout,
+                CC_REQUESTS.normalCCTransfer.locktime,
+                CC_REQUESTS.normalCCTransfer.blockNumber,
+                CC_REQUESTS.normalCCTransfer.intermediateNodes,
+                CC_REQUESTS.normalCCTransfer.index,
+                LOCKER1_PublicKeyHash,
+                {value: msgValue}
+            );
+
+            expect(
+                tx
+            ).to.emit(ccTransferRouter, 'CCTransfer').withArgs(
+                CC_REQUESTS.normalCCTransfer.recipientAddress,
+                CC_REQUESTS.normalCCTransfer.value,
+                receivedAmount,
+                CC_REQUESTS.normalCCTransfer.speed,
+                await deployer.getAddress(),
+                teleporterFee
+            );
+
+            // Finds tx cost
+            const receipt = await tx.wait();
+            const txCost = receipt.cumulativeGasUsed.mul(receipt.effectiveGasPrice);
+            
+             // Gets deployer ETH balance after sending request
+            let newETHBalance = await deployer.getBalance();
+
+            expect(
+                newETHBalance
+            ).to.equal(
+                prevETHBalance.sub(txCost).sub(relayFee), 
+                "Wrong ETH balance"
+            );
+
+            await checkFees(
+                CC_REQUESTS.normalCCTransfer.recipientAddress,
                 receivedAmount, 
                 teleporterFee, 
                 protocolFee, 
@@ -352,6 +432,7 @@ describe("CCTransferRouter", async () => {
             );
 
             await checkFees(
+                CC_REQUESTS.normalCCTransfer_zeroFee.recipientAddress,
                 receivedAmount, 
                 teleporterFee, 
                 protocolFee, 
@@ -404,6 +485,7 @@ describe("CCTransferRouter", async () => {
             );
 
             await checkFees(
+                CC_REQUESTS.normalCCTransfer.recipientAddress,
                 receivedAmount, 
                 teleporterFee, 
                 protocolFee, 
@@ -543,6 +625,23 @@ describe("CCTransferRouter", async () => {
             ).to.revertedWith("CCTransferRouter: no locker with the given script hash exists");
         })
 
+        it("Reverts if given locker script hash is zero", async function () {
+            await setRelayReturn(true);
+
+            await expect(
+                ccTransferRouter.ccTransfer(
+                    CC_REQUESTS.normalCCTransfer_invalidLocker.version,
+                    CC_REQUESTS.normalCCTransfer_invalidLocker.vin,
+                    CC_REQUESTS.normalCCTransfer_invalidLocker.vout,
+                    CC_REQUESTS.normalCCTransfer_invalidLocker.locktime,
+                    CC_REQUESTS.normalCCTransfer_invalidLocker.blockNumber,
+                    CC_REQUESTS.normalCCTransfer_invalidLocker.intermediateNodes,
+                    CC_REQUESTS.normalCCTransfer_invalidLocker.index,
+                    ZERO_ADDRESS
+                )
+            ).to.revertedWith("CCTransferRouter: address is zero");
+        })
+
         it("Reverts if no BTC has been sent to locker", async function () {
             await setRelayReturn(true);
 
@@ -560,7 +659,7 @@ describe("CCTransferRouter", async () => {
             ).to.revertedWith("CCTransferRouter: input amount is zero");
         })
 
-        it("Nothing happens if speed is wrong", async function () {
+        it("Reverts if speed is wrong", async function () {
             await setRelayReturn(true);
 
             await expect(
@@ -574,7 +673,25 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer_invalidSpeed.index,
                     LOCKER1_PublicKeyHash
                 )
-            ).to.not.emit(ccTransferRouter, "CCTransfer");
+            ).to.revertedWith("CCTransferRouter: speed is out of range");
+        })
+
+        it("Reverts if msg.value is lower than relay fee", async function () {
+            await setRelayReturn(true);
+            await mockBitcoinRelay.mock.getBlockHeaderFee.returns(1); // Sets fee of using relay
+
+            await expect(
+                ccTransferRouter.ccTransfer(
+                    CC_REQUESTS.normalCCTransfer.version,
+                    CC_REQUESTS.normalCCTransfer.vin,
+                    CC_REQUESTS.normalCCTransfer.vout,
+                    CC_REQUESTS.normalCCTransfer.locktime,
+                    CC_REQUESTS.normalCCTransfer.blockNumber,
+                    CC_REQUESTS.normalCCTransfer.intermediateNodes,
+                    CC_REQUESTS.normalCCTransfer.index,
+                    LOCKER1_PublicKeyHash
+                )
+            ).to.revertedWith("CCTransferRouter: paid fee is not sufficient");
         })
 
         it("Mints teleBTC for instant cc transfer request", async function () {
@@ -689,6 +806,99 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer.desiredRecipient
                 )
             ).to.revertedWith("CCTransferRouter: request has been used before");
+        })
+
+    });
+
+    describe("#setters", async () => {
+
+        beforeEach(async () => {
+            beginning = await takeSnapshot(signer1.provider);
+        });
+    
+        afterEach(async () => {
+            await revertProvider(signer1.provider, beginning);
+        });
+
+        it("Sets protocol percentage fee", async function () {
+            await expect(
+                ccTransferRouter.setProtocolPercentageFee(100)
+            ).to.not.reverted;
+
+            expect(
+                await ccTransferRouter.protocolPercentageFee()
+            ).to.equal(100);
+        })
+
+        it("Reverts since protocol percentage fee is greater than 10000", async function () {
+            await expect(
+                ccTransferRouter.setProtocolPercentageFee(10001)
+            ).to.revertedWith("CCTransferRouter: protocol fee is out of range");
+        })
+
+        it("Sets relay, lockers, instant router, teleBTC and treasury", async function () {
+            await expect(
+                ccTransferRouter.setRelay(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await ccTransferRouter.relay()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                ccTransferRouter.setLockers(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await ccTransferRouter.lockers()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                ccTransferRouter.setInstantRouter(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await ccTransferRouter.instantRouter()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                ccTransferRouter.setTeleBTC(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await ccTransferRouter.teleBTC()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                ccTransferRouter.setTreasury(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await ccTransferRouter.treasury()
+            ).to.equal(ONE_ADDRESS);
+
+        })
+
+        it("Reverts since given address is zero", async function () {
+            await expect(
+                ccTransferRouter.setRelay(ZERO_ADDRESS)
+            ).to.revertedWith("CCTransferRouter: address is zero");
+
+            await expect(
+                ccTransferRouter.setLockers(ZERO_ADDRESS)
+            ).to.revertedWith("CCTransferRouter: address is zero");
+
+            await expect(
+                ccTransferRouter.setInstantRouter(ZERO_ADDRESS)
+            ).to.revertedWith("CCTransferRouter: address is zero");
+
+            await expect(
+                ccTransferRouter.setTeleBTC(ZERO_ADDRESS)
+            ).to.revertedWith("CCTransferRouter: address is zero");
+
+            await expect(
+                ccTransferRouter.setTreasury(ZERO_ADDRESS)
+            ).to.revertedWith("CCTransferRouter: address is zero");
         })
 
     });
