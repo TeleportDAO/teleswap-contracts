@@ -6,10 +6,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const tokenName = "WrappedAVAX"
-    const tokenSymbol = "WAVAX"
+    const tokenName = "TeleBitcoin"
+    const tokenSymbol = "TBTC"
 
-    await deploy("WAVAX", {
+    await deploy("TeleBTC", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
@@ -21,4 +21,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ["WAVAX"];
+func.tags = ["TeleBTC"];

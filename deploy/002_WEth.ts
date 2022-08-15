@@ -6,22 +6,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const tokenName = "TeleportDAOBitcoin"
-    const tokenSymbol = "TBTC"
+    const tokenName = "WrappedETH"
+    const tokenSymbol = "WETH"
 
-    const ccTransferRouter = await deployments.get("CCTransferRouter")
-
-    await deploy("WrappedToken", {
+    await deploy("WETH", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
             tokenName,
-            tokenSymbol,
-            ccTransferRouter.address
+            tokenSymbol
         ],
     });
 };
 
 export default func;
-func.tags = ["WrappedToken"];
+func.tags = ["WETH"];

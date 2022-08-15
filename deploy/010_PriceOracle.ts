@@ -6,22 +6,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const normalConfirmationParameter = 3;
+    const acceptableDelay = 1000;
 
-    const bitcoinRelay = await deployments.get("BitcoinRelay")
-    const bitcoinTeleporter = await deployments.get("BitcoinTeleporter")
-
-    await deploy("CCTransferRouter", {
+    await deploy("PriceOracle", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            bitcoinRelay.address,
-            bitcoinTeleporter.address,
-            normalConfirmationParameter
+            acceptableDelay
         ],
     });
 };
 
 export default func;
-func.tags = ["CCTransferRouter"];
+func.tags = ["PriceOracle"];

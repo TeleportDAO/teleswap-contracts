@@ -6,19 +6,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const wavax = await deployments.get("WAVAX")
-    const liquidityPoolFactory = await deployments.get("LiquidityPoolFactory")
+    const weth = await deployments.get("WETH")
+    const uniswapV2Factory = await deployments.get("UniswapV2Factory")
 
-    await deploy("ExchangeRouter", {
+    await deploy("UniswapV2Router02", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            liquidityPoolFactory.address,
-            wavax.address
+            uniswapV2Factory.address,
+            weth.address
         ],
     });
 };
 
 export default func;
-func.tags = ["ExchangeRouter"];
+func.tags = ["UniswapV2Router02"];

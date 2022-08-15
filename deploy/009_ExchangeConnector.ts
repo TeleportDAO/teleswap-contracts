@@ -6,24 +6,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const fastLimit = 1000;
-    const fastFee = 10;
-    const neededConfirmations = 6;
+    const connectorName = "TheConnector"
+    const weth = await deployments.get("WETH")
+    const uniswapV2Router02 = await deployments.get("UniswapV2Router02")
 
-    const ccTransferRouter = await deployments.get("CCTransferRouter")
-
-    await deploy("FastRouter", {
+    await deploy("UniswapV2Connector", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            ccTransferRouter.address,
-            fastLimit,
-            fastFee,
-            neededConfirmations
+            connectorName,
+            uniswapV2Router02.address,
+            weth.address
         ],
     });
 };
 
 export default func;
-func.tags = ["FastRouter"];
+func.tags = ["UniswapV2Connector"];

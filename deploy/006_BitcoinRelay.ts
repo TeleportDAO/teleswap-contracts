@@ -28,13 +28,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         height = blockCount;
     }
 
-    // FIXME: setting the following parameters
+    // TODO: setting the following parameters
     let genesisHeader = await bitcoinRESTAPI.getHexBlockHeader(height);
     let periodStartHeight = height - height%2016;
     let periodStart = await bitcoinRESTAPI.getHexBlockHash(periodStartHeight);
 
     const tbtToken = await deployments.get("ERC20")
-    const exchangeRouter = await deployments.get("ExchangeRouter")
+
+    console.log("genesisHeader: ", genesisHeader)
+    console.log("height: ", height)
+    console.log("periodStart: ", periodStart)
 
     await deploy("BitcoinRelay", {
         from: deployer,
@@ -44,8 +47,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             '0x' + genesisHeader,
             height,
             '0x' + periodStart,
-            tbtToken.address,
-            exchangeRouter.address
+            tbtToken.address
         ],
     });
 };
