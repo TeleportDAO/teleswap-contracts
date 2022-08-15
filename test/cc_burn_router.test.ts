@@ -37,7 +37,7 @@ describe("CCBurnRouter", async () => {
     let ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
     let ten = BigNumber.from(10).pow(8).mul(10)
     let oneHundred = BigNumber.from(10).pow(8).mul(100)
-    /* 
+    /*
         This one is set so that:
         userRequestAmount * (1 - lockerFee / 10000 - PROTOCOL_PERCENTAGE_FEE / 10000) - BITCOIN_FEE = 100000000
     */
@@ -98,7 +98,7 @@ describe("CCBurnRouter", async () => {
 
         await ccBurnRouter.setTeleBTC(teleBTC.address)
 
-        await teleBTC.setCCBurnRouter(ccBurnRouter.address)
+        // await teleBTC.setCCBurnRouter(ccBurnRouter.address)
     });
 
     beforeEach("deploy a new cc exchange router", async () => {
@@ -119,9 +119,9 @@ describe("CCBurnRouter", async () => {
         const teleBTC = await teleBTCFactory.deploy(
             "Teleport Wrapped BTC",
             "TeleBTC",
-            ONE_ADDRESS,
-            ONE_ADDRESS,
-            ccBurnRouter.address
+            // ONE_ADDRESS,
+            // ONE_ADDRESS,
+            // ccBurnRouter.address
         );
 
         return teleBTC;
@@ -325,7 +325,7 @@ describe("CCBurnRouter", async () => {
                     userPubKeyHash
                 )
             ).to.emit(ccBurnRouter, "CCBurn")
-           
+
             // let totalSupplyAfter = await TeleBTCSigner1.totalSupply();
 
             // Get the burn request that has been saved in the contract
@@ -370,7 +370,7 @@ describe("CCBurnRouter", async () => {
             burntAmount = userRequestAmount.toNumber() - BITCOIN_FEE - protocolFee;
             await setLockersBurnReturn(burntAmount);
             await setLockersReturn();
-            
+
             let lockerTargetAddress = ONE_ADDRESS
             await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 
@@ -427,7 +427,7 @@ describe("CCBurnRouter", async () => {
             burntAmount = userRequestAmount.toNumber() - BITCOIN_FEE - protocolFee;
             await setLockersBurnReturn(burntAmount);
             await setLockersReturn();
-            
+
             let lockerTargetAddress = ONE_ADDRESS
             await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 

@@ -41,11 +41,11 @@ describe("Instant pool", async () => {
         teleBTC = await teleBTCFactory.deploy(
             "teleBTC",
             "TBTC",
-            ONE_ADDRESS,
-            ONE_ADDRESS,
-            ONE_ADDRESS
+            // ONE_ADDRESS,
+            // ONE_ADDRESS,
+            // ONE_ADDRESS
         );
-    
+
         // Mints teleBTC for deployer
         await teleBTC.mintTestToken();
 
@@ -56,7 +56,7 @@ describe("Instant pool", async () => {
             deployerAddress,
             instantFee,
             name,
-            symbol  
+            symbol
         );
 
         // Connects signer1 to teleBTC and instant pool
@@ -71,7 +71,7 @@ describe("Instant pool", async () => {
         beforeEach("deploy a new cc exchange router", async () => {
             snapshotId = await takeSnapshot(signer1.provider);
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
@@ -160,7 +160,7 @@ describe("Instant pool", async () => {
             expect(
                 await instantPool.balanceOf(signer1Address)
             ).to.equal(addedLiquidity);
-            
+
             expect(
                 await instantPool.totalAddedTeleBTC()
             ).to.equal(addedLiquidity);
@@ -188,7 +188,7 @@ describe("Instant pool", async () => {
             expect(
                 await instantPool.balanceOf(signer1Address)
             ).to.equal(addedLiquidity);
-            
+
             expect(
                 await instantPool.totalAddedTeleBTC()
             ).to.equal(addedLiquidity*2);
@@ -221,7 +221,7 @@ describe("Instant pool", async () => {
         beforeEach("deploy a new cc exchange router", async () => {
             snapshotId = await takeSnapshot(signer1.provider);
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
@@ -263,7 +263,7 @@ describe("Instant pool", async () => {
         it("Burns instant pool token after some amount of teleBTC was transferred directly", async function () {
 
             await teleBTC.transfer(instantPool.address, addedLiquidity);
-            
+
             await teleBTC.transfer(signer1Address, addedLiquidity);
 
             await teleBTCSigner1.approve(
@@ -300,7 +300,7 @@ describe("Instant pool", async () => {
             // Adds teleBTC  to instant pool
             await teleBTC.approve(instantPool.address, addedLiquidity);
             await instantPool.addLiquidityWithoutMint(addedLiquidity);
-            
+
             await teleBTC.transfer(signer1Address, addedLiquidity);
 
             await teleBTCSigner1.approve(
@@ -334,7 +334,7 @@ describe("Instant pool", async () => {
         })
 
         it("Burns instant pool token after some amount of teleBTC was added using addLiquidityWithoutMint (after addLiquidity)", async function () {
-            
+
             await teleBTC.transfer(signer1Address, addedLiquidity);
 
             await teleBTCSigner1.approve(
@@ -403,7 +403,7 @@ describe("Instant pool", async () => {
                 addedLiquidity
             );
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
@@ -431,7 +431,7 @@ describe("Instant pool", async () => {
             await instantPool.getLoan(
                 signer1Address,
                 addedLiquidity
-            ); 
+            );
 
             await expect(
                 instantPool.getLoan(

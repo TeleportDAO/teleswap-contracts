@@ -134,9 +134,9 @@ describe("CCExchangeRouter", async () => {
         teleBTC = await teleBTCFactory.deploy(
             "teleBTC",
             "teleBTC",
-            ONE_ADDRESS,
-            ONE_ADDRESS,
-            ONE_ADDRESS
+            // ONE_ADDRESS,
+            // ONE_ADDRESS,
+            // ONE_ADDRESS
         );
 
         // Deploys uniswapV2Factory
@@ -190,7 +190,7 @@ describe("CCExchangeRouter", async () => {
         // Sets exchangeConnector address in ccExchangeRouter
         await ccExchangeRouter.setExchangeConnector(APP_ID, exchangeConnector.address);
 
-        await teleBTC.setCCExchangeRouter(ccExchangeRouter.address);
+        // await teleBTC.setCCExchangeRouter(ccExchangeRouter.address);
 
         await lockers.setTeleBTC(teleBTC.address)
         await lockers.addMinter(ccExchangeRouter.address)
@@ -227,7 +227,7 @@ describe("CCExchangeRouter", async () => {
             _signer || deployer
         );
         const lockersLogic = await lockersLogicFactory.deploy();
-        
+
         // Deploys lockers proxy
         const lockersProxyFactory = new LockersProxy__factory(
             _signer || deployer
@@ -235,7 +235,7 @@ describe("CCExchangeRouter", async () => {
         const lockersProxy = await lockersProxyFactory.deploy(
             lockersLogic.address
         )
-        
+
         // Initializes lockers proxy
         await lockersProxy.initialize(
             teleportDAOToken.address,

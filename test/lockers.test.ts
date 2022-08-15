@@ -88,7 +88,7 @@ describe("Lockers", async () => {
             deployer,
             priceOracleContract.abi
         );
-        
+
         // Deploys lockers contract
         lockers = await deployLockers();
 
@@ -141,9 +141,9 @@ describe("Lockers", async () => {
         const wrappedToken = await teleBTCFactory.deploy(
             "TeleBTC",
             "TBTC",
-            ONE_ADDRESS,
-            ONE_ADDRESS,
-            ONE_ADDRESS
+            // ONE_ADDRESS,
+            // ONE_ADDRESS,
+            // ONE_ADDRESS
         );
 
         return wrappedToken;
@@ -158,7 +158,7 @@ describe("Lockers", async () => {
             _signer || deployer
         );
         const lockersLogic = await lockersLogicFactory.deploy();
-        
+
         // Deploys lockers proxy
         const lockersProxyFactory = new LockersProxy__factory(
             _signer || deployer
@@ -166,7 +166,7 @@ describe("Lockers", async () => {
         const lockersProxy = await lockersProxyFactory.deploy(
             lockersLogic.address
         )
-        
+
         // Initializes lockers proxy
         await lockersProxy.initialize(
             teleportDAOToken.address,
@@ -277,7 +277,7 @@ describe("Lockers", async () => {
             expect(
                 await lockers.totalNumberOfCandidates()
             ).to.equal(0)
-            
+
         })
 
     });
@@ -507,10 +507,10 @@ describe("Lockers", async () => {
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
 
             await lockerCCBurnSigner.slashLocker(
-                signer1Address, 
+                signer1Address,
                 0,
                 deployerAddress,
-                10000, 
+                10000,
                 ccBurnSimulatorAddress
             );
 
