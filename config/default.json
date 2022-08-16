@@ -1,0 +1,20 @@
+{
+  "chain_id": 3,
+  "cc_transfer": {
+    "treasury": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
+    "app_id": 0,
+    "protocol_percentage_fee": 50
+  },
+  "cc_exchange": {
+    "treasury": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
+    "app_id": 1,
+    "protocol_percentage_fee": 50
+  },
+  "cc_burn": {
+    "treasury": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
+    "protocol_percentage_fee": 50,
+    "slasher_percentage_reward": 50,
+    "bitcoin_fee": 50
+  }
+
+}
