@@ -34,7 +34,7 @@ describe("CCTransferRouter", async () => {
     const TREASURY = "0x0000000000000000000000000000000000000002";
 
     let LOCKER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd'; // Bitcoin public key
-    let LOCKER1_PublicKeyHash = '0x4062c8aeed4f81c2d73ff854a2957021191e20b6';
+    let LOCKER1_SCRIPT_HASH = '0x4062c8aeed4f81c2d73ff854a2957021191e20b6';
 
     let teleportTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000);
     let minRequiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
@@ -206,7 +206,7 @@ describe("CCTransferRouter", async () => {
 
         await lockerLocker.requestToBecomeLocker(
             LOCKER1, // Public key of locker
-            LOCKER1_PublicKeyHash, // Public key hash of locker
+            LOCKER1_SCRIPT_HASH, // Public key hash of locker
             minRequiredTDTLockedAmount,
             minRequiredNativeTokenLockedAmount,
             {value: minRequiredNativeTokenLockedAmount}
@@ -291,7 +291,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer.blockNumber,
                     CC_REQUESTS.normalCCTransfer.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer.index,
-                    LOCKER1_PublicKeyHash,
+                    LOCKER1_SCRIPT_HASH,
                 )
             ).to.emit(ccTransferRouter, 'CCTransfer').withArgs(
                 CC_REQUESTS.normalCCTransfer.recipientAddress,
@@ -351,7 +351,7 @@ describe("CCTransferRouter", async () => {
                 CC_REQUESTS.normalCCTransfer.blockNumber,
                 CC_REQUESTS.normalCCTransfer.intermediateNodes,
                 CC_REQUESTS.normalCCTransfer.index,
-                LOCKER1_PublicKeyHash,
+                LOCKER1_SCRIPT_HASH,
                 {value: msgValue}
             );
 
@@ -420,7 +420,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer_zeroFee.blockNumber,
                     CC_REQUESTS.normalCCTransfer_zeroFee.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer_zeroFee.index,
-                    LOCKER1_PublicKeyHash,
+                    LOCKER1_SCRIPT_HASH,
                 )
             ).to.emit(ccTransferRouter, 'CCTransfer').withArgs(
                 CC_REQUESTS.normalCCTransfer_zeroFee.recipientAddress,
@@ -473,7 +473,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer.blockNumber,
                     CC_REQUESTS.normalCCTransfer.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer.index,
-                    LOCKER1_PublicKeyHash,
+                    LOCKER1_SCRIPT_HASH,
                 )
             ).to.emit(ccTransferRouter, 'CCTransfer').withArgs(
                 CC_REQUESTS.normalCCTransfer.recipientAddress,
@@ -505,7 +505,7 @@ describe("CCTransferRouter", async () => {
                     STARTING_BLOCK_NUMBER - 1,
                     CC_REQUESTS.normalCCTransfer.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer.index,
-                    LOCKER1_PublicKeyHash
+                    LOCKER1_SCRIPT_HASH
                 )
             ).to.revertedWith("CCTransferRouter: request is too old");
         })
@@ -521,7 +521,7 @@ describe("CCTransferRouter", async () => {
                 CC_REQUESTS.normalCCTransfer.blockNumber,
                 CC_REQUESTS.normalCCTransfer.intermediateNodes,
                 CC_REQUESTS.normalCCTransfer.index,
-                LOCKER1_PublicKeyHash,
+                LOCKER1_SCRIPT_HASH,
             );
 
             await expect(
@@ -533,7 +533,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer.blockNumber,
                     CC_REQUESTS.normalCCTransfer.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer.index,
-                    LOCKER1_PublicKeyHash
+                    LOCKER1_SCRIPT_HASH
                 )
             ).to.revertedWith("CCTransferRouter: request has been used before");
         })
@@ -552,7 +552,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer.blockNumber,
                     CC_REQUESTS.normalCCTransfer.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer.index,
-                    LOCKER1_PublicKeyHash
+                    LOCKER1_SCRIPT_HASH
                 )
             ).to.revertedWith("CCTransferRouter: transaction has not been finalized yet");
         })
@@ -569,7 +569,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer_invalidFee.blockNumber,
                     CC_REQUESTS.normalCCTransfer_invalidFee.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer_invalidFee.index,
-                    LOCKER1_PublicKeyHash
+                    LOCKER1_SCRIPT_HASH
                 )
             ).to.revertedWith("CCTransferRouter: percentage fee is out of range");
         })
@@ -586,7 +586,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer_invalidChainId.blockNumber,
                     CC_REQUESTS.normalCCTransfer_invalidChainId.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer_invalidChainId.index,
-                    LOCKER1_PublicKeyHash
+                    LOCKER1_SCRIPT_HASH
                 )
             ).to.revertedWith("CCTransferRouter: chain id is not correct");
         })
@@ -603,7 +603,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer_invalidAppId.blockNumber,
                     CC_REQUESTS.normalCCTransfer_invalidAppId.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer_invalidAppId.index,
-                    LOCKER1_PublicKeyHash
+                    LOCKER1_SCRIPT_HASH
                 )
             ).to.revertedWith("CCTransferRouter: app id is not correct");
         })
@@ -654,7 +654,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer_invalidLocker.blockNumber,
                     CC_REQUESTS.normalCCTransfer_invalidLocker.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer_invalidLocker.index,
-                    LOCKER1_PublicKeyHash
+                    LOCKER1_SCRIPT_HASH
                 )
             ).to.revertedWith("CCTransferRouter: input amount is zero");
         })
@@ -671,7 +671,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer_invalidSpeed.blockNumber,
                     CC_REQUESTS.normalCCTransfer_invalidSpeed.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer_invalidSpeed.index,
-                    LOCKER1_PublicKeyHash
+                    LOCKER1_SCRIPT_HASH
                 )
             ).to.revertedWith("CCTransferRouter: speed is out of range");
         })
@@ -689,7 +689,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer.blockNumber,
                     CC_REQUESTS.normalCCTransfer.intermediateNodes,
                     CC_REQUESTS.normalCCTransfer.index,
-                    LOCKER1_PublicKeyHash
+                    LOCKER1_SCRIPT_HASH
                 )
             ).to.revertedWith("CCTransferRouter: paid fee is not sufficient");
         })
@@ -721,7 +721,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.instantCCTransfer.blockNumber,
                     CC_REQUESTS.instantCCTransfer.intermediateNodes,
                     CC_REQUESTS.instantCCTransfer.index,
-                    LOCKER1_PublicKeyHash
+                    LOCKER1_SCRIPT_HASH
                 )
             ).to.emit(ccTransferRouter, 'CCTransfer').withArgs(
                 CC_REQUESTS.instantCCTransfer.recipientAddress,

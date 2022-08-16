@@ -147,6 +147,8 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
             "CCTransferRouter: request has been used before"
         );
 
+        require(_locktime == bytes4(0), "CCTransferRouter: lock time is non -zero");
+
         // Extracts information from the request
         _saveCCTransferRequest(_lockerScriptHash, _vout, txId);
 
@@ -228,7 +230,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         );
     }
 
-    /// @notice                             Parses and saves the request tx
+    /// @notice                             Parses and saves the request
     /// @dev                                Checks that user has sent BTC to a valid locker
     /// @param _lockerScriptHash            Locker's script hash
     /// @param _vout                        The outputs of the tx

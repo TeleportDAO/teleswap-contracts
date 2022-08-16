@@ -1,9 +1,9 @@
 const CC_EXCHANGE_REQUESTS = require('./test_fixtures/ccExchangeRequests.json');
 require('dotenv').config({path:"../../.env"});
 
-import { assert, expect, use } from "chai";
+import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
-import { Signer, BigNumber, BigNumberish, BytesLike, Contract } from "ethers";
+import { Signer, BigNumber, Contract } from "ethers";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
 
 import { UniswapV2Pair } from "../src/types/UniswapV2Pair";
@@ -40,18 +40,15 @@ describe("CCExchangeRouter", async () => {
     const PROTOCOL_PERCENTAGE_FEE = 10; // Means %0.1
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
     const STARTING_BLOCK_NUMBER = 0;
+    const TREASURY = "0x0000000000000000000000000000000000000002";
 
     // Bitcoin public key (32 bytes)
-    let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
-    let TELEPORTER1_PublicKeyHash = '0x4062c8aeed4f81c2d73ff854a2957021191e20b6';
-    // let TELEPORTER2 = '0x03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626';
-    // let TELEPORTER2_PublicKeyHash = '0x41fb108446d66d1c049e30cc7c3044e7374e9856';
-    let REQUIRED_LOCKED_AMOUNT =  1000; // amount of required TDT
+    let LOCKER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
+    let LOCKER1_SCRIPT_HASH = '0x4062c8aeed4f81c2d73ff854a2957021191e20b6';
 
     let telePortTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000);
-    let requiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
+    let minRequiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
     let minRequiredNativeTokenLockedAmount = BigNumber.from(10).pow(18).mul(5);
-    let btcAmountToSlash = BigNumber.from(10).pow(8).mul(1)
     let collateralRatio = 20000;
     let liquidationRatio = 15000;
 
@@ -60,7 +57,6 @@ describe("CCExchangeRouter", async () => {
     let signer1: Signer;
     let locker: Signer;
     let deployerAddress: string;
-    let signer1Address: string;
     let lockerAddress: string;
 
     // Contracts
@@ -86,10 +82,9 @@ describe("CCExchangeRouter", async () => {
         // Sets accounts
         [deployer, signer1, locker] = await ethers.getSigners();
         deployerAddress = await deployer.getAddress();
-        signer1Address = await signer1.getAddress();
         lockerAddress = await locker.getAddress();
 
-        teleportDAOToken = await deployTelePortDaoToken();
+        teleportDAOToken = await deployTeleportDAOToken();
 
         // Mocks relay contract
         const bitcoinRelayContract = await deployments.getArtifact(
@@ -132,11 +127,8 @@ describe("CCExchangeRouter", async () => {
         // Deploys teleBTC contract
         const teleBTCFactory = new TeleBTC__factory(deployer);
         teleBTC = await teleBTCFactory.deploy(
-            "teleBTC",
-            "teleBTC",
-            // ONE_ADDRESS,
-            // ONE_ADDRESS,
-            // ONE_ADDRESS
+            "TeleportDAO-BTC",
+            "teleBTC"
         );
 
         // Deploys uniswapV2Factory
@@ -166,11 +158,10 @@ describe("CCExchangeRouter", async () => {
         // We replace the exchangeToken address in ccExchangeRequests
         const erc20Factory = new ERC20__factory(deployer);
         exchangeToken = await erc20Factory.deploy(
-            "exchangeToken",
-            "TDT",
+            "TestToken",
+            "TT",
             100000
         );
-        // console.log(exchangeToken.address);
 
         // Deploys ccExchangeRouter contract
         const ccExchangeRouterFactory = new CCExchangeRouter__factory(deployer);
@@ -181,16 +172,12 @@ describe("CCExchangeRouter", async () => {
             lockers.address,
             mockBitcoinRelay.address,
             teleBTC.address,
-            ONE_ADDRESS
+            TREASURY
         );
-
-        // Sets teleBTC address in ccExchangeRouter
-        // await ccExchangeRouter.setWrappedBitcoin(teleBTC.address);
 
         // Sets exchangeConnector address in ccExchangeRouter
         await ccExchangeRouter.setExchangeConnector(APP_ID, exchangeConnector.address);
 
-        // await teleBTC.setCCExchangeRouter(ccExchangeRouter.address);
 
         await lockers.setTeleBTC(teleBTC.address)
         await lockers.addMinter(ccExchangeRouter.address)
@@ -202,7 +189,7 @@ describe("CCExchangeRouter", async () => {
         await ccExchangeRouter.setInstantRouter(mockInstantRouter.address)
     });
 
-    const deployTelePortDaoToken = async (
+    const deployTeleportDAOToken = async (
         _signer?: Signer
     ): Promise<ERC20> => {
         const erc20Factory = new ERC20__factory(
@@ -210,7 +197,7 @@ describe("CCExchangeRouter", async () => {
         );
 
         const teleportDAOToken = await erc20Factory.deploy(
-            "TelePortDAOToken",
+            "TeleportDAOToken",
             "TDT",
             telePortTokenInitialSupply
         );
@@ -241,7 +228,7 @@ describe("CCExchangeRouter", async () => {
             teleportDAOToken.address,
             ONE_ADDRESS,
             mockPriceOracle.address,
-            requiredTDTLockedAmount,
+            minRequiredTDTLockedAmount,
             0,
             collateralRatio,
             liquidationRatio,
@@ -255,21 +242,21 @@ describe("CCExchangeRouter", async () => {
         return lockers;
     };
 
-    async function addALockerToLockers(): Promise<void> {
+    async function addLockerToLockers(): Promise<void> {
 
-        await teleportDAOToken.transfer(lockerAddress, requiredTDTLockedAmount)
+        await teleportDAOToken.transfer(lockerAddress, minRequiredTDTLockedAmount)
 
         let teleportDAOTokenlocker = teleportDAOToken.connect(locker)
 
-        await teleportDAOTokenlocker.approve(lockers.address, requiredTDTLockedAmount)
+        await teleportDAOTokenlocker.approve(lockers.address, minRequiredTDTLockedAmount)
 
         let lockerlocker = lockers.connect(locker)
 
         await lockerlocker.requestToBecomeLocker(
-            TELEPORTER1,
-            // TELEPORTER1_PublicKeyHash,
+            LOCKER1,
+            // LOCKER1_SCRIPT_HASH,
             CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient,
-            requiredTDTLockedAmount,
+            minRequiredTDTLockedAmount,
             minRequiredNativeTokenLockedAmount,
             {value: minRequiredNativeTokenLockedAmount}
         )
@@ -279,60 +266,128 @@ describe("CCExchangeRouter", async () => {
 
     describe("#ccExchange", async () => {
         let oldReserveTeleBTC: BigNumber;
-        let oldReserveExchangeToken: BigNumber;
+        let oldReserveTT: BigNumber;
         let oldDeployerBalanceTeleBTC: BigNumber;
         let oldUserBalanceTeleBTC: BigNumber;
-        let oldDeployerBalanceTDT: BigNumber;
-        let oldUserBalanceTDT: BigNumber;
+        let oldDeployerBalanceTT: BigNumber;
+        let oldUserBalanceTT: BigNumber;
         let oldTotalSupplyTeleBTC: BigNumber;
 
-        async function checksWhenExchangeFails(request: any) {
+        async function checksWhenExchangeSucceed(
+            recipientAddress: string,
+            bitcoinAmount: number,
+            expectedOutputAmount: number, 
+            teleporterFee: number, 
+            protocolFee: number, 
+            lockerFee: number
+        ) {
             // Records new supply of teleBTC
             let newTotalSupplyTeleBTC = await teleBTC.totalSupply();
 
-            // Records new teleBTC and TDT balances of user and teleporter
+            // Records new teleBTC and TT balances of user
             let newUserBalanceTeleBTC = await teleBTC.balanceOf(
-                request.recipientAddress
+                recipientAddress
             );
-            let newDeployerBalanceTeleBTC = await teleBTC.balanceOf(deployerAddress);
-            let newUserBalanceTDT = await exchangeToken.balanceOf(
-                request.recipientAddress
+            let newUserBalanceTT = await exchangeToken.balanceOf(
+                recipientAddress
             );
-            let newDeployerBalanceTDT = await exchangeToken.balanceOf(deployerAddress);
 
-            // Calculates fees
-            let lockerFee = Math.floor(request.bitcoinAmount*LOCKER_PERCENTAGE_FEE/10000);
-            let teleporterFee = Math.floor(request.bitcoinAmount*request.teleporterFee/100);
-            let protocolFee = Math.floor(request.bitcoinAmount*PROTOCOL_PERCENTAGE_FEE/10000);
+            // Records new teleBTC and TDT balances of teleporter
+            let newDeployerBalanceTeleBTC = await teleBTC.balanceOf(deployerAddress);
+            let newDeployerBalanceTT = await exchangeToken.balanceOf(deployerAddress);
+
+            // Checks that extra teleBTC hasn't been minted
+            expect(newTotalSupplyTeleBTC).to.equal(
+                oldTotalSupplyTeleBTC.add(bitcoinAmount)
+            );
+
+            // Checks that enough teleBTC has been minted for teleporter
+            expect(newDeployerBalanceTeleBTC).to.equal(
+                oldDeployerBalanceTeleBTC.add(teleporterFee)
+            );
+
+            // Checks that user teleBTC balance hasn't changed
+            expect(newUserBalanceTeleBTC).to.equal(
+                oldUserBalanceTeleBTC
+            );
+
+            // Checks that user received enough TT
+            expect(newUserBalanceTT).to.equal(
+                oldUserBalanceTT.add(expectedOutputAmount)
+            );
+
+            // Checks that teleporter TT balance hasn't changed
+            expect(newDeployerBalanceTT).to.equal(
+                oldDeployerBalanceTT
+            );
+
+            // Checks that correct amount of teleBTC has been minted for protocol
+            expect(
+                await teleBTC.balanceOf(TREASURY)
+            ).to.equal(protocolFee);
+
+            // Checks that correct amount of teleBTC has been minted for locker
+            expect(
+                await teleBTC.balanceOf(lockerAddress)
+            ).to.equal(lockerFee);
+        }
+
+        async function checksWhenExchangeFails(
+            recipientAddress: string,
+            bitcoinAmount: number,
+            teleporterFee: number, 
+            protocolFee: number, 
+            lockerFee: number
+        ) {
+            // Records new supply of teleBTC
+            let newTotalSupplyTeleBTC = await teleBTC.totalSupply();
+
+            // Records new teleBTC and TDT balances of user
+            let newUserBalanceTeleBTC = await teleBTC.balanceOf(
+                recipientAddress
+            );
+            let newUserBalanceTT = await exchangeToken.balanceOf(
+                recipientAddress
+            );
+
+            // Records new teleBTC and TDT balances of teleporter
+            let newDeployerBalanceTeleBTC = await teleBTC.balanceOf(deployerAddress);
+            let newDeployerBalanceTT = await exchangeToken.balanceOf(deployerAddress);
 
             // Checks enough teleBTC has been minted for user
             expect(newUserBalanceTeleBTC).to.equal(
                 oldUserBalanceTeleBTC.add(
-                    request.bitcoinAmount - lockerFee - teleporterFee - protocolFee
+                    bitcoinAmount - lockerFee - teleporterFee - protocolFee
                 )
             );
 
             // Checks that enough teleBTC has been minted for teleporter
             expect(newDeployerBalanceTeleBTC).to.equal(
-                oldDeployerBalanceTeleBTC.add(request.bitcoinAmount * request.teleporterFee / 100)
+                oldDeployerBalanceTeleBTC.add(teleporterFee)
             );
 
-            // Checks that user and deployer TDT balance hasn't changed
-            expect(newUserBalanceTDT).to.equal(
-                oldUserBalanceTDT
+            // Checks that user TT balance hasn't changed
+            expect(newUserBalanceTT).to.equal(
+                oldUserBalanceTT
             );
-            expect(newDeployerBalanceTDT).to.equal(
-                oldDeployerBalanceTDT
-            );
+
+            // Checks that correct amount of teleBTC has been minted for protocol
+            expect(
+                await teleBTC.balanceOf(TREASURY)
+            ).to.equal(protocolFee);
+
+            // Checks that correct amount of teleBTC has been minted for locker
+            expect(
+                await teleBTC.balanceOf(lockerAddress)
+            ).to.equal(lockerFee);
 
             // Checks extra teleBTC hasn't been minted
             expect(newTotalSupplyTeleBTC).to.equal(
-                oldTotalSupplyTeleBTC.add(request.bitcoinAmount)
+                oldTotalSupplyTeleBTC.add(bitcoinAmount)
             );
-            return true;
         }
 
-        beforeEach("adds liquidity to liquidity pool", async () => {
+        beforeEach("Adds liquidity to liquidity pool", async () => {
             // Takes snapshot before adding liquidity
             snapshotId = await takeSnapshot(deployer.provider);
 
@@ -365,25 +420,25 @@ describe("CCExchangeRouter", async () => {
             // Loads teleBTC-TDT liquidity pool
             uniswapV2Pair = await uniswapV2Pair__factory.attach(liquidityPoolAddress);
 
-            // Records current reserves of teleBTC and TDT
+            // Records current reserves of teleBTC and TT
             if (await uniswapV2Pair.token0() == teleBTC.address) {
-                [oldReserveTeleBTC, oldReserveExchangeToken] = await uniswapV2Pair.getReserves();
+                [oldReserveTeleBTC, oldReserveTT] = await uniswapV2Pair.getReserves();
             } else {
-                [oldReserveExchangeToken, oldReserveTeleBTC] = await uniswapV2Pair.getReserves()
+                [oldReserveTT, oldReserveTeleBTC] = await uniswapV2Pair.getReserves()
             }
 
-            // Records current teleBTC and TDT balances of user and teleporter
+            // Records current teleBTC and TT balances of user and teleporter
             oldUserBalanceTeleBTC = await teleBTC.balanceOf(
                 CC_EXCHANGE_REQUESTS.normalCCExchange.recipientAddress
             );
             oldDeployerBalanceTeleBTC = await teleBTC.balanceOf(deployerAddress);
-            oldUserBalanceTDT = await exchangeToken.balanceOf(
+            oldUserBalanceTT = await exchangeToken.balanceOf(
                 CC_EXCHANGE_REQUESTS.normalCCExchange.recipientAddress
             );
-            oldDeployerBalanceTDT = await exchangeToken.balanceOf(deployerAddress);
+            oldDeployerBalanceTT = await exchangeToken.balanceOf(deployerAddress);
 
 
-            await addALockerToLockers()
+            await addLockerToLockers()
         });
 
         afterEach(async () => {
@@ -391,25 +446,32 @@ describe("CCExchangeRouter", async () => {
             await revertProvider(deployer.provider, snapshotId);
         });
 
-        it("mints and exchanges teleBTC for desired exchange token (normal cc exchange request)", async function () {
-            // Mocks reedemScriptHash of bitcoinTeleporter
-            // await mockLockers.mock.redeemScriptHash.returns(
-            //     CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient
-            // );
-
-            // Finds expected output amount that user receives
-            let expectedOutputAmount = await uniswapV2Router02.getAmountOut(
-                CC_EXCHANGE_REQUESTS.normalCCExchange.bitcoinAmount -
-                CC_EXCHANGE_REQUESTS.normalCCExchange.teleporterFee,
-                oldReserveTeleBTC,
-                oldReserveExchangeToken
-            );
+        it("Exchanges teleBTC for desired exchange token (normal cc exchange request)", async function () {
 
             // Replaces dummy address in vout with exchange token address
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            // Mints and exchanges teleBTC for TDT
+            // Calculates fees
+            let lockerFee = Math.floor(
+                CC_EXCHANGE_REQUESTS.normalCCExchange.bitcoinAmount*LOCKER_PERCENTAGE_FEE/10000
+            );
+            let teleporterFee = Math.floor(
+                CC_EXCHANGE_REQUESTS.normalCCExchange.bitcoinAmount*
+                CC_EXCHANGE_REQUESTS.normalCCExchange.teleporterFee/10000
+            );
+            let protocolFee = Math.floor(
+                CC_EXCHANGE_REQUESTS.normalCCExchange.bitcoinAmount*PROTOCOL_PERCENTAGE_FEE/10000
+            );
+
+            // Finds expected output amount that user receives (input token is fixed)
+            let expectedOutputAmount = await uniswapV2Router02.getAmountOut(
+                CC_EXCHANGE_REQUESTS.normalCCExchange.bitcoinAmount - teleporterFee - lockerFee - protocolFee,
+                oldReserveTeleBTC,
+                oldReserveTT
+            );
+
+            // Exchanges teleBTC for TT
             expect(
                 await ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange.version,
@@ -419,57 +481,35 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange.index,
-                    // false // payWithTDT
-                    CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient,
+                    LOCKER1_SCRIPT_HASH,
                 )
-            ).to.emit(ccExchangeRouter, 'CCExchange');
+            ).to.emit(ccExchangeRouter, 'CCExchange').withArgs(
 
-            // Records new supply of teleBTC
-            let newTotalSupplyTeleBTC = await teleBTC.totalSupply();
-
-            // Records new teleBTC and TDT balances of user and teleporter
-            let newUserBalanceTeleBTC = await teleBTC.balanceOf(
-                CC_EXCHANGE_REQUESTS.normalCCExchange.recipientAddress
             );
-            let newDeployerBalanceTeleBTC = await teleBTC.balanceOf(deployerAddress);
-            let newUserBalanceTDT = await exchangeToken.balanceOf(
-                CC_EXCHANGE_REQUESTS.normalCCExchange.recipientAddress
+            
+            await checksWhenExchangeSucceed(
+                CC_EXCHANGE_REQUESTS.normalCCExchange.recipientAddress,
+                CC_EXCHANGE_REQUESTS.normalCCExchange.bitcoinAmount,
+                expectedOutputAmount.toNumber(),
+                teleporterFee,
+                protocolFee,
+                lockerFee
             );
-            let newDeployerBalanceTDT = await exchangeToken.balanceOf(deployerAddress);
-
-            // Checks extra teleBTC hasn't been minted
-            expect(newTotalSupplyTeleBTC).to.equal(
-                oldTotalSupplyTeleBTC.add(CC_EXCHANGE_REQUESTS.normalCCExchange.bitcoinAmount)
-            );
-
-            // Checks that enough teleBTC has been minted for teleporter
-            expect(newDeployerBalanceTeleBTC).to.equal(
-                oldDeployerBalanceTeleBTC.add(CC_EXCHANGE_REQUESTS.normalCCExchange.bitcoinAmount * CC_EXCHANGE_REQUESTS.normalCCExchange.teleporterFee / 100)
-            );
-
-            // FIXME: make modifications on the code to fix this expect
-            // Checks that user received enough TDT
-            // expect(newUserBalanceTDT).to.equal(
-            //     oldUserBalanceTDT.add(expectedOutputAmount)
-            // );
-
-            // Checks that user teleBTC balance and deployer TDT balance hasn't changed
-            expect(newUserBalanceTeleBTC).to.equal(
-                oldUserBalanceTeleBTC
-            );
-
-            expect(newDeployerBalanceTDT).to.equal(
-                oldDeployerBalanceTDT
-            );
-            // expects z teleBTC has been minted for protocol
-            // expects a teleBTC has been minted for lockers
         })
 
-        it("mints teleBTC since deadline has passed (normal cc exchange request)", async function () {
-            // Mocks reedemScriptHash of bitcoinTeleporter
-            // await mockLockers.mock.redeemScriptHash.returns(
-            //     CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.desiredRecipient
-            // );
+        it("Mints teleBTC since deadline has passed (normal cc exchange request)", async function () {
+
+            // Calculates fees
+            let lockerFee = Math.floor(
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.bitcoinAmount*LOCKER_PERCENTAGE_FEE/10000
+            );
+            let teleporterFee = Math.floor(
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.bitcoinAmount*
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.teleporterFee/10000
+            );
+            let protocolFee = Math.floor(
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.bitcoinAmount*PROTOCOL_PERCENTAGE_FEE/10000
+            );
 
             // Mints teleBTC
             expect(
@@ -481,30 +521,39 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.index,
-                    // false // payWithTDT
-                    CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.desiredRecipient,
+                    LOCKER1_SCRIPT_HASH
                 )
             ).to.emit(teleBTC, 'Transfer').and.not.emit(ccExchangeRouter, 'CCExchange');
 
             // Checks needed conditions when exchange fails
-            expect(await checksWhenExchangeFails(CC_EXCHANGE_REQUESTS.normalCCExchangeExpired)).to.equal(true);
-
+            await checksWhenExchangeFails(
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.recipientAddress,
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.bitcoinAmount,
+                teleporterFee,
+                protocolFee,
+                lockerFee
+            );
+            
             // expects x teleBTC has been minted for instant pool
-            // expects y teleBTC has been minted for teleporter
-            // expects z teleBTC has been minted for user
-            // expects a teleBTC has been minted for protocol
-            // expects b teleBTC has been minted for lockers
         })
 
-        it("mints teleBTC since output amount is less than minimum expected amount (normal cc exchange request)", async function () {
-            // Mocks reedemScriptHash of bitcoinTeleporter
-            // await mockLockers.mock.redeemScriptHash.returns(
-            //     CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.desiredRecipient
-            // );
+        it("Mints teleBTC since output amount is less than minimum expected amount (normal cc exchange request)", async function () {
 
             // Replaces dummy address in vout with exchange token address
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+
+            // Calculates fees
+            let lockerFee = Math.floor(
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.bitcoinAmount*LOCKER_PERCENTAGE_FEE/10000
+            );
+            let teleporterFee = Math.floor(
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.bitcoinAmount*
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.teleporterFee/10000
+            );
+            let protocolFee = Math.floor(
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.bitcoinAmount*PROTOCOL_PERCENTAGE_FEE/10000
+            );
 
             // Mints teleBTC
             expect(
@@ -522,20 +571,28 @@ describe("CCExchangeRouter", async () => {
             ).to.emit(teleBTC, 'Transfer').and.not.emit(ccExchangeRouter, 'CCExchange');
 
             // Checks needed conditions when exchange fails
-            expect(await checksWhenExchangeFails(CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage)).to.equal(true);
-
-            // expects x teleBTC has been minted for instant pool
-            // expects y teleBTC has been minted for teleporter
-            // expects z teleBTC has been minted for user
-            // expects a teleBTC has been minted for protocol
-            // expects b teleBTC has been minted for lockers
+            await checksWhenExchangeFails(
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.recipientAddress,
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.bitcoinAmount,
+                teleporterFee,
+                protocolFee,
+                lockerFee
+            );
         })
 
-        it("mints teleBTC since exchange token doesn't exist (normal cc exchange request)", async function () {
-            // Mocks reedemScriptHash of bitcoinTeleporter
-            // await mockLockers.mock.redeemScriptHash.returns(
-            //     CC_EXCHANGE_REQUESTS.normalCCExchangeHighSlippage.desiredRecipient
-            // );
+        it("Mints teleBTC since exchange token doesn't exist (normal cc exchange request)", async function () {
+
+            // Calculates fees
+            let lockerFee = Math.floor(
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.bitcoinAmount*LOCKER_PERCENTAGE_FEE/10000
+            );
+            let teleporterFee = Math.floor(
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.bitcoinAmount*
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.teleporterFee/10000
+            );
+            let protocolFee = Math.floor(
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.bitcoinAmount*PROTOCOL_PERCENTAGE_FEE/10000
+            );
 
             // Mints teleBTC
             expect(
@@ -547,26 +604,21 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchangeWrongToken.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchangeWrongToken.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchangeWrongToken.index,
-                    // false // payWithTDT
                     CC_EXCHANGE_REQUESTS.normalCCExchangeWrongToken.desiredRecipient,
                 )
             ).to.emit(teleBTC, 'Transfer').and.not.emit(ccExchangeRouter, 'CCExchange');
 
             // Checks needed conditions when exchange fails
-            expect(await checksWhenExchangeFails(CC_EXCHANGE_REQUESTS.normalCCExchangeWrongToken)).to.equal(true);
-
-            // expects x teleBTC has been minted for instant pool
-            // expects y teleBTC has been minted for teleporter
-            // expects z teleBTC has been minted for user
-            // expects a teleBTC has been minted for protocol
-            // expects b teleBTC has been minted for lockers
+            await checksWhenExchangeFails(
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.recipientAddress,
+                CC_EXCHANGE_REQUESTS.normalCCExchangeExpired.bitcoinAmount,
+                teleporterFee,
+                protocolFee,
+                lockerFee
+            );
         })
 
-        it("reverts if the request has been used before", async function () {
-            // Mocks reedemScriptHash of bitcoinTeleporter
-            // await mockLockers.mock.redeemScriptHash.returns(
-            //     CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient
-            // );
+        it("Reverts if the request has been used before", async function () {
 
             // Replaces dummy address in vout with exchange token address
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange.vout;
@@ -581,7 +633,6 @@ describe("CCExchangeRouter", async () => {
                 CC_EXCHANGE_REQUESTS.normalCCExchange.blockNumber,
                 CC_EXCHANGE_REQUESTS.normalCCExchange.intermediateNodes,
                 CC_EXCHANGE_REQUESTS.normalCCExchange.index,
-                // false // payWithTDT
                 CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient,
             );
 
@@ -595,25 +646,19 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange.index,
-                    // false // payWithTDT
                     CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient,
                 )
             ).to.revertedWith("CCExchangeRouter: the request has been used before");
 
         })
 
-        it("mints and exchanges teleBTC for desired exchange token (instant cc exchange request)", async function () {
-            // Mocks reedemScriptHash of bitcoinTeleporter
-            // await mockLockers.mock.redeemScriptHash.returns(
-            //     CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient
-            // );
-
+        it("Mints and exchanges teleBTC for desired exchange token (instant cc exchange request)", async function () {
             // Finds expected output amount that user receives
             let expectedOutputAmount = await uniswapV2Router02.getAmountOut(
                 CC_EXCHANGE_REQUESTS.instantCCExchange.bitcoinAmount -
                 CC_EXCHANGE_REQUESTS.instantCCExchange.teleporterFee,
                 oldReserveTeleBTC,
-                oldReserveExchangeToken
+                oldReserveTT
             );
 
             // Replaces dummy address in vout with exchange token address
@@ -655,7 +700,7 @@ describe("CCExchangeRouter", async () => {
 
             // Checks that enough teleBTC has been minted for teleporter
             expect(newDeployerBalanceTeleBTC).to.equal(
-                oldDeployerBalanceTeleBTC.add(CC_EXCHANGE_REQUESTS.instantCCExchange.bitcoinAmount * CC_EXCHANGE_REQUESTS.instantCCExchange.teleporterFee / 100)
+                oldDeployerBalanceTeleBTC.add(CC_EXCHANGE_REQUESTS.instantCCExchange.bitcoinAmount * CC_EXCHANGE_REQUESTS.instantCCExchange.teleporterFee / 10000)
             );
         })
 

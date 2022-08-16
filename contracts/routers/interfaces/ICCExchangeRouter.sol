@@ -5,14 +5,14 @@ interface ICCExchangeRouter {
     // Structures
 
     /// @notice                    Structure for recording cross-chain exchange requests
-    /// @param appId               Application id that user wants to use
-    /// @param inputAmount         Amount of locked tokens on source chain
-    /// @param outputAmount        Expected amount of output token
+    /// @param appId               Application id that user wants to use (defines the exchange that user wants to use)
+    /// @param inputAmount         Amount of locked BTC on source chain
+    /// @param outputAmount        Amount of output token
     /// @param isFixedToken        True if amount of input token is fixed
     /// @param recipientAddress    Address of exchange recipient
-    /// @param fee                 Transfer fee (aggregated, paid to Teleporter)
+    /// @param fee                 Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
     /// @param isUsed              Whether the tx is used or not
-    /// @param path                Path of exchange tokens (includes input and output token addresses)
+    /// @param path                Path from input token to output token
     /// @param deadline            Deadline of exchanging tokens
     /// @param speed               Speed of the request (normal or instant)
     struct ccExchangeRequest {
@@ -31,13 +31,14 @@ interface ICCExchangeRouter {
     // Events
 
     /// @notice                     Emits when a cc exchange request gets done
-    /// @param user                 User recipient Address
-    /// @param inputToken           Source chain token
-    /// @param outputToken          Target chain token
+    /// @param user                 Exchange recipient address
+    /// @param inputToken           Input token (teleBTC)
+    /// @param outputToken          Output token
     /// @param inputAmount          Amount of locked tokens on the source chain
-    /// @param outputAmount         Amount of tokens to get on the target chain
+    /// @param outputAmount         Amount of exchange token that user received
     /// @param speed                Speed of the request (normal or instant)
-    /// @param fee                  Transfer fee (aggregated, paid to Teleporter) paid by the user
+    /// @param teleporter          Address of teleporter who submitted the request
+    /// @param teleporterFee        Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
     event CCExchange(
         address indexed user,
         address inputToken,
@@ -45,14 +46,15 @@ interface ICCExchangeRouter {
         uint inputAmount,
         uint outputAmount,
         uint indexed speed,
-        uint fee
+        address teleporter,
+        uint teleporterFee
     );
 
     /// @notice                     Emits when a cc exchange request fails
     /// @dev                        In this case, instead of excahnging tokens,
-    ///                             we mint wrapped tokens and send it to the user
-    /// @param recipientAddress     User recipient Address
-    /// @param remainedInputAmount  Amount of wrapped tokens transferred to the user after paying fees
+    ///                             we mint teleBTC and send it to the user
+    /// @param recipientAddress     Exchange recipient address
+    /// @param remainedInputAmount  Amount of teleBTC that transferred to the user
     event FailedCCExchange(
         address recipientAddress,
         uint remainedInputAmount
@@ -105,14 +107,14 @@ interface ICCExchangeRouter {
 	function setProtocolPercentageFee(uint _protocolPercentageFee) external;
 
     function ccExchange(
-    // Bitcoin tx
+        // Bitcoin tx
         bytes4 version,
         bytes memory vin,
         bytes calldata vout,
         bytes4 locktime,
-    // Bitcoin block number
+        // Bitcoin block number
         uint256 blockNumber,
-    // Merkle proof
+        // Merkle proof
         bytes calldata intermediateNodes,
         uint index,
         address lockerBitcoinDecodedAddress
