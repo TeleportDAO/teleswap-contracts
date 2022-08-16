@@ -1,18 +1,23 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import config from 'config'
+import { BigNumber } from 'ethers';
 
-require('dotenv').config({path:"../config/temp.env"});
+import * as dotenv from "dotenv";
+dotenv.config();
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts} = hre;
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    let theBlockHeight = process.env.BLOCK_HEIGHT;
+    let theBlockHeight = await process.env.BLOCK_HEIGHT;
+    let theBlockHeightStr = theBlockHeight as string
+    let blockHeightBigNumber = BigNumber.from(theBlockHeightStr)
+    console.log("sdkgfjsdklsdajkfgnsdjkafg")
 
     const protocolPercentageFee = config.get("cc_transfer.protocol_percentage_fee")
-    const chainID = config.get("chain_id")
+    const chainId = config.get("chain_id")
     const appId = config.get("cc_transfer.app_id")
     const treasuryAddress = config.get("cc_transfer.treasury")
 
@@ -26,9 +31,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            theBlockHeight,
+            blockHeightBigNumber,
             protocolPercentageFee,
-            chainID,
+            chainId,
             appId,
             bitcoinRelay.address,
             lockersProxy.address,

@@ -8,7 +8,8 @@ import {DeployFunction} from 'hardhat-deploy/types';
 
 var path = require('path');
 var fs = require('fs');
-var tempFilePath = path.join(__dirname, '..', 'config', 'temp.env')
+// TODO: use another file instead of .env
+var tempFilePath = path.join(__dirname, '..', '.env');
 
 const {BitcoinRESTAPI} = require('bitcoin_rest_api');
 const {baseURLMainnet} = require('bitcoin_rest_api');
