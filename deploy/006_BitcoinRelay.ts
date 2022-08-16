@@ -45,14 +45,41 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     var blockHeight = "BLOCK_HEIGHT=" + height + "\n";
     fs.appendFileSync(tempFilePath, blockHeight);
 
-    console.log("genesisHeader: ", genesisHeader)
-    console.log("height: ", height)
-    console.log("periodStart: ", periodStart)
+    const typedMemViewLib = await deploy("TypedMemView", {
+        from: deployer,
+        log: true,
+        skipIfAlreadyDeployed: true,
+    })
+
+    const viewBTCLib = await deploy("ViewBTC", {
+        from: deployer,
+        log: true,
+        skipIfAlreadyDeployed: true,
+        libraries: {
+            "TypedMemView": typedMemViewLib.address
+        }
+    })
+
+    const viewSPVLib = await deploy("ViewSPV", {
+        from: deployer,
+        log: true,
+        skipIfAlreadyDeployed: true,
+        libraries: {
+            "TypedMemView": typedMemViewLib.address,
+            "ViewBTC": viewBTCLib.address
+        }
+    })
+
 
     await deploy("BitcoinRelay", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
+        libraries: {
+            "TypedMemView": typedMemViewLib.address,
+            "ViewBTC": viewBTCLib.address,
+            "ViewSPV": viewSPVLib.address
+        },
         args: [
             '0x' + genesisHeader,
             height,
