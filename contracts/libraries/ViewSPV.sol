@@ -16,15 +16,15 @@ library ViewSPV {
     uint256 constant ERR_INVALID_CHAIN = 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe;
     uint256 constant ERR_LOW_WORK = 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd;
 
-    function getErrBadLength() internal pure returns (uint256) {
+    function getErrBadLength() public pure returns (uint256) {
         return ERR_BAD_LENGTH;
     }
 
-    function getErrInvalidChain() internal pure returns (uint256) {
+    function getErrInvalidChain() public pure returns (uint256) {
         return ERR_INVALID_CHAIN;
     }
 
-    function getErrLowWork() internal pure returns (uint256) {
+    function getErrLowWork() public pure returns (uint256) {
         return ERR_LOW_WORK;
     }
 
@@ -62,7 +62,7 @@ library ViewSPV {
         bytes32 _merkleRoot,
         bytes29 _intermediateNodes,
         uint _index
-    ) internal view returns (bool) {
+    ) public view returns (bool) {
         // Shortcut the empty-block case
         if (revertBytes32(_txid) == _merkleRoot && _index == 0 && _intermediateNodes.len() == 0) {
             return true;
@@ -71,7 +71,7 @@ library ViewSPV {
         return ViewBTC.checkMerkle(_txid, _intermediateNodes, _merkleRoot, _index);
     }
 
-    function revertBytes32(bytes32 input) internal pure returns(bytes32) {
+    function revertBytes32(bytes32 input) public pure returns(bytes32) {
         bytes memory temp;
         bytes32 result;
         for (uint i = 0; i < 32; i++) {
@@ -95,7 +95,7 @@ library ViewSPV {
         bytes29 _vin,
         bytes29 _vout,
         bytes4 _locktime
-    ) internal view typeAssert(_vin, ViewBTC.BTCTypes.Vin) typeAssert(_vout, ViewBTC.BTCTypes.Vout) returns (bytes32) {
+    ) public view typeAssert(_vin, ViewBTC.BTCTypes.Vin) typeAssert(_vout, ViewBTC.BTCTypes.Vout) returns (bytes32) {
         // TODO: write in assembly
         return abi.encodePacked(_version, _vin.clone(), _vout.clone(), _locktime).ref(0).hash256();
     }
@@ -105,7 +105,7 @@ library ViewSPV {
     // @param _header      Header view
     // @param _target      The target threshold
     // @return             true if header work is valid, false otherwise
-    function checkWork(bytes29 _header, uint256 _target) internal view typeAssert(_header, ViewBTC.BTCTypes.Header) returns (bool) {
+    function checkWork(bytes29 _header, uint256 _target) public view typeAssert(_header, ViewBTC.BTCTypes.Header) returns (bool) {
         return _header.work() < _target;
     }
 
@@ -115,7 +115,7 @@ library ViewSPV {
     // @param _header              The raw bytes header
     // @param _prevHeaderDigest    The previous header's digest
     // @return                     true if the connect is valid, false otherwise
-    function checkParent(bytes29 _header, bytes32 _prevHeaderDigest) internal pure typeAssert(_header, ViewBTC.BTCTypes.Header) returns (bool) {
+    function checkParent(bytes29 _header, bytes32 _prevHeaderDigest) public pure typeAssert(_header, ViewBTC.BTCTypes.Header) returns (bool) {
         return _header.parent() == _prevHeaderDigest;
     }
 
@@ -123,7 +123,7 @@ library ViewSPV {
     // @notice             Compares the hash of each header to the prevHash in the next header
     // @param _headers     Raw byte array of header chain
     // @return             The total accumulated difficulty of the header chain, or an error code
-    function checkChain(bytes29 _headers) internal view typeAssert(_headers, ViewBTC.BTCTypes.HeaderArray) returns (uint256 _totalDifficulty) {
+    function checkChain(bytes29 _headers) public view typeAssert(_headers, ViewBTC.BTCTypes.HeaderArray) returns (uint256 _totalDifficulty) {
         bytes32 _digest;
         uint256 _headerCount = _headers.len() / 80;
         for (uint256 i = 0; i < _headerCount; i += 1) {

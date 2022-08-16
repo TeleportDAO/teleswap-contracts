@@ -1,6 +1,7 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import config from 'config'
+import { BigNumber } from 'ethers';
 
 require('dotenv').config({path:"../config/temp.env"});
 
@@ -10,6 +11,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployer } = await getNamedAccounts();
 
     let theBlockHeight = process.env.BLOCK_HEIGHT;
+    let theBlockHeightStr = theBlockHeight as string
+    let blockHeightBigNumber = BigNumber.from(theBlockHeightStr)
 
     const protocolPercentageFee = config.get("cc_exchange.protocol_percentage_fee")
     const chainID = config.get("chain_id")
@@ -26,7 +29,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            theBlockHeight,
+            blockHeightBigNumber,
             protocolPercentageFee,
             chainID,
             lockersProxy.address,
