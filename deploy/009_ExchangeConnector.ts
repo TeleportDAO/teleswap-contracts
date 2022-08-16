@@ -6,19 +6,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const tokenName = "WrappedAVAX"
-    const tokenSymbol = "WAVAX"
+    const connectorName = "TheConnector"
+    const weth = await deployments.get("WETH")
+    const uniswapV2Router02 = await deployments.get("UniswapV2Router02")
 
-    await deploy("WAVAX", {
+    await deploy("UniswapV2Connector", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            tokenName,
-            tokenSymbol
+            connectorName,
+            uniswapV2Router02.address,
+            weth.address
         ],
     });
 };
 
 export default func;
-func.tags = ["WAVAX"];
+func.tags = ["UniswapV2Connector"];

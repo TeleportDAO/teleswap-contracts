@@ -5,11 +5,17 @@ import {DeployFunction} from 'hardhat-deploy/types';
 // import {baseURLTestnet} from 'bitcoin_rest_api';
 // import {networkMainnet} from 'bitcoin_rest_api';
 // import {networkTestnet} from 'bitcoin_rest_api';
+
+var path = require('path');
+var fs = require('fs');
+var tempFilePath = path.join(__dirname, '..', 'config', 'temp.env')
+
 const {BitcoinRESTAPI} = require('bitcoin_rest_api');
 const {baseURLMainnet} = require('bitcoin_rest_api');
 const {baseURLTestnet} = require('bitcoin_rest_api');
 const {networkMainnet} = require('bitcoin_rest_api');
 const {networkTestnet} = require('bitcoin_rest_api');
+
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts} = hre;
@@ -28,13 +34,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         height = blockCount;
     }
 
-    // FIXME: setting the following parameters
+    // TODO: setting the following parameters
     let genesisHeader = await bitcoinRESTAPI.getHexBlockHeader(height);
     let periodStartHeight = height - height%2016;
     let periodStart = await bitcoinRESTAPI.getHexBlockHash(periodStartHeight);
 
     const tbtToken = await deployments.get("ERC20")
-    const exchangeRouter = await deployments.get("ExchangeRouter")
+
+    var blockHeight = "BLOCK_HEIGHT=" + height + "\n";
+    fs.appendFileSync(tempFilePath, blockHeight);
+
+    console.log("genesisHeader: ", genesisHeader)
+    console.log("height: ", height)
+    console.log("periodStart: ", periodStart)
 
     await deploy("BitcoinRelay", {
         from: deployer,
@@ -44,8 +56,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             '0x' + genesisHeader,
             height,
             '0x' + periodStart,
-            tbtToken.address,
-            exchangeRouter.address
+            tbtToken.address
         ],
     });
 };

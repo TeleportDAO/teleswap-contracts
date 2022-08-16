@@ -6,17 +6,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const tbtToken = await deployments.get("ERC20")
+    let feeToSetter = 0;
 
-    await deploy("Staking", {
+    await deploy("UniswapV2Factory", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            tbtToken.address
+            feeToSetter
         ],
     });
 };
 
 export default func;
-func.tags = ["Staking"];
+func.tags = ["UniswapV2Factory"];

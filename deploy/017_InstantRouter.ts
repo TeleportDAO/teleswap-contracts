@@ -6,22 +6,30 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const normalConfirmationParameter = 3;
 
+    const slasherPercentageReward = 10;
+    const paybackDeadline = 12;
+
+    const teleBTC = await deployments.get("TeleBTC")
     const bitcoinRelay = await deployments.get("BitcoinRelay")
-    const bitcoinTeleporter = await deployments.get("BitcoinTeleporter")
+    const priceOracle = await deployments.get("PriceOracle")
+    const collateralPoolFactory = await deployments.get("CollateralPoolFactory")
 
-    await deploy("CCTransferRouter", {
+
+    await deploy("InstantRouter", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
+            teleBTC.address,
             bitcoinRelay.address,
-            bitcoinTeleporter.address,
-            normalConfirmationParameter
+            priceOracle.address,
+            collateralPoolFactory.address,
+            slasherPercentageReward,
+            paybackDeadline
         ],
     });
 };
 
 export default func;
-func.tags = ["CCTransferRouter"];
+func.tags = ["InstantRouter"];

@@ -6,21 +6,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const exchangeRouter = await deployments.get("ExchangeRouter")
-    const bitcoinTeleporter = await deployments.get("BitcoinTeleporter")
-    const ccTransferRouter = await deployments.get("CCTransferRouter")
+    const zero_address = "0x0000000000000000000000000000000000000000";
 
-    await deploy("CCExchangeRouter", {
+    await deploy("CollateralPoolFactory", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            exchangeRouter.address,
-            bitcoinTeleporter.address,
-            ccTransferRouter.address
+            zero_address
         ],
     });
 };
 
 export default func;
-func.tags = ["CCExchangeRouter"];
+func.tags = ["CollateralPoolFactory"];

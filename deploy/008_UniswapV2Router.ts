@@ -6,26 +6,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const unlockFee = 0;
-    const unlockPeriod = 0;
-    const requiredLockedAmount = 0;
+    const weth = await deployments.get("WETH")
+    const uniswapV2Factory = await deployments.get("UniswapV2Factory")
 
-    const tbtToken = await deployments.get("ERC20")
-    const exchangeRouter = await deployments.get("ExchangeRouter")
-
-    await deploy("BitcoinTeleporter", {
+    await deploy("UniswapV2Router02", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            tbtToken.address,
-            exchangeRouter.address,
-            unlockFee,
-            unlockPeriod,
-            requiredLockedAmount
+            uniswapV2Factory.address,
+            weth.address
         ],
     });
 };
 
 export default func;
-func.tags = ["BitcoinTeleporter"];
+func.tags = ["UniswapV2Router02"];

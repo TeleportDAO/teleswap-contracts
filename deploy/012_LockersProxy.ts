@@ -1,29 +1,23 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
+import { ethers, network } from 'hardhat';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts} = hre;
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const fastLimit = 1000;
-    const fastFee = 10;
-    const neededConfirmations = 6;
+    const lockersLogic = await deployments.get("LockersLogic")
 
-    const ccTransferRouter = await deployments.get("CCTransferRouter")
-
-    await deploy("FastRouter", {
+    await deploy("LockersProxy", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            ccTransferRouter.address,
-            fastLimit,
-            fastFee,
-            neededConfirmations
+            lockersLogic.address
         ],
     });
 };
 
 export default func;
-func.tags = ["FastRouter"];
+func.tags = ["LockersProxy"];

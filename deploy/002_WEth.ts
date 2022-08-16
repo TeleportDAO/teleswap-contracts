@@ -6,17 +6,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const zeroAddress = "0x0000000000000000000000000000000000000000"
+    const tokenName = "WrappedETH"
+    const tokenSymbol = "WETH"
 
-    await deploy("LiquidityPoolFactory", {
+    await deploy("WETH", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            zeroAddress
+            tokenName,
+            tokenSymbol
         ],
     });
 };
 
 export default func;
-func.tags = ["LiquidityPoolFactory"];
+func.tags = ["WETH"];
