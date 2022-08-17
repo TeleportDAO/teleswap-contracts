@@ -13,158 +13,140 @@ import "hardhat-deploy-tenderly";
 
 dotenv.config();
 
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-
-task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
-  const accounts = await hre.ethers.getSigners();
-
-  for (const account of accounts) {
-    console.log(account.address);
-  }
-});
-
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
-
 const infuraNetwork = (
-  accounts: any, 
-  network: string,
-  chainId?: number,
-  gas?: number
+	accounts: any, 
+	network: string,
+	chainId?: number,
+	gas?: number
 ): HttpNetworkUserConfig => {
-  return {
-      url: `https://${network}.infura.io/v3/${process.env.PROJECT_ID}`,
-      chainId,
-      gas,
-      accounts,
-      gasPrice: 200000000000,
-  }
+	return {
+		url: `https://${network}.infura.io/v3/${process.env.PROJECT_ID}`,
+		chainId,
+		gas,
+		accounts,
+		gasPrice: 200000000000,
+	}
 }
 
 const config: HardhatUserConfig = {
-  solidity: {
-    compilers: [
-        {
-            version: "0.5.16",
-            settings: {
-                optimizer: {
-                    enabled: true
-                },
-            },
-        },
-        {
-            version: "0.6.6",
-            settings: {
-                optimizer: {
-                    enabled: true
-                },
-            },
-        },
-        {
-            version: "0.7.6",
-            settings: {
-                optimizer: {
-                    enabled: true
-                },
-            },
-        },
-        {
-            version: "0.8.2",
-            settings: {
-                optimizer: {
-                    enabled: true
-                },
-            },
-        },
-        {
-          version: "0.8.0",
-          settings: {
-              optimizer: {
-                  enabled: true
-              },
-          },
-      }
-    ],
-  },
-  networks: {
-    mainnet: infuraNetwork(
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
-        "mainnet", 
-        1, 
-        6283185,
-    ),
-    ropsten: infuraNetwork(
-      process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
-      "ropsten", 
-      3, 
-      6283185
-    ),
-    rinkeby: infuraNetwork(
-      process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
-      "rinkeby", 
-      4, 
-      6283185
-    ),
-    kovan: infuraNetwork(
-      process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
-      "kovan", 
-      42, 
-      6283185
-    ),
-    goerli: infuraNetwork(process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
-      "goerli", 
-      5, 
-      6283185
-    ),
-    // ropsten: {
-    //   url: process.env.ROPSTEN_URL || "",
-    //   accounts:
-    //     process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-    // },
-    matic: {
-      url: "https://rpc-mainnet.maticvigil.com/",
-      chainId: 137,
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-  },
-  matic_testnet: {
-      url: "https://rpc-mumbai.matic.today",
-      chainId: 80001,
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-  },
-  bsc: {
-      url: "https://bsc-dataseed.binance.org/",
-      chainId: 56,
-      gasPrice: 20000000000,
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-  },
-  bsc_testnet: {
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
-      chainId: 97,
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-  },
-  },
-  paths: {
-    artifacts: "artifacts",
-    deploy: "deploy",
-    deployments: "deployments",
-  },
-  typechain: {
-    outDir: "src/types",
-    target: "ethers-v5",
-  },
-  namedAccounts: {
-    deployer: {
-        default: 0,
-    },
-  },
-  gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
-    currency: "USD",
-  },
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
-  },
+	solidity: {
+		compilers: [
+			{
+				version: "0.5.16",
+				settings: {
+					optimizer: {
+						enabled: true
+					},
+				},
+			},
+			{
+				version: "0.6.6",
+				settings: {
+					optimizer: {
+						enabled: true
+					},
+				},
+			},
+			{
+				version: "0.7.6",
+				settings: {
+					optimizer: {
+						enabled: true
+					},
+				},
+			},
+			{
+				version: "0.8.2",
+				settings: {
+					optimizer: {
+						enabled: true
+					},
+				},
+			},
+			{
+				version: "0.8.0",
+				settings: {
+					optimizer: {
+						enabled: true
+					},
+				},
+			}
+		],
+	},
+	networks: {
+		mainnet: infuraNetwork(
+			process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
+			"mainnet", 
+			1, 
+			6283185,
+		),
+		ropsten: infuraNetwork(
+			process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
+			"ropsten", 
+			3, 
+			6283185
+		),
+		rinkeby: infuraNetwork(
+			process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
+			"rinkeby", 
+			4, 
+			6283185
+		),
+		kovan: infuraNetwork(
+			process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
+			"kovan", 
+			42, 
+			6283185
+		),
+		goerli: infuraNetwork(
+			process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
+			"goerli", 
+			5, 
+			6283185
+		),
+		matic: {
+			url: "https://rpc-mainnet.maticvigil.com/",
+			chainId: 137,
+			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+		},
+		matic_testnet: {
+			url: "https://rpc-mumbai.matic.today",
+			chainId: 80001,
+			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+		},
+		bsc: {
+			url: "https://bsc-dataseed.binance.org/",
+			chainId: 56,
+			gasPrice: 20000000000,
+			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+		},
+		bsc_testnet: {
+			url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+			chainId: 97,
+			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+		},
+	},	
+  	paths: {
+		artifacts: "artifacts",
+		deploy: "deploy",
+		deployments: "deployments",
+  	},
+  	typechain: {
+		outDir: "src/types",
+		target: "ethers-v5",
+  	},
+  	namedAccounts: {
+		deployer: {
+			default: 0,
+		},
+  	},
+  	gasReporter: {
+		enabled: process.env.REPORT_GAS !== undefined,
+		currency: "USD",
+  	},
+  	etherscan: {
+		apiKey: process.env.ETHERSCAN_API_KEY,
+  	},
 };
 
 export default config;

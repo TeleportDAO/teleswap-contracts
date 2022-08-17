@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../libraries/SafeMath.sol";
 import "../libraries/TypedMemView.sol";
 import "../libraries/ViewBTC.sol";
 import "../libraries/ViewSPV.sol";
@@ -14,40 +13,36 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";
 
 contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
-    using SafeMath for uint256;
+
+    /*  using BytesLib for bytes;
+        using BTCUtils for bytes;
+        using ValidateSPV for bytes; 
+    */
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
     using ViewBTC for bytes29;
     using ViewSPV for bytes29;
 
-    /* using BytesLib for bytes;
-    using BTCUtils for bytes;
-    using ValidateSPV for bytes; */
-
+    // Public variables
     uint public override initialHeight;
     uint public override lastSubmittedHeight;
     uint public override finalizationParameter;
+    uint public override rewardAmountInTDT;
+    uint public override relayerPercentageFee; // A number between [0, 100)
+    uint public override submissionGasUsed; // Gas used for submitting a block header
+    uint public override epochLength;
+    uint public override baseQueries;
+    uint public override currentEpochQueries;
+    uint public override lastEpochQueries;
+    address public override TeleportDAOToken;
+    bytes32 public override relayGenesisHash; // Initial block header of relay
+    mapping(bytes32 => bytes32) internal previousBlock; // block header hash => parnet header hash
+    mapping(bytes32 => uint256) internal blockHeight; // block header hash => block height
 
-    bytes32 public override relayGenesisHash;
-    mapping(bytes32 => bytes32) internal previousBlock;
-    mapping(bytes32 => uint256) internal blockHeight;
-    mapping(uint => blockHeader[]) private chain;
-
+    // Private variables
     uint256 internal currentEpochDiff;
     uint256 internal prevEpochDiff;
-
-    // Reward parameters
-    uint public override rewardAmountInTDT;
-    address public override TeleportDAOToken;
-    uint public override relayerPercentageFee; // Multiplied by 100 - greater than 100
-    uint public override submissionGasUsed;
-    uint public override epochLength;
-    uint public override lastEpochQueries;
-    uint public override currentEpochQueries;
-    uint public override baseQueries;
-    mapping (uint => uint) private numberOfQueries;
-
-
+    mapping(uint => blockHeader[]) private chain; // height => list of block headers
 
     /// @notice                   Gives a starting point for the relay
     /// @param  _genesisHeader    The starting header
@@ -59,28 +54,25 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         bytes32 _periodStart,
         address _TeleportDAOToken
     ) {
+        // Adds the initial block header to the chain
         bytes29 _genesisView = _genesisHeader.ref(0).tryAsHeader();
         require(_genesisView.notNull(), "BitcoinRelay: stop being dumb");
         bytes32 _genesisHash = _genesisView.hash256();
-        // Add the initial block header to the chain
+        relayGenesisHash = _genesisHash;
         blockHeader memory newBlockHeader;
         newBlockHeader.selfHash = _genesisHash;
+        newBlockHeader.parentHash = _genesisView.parent();
         newBlockHeader.merkleRoot = _genesisView.merkleRoot();
         newBlockHeader.relayer = msg.sender;
-        newBlockHeader.gasPrice = tx.gasprice;
+        newBlockHeader.gasPrice = 0;
         chain[_height].push(newBlockHeader);
-
-        // require(
-        //     _periodStart & bytes32(0x0000000000000000000000000000000000000000000000000000000000ffffff) == bytes32(0),
-        //     "Period start hash does not have work. Hint: wrong byte order?");
-        relayGenesisHash = _genesisHash;
         blockHeight[_genesisHash] = _height;
         blockHeight[_periodStart] = _height - (_height % 2016);
-        // Added parameters
+
+        // Relay parameters
         finalizationParameter = 1;
-        lastSubmittedHeight = _height;
         initialHeight = _height;
-        // Reward parameters
+        lastSubmittedHeight = _height;
         TeleportDAOToken = _TeleportDAOToken;
         relayerPercentageFee = 0;
         epochLength = 5;
@@ -90,16 +82,14 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         submissionGasUsed = 100000;
     }
 
-    /// @notice                 Pause the relay, so only the functions can be called which are whenPaused
-    /// @dev
-    /// @param
+    /// @notice        Pause the relay
+    /// @dev           Only functions with whenPaused modifier can be called
     function pauseRelay() external override onlyOwner {
         _pause();
     }
 
-    /// @notice                 Un-pause the relay, so only the functions can be called which are whenNotPaused
-    /// @dev
-    /// @param
+    /// @notice        Unpause the relay
+    /// @dev           Only functions with whenNotPaused modifier can be called
     function unPauseRelay() external override onlyOwner {
         _unpause();
     }
@@ -293,7 +283,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
 
     /// @notice         Finds the height of a header by its hash
     /// @dev            Will fail if the header is unknown
-    /// @param _hash  The header hash to search for
+    /// @param _hash    The header hash to search for
     /// @return         The height of the header
     function _findHeight(bytes32 _hash) internal view returns (uint256) {
         if (blockHeight[_hash] == 0) {

@@ -39,7 +39,7 @@ describe("CCExchangeRouter", async () => {
     const APP_ID = 1;
     const PROTOCOL_PERCENTAGE_FEE = 10; // Means %0.1
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
-    const STARTING_BLOCK_NUMBER = 0;
+    const STARTING_BLOCK_NUMBER = 1;
     const TREASURY = "0x0000000000000000000000000000000000000002";
 
     // Bitcoin public key (32 bytes)
@@ -109,7 +109,6 @@ describe("CCExchangeRouter", async () => {
         // We don't pass arguments since the request was modified and the txId is not valid
         await mockBitcoinRelay.mock.getBlockHeaderFee.returns(0); // Fee of relay
         await mockBitcoinRelay.mock.checkTxProof.returns(true);
-
 
         // Mocks instant router contract
         const instantRouterContract = await deployments.getArtifact(
@@ -255,7 +254,7 @@ describe("CCExchangeRouter", async () => {
         await lockerlocker.requestToBecomeLocker(
             LOCKER1,
             // LOCKER1_SCRIPT_HASH,
-            CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient,
+            LOCKER1_SCRIPT_HASH,
             minRequiredTDTLockedAmount,
             minRequiredNativeTokenLockedAmount,
             {value: minRequiredNativeTokenLockedAmount}
@@ -633,7 +632,7 @@ describe("CCExchangeRouter", async () => {
                 CC_EXCHANGE_REQUESTS.normalCCExchange.blockNumber,
                 CC_EXCHANGE_REQUESTS.normalCCExchange.intermediateNodes,
                 CC_EXCHANGE_REQUESTS.normalCCExchange.index,
-                CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient,
+                LOCKER1_SCRIPT_HASH,
             );
 
             // Reverts since the request has been used before
@@ -646,20 +645,93 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange.index,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient,
+                    LOCKER1_SCRIPT_HASH,
                 )
             ).to.revertedWith("CCExchangeRouter: the request has been used before");
 
         })
 
-        it("Mints and exchanges teleBTC for desired exchange token (instant cc exchange request)", async function () {
-            // Finds expected output amount that user receives
-            let expectedOutputAmount = await uniswapV2Router02.getAmountOut(
-                CC_EXCHANGE_REQUESTS.instantCCExchange.bitcoinAmount -
-                CC_EXCHANGE_REQUESTS.instantCCExchange.teleporterFee,
-                oldReserveTeleBTC,
-                oldReserveTT
-            );
+        it("Reverts since request belongs to an old block header", async function () {
+            // Replaces dummy address in vout with exchange token address
+            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange.vout;
+            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+
+            await expect(
+                ccExchangeRouter.ccExchange(
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.version,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.vin,
+                    vout,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.locktime,
+                    STARTING_BLOCK_NUMBER - 1,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.intermediateNodes,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.index,
+                    LOCKER1_SCRIPT_HASH,
+                )
+            ).to.revertedWith("CCExchangeRouter: request is too old");
+        })
+
+        it("Reverts since lock time is non-zero", async function () {
+            // Replaces dummy address in vout with exchange token address
+            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange.vout;
+            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+
+            await expect(
+                ccExchangeRouter.ccExchange(
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.version,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.vin,
+                    vout,
+                    '0x11111111',
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.blockNumber,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.intermediateNodes,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.index,
+                    LOCKER1_SCRIPT_HASH,
+                )
+            ).to.revertedWith("CCExchangeRouter: lock time is non -zero");
+        })
+
+        it("Reverts if request has not been finalized yet", async function () {
+            // Replaces dummy address in vout with exchange token address
+            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange.vout;
+            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+
+            await mockBitcoinRelay.mock.checkTxProof.returns(false);
+
+            await expect(
+                ccExchangeRouter.ccExchange(
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.version,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.vin,
+                    vout,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.locktime,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.blockNumber,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.intermediateNodes,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.index,
+                    LOCKER1_SCRIPT_HASH,
+                )
+            ).to.revertedWith("CCExchangeRouter: transaction has not been finalized yet");
+        })
+
+        it("Reverts if paid fee is not sufficient", async function () {
+            // Replaces dummy address in vout with exchange token address
+            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange.vout;
+            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+
+            await mockBitcoinRelay.mock.getBlockHeaderFee.returns(1);
+
+            await expect(
+                ccExchangeRouter.ccExchange(
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.version,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.vin,
+                    vout,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.locktime,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.blockNumber,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.intermediateNodes,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange.index,
+                    LOCKER1_SCRIPT_HASH,
+                )
+            ).to.revertedWith("CCExchangeRouter: paid fee is not sufficient");
+        })
+
+        it("Pays back instant loan (instant cc exchange request)", async function () {
 
             // Replaces dummy address in vout with exchange token address
             let vout = CC_EXCHANGE_REQUESTS.instantCCExchange.vout;
@@ -700,7 +772,10 @@ describe("CCExchangeRouter", async () => {
 
             // Checks that enough teleBTC has been minted for teleporter
             expect(newDeployerBalanceTeleBTC).to.equal(
-                oldDeployerBalanceTeleBTC.add(CC_EXCHANGE_REQUESTS.instantCCExchange.bitcoinAmount * CC_EXCHANGE_REQUESTS.instantCCExchange.teleporterFee / 10000)
+                oldDeployerBalanceTeleBTC.add(
+                    CC_EXCHANGE_REQUESTS.instantCCExchange.bitcoinAmount*
+                    CC_EXCHANGE_REQUESTS.instantCCExchange.teleporterFee/10000
+                )
             );
         })
 
@@ -708,7 +783,7 @@ describe("CCExchangeRouter", async () => {
         // it("reverts if teleporter fee is greater than bitcoin amount", async function () {
         //     // Mocks reedemScriptHash of bitcoinTeleporter
         //     await mockLockers.mock.redeemScriptHash.returns(
-        //         CC_EXCHANGE_REQUESTS.normalCCExchange.desiredRecipient
+        //         LOCKER1_SCRIPT_HASH
         //     );
 
         //     // Reverts since the request has been used before

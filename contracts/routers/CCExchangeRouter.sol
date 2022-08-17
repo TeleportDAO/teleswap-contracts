@@ -148,7 +148,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         uint _index,
         address _lockerScriptHash
     ) external payable nonReentrant nonZeroAddress(_lockerScriptHash) override returns (bool) {
-        require(_blockNumber >= startingBlockNumber, "CCExchangeRouter: request is old");
+        require(_blockNumber >= startingBlockNumber, "CCExchangeRouter: request is too old");
 
         // Calculates transaction id
         bytes32 txId = TxHelper.calculateTxId(_version, _vin, _vout, _locktime);
@@ -172,7 +172,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
                 _intermediateNodes,
                 _index
             ),
-            "CCExchangeRouter: transaction has not been finalized on source chain yet"
+            "CCExchangeRouter: transaction has not been finalized yet"
         );
 
         // Normal cc exchange request
@@ -213,6 +213,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
                 _exchangeConnector,
                 remainedInputAmount
             );
+            
             // Exchanges minted teleBTC for output token
             (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
                 remainedInputAmount,
@@ -365,7 +366,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     ) private returns (bool) {
         // Finds fee amount
         uint feeAmount = IBitcoinRelay(relay).getBlockHeaderFee(_blockNumber, 0);
-        require(msg.value >= feeAmount, "CCExchangeRouter: relay fee is not sufficient");
+        require(msg.value >= feeAmount, "CCExchangeRouter: paid fee is not sufficient");
 
         // Calls relay contract
         bytes memory data = Address.functionCallWithValue(

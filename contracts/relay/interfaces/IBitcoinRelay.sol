@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 interface IBitcoinRelay {
-    // structures
+    // Structures
 
     /// @notice                 	Structure for recording block header
     /// @param selfHash             Hash of block header
@@ -17,7 +17,7 @@ interface IBitcoinRelay {
         uint gasPrice;
     }
 
-    // events
+    // Events
 
     /// @notice                     Emits when a block header is added
     /// @param height               Height of submitted header
@@ -93,8 +93,8 @@ interface IBitcoinRelay {
 
     function rewardAmountInTDT() external view returns (uint);
 
-
     // State-changing functions
+
     function pauseRelay() external;
 
     function unPauseRelay() external;
