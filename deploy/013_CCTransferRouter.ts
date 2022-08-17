@@ -12,9 +12,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployer } = await getNamedAccounts();
 
     let theBlockHeight = await process.env.BLOCK_HEIGHT;
-    let theBlockHeightStr = theBlockHeight as string
-    let blockHeightBigNumber = BigNumber.from(theBlockHeightStr)
-    console.log("sdkgfjsdklsdajkfgnsdjkafg")
 
     const protocolPercentageFee = config.get("cc_transfer.protocol_percentage_fee")
     const chainId = config.get("chain_id")
@@ -25,13 +22,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const lockersProxy = await deployments.get("LockersProxy")
     const teleBTC = await deployments.get("TeleBTC")
 
-
     await deploy("CCTransferRouter", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            blockHeightBigNumber,
+            theBlockHeight,
             protocolPercentageFee,
             chainId,
             appId,
