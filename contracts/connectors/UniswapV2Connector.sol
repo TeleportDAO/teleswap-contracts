@@ -61,13 +61,6 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
             return (false, 0);
         }
 
-        // // Gets reserves of input token and output token
-        // (uint reserveIn, uint reserveOut) = IUniswapV2Router02(exchangeRouter).getReserves(
-        //     _inputToken,
-        //     _outputToken
-        // );
-
-        // return (true, IUniswapV2Router02(exchangeRouter).getAmountIn(_outputAmount, reserveIn, reserveOut));
         address[] memory path = new address[](2);
         path[0] = _inputToken;
         path[1] = _outputToken;
@@ -88,14 +81,6 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         ) {
             return (false, 0);
         }
-
-        // // Gets reserves of input token and output token
-        // (uint reserveIn, uint reserveOut) = IUniswapV2Router02(exchangeRouter).getReserves(
-        //     _inputToken,
-        //     _outputToken
-        // );
-
-        // return (true, IUniswapV2Router02(exchangeRouter).getAmountOut(_inputAmount, reserveIn, reserveOut));
 
         address[] memory path = new address[](2);
         path[0] = _inputToken;

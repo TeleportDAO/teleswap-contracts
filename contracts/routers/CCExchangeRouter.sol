@@ -159,7 +159,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             "CCExchangeRouter: the request has been used before"
         );
 
-        require(_locktime == bytes4(0), "CCExchangeRouter: lock time is non -zero");
+        require(_locktime == bytes4(0), "CCExchangeRouter: lock time is non-zero");
 
         // Extracts information from the request
         _saveCCExchangeRequest(_lockerScriptHash, _vout, txId);
@@ -206,47 +206,54 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
         // Gets exchnage connector address
         address _exchangeConnector = exchangeConnector[ccExchangeRequests[_txId].appId];
+        require(_exchangeConnector != address(0), "CCExchangeRouter: app id doesn't exist");
 
-        if (_exchangeConnector != address(0)) {
-            // Gives allowance to exchange connector to transfer from cc exchange router
-            ITeleBTC(teleBTC).approve(
-                _exchangeConnector,
-                remainedInputAmount
-            );
-            
-            // Exchanges minted teleBTC for output token
-            (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
-                remainedInputAmount,
-                ccExchangeRequests[_txId].outputAmount,
-                ccExchangeRequests[_txId].path,
-                ccExchangeRequests[_txId].recipientAddress,
-                ccExchangeRequests[_txId].deadline,
-                ccExchangeRequests[_txId].isFixedToken
-            );
-        } else {
-            result = false;
-        }
+        // Gives allowance to exchange connector to transfer from cc exchange router
+        ITeleBTC(teleBTC).approve(
+            _exchangeConnector,
+            remainedInputAmount
+        );
+        
+        // Exchanges minted teleBTC for output token
+        (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
+            remainedInputAmount,
+            ccExchangeRequests[_txId].outputAmount,
+            ccExchangeRequests[_txId].path,
+            ccExchangeRequests[_txId].recipientAddress,
+            ccExchangeRequests[_txId].deadline,
+            ccExchangeRequests[_txId].isFixedToken
+        );
 
         if (result) {
             // Emits CCExchange if exchange was successful
             emit CCExchange(
                 ccExchangeRequests[_txId].recipientAddress,
-                ccExchangeRequests[_txId].path[0],
-                ccExchangeRequests[_txId].path[ccExchangeRequests[_txId].path.length-1],
-                remainedInputAmount,
-                amounts[amounts.length-1],
+                ccExchangeRequests[_txId].path[0], // input token
+                ccExchangeRequests[_txId].path[ccExchangeRequests[_txId].path.length-1], // output token
+                amounts[0], // input amount
+                amounts[amounts.length-1], // output amount
                 ccExchangeRequests[_txId].speed,
                 msg.sender, // Teleporter address
                 ccExchangeRequests[_txId].fee
             );
+
+            // Transfers rest of teleBTC to recipientAddress (if input amount is not fixed)
+            if (ccExchangeRequests[_txId].isFixedToken == false) {
+                ITeleBTC(teleBTC).transfer(
+                    ccExchangeRequests[_txId].recipientAddress,
+                    remainedInputAmount - amounts[0]
+                );
+            }
         } else {
+            // Handles situation when exchange was not successful
+
             // Revokes allowance
             ITeleBTC(teleBTC).approve(
                 _exchangeConnector,
                 0
             );
-            
-            // Sends teleBTC to recipient if exchange was unsuccessful
+
+            // Sends teleBTC to recipient if exchange wasn't successful
             ITeleBTC(teleBTC).transfer(
                 ccExchangeRequests[_txId].recipientAddress,
                 remainedInputAmount
@@ -315,10 +322,10 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         request.appId = TxHelper.parseAppId(arbitraryData);
         
         address exchangeToken = TxHelper.parseExchangeToken(arbitraryData);
-        require(
-            exchangeToken != address(0), 
-            "CCExchangeRouter: no exchange token"
-        );
+        // require(
+        //     exchangeToken != address(0), 
+        //     "CCExchangeRouter: no exchange token"
+        // );
         request.outputAmount = TxHelper.parseExchangeOutputAmount(arbitraryData);
 
         if (TxHelper.parseIsFixedToken(arbitraryData) == 0) {
