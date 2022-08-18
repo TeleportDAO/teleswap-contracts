@@ -471,7 +471,7 @@ describe("CCExchangeRouter", async () => {
             oldDeployerBalanceTT = await exchangeToken.balanceOf(deployerAddress);
 
 
-            await addLockerToLockers()
+            await addLockerToLockers();
         });
 
         afterEach(async () => {
@@ -1046,6 +1046,153 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.instantCCExchange.teleporterFee/10000
                 )
             );
+        })
+    });
+
+
+    describe("#isRequestUsed", async () => {
+
+        beforeEach(async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+            await addLockerToLockers();
+        });
+    
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("Checks if the request has been used before (unused)", async function () {
+            expect(
+                await ccExchangeRouter.isRequestUsed(CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.txId)
+            ).to.equal(false);
+        })
+
+        it("Reverts since the request has been executed before", async function () {
+
+            // Replaces dummy address in vout with exchange token address
+            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
+            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+
+            await ccExchangeRouter.ccExchange(
+                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+                vout,
+                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
+                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
+                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+                LOCKER1_SCRIPT_HASH
+            );
+
+            expect(
+                await ccExchangeRouter.isRequestUsed(CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.txId)
+            ).to.equal(true);
+
+            await expect(
+                ccExchangeRouter.ccExchange(
+                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+                    vout,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+                    LOCKER1_SCRIPT_HASH
+                )
+            ).to.revertedWith("CCExchangeRouter: the request has been used before");
+        })
+
+    });
+
+    describe("#setters", async () => {
+
+        beforeEach(async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+        });
+    
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("Sets protocol percentage fee", async function () {
+            await expect(
+                ccExchangeRouter.setProtocolPercentageFee(100)
+            ).to.not.reverted;
+
+            expect(
+                await ccExchangeRouter.protocolPercentageFee()
+            ).to.equal(100);
+        })
+
+        it("Reverts since protocol percentage fee is greater than 10000", async function () {
+            await expect(
+                ccExchangeRouter.setProtocolPercentageFee(10001)
+            ).to.revertedWith("CCExchangeRouter: fee is out of range");
+        })
+
+        it("Sets relay, lockers, instant router, teleBTC and treasury", async function () {
+            await expect(
+                ccExchangeRouter.setRelay(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await ccExchangeRouter.relay()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                ccExchangeRouter.setLockers(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await ccExchangeRouter.lockers()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                ccExchangeRouter.setInstantRouter(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await ccExchangeRouter.instantRouter()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                ccExchangeRouter.setTeleBTC(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await ccExchangeRouter.teleBTC()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                ccExchangeRouter.setTreasury(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await ccExchangeRouter.treasury()
+            ).to.equal(ONE_ADDRESS);
+
+        })
+
+        it("Reverts since given address is zero", async function () {
+            await expect(
+                ccExchangeRouter.setRelay(ZERO_ADDRESS)
+            ).to.revertedWith("CCExchangeRouter: address is zero");
+
+            await expect(
+                ccExchangeRouter.setLockers(ZERO_ADDRESS)
+            ).to.revertedWith("CCExchangeRouter: address is zero");
+
+            await expect(
+                ccExchangeRouter.setInstantRouter(ZERO_ADDRESS)
+            ).to.revertedWith("CCExchangeRouter: address is zero");
+
+            await expect(
+                ccExchangeRouter.setTeleBTC(ZERO_ADDRESS)
+            ).to.revertedWith("CCExchangeRouter: address is zero");
+
+            await expect(
+                ccExchangeRouter.setTreasury(ZERO_ADDRESS)
+            ).to.revertedWith("CCExchangeRouter: address is zero");
         })
 
     });

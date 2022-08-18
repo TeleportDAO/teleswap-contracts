@@ -175,29 +175,22 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             "CCExchangeRouter: transaction has not been finalized yet"
         );
 
-        // Normal cc exchange request
         if (ccExchangeRequests[txId].speed == 0) {
-            require(
-                _normalCCExchange(_lockerScriptHash, txId),
-                "CCExchangeRouter: normal cc exchange was not successful"
-            );
-            return true;
+            // Normal cc exchange request
+            _normalCCExchange(_lockerScriptHash, txId);
         } else {
             // Pay back instant loan (ccExchangeRequests[txId].speed == 1)
-            require(
-                _payBackInstantLoan(_lockerScriptHash, txId),
-                "CCExchangeRouter: paying back instant loan was not successful"
-            );
-            return true;
+            _payBackInstantLoan(_lockerScriptHash, txId);
         }
+
+        return true;
     }
 
     /// @notice                          Executes a normal cross-chain exchange request
     /// @dev                             Mints teleBTC for user if exchanging is not successful
     /// @param _lockerScriptHash         Locker's script hash    
     /// @param _txId                     Id of the transaction containing the user request
-    /// @return                          True if exchanging is successful
-    function _normalCCExchange(address _lockerScriptHash, bytes32 _txId) private returns (bool) {
+    function _normalCCExchange(address _lockerScriptHash, bytes32 _txId) private {
         // Gets remained amount after reducing fees
         uint remainedInputAmount = _mintAndReduceFees(_lockerScriptHash, _txId);
 
@@ -264,16 +257,13 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
                 remainedInputAmount
             );
         }
-
-        return true;
     }
 
     /// @notice                        Executes an instant cross-chain exchange request
     /// @dev                           Mints teleBTC for instant router to pay back loan
     /// @param _lockerScriptHash       Locker's script hash
     /// @param _txId                   Id of the transaction containing the user request
-    /// @return                        True if paying back loan is successful
-    function _payBackInstantLoan(address _lockerScriptHash, bytes32 _txId) private returns (bool) {
+    function _payBackInstantLoan(address _lockerScriptHash, bytes32 _txId) private {
         // Gets remained amount after reducing fees
         uint remainedAmount = _mintAndReduceFees(_lockerScriptHash, _txId);
 
@@ -288,8 +278,6 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             ccExchangeRequests[_txId].recipientAddress,
             remainedAmount
         );
-
-        return true;
     }
 
     /// @notice                             Parses and saves the request
@@ -322,10 +310,6 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         request.appId = TxHelper.parseAppId(arbitraryData);
         
         address exchangeToken = TxHelper.parseExchangeToken(arbitraryData);
-        // require(
-        //     exchangeToken != address(0), 
-        //     "CCExchangeRouter: no exchange token"
-        // );
         request.outputAmount = TxHelper.parseExchangeOutputAmount(arbitraryData);
 
         if (TxHelper.parseIsFixedToken(arbitraryData) == 0) {
