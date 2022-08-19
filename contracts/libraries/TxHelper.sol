@@ -74,19 +74,30 @@ library TxHelper {
                 keccak256(abi.encodePacked(scriptPubkey.clone())) == keccak256(abi.encodePacked(_lockingScript))
             ) {
                 bitcoinAmount = ViewBTC.value(output);
+                break;
             }
         }
     }
 
-    function isScriptMatchedWithLockingScript(
-        bytes memory _lockerLockingScript,
-        bytes memory _lockerScript
-    ) internal view returns (bool) {
-        // Finds hash of locker script
-        address lockerScriptHash = _doubleHash(_lockerScript);
+    function getLockingScript(
+        bytes memory _vout, 
+        uint _index
+    ) internal view returns (bytes memory _lockingScript) {
+        bytes29 vout = _vout.ref(0).tryAsVout();
+        bytes29 output = ViewBTC.indexVout(vout, _index);
+        bytes29 _lockingScriptBytes29 = ViewBTC.scriptPubkey(output);
+        _lockingScript = _lockingScriptBytes29.clone();
+    }
 
-        // Checks that hash is part of locking script
-        return true;
+    function extractOutpoint(
+        bytes memory _vin, 
+        uint _index
+    ) internal view returns (bytes32 _txId, uint _outputIndex) {
+        bytes29 vin = _vin.ref(0).tryAsVin();
+        bytes29 input = ViewBTC.indexVin(vin, _index);
+        bytes29 outpoint = ViewBTC.outpoint(input);
+        _txId = revertBytes32(ViewBTC.txidLE(outpoint)); // TxId is in BE form
+        _outputIndex = ViewBTC.outpointIdx(outpoint);
     }
 
     // Bitcoin double hash function

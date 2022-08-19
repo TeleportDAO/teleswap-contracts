@@ -819,39 +819,39 @@ describe("CCBurnRouter", async () => {
 
     describe("#disputeLocker", async () => {
 
-        it("Dispute the locker who has spent its BTC (without getting a burn request)", async function () {
+        // it("Dispute the locker who has spent its BTC (without getting a burn request)", async function () {
 
-            let thisBlockNumber = await signer1.provider?.getBlockNumber()
-            let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
+        //     let thisBlockNumber = await signer1.provider?.getBlockNumber()
+        //     let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
 
-            // Find the locker target address
-            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
-            let lockerTargetAddress = ONE_ADDRESS
+        //     // Find the locker target address
+        //     // let lockerTargetAddress = await mockLockers.redeemScriptHash();
+        //     let lockerTargetAddress = ONE_ADDRESS
 
-            let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
+        //     let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
 
-            // Set mock contracts outputs
-            await setRelayCheckTxProofReturn(true);
-            await setLockersIsLockerReturn(true);
-            await setLockersGetLockerRedeemScriptReturn(lockerRedeemScript);
-            await setRelayLastSubmittedHeightReturn(theBlockNumber.add(30));
-            await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
-            await setLockersSlashLockerReturn();
+        //     // Set mock contracts outputs
+        //     await setRelayCheckTxProofReturn(true);
+        //     await setLockersIsLockerReturn(true);
+        //     await setLockersGetLockerRedeemScriptReturn(lockerRedeemScript);
+        //     await setRelayLastSubmittedHeightReturn(theBlockNumber.add(30));
+        //     await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
+        //     await setLockersSlashLockerReturn();
 
-            await expect(
-                ccBurnRouterSigner2.disputeLocker(
-                    LOCKER1_LOCKING_SCRIPT,
-                    LOCKER1_REDEEM_SCRIPT,
-                    0,
-                    btcLockerVersion,
-                    btcLockerVin,
-                    btcLockerVout,
-                    btcLockerLocktime,
-                    theBlockNumber,
-                    btcLockerInterMediateNodes,
-                    1
-                )
-            ).to.emit(ccBurnRouter, "LockerDispute")
-        })
+        //     await expect(
+        //         ccBurnRouterSigner2.disputeLocker(
+        //             LOCKER1_LOCKING_SCRIPT,
+        //             LOCKER1_REDEEM_SCRIPT,
+        //             0,
+        //             btcLockerVersion,
+        //             btcLockerVin,
+        //             btcLockerVout,
+        //             btcLockerLocktime,
+        //             theBlockNumber,
+        //             btcLockerInterMediateNodes,
+        //             1
+        //         )
+        //     ).to.emit(ccBurnRouter, "LockerDispute")
+        // })
     });
 });
