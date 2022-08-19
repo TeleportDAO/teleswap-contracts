@@ -130,6 +130,7 @@ interface ICCBurnRouter {
 
 	function disputeLocker(
 		bytes memory _lockerLockingScript,
+		bytes memory _lockerScript,
         uint _inputIndex,
 		bytes4 _version,
 		bytes memory _vin,

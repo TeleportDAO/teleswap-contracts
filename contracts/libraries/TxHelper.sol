@@ -78,6 +78,24 @@ library TxHelper {
         }
     }
 
+    function isScriptMatchedWithLockingScript(
+        bytes memory _lockerLockingScript,
+        bytes memory _lockerScript
+    ) internal view returns (bool) {
+        // Finds hash of locker script
+        address lockerScriptHash = _doubleHash(_lockerScript);
+
+        // Checks that hash is part of locking script
+        return true;
+    }
+
+    // Bitcoin double hash function
+    function _doubleHash(bytes memory input) internal pure returns(address) {
+        bytes32 inputHash1 = sha256(input);
+        bytes20 inputHash2 = ripemd160(abi.encodePacked(inputHash1));
+        return address(inputHash2);
+    }
+
     function parseTotalValue(bytes memory vout) internal pure returns (uint64) {
         bytes29 voutView = vout.ref(0).tryAsVout();
         bytes29 output;

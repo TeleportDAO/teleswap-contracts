@@ -565,13 +565,6 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         return remainedAmount;
     }
 
-    // bitcoin double hash function
-    function _doubleHash(bytes memory input) internal pure returns(address) {
-        bytes32 inputHash1 = sha256(input);
-        bytes20 inputHash2 = ripemd160(abi.encodePacked(inputHash1));
-        return address(inputHash2);
-    }
-
     /**
      * @dev Check if an account is minter.
      * @return bool

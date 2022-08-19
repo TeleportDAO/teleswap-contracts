@@ -297,6 +297,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @return                                 True if dispute is successfull
     function disputeLocker(
         bytes memory _lockerLockingScript,
+        bytes memory _lockerScript,
         uint _inputIndex,
         bytes4 _version,
         bytes memory _vin,
@@ -310,6 +311,11 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         require(
             ILockers(lockers).isLocker(_lockerLockingScript),
             "CCBurnRouter: given locking script is not locker"
+        );
+
+        require(
+            TxHelper.isScriptMatchedWithLockingScript(_lockerLockingScript, _lockerScript),
+            "CCBurnRouter: script doesn't belong to locking script"
         );
 
         // Checks if the provided transaction is valid:
@@ -326,12 +332,9 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         );
 
         // 2. Check if the transaction belongs to the locker
-        // First get the target address of the locker from its Bitcoin address
-        address _lockerTargetAddress = ILockers(lockers)
-        .getLockerTargetAddress(_lockerLockingScript);
 
         require(
-            _isTxFromLocker(_vin, _inputIndex, _lockerLockingScript),
+            _isTxFromLocker(_vin, _inputIndex, _lockerScript),
             "CCBurnRouter: transaction doesn't belong to locker"
         );
 
@@ -351,6 +354,11 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint totalValue = TxHelper.parseTotalValue(_vout);
 
         // Slashes locker
+
+        // Gets the target address of the locker from its Bitcoin address
+        address _lockerTargetAddress = ILockers(lockers)
+        .getLockerTargetAddress(_lockerLockingScript);
+
         ILockers(lockers).slashLocker(
             _lockerTargetAddress,
             totalValue*slasherPercentageReward/100, // Slasher reward
@@ -368,6 +376,54 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         return true;
     }
+
+    // function newDisputeLocker(
+    //     bytes memory _lockerLockingScript,
+    //     bytes4[] memory _versions, // [inputTxVersion, outputTxVersion]
+    //     bytes memory _inputVin,
+    //     bytes memory _inputVout,
+    //     bytes memory _outputVin,
+    //     bytes memory _outputVout,
+    //     bytes4[] memory _locktimes, // [inputTxLocktime, outputTxLocktime]
+    //     bytes memory _inputIntermediateNodes,
+    //     bytes memory _outputIntermediateNodes,
+    //     uint[] memory _indexesAndBlockNumbers // [inputIndex, inputTxIndex, outputTxIndex, inputTxBlockNumber, outputTxBlockNumber]
+    // ) external payable nonReentrant returns (bool) {
+
+    //     // Checks if the locker address is valid
+    //     require(
+    //         ILockers(lockers).isLocker(_lockerLockingScript),
+    //         "CCBurnRouter: given locking script is not locker"
+    //     );
+
+    //     require(
+    //         _isConfirmed(
+    //             _calculateTxId(_versions[0], _inputVin, _inputVin, _locktimes[0]),
+    //             _indexesAndBlockNumbers[3],
+    //             _inputIntermediateNodes,
+    //             _indexesAndBlockNumbers[1]
+    //         ),
+    //         "CCBurnRouter: input transaction is not finalized"
+    //     );
+
+    //     require(
+    //         _isConfirmed(
+    //             _calculateTxId(_versions[1], _inputVin, _inputVin, _locktimes[1]),
+    //             _indexesAndBlockNumbers[4],
+    //             _inputIntermediateNodes,
+    //             _indexesAndBlockNumbers[2]
+    //         ),
+    //         "CCBurnRouter: output transaction is not finalized"
+    //     );
+
+    //     // Extracts txId and index from tx input
+
+    //     // Checks that txId == outputTx
+
+    //     // Checks that index of txId has been sent non-zero value to 
+
+    //     return true;
+    // }
 
     /// @notice                             Checks the burn requests that get paid by this transaction
     /// @dev                                Counts the number of outputs that are paying a burn request

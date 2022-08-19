@@ -45,6 +45,8 @@ describe("CCBurnRouter", async () => {
     let BITCOIN_FEE = 10000 // estimation of Bitcoin transaction fee in Satoshi
 
     let lockerScriptHash = "0x4062c8aeed4f81c2d73ff854a2957021191e20b6";
+    let LOCKER1_LOCKING_SCRIPT = '0xa914748284390f9e263a4b766a75d0633c50426eb87587';
+    let LOCKER1_REDEEM_SCRIPT = '0x5121022afc20bf379bc96a2f4e9e63ffceb8652b2b6a097f63fbee6ecec2a49a48010e2103a767c7221e9f15f870f1ad9311f5ab937d79fcaeee15bb2c722bca515581b4c052ae';
 
     let btcPublicKey = "03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd"
     let btcAddress = "mmPPsxXdtqgHFrxZdtFCtkwhHynGTiTsVh"
@@ -148,7 +150,7 @@ describe("CCBurnRouter", async () => {
     }
 
     async function setLockersGetLockerRedeemScriptReturn(lockerRedeemScript: string): Promise<void> {
-        await mockLockers.mock.getLockerRedeemScript
+        await mockLockers.mock.getLockerLockingScript
             .returns(lockerRedeemScript);
     }
 
@@ -838,7 +840,8 @@ describe("CCBurnRouter", async () => {
 
             await expect(
                 ccBurnRouterSigner2.disputeLocker(
-                    lockerTargetAddress,
+                    LOCKER1_LOCKING_SCRIPT,
+                    LOCKER1_REDEEM_SCRIPT,
                     0,
                     btcLockerVersion,
                     btcLockerVin,
