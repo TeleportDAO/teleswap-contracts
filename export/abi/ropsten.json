@@ -3,7 +3,7 @@
   "chainId": "3",
   "contracts": {
     "BitcoinRelay": {
-      "address": "0x8ed36B08134B84698C898f0A4314905e1cA7aE1d",
+      "address": "0x710bFb9AF7A8775b1f594b5D08b74D2fc7a93725",
       "abi": [
         {
           "inputs": [
@@ -725,7 +725,7 @@
       ]
     },
     "ERC20": {
-      "address": "0x9FBe0bBB83d1f131e2B9F29BC61FF56129A2c74b",
+      "address": "0xd7F0E220EC7Ab0FF89EfA2dAcaC68A43264904EF",
       "abi": [
         {
           "inputs": [
@@ -1021,7 +1021,7 @@
       ]
     },
     "ERC20AsDot": {
-      "address": "0x61E5e87CA7cD24B2A987af45c244C256cf1cc405",
+      "address": "0xE131f4989bB2F7e5895694ED6Ab49b26B6Ecb292",
       "abi": [
         {
           "inputs": [
@@ -1317,7 +1317,7 @@
       ]
     },
     "ERC20AsLink": {
-      "address": "0x687b172572fb97fCff7B4AdD50a0c82DB8C52448",
+      "address": "0x4b7cD3328CBeF002b756756347dC1bf30d1c53F6",
       "abi": [
         {
           "inputs": [
@@ -1613,7 +1613,7 @@
       ]
     },
     "LockersLogic": {
-      "address": "0xAB649ed4904e46787534942A8846656368AaaED4",
+      "address": "0x6975e78d05B10a16F852202aE8BF7De542fD8cF0",
       "abi": [
         {
           "anonymous": false,
@@ -1640,7 +1640,7 @@
             {
               "indexed": false,
               "internalType": "bytes",
-              "name": "lockerRedeemScript",
+              "name": "lockerLockingScript",
               "type": "bytes"
             },
             {
@@ -1657,9 +1657,9 @@
             },
             {
               "indexed": false,
-              "internalType": "bool",
-              "name": "isScriptHash",
-              "type": "bool"
+              "internalType": "uint256",
+              "name": "addingTime",
+              "type": "uint256"
             }
           ],
           "name": "LockerAdded",
@@ -1677,7 +1677,7 @@
             {
               "indexed": false,
               "internalType": "bytes",
-              "name": "lockerRedeemScript",
+              "name": "lockerLockingScript",
               "type": "bytes"
             },
             {
@@ -1759,7 +1759,7 @@
             {
               "indexed": false,
               "internalType": "bytes",
-              "name": "lockerRedeemScript",
+              "name": "lockerLockingScript",
               "type": "bytes"
             },
             {
@@ -1773,12 +1773,6 @@
               "internalType": "uint256",
               "name": "nativeTokenLockedAmount",
               "type": "uint256"
-            },
-            {
-              "indexed": true,
-              "internalType": "bool",
-              "name": "isScriptHash",
-              "type": "bool"
             }
           ],
           "name": "RequestAddLocker",
@@ -1796,7 +1790,7 @@
             {
               "indexed": false,
               "internalType": "bytes",
-              "name": "lockerRedeemScript",
+              "name": "lockerLockingScript",
               "type": "bytes"
             },
             {
@@ -1908,9 +1902,9 @@
         {
           "inputs": [
             {
-              "internalType": "address",
-              "name": "_lockerScriptHash",
-              "type": "address"
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
             },
             {
               "internalType": "uint256",
@@ -1995,7 +1989,7 @@
               "type": "address"
             }
           ],
-          "name": "getLockerRedeemScript",
+          "name": "getLockerLockingScript",
           "outputs": [
             {
               "internalType": "bytes",
@@ -2009,9 +2003,9 @@
         {
           "inputs": [
             {
-              "internalType": "address",
-              "name": "_lockerScriptHash",
-              "type": "address"
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
             }
           ],
           "name": "getLockerTargetAddress",
@@ -2060,9 +2054,9 @@
         {
           "inputs": [
             {
-              "internalType": "address",
-              "name": "_lockerScriptHash",
-              "type": "address"
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
             }
           ],
           "name": "isLocker",
@@ -2167,9 +2161,9 @@
         {
           "inputs": [
             {
-              "internalType": "address",
+              "internalType": "bytes",
               "name": "",
-              "type": "address"
+              "type": "bytes"
             }
           ],
           "name": "lockerTargetAddress",
@@ -2208,13 +2202,8 @@
           "outputs": [
             {
               "internalType": "bytes",
-              "name": "lockerRedeemScript",
+              "name": "lockerLockingScript",
               "type": "bytes"
-            },
-            {
-              "internalType": "address",
-              "name": "lockerScriptHash",
-              "type": "address"
             },
             {
               "internalType": "uint256",
@@ -2284,9 +2273,9 @@
         {
           "inputs": [
             {
-              "internalType": "address",
-              "name": "_lockerScriptHash",
-              "type": "address"
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
             },
             {
               "internalType": "address",
@@ -2412,13 +2401,8 @@
           "inputs": [
             {
               "internalType": "bytes",
-              "name": "_candidateRedeemScript",
+              "name": "_candidateLockingScript",
               "type": "bytes"
-            },
-            {
-              "internalType": "address",
-              "name": "_candidateScriptHash",
-              "type": "address"
             },
             {
               "internalType": "uint256",
@@ -2673,7 +2657,7 @@
       ]
     },
     "LockersProxy": {
-      "address": "0x6c89ca66B217cA2eA87AB118De25D54013d4c891",
+      "address": "0x1eFfd99c2B6567a4886C5942608AA1343d2FA102",
       "abi": [
         {
           "inputs": [
@@ -2928,9 +2912,9 @@
         {
           "inputs": [
             {
-              "internalType": "address",
+              "internalType": "bytes",
               "name": "",
-              "type": "address"
+              "type": "bytes"
             }
           ],
           "name": "lockerTargetAddress",
@@ -2969,13 +2953,8 @@
           "outputs": [
             {
               "internalType": "bytes",
-              "name": "lockerRedeemScript",
+              "name": "lockerLockingScript",
               "type": "bytes"
-            },
-            {
-              "internalType": "address",
-              "name": "lockerScriptHash",
-              "type": "address"
             },
             {
               "internalType": "uint256",
@@ -3160,7 +3139,7 @@
       ]
     },
     "PriceOracle": {
-      "address": "0x1562A83dB2d6A7DAf652EbD8dD497DE4e68E6717",
+      "address": "0x0280F676DbCAD652EC3e3672E9EB824ec3A521fF",
       "abi": [
         {
           "inputs": [
@@ -3565,7 +3544,7 @@
       ]
     },
     "TeleBTC": {
-      "address": "0xE9B3d12D7254Bb86DF10c2f03C98ee4B17598abc",
+      "address": "0x54e0DC67bE95D07460FCD82Cf97f88300046775a",
       "abi": [
         {
           "inputs": [
@@ -4086,7 +4065,7 @@
       ]
     },
     "UniswapV2Connector": {
-      "address": "0x755B9A6f41625fD0E488669EcFaE1ce63ee1aF2d",
+      "address": "0x75141817aE14C2d8b8e488e6156bE40E2652cd95",
       "abi": [
         {
           "inputs": [
@@ -4391,7 +4370,7 @@
       ]
     },
     "UniswapV2Factory": {
-      "address": "0xa61eBf7FCD82E6dDAeC0Baa28ee851EBf7E8FE7b",
+      "address": "0x3CA42A7395A82f787295a649f3f78d895bAD3473",
       "abi": [
         {
           "inputs": [
@@ -4587,7 +4566,7 @@
       ]
     },
     "UniswapV2Router02": {
-      "address": "0xDFd804bF041C63b35AaaEb9EeC68fB90FcC7b703",
+      "address": "0x457AF167f28E57AaFEC0070089E801Daeab8d46b",
       "abi": [
         {
           "inputs": [
@@ -5563,7 +5542,7 @@
       ]
     },
     "WETH": {
-      "address": "0xcABd1BefD97fF1D2Dc4a0355df6138Aa74E8A8BF",
+      "address": "0x247Cd15A706D567E0543C55E67a30E4A6814e3D0",
       "abi": [
         {
           "inputs": [
@@ -5874,7 +5853,7 @@
       ]
     },
     "CCTransferRouter": {
-      "address": "0xA2A74ea64Bed2974b16FDbAd365E884D9F7781E3",
+      "address": "0x3cDDf0da7DF85d41B6476f2098f7DAF37591Bb65",
       "abi": [
         {
           "inputs": [
@@ -6035,9 +6014,9 @@
               "type": "uint256"
             },
             {
-              "internalType": "address",
-              "name": "_lockerScriptHash",
-              "type": "address"
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
             }
           ],
           "name": "ccTransfer",
@@ -6327,7 +6306,7 @@
       ]
     },
     "CCBurnRouter": {
-      "address": "0xdaa95209fd0bbF839A1F2B02b279E53492C58937",
+      "address": "0x1caC8e4a5e51b77C7cC3b77eD3eDaD0EefFD6B62",
       "abi": [
         {
           "inputs": [
@@ -6381,21 +6360,9 @@
             },
             {
               "indexed": false,
-              "internalType": "address",
-              "name": "userPubKeyHash",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "bool",
-              "name": "isScriptHash",
-              "type": "bool"
-            },
-            {
-              "indexed": false,
-              "internalType": "bool",
-              "name": "isSegwit",
-              "type": "bool"
+              "internalType": "bytes",
+              "name": "userLockingScript",
+              "type": "bytes"
             },
             {
               "indexed": false,
@@ -6406,7 +6373,7 @@
             {
               "indexed": false,
               "internalType": "uint256",
-              "name": "remainedAmount",
+              "name": "burntAmount",
               "type": "uint256"
             },
             {
@@ -6486,14 +6453,14 @@
             },
             {
               "indexed": false,
-              "internalType": "address",
-              "name": "userPubKeyHash",
-              "type": "address"
+              "internalType": "bytes",
+              "name": "userLockingScript",
+              "type": "bytes"
             },
             {
               "indexed": false,
               "internalType": "uint256",
-              "name": "remainedAmount",
+              "name": "burntAmount",
               "type": "uint256"
             },
             {
@@ -6563,9 +6530,9 @@
               "type": "uint256"
             },
             {
-              "internalType": "address",
-              "name": "_lockerScriptHash",
-              "type": "address"
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
             },
             {
               "internalType": "uint256",
@@ -6611,7 +6578,7 @@
             },
             {
               "internalType": "uint256",
-              "name": "remainedAmount",
+              "name": "burntAmount",
               "type": "uint256"
             },
             {
@@ -6620,19 +6587,9 @@
               "type": "address"
             },
             {
-              "internalType": "address",
-              "name": "userPubKeyHash",
-              "type": "address"
-            },
-            {
-              "internalType": "bool",
-              "name": "isScriptHash",
-              "type": "bool"
-            },
-            {
-              "internalType": "bool",
-              "name": "isSegwit",
-              "type": "bool"
+              "internalType": "bytes",
+              "name": "userLockingScript",
+              "type": "bytes"
             },
             {
               "internalType": "uint256",
@@ -6656,24 +6613,14 @@
               "type": "uint256"
             },
             {
-              "internalType": "address",
-              "name": "_userPubKeyHash",
-              "type": "address"
+              "internalType": "bytes",
+              "name": "_userLockingScript",
+              "type": "bytes"
             },
             {
-              "internalType": "bool",
-              "name": "_isScriptHash",
-              "type": "bool"
-            },
-            {
-              "internalType": "bool",
-              "name": "_isSegwit",
-              "type": "bool"
-            },
-            {
-              "internalType": "address",
-              "name": "_lockerScriptHash",
-              "type": "address"
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
             }
           ],
           "name": "ccBurn",
@@ -6690,9 +6637,9 @@
         {
           "inputs": [
             {
-              "internalType": "address",
-              "name": "_lockerScriptHash",
-              "type": "address"
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
             },
             {
               "internalType": "uint256[]",
@@ -6714,9 +6661,14 @@
         {
           "inputs": [
             {
-              "internalType": "address",
-              "name": "_lockerScriptHash",
-              "type": "address"
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_lockerScript",
+              "type": "bytes"
             },
             {
               "internalType": "uint256",
@@ -7025,7 +6977,7 @@
       ]
     },
     "CCExchangeRouter": {
-      "address": "0xF143323f34E5C28826C7646aBFCD8eDACCc07711",
+      "address": "0x03ef67AC5176E3C330aEb14F65D9372e52161A2F",
       "abi": [
         {
           "inputs": [
@@ -7218,9 +7170,9 @@
               "type": "uint256"
             },
             {
-              "internalType": "address",
-              "name": "_lockerScriptHash",
-              "type": "address"
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
             }
           ],
           "name": "ccExchange",
@@ -7508,7 +7460,7 @@
       ]
     },
     "CollateralPoolFactory": {
-      "address": "0xBc6aCDe2c0E9BC472f4e0808Af5cCf62698a7a8C",
+      "address": "0x8A062C6D5a59918a4a21A14602aC6fd03760Ad29",
       "abi": [
         {
           "inputs": [
@@ -7770,7 +7722,7 @@
       ]
     },
     "InstantRouter": {
-      "address": "0x2a19eb9146DB64dc8cbCdD8Ff77cFB3204118362",
+      "address": "0x0618D164B7ab796Be9A3E6bB2D42182aD2DFeE8c",
       "abi": [
         {
           "inputs": [
@@ -8416,7 +8368,7 @@
       ]
     },
     "InstantPool": {
-      "address": "0xF8FDBD920C430C018d43Cf4F83d152da229462A2",
+      "address": "0x4F5FfB0b5330deAD061f4c4Dc183ae4119eAa29f",
       "abi": [
         {
           "inputs": [

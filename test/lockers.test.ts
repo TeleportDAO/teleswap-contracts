@@ -193,7 +193,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.requestToBecomeLocker(
-                    TELEPORTER1,
+                    // TELEPORTER1,
                     TELEPORTER1_PublicKeyHash,
                     minRequiredTDTLockedAmount.sub(1),
                     minRequiredNativeTokenLockedAmount,
@@ -207,7 +207,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.requestToBecomeLocker(
-                    TELEPORTER1,
+                    // TELEPORTER1,
                     TELEPORTER1_PublicKeyHash,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
@@ -228,7 +228,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.requestToBecomeLocker(
-                    TELEPORTER1,
+                    // TELEPORTER1,
                     TELEPORTER1_PublicKeyHash,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
@@ -265,7 +265,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                TELEPORTER1,
+                // TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
@@ -303,7 +303,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                TELEPORTER1,
+                // TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
@@ -325,7 +325,7 @@ describe("Lockers", async () => {
             let theLockerMapping = await lockers.lockersMapping(signer1Address)
             expect(
                 theLockerMapping[0]
-            ).to.equal(TELEPORTER1)
+            ).to.equal(TELEPORTER1_PublicKeyHash)
         })
 
     });
@@ -351,7 +351,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                TELEPORTER1,
+                // TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
@@ -388,7 +388,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                TELEPORTER1,
+                // TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
@@ -413,7 +413,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                TELEPORTER1,
+                // TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
@@ -493,7 +493,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                TELEPORTER1,
+                // TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
@@ -542,7 +542,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                TELEPORTER1,
+                // TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
@@ -563,7 +563,7 @@ describe("Lockers", async () => {
             let theLockerMapping = await lockers.lockersMapping(signer1Address);
 
             expect(
-                theLockerMapping[4]
+                theLockerMapping[3]
             ).to.equal(1000);
 
             // Checks that enough teleBTC has been minted for user
@@ -589,7 +589,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                TELEPORTER1,
+                // TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
@@ -634,7 +634,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                TELEPORTER1,
+                // TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
@@ -653,7 +653,7 @@ describe("Lockers", async () => {
             let theLockerMapping = await lockers.lockersMapping(signer1Address);
 
             expect(
-                theLockerMapping[4]
+                theLockerMapping[3]
             ).to.equal(1000);
 
             let teleBTCSigner2 = teleBTC.connect(signer2)
@@ -670,7 +670,7 @@ describe("Lockers", async () => {
             theLockerMapping = await lockers.lockersMapping(signer1Address);
 
             expect(
-                theLockerMapping[4]
+                theLockerMapping[3]
             ).to.equal(1000 - amount + lockerFee);
 
 
@@ -701,7 +701,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                TELEPORTER1,
+                // TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
@@ -735,7 +735,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                TELEPORTER1,
+                // TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
@@ -771,7 +771,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                TELEPORTER1,
+                // TELEPORTER1,
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,

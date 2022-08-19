@@ -76,7 +76,7 @@ describe("CCTransferRouter", async () => {
             deployer,
             bitcoinRelayContract.abi
         );
-        
+
         // Mocks price oracle contract
         const priceOracleContract = await deployments.getArtifact(
             "IPriceOracle"
@@ -121,12 +121,12 @@ describe("CCTransferRouter", async () => {
 
         // Set teleBTC address in ccTransferRouter
         await ccTransferRouter.setTeleBTC(teleBTC.address);
-        
+
         // Deploys lockers contract
         lockers = await deployLockers();
         await lockers.setTeleBTC(teleBTC.address)
         await lockers.addMinter(ccTransferRouter.address)
-        
+
         // Adds lockers contract as minter and burner in teleBTC
         await teleBTC.addMinter(lockers.address)
         await teleBTC.addBurner(lockers.address)
@@ -144,7 +144,7 @@ describe("CCTransferRouter", async () => {
             _signer || deployer
         );
         const lockersLogic = await lockersLogicFactory.deploy();
-        
+
         // Deploys lockers proxy
         const lockersProxyFactory = new LockersProxy__factory(
             _signer || deployer
@@ -152,7 +152,7 @@ describe("CCTransferRouter", async () => {
         const lockersProxy = await lockersProxyFactory.deploy(
             lockersLogic.address
         )
-        
+
         // Initializes lockers proxy
         await lockersProxy.initialize(
             teleportDAOToken.address,
@@ -210,18 +210,18 @@ describe("CCTransferRouter", async () => {
             minRequiredNativeTokenLockedAmount,
             {value: minRequiredNativeTokenLockedAmount}
         )
-        
+
         // Deployer (owner of lockers) adds locker to lockers
         await lockers.addLocker(lockerAddress)
     }
 
     async function checkFees(
         recipientAddress: string,
-        receivedAmount: number, 
-        teleporterFee: number, 
-        protocolFee: number, 
-        lockerFee: number, 
-        prevSupply: number, 
+        receivedAmount: number,
+        teleporterFee: number,
+        protocolFee: number,
+        lockerFee: number,
+        prevSupply: number,
         bitcoinAmount: number
     ): Promise<void> {
         // Checks that enough teleBTC has been minted for user
@@ -256,7 +256,7 @@ describe("CCTransferRouter", async () => {
             beginning = await takeSnapshot(signer1.provider);
             await addLockerToLockers();
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, beginning);
         });
@@ -276,7 +276,7 @@ describe("CCTransferRouter", async () => {
             let protocolFee = Math.floor(
                 CC_REQUESTS.normalCCTransfer.bitcoinAmount*PROTOCOL_PERCENTAGE_FEE/10000
             );
-            
+
             // Calculates amount that user should have received
             let receivedAmount = CC_REQUESTS.normalCCTransfer.bitcoinAmount - lockerFee - teleporterFee - protocolFee;
 
@@ -303,25 +303,25 @@ describe("CCTransferRouter", async () => {
 
             await checkFees(
                 CC_REQUESTS.normalCCTransfer.recipientAddress,
-                receivedAmount, 
-                teleporterFee, 
-                protocolFee, 
-                lockerFee, 
-                prevSupply.toNumber(), 
+                receivedAmount,
+                teleporterFee,
+                protocolFee,
+                lockerFee,
+                prevSupply.toNumber(),
                 CC_REQUESTS.normalCCTransfer.bitcoinAmount
             );
         })
 
         it("Mints teleBTC for normal cc transfer request (relay fee is non-zero)", async function () {
             let prevSupply = await teleBTC.totalSupply();
-            
+
             let relayFee = 1;
             let msgValue = 1;
 
             // Mocks relay to return true after checking tx proof
             await setRelayReturn(true);
             // Sets fee of using relay
-            await mockBitcoinRelay.mock.getBlockHeaderFee.returns(relayFee); 
+            await mockBitcoinRelay.mock.getBlockHeaderFee.returns(relayFee);
 
             // Calculates fees
             let lockerFee = Math.floor(
@@ -333,10 +333,10 @@ describe("CCTransferRouter", async () => {
             let protocolFee = Math.floor(
                 CC_REQUESTS.normalCCTransfer.bitcoinAmount*PROTOCOL_PERCENTAGE_FEE/10000
             );
-            
+
             // Calculates amount that user should have received
             let receivedAmount = CC_REQUESTS.normalCCTransfer.bitcoinAmount - lockerFee - teleporterFee - protocolFee;
-            
+
             // Gets deployer ETH balance before sending request
             let prevETHBalance = await deployer.getBalance();
 
@@ -368,24 +368,24 @@ describe("CCTransferRouter", async () => {
             // Finds tx cost
             const receipt = await tx.wait();
             const txCost = receipt.cumulativeGasUsed.mul(receipt.effectiveGasPrice);
-            
-             // Gets deployer ETH balance after sending request
+
+            // Gets deployer ETH balance after sending request
             let newETHBalance = await deployer.getBalance();
 
             expect(
                 newETHBalance
             ).to.equal(
-                prevETHBalance.sub(txCost).sub(relayFee), 
+                prevETHBalance.sub(txCost).sub(relayFee),
                 "Wrong ETH balance"
             );
 
             await checkFees(
                 CC_REQUESTS.normalCCTransfer.recipientAddress,
-                receivedAmount, 
-                teleporterFee, 
-                protocolFee, 
-                lockerFee, 
-                prevSupply.toNumber(), 
+                receivedAmount,
+                teleporterFee,
+                protocolFee,
+                lockerFee,
+                prevSupply.toNumber(),
                 CC_REQUESTS.normalCCTransfer.bitcoinAmount
             );
         })
@@ -405,7 +405,7 @@ describe("CCTransferRouter", async () => {
             let protocolFee = Math.floor(
                 CC_REQUESTS.normalCCTransfer_zeroFee.bitcoinAmount*PROTOCOL_PERCENTAGE_FEE/10000
             );
-            
+
             // Calculates amount that user should have received
             let receivedAmount = CC_REQUESTS.normalCCTransfer_zeroFee.bitcoinAmount - lockerFee - teleporterFee - protocolFee;
 
@@ -432,18 +432,18 @@ describe("CCTransferRouter", async () => {
 
             await checkFees(
                 CC_REQUESTS.normalCCTransfer_zeroFee.recipientAddress,
-                receivedAmount, 
-                teleporterFee, 
-                protocolFee, 
-                lockerFee, 
-                prevSupply.toNumber(), 
+                receivedAmount,
+                teleporterFee,
+                protocolFee,
+                lockerFee,
+                prevSupply.toNumber(),
                 CC_REQUESTS.normalCCTransfer_zeroFee.bitcoinAmount
             );
         })
 
         it("Mints teleBTC for normal cc transfer request (zero protocol fee)", async function () {
             let prevSupply = await teleBTC.totalSupply();
-            
+
             // Sets protocol fee
             await ccTransferRouter.setProtocolPercentageFee(0);
 
@@ -458,7 +458,7 @@ describe("CCTransferRouter", async () => {
                 CC_REQUESTS.normalCCTransfer.bitcoinAmount*CC_REQUESTS.normalCCTransfer.teleporterFee/10000
             );
             let protocolFee = 0;
-            
+
             // Calculates amount that user should have received
             let receivedAmount = CC_REQUESTS.normalCCTransfer.bitcoinAmount - lockerFee - teleporterFee - protocolFee;
 
@@ -485,11 +485,11 @@ describe("CCTransferRouter", async () => {
 
             await checkFees(
                 CC_REQUESTS.normalCCTransfer.recipientAddress,
-                receivedAmount, 
-                teleporterFee, 
-                protocolFee, 
-                lockerFee, 
-                prevSupply.toNumber(), 
+                receivedAmount,
+                teleporterFee,
+                protocolFee,
+                lockerFee,
+                prevSupply.toNumber(),
                 CC_REQUESTS.normalCCTransfer.bitcoinAmount
             );
         })
@@ -621,7 +621,7 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer_invalidLocker.index,
                     CC_REQUESTS.normalCCTransfer_invalidLocker.desiredRecipient
                 )
-            ).to.revertedWith("CCTransferRouter: no locker with the given script hash exists");
+            ).to.revertedWith("CCTransferRouter: no locker with the given locking script exists");
         })
 
         it("Reverts if no BTC has been sent to locker", async function () {
@@ -711,7 +711,7 @@ describe("CCTransferRouter", async () => {
                 receivedAmount,
                 CC_REQUESTS.instantCCTransfer.speed,
                 await deployer.getAddress(),
-                teleporterFee  
+                teleporterFee
             );
 
             // Checks that enough teleBTC allowance has been given to instant router
@@ -747,7 +747,7 @@ describe("CCTransferRouter", async () => {
         beforeEach(async () => {
             beginning = await takeSnapshot(signer1.provider);
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, beginning);
         });
@@ -797,7 +797,7 @@ describe("CCTransferRouter", async () => {
         beforeEach(async () => {
             beginning = await takeSnapshot(signer1.provider);
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, beginning);
         });
