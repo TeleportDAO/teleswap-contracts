@@ -17,16 +17,14 @@ contract LockersStorageStructure is OwnableUpgradeable, ReentrancyGuardUpgradeab
 
     /// @notice                             Structure for registering lockers
     /// @dev
-    /// @param lockerRedeemScript           Locker redeem script
+    /// @param lockerLockingScript           Locker redeem script
     /// @param TDTLockedAmount              Bond amount of locker in TDT
     /// @param nativeTokenLockedAmount      Bond amount of locker in native token of the target chain
     /// @param netMinted                    Total minted - total burnt
-    /// @param isScriptHash                 Determines if the lockerScriptHash is pub key hash or redeem script hash
     /// @param isActive                     Shows if a locker is active (has not requested for removal and
     ///                                     has enough collateral to accept more minting requests)
     struct locker {
-        bytes lockerRedeemScript;
-        address lockerScriptHash;
+        bytes lockerLockingScript;
         uint TDTLockedAmount;
         uint nativeTokenLockedAmount;
         uint netMinted;
@@ -62,7 +60,7 @@ contract LockersStorageStructure is OwnableUpgradeable, ReentrancyGuardUpgradeab
     mapping(address => bool) public lockerLeavingRequests;
     mapping(address => bool) public lockerLeavingAcceptance;
 
-    mapping(address => address) public lockerTargetAddress;
+    mapping(bytes => address) public lockerTargetAddress;
 
     mapping(address => bool) minters;
     mapping(address => bool) burners;

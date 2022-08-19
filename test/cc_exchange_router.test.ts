@@ -44,7 +44,7 @@ describe("CCExchangeRouter", async () => {
 
     // Bitcoin public key (32 bytes)
     let LOCKER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
-    let LOCKER1_SCRIPT_HASH = '0x4062c8aeed4f81c2d73ff854a2957021191e20b6';
+    let LOCKER1_LOCKING_SCRIPT = '0xa9144062c8aeed4f81c2d73ff854a2957021191e20b687';
 
     let telePortTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000);
     let minRequiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
@@ -252,9 +252,7 @@ describe("CCExchangeRouter", async () => {
         let lockerlocker = lockers.connect(locker)
 
         await lockerlocker.requestToBecomeLocker(
-            LOCKER1,
-            // LOCKER1_SCRIPT_HASH,
-            LOCKER1_SCRIPT_HASH,
+            LOCKER1_LOCKING_SCRIPT,
             minRequiredTDTLockedAmount,
             minRequiredNativeTokenLockedAmount,
             {value: minRequiredNativeTokenLockedAmount}
@@ -507,7 +505,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_SCRIPT_HASH,
+                    LOCKER1_LOCKING_SCRIPT,
                 )
             ).to.emit(ccExchangeRouter, 'CCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
@@ -559,7 +557,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.index,
-                    LOCKER1_SCRIPT_HASH,
+                    LOCKER1_LOCKING_SCRIPT,
                 )
             ).to.emit(ccExchangeRouter, 'CCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
@@ -601,7 +599,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_expired.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_expired.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_expired.index,
-                    LOCKER1_SCRIPT_HASH
+                    LOCKER1_LOCKING_SCRIPT
                 )
             ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
@@ -640,7 +638,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.index,
-                    LOCKER1_SCRIPT_HASH
+                    LOCKER1_LOCKING_SCRIPT
                 )
             ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
@@ -679,7 +677,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.index,
-                    LOCKER1_SCRIPT_HASH
+                    LOCKER1_LOCKING_SCRIPT
                 )
             ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
@@ -716,7 +714,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_SCRIPT_HASH
+                    LOCKER1_LOCKING_SCRIPT
                 )
             ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
@@ -753,7 +751,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_SCRIPT_HASH
+                    LOCKER1_LOCKING_SCRIPT
                 )
             ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
@@ -785,7 +783,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.index,
-                    LOCKER1_SCRIPT_HASH
+                    LOCKER1_LOCKING_SCRIPT
                 )
             ).to.revertedWith("CCExchangeRouter: app id doesn't exist");
         })
@@ -804,7 +802,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.index,
-                    LOCKER1_SCRIPT_HASH
+                    LOCKER1_LOCKING_SCRIPT
                 )
             ).to.revertedWith("CCExchangeRouter: input amount is zero");
         })
@@ -842,7 +840,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.index,
-                    LOCKER1_SCRIPT_HASH
+                    LOCKER1_LOCKING_SCRIPT
                 )
             ).to.revertedWith("CCExchangeRouter: percentage fee is not correct");
         })
@@ -861,7 +859,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.index,
-                    LOCKER1_SCRIPT_HASH,
+                    LOCKER1_LOCKING_SCRIPT,
                 )
             ).to.revertedWith("CCExchangeRouter: chain id is not correct");
         })
@@ -881,7 +879,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.index,
-                    LOCKER1_SCRIPT_HASH,
+                    LOCKER1_LOCKING_SCRIPT,
                 )
             ).to.revertedWith("CCExchangeRouter: speed is not correct");
         })
@@ -901,7 +899,7 @@ describe("CCExchangeRouter", async () => {
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                LOCKER1_SCRIPT_HASH,
+                LOCKER1_LOCKING_SCRIPT,
             );
 
             // Reverts since the request has been used before
@@ -914,7 +912,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_SCRIPT_HASH,
+                    LOCKER1_LOCKING_SCRIPT,
                 )
             ).to.revertedWith("CCExchangeRouter: the request has been used before");
 
@@ -934,7 +932,7 @@ describe("CCExchangeRouter", async () => {
                     STARTING_BLOCK_NUMBER - 1,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_SCRIPT_HASH,
+                    LOCKER1_LOCKING_SCRIPT,
                 )
             ).to.revertedWith("CCExchangeRouter: request is too old");
         })
@@ -953,7 +951,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_SCRIPT_HASH,
+                    LOCKER1_LOCKING_SCRIPT,
                 )
             ).to.revertedWith("CCExchangeRouter: lock time is non-zero");
         })
@@ -974,7 +972,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_SCRIPT_HASH,
+                    LOCKER1_LOCKING_SCRIPT,
                 )
             ).to.revertedWith("CCExchangeRouter: transaction has not been finalized yet");
         })
@@ -995,7 +993,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_SCRIPT_HASH,
+                    LOCKER1_LOCKING_SCRIPT,
                 )
             ).to.revertedWith("CCExchangeRouter: paid fee is not sufficient");
         })
@@ -1016,8 +1014,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.instantCCExchange.blockNumber,
                     CC_EXCHANGE_REQUESTS.instantCCExchange.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.instantCCExchange.index,
-                    // false // payWithTDT
-                    CC_EXCHANGE_REQUESTS.instantCCExchange.desiredRecipient,
+                    LOCKER1_LOCKING_SCRIPT
                 )
             ).to.emit(ccExchangeRouter, 'CCExchange');
 
@@ -1081,7 +1078,7 @@ describe("CCExchangeRouter", async () => {
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                LOCKER1_SCRIPT_HASH
+                LOCKER1_LOCKING_SCRIPT
             );
 
             expect(
@@ -1097,7 +1094,7 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_SCRIPT_HASH
+                    LOCKER1_LOCKING_SCRIPT
                 )
             ).to.revertedWith("CCExchangeRouter: the request has been used before");
         })

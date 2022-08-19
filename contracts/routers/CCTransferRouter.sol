@@ -122,7 +122,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _blockNumber                 The block number of the request tx
     /// @param _intermediateNodes           Merkle proof for tx
     /// @param _index                       Index of tx in the block
-    /// @param _lockerScriptHash            Script hash of locker that user has sent BTC to it
+    /// @param _lockerLockingScript         Locking script of locker that user has sent BTC to it
     /// @return                             True if the transfer is successful
     function ccTransfer(
         // Bitcoin tx
@@ -135,8 +135,8 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         // Merkle proof
         bytes calldata _intermediateNodes,
         uint _index,
-        address _lockerScriptHash
-    ) external payable nonReentrant nonZeroAddress(_lockerScriptHash) override returns (bool) {
+        bytes calldata _lockerLockingScript
+    ) external payable nonReentrant override returns (bool) {
         require(_blockNumber >= startingBlockNumber, "CCTransferRouter: request is too old");
 
         // Finds txId on the source chain
@@ -150,7 +150,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         require(_locktime == bytes4(0), "CCTransferRouter: lock time is non -zero");
 
         // Extracts information from the request
-        _saveCCTransferRequest(_lockerScriptHash, _vout, txId);
+        _saveCCTransferRequest(_lockerLockingScript, _vout, txId);
 
         // Checks if tx has been confirmed on source chain
         require(
@@ -165,7 +165,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
 
         // Normal cc transfer request
         if (ccTransferRequests[txId].speed == 0) {
-            uint receivedAmount = _sendTeleBTC(_lockerScriptHash, txId);
+            uint receivedAmount = _sendTeleBTC(_lockerLockingScript, txId);
             emit CCTransfer(
                 ccTransferRequests[txId].recipientAddress,
                 ccTransferRequests[txId].inputAmount,
@@ -177,7 +177,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
             return true;
         } else {
             // Pays back instant loan (ccTransferRequests[txId].speed == 1)
-            uint receivedAmount = _payBackInstantLoan(_lockerScriptHash, txId);
+            uint receivedAmount = _payBackInstantLoan(_lockerLockingScript, txId);
             emit CCTransfer(
                 ccTransferRequests[txId].recipientAddress,
                 ccTransferRequests[txId].inputAmount,
@@ -191,12 +191,12 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     }
 
     /// @notice                             Sends minted teleBTC to the user
-    /// @param _lockerScriptHash            Locker's script hash
+    /// @param _lockerLockingScript         Locker's locking script
     /// @param _txId                        The transaction ID of the request
     /// @return _remainedAmount             Amount of teleBTC that user receives after reducing fees
-    function _sendTeleBTC(address _lockerScriptHash, bytes32 _txId) private returns (uint _remainedAmount) {
+    function _sendTeleBTC(bytes memory _lockerLockingScript, bytes32 _txId) private returns (uint _remainedAmount) {
         // Gets remained amount after reducing fees
-        _remainedAmount = _mintAndReduceFees(_lockerScriptHash, _txId);
+        _remainedAmount = _mintAndReduceFees(_lockerLockingScript, _txId);
 
         // Transfers rest of tokens to recipient
         ITeleBTC(teleBTC).transfer(
@@ -206,16 +206,16 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     }
 
     /// @notice                             Executes the paying back instant loan request
-    /// @param _lockerScriptHash            Locker's script hash
+    /// @param _lockerLockingScript         Locker's locking script
     /// @param _txId                        The transaction ID of the request
     /// @return _remainedAmount             Amount of teleBTC that user receives after reducing fees
     function _payBackInstantLoan(
-        address _lockerScriptHash, 
+        bytes memory _lockerLockingScript, 
         bytes32 _txId
     ) private returns (uint _remainedAmount) {
 
         // Gets remained amount after reducing fees
-        _remainedAmount = _mintAndReduceFees(_lockerScriptHash, _txId);
+        _remainedAmount = _mintAndReduceFees(_lockerLockingScript, _txId);
 
         // Gives allowance to instant router to transfer remained teleBTC
         ITeleBTC(teleBTC).approve(
@@ -232,24 +232,25 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
 
     /// @notice                             Parses and saves the request
     /// @dev                                Checks that user has sent BTC to a valid locker
-    /// @param _lockerScriptHash            Locker's script hash
+    /// @param _lockerLockingScript         Locker's locking script
     /// @param _vout                        The outputs of the tx
     /// @param _txId                        The txID of the request
     function _saveCCTransferRequest(
-        address _lockerScriptHash,
+        bytes memory _lockerLockingScript,
         bytes memory _vout,
         bytes32 _txId
     ) private {
 
         require(
-            ILockers(lockers).isLocker(_lockerScriptHash),
-            "CCTransferRouter: no locker with the given script hash exists"
+            ILockers(lockers).isLocker(_lockerLockingScript),
+            "CCTransferRouter: no locker with the given locking script exists"
         );
 
         // Extracts value and opreturn data from request
         ccTransferRequest memory request; // Defines it to save gas
         bytes memory arbitraryData;
-        (request.inputAmount, arbitraryData) = TxHelper.parseValueAndData(_vout, _lockerScriptHash);
+        
+        (request.inputAmount, arbitraryData) = TxHelper.parseOutputValueAndData(_vout, _lockerLockingScript);
 
         // Checks that input amount is not zero
         require(request.inputAmount > 0, "CCTransferRouter: input amount is zero");
@@ -312,18 +313,18 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     }
 
     /// @notice                       Mints teleBTC by calling lockers contract
-    /// @param _lockerScriptHash      Locker's script hash
+    /// @param _lockerLockingScript   Locker's locking script
     /// @param _txId                  The transaction ID of the request
     /// @return _remainedAmount       Amount of teleBTC that user receives after reducing all fees (protocol, locker, teleporter)
     function _mintAndReduceFees(
-        address _lockerScriptHash,
+        bytes memory _lockerLockingScript,
         bytes32 _txId
     ) private returns (uint _remainedAmount) {
 
         // Mints teleBTC for cc transfer router
         // Lockers contract gets locker's fee
         uint mintedAmount = ILockers(lockers).mint(
-            _lockerScriptHash,
+            _lockerLockingScript,
             address(this),
             ccTransferRequests[_txId].inputAmount
         );

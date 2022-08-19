@@ -16,119 +16,84 @@ library TxHelper {
     /// @notice                           Parse the bitcoin amount and the op_return of a transaction as data
     /// @dev                              Support 3 types of transaction outputs, p2pkh, p2sh and p2wpkh
     /// @param _vout                      The vout of a bitcoin transaction
-    /// @param _desiredRecipient          20 bytes, public_key hash or redeem_script hash which is using in bitcoin locking script
+    /// @param _lockingScript             20 bytes, public_key hash or redeem_script hash which is using in bitcoin locking script
     /// @return                           bitcoinAmount of the _desiredRecipient (20 bytes, public_key hash or redeem_script hash)
     /// @return                           arbitraryData or the op_return of the transaction
-    function parseValueAndData(
+    function parseOutputValueAndData(
         bytes memory _vout,
-        address _desiredRecipient
+        bytes memory _lockingScript
     ) internal view returns (uint64 bitcoinAmount, bytes memory arbitraryData) {
         bytes29 voutView = _vout.ref(0).tryAsVout();
         require(!voutView.isNull(), "TxHelper: vout is null");
 
         bytes29 output;
         bytes29 scriptPubkey;
+        bytes29 scriptPubkeyWithLength;
         bytes29 _arbitraryData;
-        address bitcoinRecipient;
 
         uint _numberOfOutputs = uint256(ViewBTC.indexCompactInt(voutView, 0));
 
         for (uint index = 0; index < _numberOfOutputs; index++) {
             output = ViewBTC.indexVout(voutView, index);
             scriptPubkey = ViewBTC.scriptPubkey(output);
-            _arbitraryData = ViewBTC.opReturnPayload(scriptPubkey);
+            scriptPubkeyWithLength = ViewBTC.scriptPubkeyWithLength(output);
+            _arbitraryData = ViewBTC.opReturnPayload(scriptPubkeyWithLength);
 
             // Checks whether the output is an arbitarary data or not
             if(_arbitraryData == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
                 // Output is not an arbitrary data
-
-                if (scriptPubkey.len() == 23 || scriptPubkey.len() == 24) {
-                    // It is P2SH: OP_HASH160 ScriptHash OP_EQUAL
-                    bitcoinRecipient = scriptPubkey.indexAddress(3);
-                }
-
-                if (scriptPubkey.len() == 26) {
-                    // It is P2PKH: OP_DUP OP_HASH160 PubKeyHash OP_EQUALVERIFY OP_CHECKSIG
-                    bitcoinRecipient = scriptPubkey.indexAddress(4);
-                }
-
-                if (scriptPubkey.len() == 21) {
-                    // It is P2WPKH: 0 PubKeyHash
-                    bitcoinRecipient = scriptPubkey.indexAddress(2);
-                }
-
-                if (scriptPubkey.len() == 33) {
-                    // It is P2WSH: 0 ScriptHash
-                    bitcoinRecipient = scriptPubkey.indexAddress(2);
-                }
-
-                if (bitcoinRecipient == _desiredRecipient) {
-                    bitcoinAmount = ViewBTC.value(output);
-                }
-
-            } else {
-                arbitraryData = _arbitraryData.clone(); // bytes29.clone() returns the whole bytes array
-            }
-        }
-
-        return (bitcoinAmount, arbitraryData);
-    }
-
-    function _parseValueAndData(
-        bytes memory _vout,
-        bytes memory _desiredRecipient
-    ) internal view returns (uint64 bitcoinAmount, bytes memory arbitraryData) {
-        bytes29 voutView = _vout.ref(0).tryAsVout();
-        require(!voutView.isNull(), "TxHelper: vout is null");
-
-        bytes29 output;
-        bytes29 scriptPubkey;
-        bytes29 _arbitraryData;
-        bytes memory bitcoinRecipient;
-
-        uint _numberOfOutputs = uint256(ViewBTC.indexCompactInt(voutView, 0));
-
-        for (uint index = 0; index < _numberOfOutputs; index++) {
-            output = ViewBTC.indexVout(voutView, index);
-            scriptPubkey = ViewBTC.scriptPubkey(output);
-            _arbitraryData = ViewBTC.opReturnPayload(scriptPubkey);
-
-            // Checks whether the output is an arbitarary data or not
-            if(_arbitraryData == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
-                // Output is not an arbitrary data
-
-                if (scriptPubkey.len() == 23 || scriptPubkey.len() == 24) {
-                    // It is P2SH: OP_HASH160 ScriptHash OP_EQUAL (20 bytes)
-                    bitcoinRecipient = abi.encodePacked(scriptPubkey.indexAddress(3));
-                }
-
-                if (scriptPubkey.len() == 26) {
-                    // It is P2PKH: OP_DUP OP_HASH160 PubKeyHash OP_EQUALVERIFY OP_CHECKSIG (20 bytes)
-                    bitcoinRecipient = abi.encodePacked(scriptPubkey.indexAddress(4));
-                }
-
-                if (scriptPubkey.len() == 21) {
-                    // It is P2WPKH: 0 PubKeyHash (20 bytes)
-                    bitcoinRecipient = abi.encodePacked(scriptPubkey.indexAddress(2));
-                }
-
-                if (scriptPubkey.len() == 33) {
-                    // It is P2WSH: 0 ScriptHash (32 bytes)
-                    bitcoinRecipient = abi.encodePacked(scriptPubkey.index(2, 32));
-                }
-
                 if (
-                    keccak256(abi.encodePacked(bitcoinRecipient)) == keccak256(abi.encodePacked(_desiredRecipient))
+                    keccak256(abi.encodePacked(scriptPubkey.clone())) == keccak256(abi.encodePacked(_lockingScript))
                 ) {
                     bitcoinAmount = ViewBTC.value(output);
                 }
 
             } else {
-                arbitraryData = _arbitraryData.clone(); // bytes29.clone() returns the whole bytes array
+                arbitraryData = _arbitraryData.clone(); // Returns the whole bytes array
             }
         }
+    }
 
-        return (bitcoinAmount, arbitraryData);
+    function parseOutputValue(
+        bytes memory _vout,
+        bytes memory _lockingScript
+    ) internal view returns (uint64 bitcoinAmount) {
+        bytes29 voutView = _vout.ref(0).tryAsVout();
+        require(!voutView.isNull(), "TxHelper: vout is null");
+
+        bytes29 output;
+        bytes29 scriptPubkey;
+
+        uint _numberOfOutputs = uint256(ViewBTC.indexCompactInt(voutView, 0));
+
+        for (uint index = 0; index < _numberOfOutputs; index++) {
+            output = ViewBTC.indexVout(voutView, index);
+            scriptPubkey = ViewBTC.scriptPubkey(output);
+
+            if (
+                keccak256(abi.encodePacked(scriptPubkey.clone())) == keccak256(abi.encodePacked(_lockingScript))
+            ) {
+                bitcoinAmount = ViewBTC.value(output);
+            }
+        }
+    }
+
+    function isScriptMatchedWithLockingScript(
+        bytes memory _lockerLockingScript,
+        bytes memory _lockerScript
+    ) internal view returns (bool) {
+        // Finds hash of locker script
+        address lockerScriptHash = _doubleHash(_lockerScript);
+
+        // Checks that hash is part of locking script
+        return true;
+    }
+
+    // Bitcoin double hash function
+    function _doubleHash(bytes memory input) internal pure returns(address) {
+        bytes32 inputHash1 = sha256(input);
+        bytes20 inputHash2 = ripemd160(abi.encodePacked(inputHash1));
+        return address(inputHash2);
     }
 
     function parseTotalValue(bytes memory vout) internal pure returns (uint64) {

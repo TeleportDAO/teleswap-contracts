@@ -7,21 +7,17 @@ interface ICCBurnRouter {
 
     /// @notice                 	Structure for recording burn requests
     /// @param amount         		Amount of burnt tokens
-    /// @param remainedAmount   	Amount that user gets (after paying fees)
+    /// @param burntAmount   	    Amount that user gets (after paying fees)
     /// @param sender       		Address of user who requests burning
-    /// @param userPubKeyHash   Public key hash of the user on Bitcoin
-    /// @param isScriptHash   		Whether the user's Bitcoin address is script hash or pubKey hash
-    /// @param isSegwit			   	Whether the user's Bitcoin address is Segwit or nonSegwit
+    /// @param userLockingScript    Public key hash of the user on Bitcoin
     /// @param deadline         	Deadline of lockers for executing the request
     /// @param isTransferred    	True if the request has been executed
     /// @param locker		    	The locker assigned to this burn request who should execute it
 	struct burnRequest {
 		uint amount;
-		uint remainedAmount;
+		uint burntAmount;
 		address sender;
-		address userPubKeyHash;
-		bool isScriptHash;
-		bool isSegwit;
+		bytes userLockingScript;
 		uint deadline;
 		bool isTransferred;
   	}
@@ -30,21 +26,17 @@ interface ICCBurnRouter {
 
 	/// @notice                 		Emits when a burn request gets submitted
     /// @param userTargetAddress        Target address of the user
-    /// @param userPubKeyHash       Public key hash of the user on Bitcoin
-	/// @param isScriptHash   			Whether the user's Bitcoin address is script hash or pubKey hash
-    /// @param isSegwit			   		Whether the user's Bitcoin address is Segwit or nonSegwit
+    /// @param userLockingScript        Public key hash of the user on Bitcoin
     /// @param amount         			Amount of burnt tokens
-    /// @param remainedAmount   		Amount that user gets (after paying fees)
+    /// @param burntAmount   		Amount that user gets (after paying fees)
 	/// @param lockerTargetAddress		Locker's address on the target chain
     /// @param index       				The index of a request for a locker
     /// @param deadline         		Deadline of lockers for executing the request
   	event CCBurn(
 		address indexed userTargetAddress,
-		address userPubKeyHash,
-		bool isScriptHash,
-    	bool isSegwit,
+		bytes userLockingScript,
 		uint amount, 
-		uint remainedAmount, 
+		uint burntAmount, 
 		address indexed lockerTargetAddress,
 		uint index, 
 		uint indexed deadline
@@ -52,14 +44,14 @@ interface ICCBurnRouter {
 
 	/// @notice                 		Emits when a burn request gets executed
     /// @param userTargetAddress        Target address of the user
-    /// @param userPubKeyHash       Public key hash of the user on Bitcoin
-    /// @param remainedAmount   		Amount that user gets (after paying fees)
+    /// @param userLockingScript        Public key hash of the user on Bitcoin
+    /// @param burntAmount   		    Amount that user gets (after paying fees)
 	/// @param lockerTargetAddress		Locker's address on the target chain
     /// @param index       				The index of a request for a locker
 	event PaidCCBurn(
 		address indexed userTargetAddress, 
-		address userPubKeyHash, 
-		uint remainedAmount, 
+		bytes userLockingScript, 
+		uint burntAmount, 
 		address indexed lockerTargetAddress, 
 		uint index
 	);
@@ -114,10 +106,8 @@ interface ICCBurnRouter {
 
 	function ccBurn(
 		uint _amount, 
-		address _userPubKeyHash,
-		bool _isScriptHash,
-    	bool _isSegwit,
-		address _lockerTargetAddress
+		bytes calldata _userLockingScript,
+		bytes calldata _lockerLockingScript
 	) external returns (bool);
 
 	function burnProof(
@@ -128,25 +118,26 @@ interface ICCBurnRouter {
 		uint256 _blockNumber,
 		bytes calldata _intermediateNodes,
 		uint _index,
-		address _lockerTargetAddress,
+		bytes calldata _lockerLockingScript,
 		uint _startIndex,
 		uint _endIndex
 	) external payable returns (bool);
 
 	function disputeBurn(
-		address _lockerTargetAddress, 
+		bytes calldata _lockerLockingScript,
 		uint[] memory _indices
 	) external returns (bool);
 
 	function disputeLocker(
-		address _lockerTargetAddress,
+		bytes memory _lockerLockingScript,
+		bytes memory _lockerScript,
         uint _inputIndex,
 		bytes4 _version,
 		bytes memory _vin,
-		bytes calldata _vout,
+		bytes memory _vout,
 		bytes4 _locktime,
 		uint256 _blockNumber,
-		bytes calldata _intermediateNodes,
+		bytes memory _intermediateNodes,
 		uint _index
 	) external payable returns (bool);
 }

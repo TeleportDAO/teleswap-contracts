@@ -84,6 +84,6 @@ interface ICCTransferRouter {
 		// Merkle proof
 		bytes calldata _intermediateNodes,
 		uint _index,
-		address lockerBitcoinDecodedAddress
+		bytes calldata _lockerLockingScript
 	) external payable returns (bool);
 }

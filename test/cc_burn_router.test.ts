@@ -1,6 +1,6 @@
 require('dotenv').config({path:"../../.env"});
 
-import { assert, expect, use } from "chai";
+import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
 import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
@@ -11,7 +11,7 @@ import {TeleBTC__factory} from "../src/types/factories/TeleBTC__factory";
 import {CCBurnRouter} from "../src/types/CCBurnRouter";
 import {CCBurnRouter__factory} from "../src/types/factories/CCBurnRouter__factory";
 
-import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
+import { takeSnapshot, revertProvider } from "./block_utils";
 
 describe("CCBurnRouter", async () => {
     let snapshotId: any;
@@ -20,9 +20,7 @@ describe("CCBurnRouter", async () => {
     let deployer: Signer;
     let signer1: Signer;
     let signer2: Signer;
-    let deployerAddress: Address;
     let signer1Address: Address;
-    let signer2Address: Address;
 
     // Contracts
     let teleBTC: TeleBTC;
@@ -35,7 +33,6 @@ describe("CCBurnRouter", async () => {
     // Constants
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     let ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
-    let ten = BigNumber.from(10).pow(8).mul(10)
     let oneHundred = BigNumber.from(10).pow(8).mul(100)
     /*
         This one is set so that:
@@ -47,15 +44,19 @@ describe("CCBurnRouter", async () => {
     let SLASHER_PERCENTAGE_REWARD = 5 // means 0.05%
     let BITCOIN_FEE = 10000 // estimation of Bitcoin transaction fee in Satoshi
 
+    let lockerScriptHash = "0x4062c8aeed4f81c2d73ff854a2957021191e20b6";
+    let LOCKER1_LOCKING_SCRIPT = '0xa914748284390f9e263a4b766a75d0633c50426eb87587';
+    let LOCKER1_REDEEM_SCRIPT = '0x5121022afc20bf379bc96a2f4e9e63ffceb8652b2b6a097f63fbee6ecec2a49a48010e2103a767c7221e9f15f870f1ad9311f5ab937d79fcaeee15bb2c722bca515581b4c052ae';
+
     let btcPublicKey = "03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd"
     let btcAddress = "mmPPsxXdtqgHFrxZdtFCtkwhHynGTiTsVh"
-    let userPubKeyHash = "0x4062c8aeed4f81c2d73ff854a2957021191e20b6"
+    let userLockingScript = "0x76a91412ab8dc588ca9d5787dde7eb29569da63c3a238c88ac"
     let btcSegwitDecodedAddress = "0x751e76e8199196d454941c45d1b3a323f1433bd6"
 
     // A user sends tokens to the locker
     let btcUserVersion =  "0x02000000"
     let btcUserVin = "0x01df4a990ad3c3a225862465bb660f06d445914a038ada819ace235afb9f23cff30200000000feffffff"
-    let btcUserVout = "0x0200e1f505000000001976a9144062c8aeed4f81c2d73ff854a2957021191e20b688ac984f42060100000016001447ef833107e0ad9998f8711813075ac62ec1104b"
+    let btcUserVout = "0x0200e1f505000000001976a91412ab8dc588ca9d5787dde7eb29569da63c3a238c88ac984f42060100000016001447ef833107e0ad9998f8711813075ac62ec1104b"
     let btcUserLocktime = "0x00000000"
     let btcUserInterMediateNodes = "0x7451e7cd7a5afcd93d5a3f84e4d7976fb3bd771dc6aeab416d818ea1d72c0476"
 
@@ -70,11 +71,7 @@ describe("CCBurnRouter", async () => {
     before(async () => {
 
         [deployer, signer1, signer2] = await ethers.getSigners();
-        deployerAddress = await deployer.getAddress()
-        signer1Address = await signer1.getAddress()
-        signer2Address = await signer2.getAddress()
-
-        // read block headers from file
+        signer1Address = await signer1.getAddress();
 
         const bitcoinRelay = await deployments.getArtifact(
             "IBitcoinRelay"
@@ -97,8 +94,6 @@ describe("CCBurnRouter", async () => {
         teleBTC = await deployTeleBTC()
 
         await ccBurnRouter.setTeleBTC(teleBTC.address)
-
-        // await teleBTC.setCCBurnRouter(ccBurnRouter.address)
     });
 
     beforeEach("deploy a new cc exchange router", async () => {
@@ -118,10 +113,7 @@ describe("CCBurnRouter", async () => {
 
         const teleBTC = await teleBTCFactory.deploy(
             "Teleport Wrapped BTC",
-            "TeleBTC",
-            // ONE_ADDRESS,
-            // ONE_ADDRESS,
-            // ccBurnRouter.address
+            "TeleBTC"
         );
 
         return teleBTC;
@@ -133,7 +125,6 @@ describe("CCBurnRouter", async () => {
         const ccBurnRouterFactory = new CCBurnRouter__factory(
             _signer || deployer
         );
-
 
         const ccBurnRouter = await ccBurnRouterFactory.deploy(
             mockBitcoinRelay.address,
@@ -148,11 +139,6 @@ describe("CCBurnRouter", async () => {
         return ccBurnRouter;
     };
 
-    async function setLockersReturn(): Promise<void> {
-        // await mockLockers.mock.redeemScriptHash
-        //     .returns(ONE_ADDRESS);
-    }
-
     async function setLockersSlashLockerReturn(): Promise<void> {
         await mockLockers.mock.slashLocker
             .returns(true);
@@ -164,7 +150,7 @@ describe("CCBurnRouter", async () => {
     }
 
     async function setLockersGetLockerRedeemScriptReturn(lockerRedeemScript: string): Promise<void> {
-        await mockLockers.mock.getLockerRedeemScript
+        await mockLockers.mock.getLockerLockingScript
             .returns(lockerRedeemScript);
     }
 
@@ -211,13 +197,11 @@ describe("CCBurnRouter", async () => {
         // Set mock contracts outputs
         await setRelayLastSubmittedHeightReturn(theBlockNumber);
         await setLockersIsLockerReturn(true);
-        await setLockersReturn();
 
         let burntAmount: number;
         let protocolFee = Math.floor(_userRequestAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
         burntAmount = _userRequestAmount.toNumber() - BITCOIN_FEE - protocolFee;
         await setLockersBurnReturn(burntAmount);
-        await setLockersReturn();
 
         let lockerTargetAddress = ONE_ADDRESS
         await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
@@ -226,17 +210,14 @@ describe("CCBurnRouter", async () => {
         await expect(
             ccBurnRouterSigner1.ccBurn(
                 _userRequestAmount,
-                userPubKeyHash,
-                true,
-                false,
-                userPubKeyHash
+                userLockingScript,
+                lockerScriptHash
             )
         ).to.emit(ccBurnRouter, "CCBurn")
     }
 
     async function provideProof(theBlockNumber: BigNumber) {
         let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
-        await setLockersReturn();
 
         // Get the locker target address
         // let lockerTargetAddress = await mockLockers.redeemScriptHash();
@@ -250,7 +231,6 @@ describe("CCBurnRouter", async () => {
         let protocolFee = Math.floor(userRequestAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
         burntAmount = userRequestAmount.toNumber() - BITCOIN_FEE - protocolFee;
         await setLockersBurnReturn(burntAmount);
-        await setLockersReturn();
 
         await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 
@@ -273,7 +253,7 @@ describe("CCBurnRouter", async () => {
 
     describe("#ccBurn", async () => {
 
-        it("burning TeleBTC by ccBurn function (is script hash and non-segwit)", async function () {
+        it("Burns teleBTC", async function () {
 
             let thisBlockNumber = await signer1.provider?.getBlockNumber()
             let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
@@ -287,42 +267,35 @@ describe("CCBurnRouter", async () => {
                 await TeleBTCSigner1.balanceOf(signer1Address)
             ).to.equal(oneHundred)
 
-            // Give the allowance to the ccBurnRouter so that it could burn tokens
+            // Give allowance to the ccBurnRouter so that it could burn tokens
             await TeleBTCSigner1.approve(
                 ccBurnRouter.address,
                 userRequestAmount
-            )
+            );
 
             expect(
                 await teleBTC.allowance(signer1Address, ccBurnRouter.address)
-            ).to.equal(userRequestAmount)
+            ).to.equal(userRequestAmount);
 
-            let ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1)
+            let ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1);
 
-            // Set mock contracts outputs
+            // Sets mock contracts outputs
             await setRelayLastSubmittedHeightReturn(theBlockNumber);
             await setLockersIsLockerReturn(true);
 
-            let burntAmount: number;
             let protocolFee = Math.floor(userRequestAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
-            burntAmount = userRequestAmount.toNumber() - BITCOIN_FEE - protocolFee;
+            let burntAmount = userRequestAmount.toNumber() - BITCOIN_FEE - protocolFee;
             await setLockersBurnReturn(burntAmount);
-            await setLockersReturn();
 
-            let lockerTargetAddress = ONE_ADDRESS
+            let lockerTargetAddress = ONE_ADDRESS;
             await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
 
-
-            // let totalSupplyBefore = await TeleBTCSigner1.totalSupply();
-
-            // Burn some test tokens using ccBurn
+            // Burns teleBTC
             await expect(
                 ccBurnRouterSigner1.ccBurn(
                     userRequestAmount,
-                    userPubKeyHash,
-                    true,
-                    false,
-                    userPubKeyHash
+                    userLockingScript,
+                    lockerScriptHash
                 )
             ).to.emit(ccBurnRouter, "CCBurn")
 
@@ -369,7 +342,6 @@ describe("CCBurnRouter", async () => {
             let protocolFee = Math.floor(userRequestAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
             burntAmount = userRequestAmount.toNumber() - BITCOIN_FEE - protocolFee;
             await setLockersBurnReturn(burntAmount);
-            await setLockersReturn();
 
             let lockerTargetAddress = ONE_ADDRESS
             await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
@@ -380,10 +352,8 @@ describe("CCBurnRouter", async () => {
             await expect(
                 ccBurnRouterSigner1.ccBurn(
                     userRequestAmount,
-                    btcSegwitDecodedAddress,
-                    true,
-                    true,
-                    userPubKeyHash
+                    userLockingScript,
+                    lockerScriptHash
                 )
             ).to.emit(ccBurnRouter, "CCBurn")
 
@@ -426,7 +396,6 @@ describe("CCBurnRouter", async () => {
             let protocolFee = Math.floor(userRequestAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
             burntAmount = userRequestAmount.toNumber() - BITCOIN_FEE - protocolFee;
             await setLockersBurnReturn(burntAmount);
-            await setLockersReturn();
 
             let lockerTargetAddress = ONE_ADDRESS
             await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
@@ -435,10 +404,8 @@ describe("CCBurnRouter", async () => {
             await expect(
                 ccBurnRouterSigner1.ccBurn(
                     userRequestAmount,
-                    userPubKeyHash,
-                    true,
-                    false,
-                    userPubKeyHash
+                    userLockingScript,
+                    lockerScriptHash
                 )
             ).to.revertedWith("ERC20: transfer amount exceeds allowance")
         })
@@ -462,7 +429,7 @@ describe("CCBurnRouter", async () => {
 
             // Set mock contracts outputs
             await setRelayLastSubmittedHeightReturn(theBlockNumber);
-            await setLockersReturn();
+
             await setLockersIsLockerReturn(false);
             // let lockerTargetAddress = await mockLockers.redeemScriptHash();
             let lockerTargetAddress = ONE_ADDRESS
@@ -472,12 +439,10 @@ describe("CCBurnRouter", async () => {
             await expect(
                 ccBurnRouterSigner1.ccBurn(
                     userRequestAmount,
-                    userPubKeyHash,
-                    true,
-                    false,
-                    userPubKeyHash
+                    userLockingScript,
+                    lockerScriptHash
                 )
-            ).to.revertedWith("CCBurnRouter: locker address is not valid")
+            ).to.revertedWith("CCBurnRouter: given locking script is not locker")
         })
 
     });
@@ -489,20 +454,17 @@ describe("CCBurnRouter", async () => {
             let thisBlockNumber = await signer1.provider?.getBlockNumber()
             let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
 
-            // Find the locker target address
-            await setLockersReturn();
-            // let lockerTargetAddress = await mockLockers.redeemScriptHash();
             let lockerTargetAddress = ONE_ADDRESS
 
-            // Mint TeleBTC for test
+            // Mints TeleBTC for test
             await mintTeleBTCForTest();
 
-            // Send a burn request
+            // Sends a burn request
             await sendBurnRequest(theBlockNumber, userRequestAmount);
 
-            let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
+            let ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2);
 
-            // Set mock contracts outputs
+            // Sets mock contracts outputs
             await setRelayCheckTxProofReturn(true);
             await setLockersIsLockerReturn(true);
             await setLockersGetLockerTargetAddressReturn(lockerTargetAddress);
@@ -528,7 +490,6 @@ describe("CCBurnRouter", async () => {
             let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
 
             // Find the locker target address
-            await setLockersReturn();
             // let lockerTargetAddress = await mockLockers.redeemScriptHash();
             let lockerTargetAddress = ONE_ADDRESS
 
@@ -583,7 +544,6 @@ describe("CCBurnRouter", async () => {
             let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
 
             // Find the locker target address
-            await setLockersReturn();
             // let lockerTargetAddress = await mockLockers.redeemScriptHash();
             let lockerTargetAddress = ONE_ADDRESS
 
@@ -614,7 +574,7 @@ describe("CCBurnRouter", async () => {
                     0,
                     0
                 )
-            ).to.revertedWith("CCBurnRouter: locker address is not valid")
+            ).to.revertedWith("CCBurnRouter: given locking script is not locker")
         })
 
         it("Reverts if locker's tx has not been finalized on relay", async function () {
@@ -622,7 +582,6 @@ describe("CCBurnRouter", async () => {
             let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
 
             // Find the locker target address
-            await setLockersReturn();
             // let lockerTargetAddress = await mockLockers.redeemScriptHash();
             let lockerTargetAddress = ONE_ADDRESS
 
@@ -661,7 +620,6 @@ describe("CCBurnRouter", async () => {
             let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
 
             // Find the locker target address
-            await setLockersReturn();
             // let lockerTargetAddress = await mockLockers.redeemScriptHash();
             let lockerTargetAddress = ONE_ADDRESS
 
@@ -701,7 +659,6 @@ describe("CCBurnRouter", async () => {
             let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
 
             // Find the locker target address
-            await setLockersReturn();
             // let lockerTargetAddress = await mockLockers.redeemScriptHash();
             let lockerTargetAddress = ONE_ADDRESS
 
@@ -743,7 +700,6 @@ describe("CCBurnRouter", async () => {
             let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
 
             // Find the locker target address
-            await setLockersReturn();
             // let lockerTargetAddress = await mockLockers.redeemScriptHash();
             let lockerTargetAddress = ONE_ADDRESS
 
@@ -775,7 +731,6 @@ describe("CCBurnRouter", async () => {
             let thisBlockNumber = BigNumber.from(await signer1.provider?.getBlockNumber())
 
             // Find the locker target address
-            await setLockersReturn();
             // let lockerTargetAddress = await mockLockers.redeemScriptHash();
             let lockerTargetAddress = ONE_ADDRESS
 
@@ -804,7 +759,6 @@ describe("CCBurnRouter", async () => {
             let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
 
             // Find the locker target address
-            await setLockersReturn();
             // let lockerTargetAddress = await mockLockers.redeemScriptHash();
             let lockerTargetAddress = ONE_ADDRESS
 
@@ -827,14 +781,13 @@ describe("CCBurnRouter", async () => {
                     lockerTargetAddress,
                     [0]
                 )
-            ).to.revertedWith("CCBurnRouter: locker address is not valid")
+            ).to.revertedWith("CCBurnRouter: given locking script is not locker")
         })
 
         it("Otherwise goes through", async function () {
             let thisBlockNumber = BigNumber.from(await signer1.provider?.getBlockNumber())
 
             // Find the locker target address
-            await setLockersReturn();
             // let lockerTargetAddress = await mockLockers.redeemScriptHash();
             let lockerTargetAddress = ONE_ADDRESS
 
@@ -872,7 +825,6 @@ describe("CCBurnRouter", async () => {
             let theBlockNumber = BigNumber.from(thisBlockNumber).sub(5)
 
             // Find the locker target address
-            await setLockersReturn();
             // let lockerTargetAddress = await mockLockers.redeemScriptHash();
             let lockerTargetAddress = ONE_ADDRESS
 
@@ -888,7 +840,8 @@ describe("CCBurnRouter", async () => {
 
             await expect(
                 ccBurnRouterSigner2.disputeLocker(
-                    lockerTargetAddress,
+                    LOCKER1_LOCKING_SCRIPT,
+                    LOCKER1_REDEEM_SCRIPT,
                     0,
                     btcLockerVersion,
                     btcLockerVin,

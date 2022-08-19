@@ -136,7 +136,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _blockNumber         Height of the block containing the user request
     /// @param _intermediateNodes   Merkle inclusion proof for transaction containing the user request
     /// @param _index               Index of transaction containing the user request in the block
-    /// @param _lockerScriptHash    Script hash of locker that user has sent BTC to it
+    /// @param _lockerLockingScript    Script hash of locker that user has sent BTC to it
     /// @return
     function ccExchange(
         bytes4 _version,
@@ -146,8 +146,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         uint256 _blockNumber,
         bytes calldata _intermediateNodes,
         uint _index,
-        address _lockerScriptHash
-    ) external payable nonReentrant nonZeroAddress(_lockerScriptHash) override returns (bool) {
+        bytes calldata _lockerLockingScript
+    ) external payable nonReentrant override returns (bool) {
         require(_blockNumber >= startingBlockNumber, "CCExchangeRouter: request is too old");
 
         // Calculates transaction id
@@ -162,7 +162,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         require(_locktime == bytes4(0), "CCExchangeRouter: lock time is non-zero");
 
         // Extracts information from the request
-        _saveCCExchangeRequest(_lockerScriptHash, _vout, txId);
+        _saveCCExchangeRequest(_lockerLockingScript, _vout, txId);
 
         // Check if transaction has been confirmed on source chain
         require(
@@ -177,10 +177,10 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
         if (ccExchangeRequests[txId].speed == 0) {
             // Normal cc exchange request
-            _normalCCExchange(_lockerScriptHash, txId);
+            _normalCCExchange(_lockerLockingScript, txId);
         } else {
             // Pay back instant loan (ccExchangeRequests[txId].speed == 1)
-            _payBackInstantLoan(_lockerScriptHash, txId);
+            _payBackInstantLoan(_lockerLockingScript, txId);
         }
 
         return true;
@@ -188,11 +188,11 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
     /// @notice                          Executes a normal cross-chain exchange request
     /// @dev                             Mints teleBTC for user if exchanging is not successful
-    /// @param _lockerScriptHash         Locker's script hash    
+    /// @param _lockerLockingScript      Locker's locking script    
     /// @param _txId                     Id of the transaction containing the user request
-    function _normalCCExchange(address _lockerScriptHash, bytes32 _txId) private {
+    function _normalCCExchange(bytes memory _lockerLockingScript, bytes32 _txId) private {
         // Gets remained amount after reducing fees
-        uint remainedInputAmount = _mintAndReduceFees(_lockerScriptHash, _txId);
+        uint remainedInputAmount = _mintAndReduceFees(_lockerLockingScript, _txId);
 
         bool result;
         uint[] memory amounts;
@@ -261,11 +261,11 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
     /// @notice                        Executes an instant cross-chain exchange request
     /// @dev                           Mints teleBTC for instant router to pay back loan
-    /// @param _lockerScriptHash       Locker's script hash
+    /// @param _lockerLockingScript    Locker's locking script
     /// @param _txId                   Id of the transaction containing the user request
-    function _payBackInstantLoan(address _lockerScriptHash, bytes32 _txId) private {
+    function _payBackInstantLoan(bytes memory _lockerLockingScript, bytes32 _txId) private {
         // Gets remained amount after reducing fees
-        uint remainedAmount = _mintAndReduceFees(_lockerScriptHash, _txId);
+        uint remainedAmount = _mintAndReduceFees(_lockerLockingScript, _txId);
 
         // Gives allowance to instant router to transfer minted teleBTC
         ITeleBTC(teleBTC).approve(
@@ -282,25 +282,25 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
     /// @notice                             Parses and saves the request
     /// @dev                                Checks that user has sent BTC to a valid locker
-    /// @param _lockerScriptHash            Locker's script hash
+    /// @param _lockerLockingScript         Locker's locking script
     /// @param _vout                        The outputs of the tx
     /// @param _txId                        The txID of the request
     function _saveCCExchangeRequest(
-        address _lockerScriptHash,
+        bytes memory _lockerLockingScript,
         bytes memory _vout,
         bytes32 _txId
     ) private {
 
         // Checks that given script hash is locker
         require(
-            ILockers(lockers).isLocker(_lockerScriptHash),
+            ILockers(lockers).isLocker(_lockerLockingScript),
             "CCExchangeRouter: no locker with give script hash exists"
         );
 
         // Extracts value and opreturn data from request
         ccExchangeRequest memory request; // Defines it to save gas
         bytes memory arbitraryData;
-        (request.inputAmount, arbitraryData) = TxHelper.parseValueAndData(_vout, _lockerScriptHash);
+        (request.inputAmount, arbitraryData) = TxHelper.parseOutputValueAndData(_vout, _lockerLockingScript);
 
         // Checks that input amount is not zero
         require(request.inputAmount > 0, "CCExchangeRouter: input amount is zero");
@@ -379,17 +379,17 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     }
 
     /// @notice                       Mints teleBTC by calling lockers contract
-    /// @param _lockerScriptHash      Locker's script hash
+    /// @param _lockerLockingScript   Locker's locking script
     /// @param _txId                  The transaction ID of the request
     /// @return _remainedAmount       Amount of teleBTC that user receives after reducing all fees (protocol, locker, teleporter)
     function _mintAndReduceFees(
-        address _lockerScriptHash,
+        bytes memory _lockerLockingScript,
         bytes32 _txId
     ) private returns (uint _remainedAmount) {
 
         // Mints teleBTC for cc exchange router
         uint mintedAmount = ILockers(lockers).mint(
-            _lockerScriptHash,
+            _lockerLockingScript,
             address(this),
             ccExchangeRequests[_txId].inputAmount
         );

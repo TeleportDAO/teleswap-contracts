@@ -108,15 +108,15 @@ interface ICCExchangeRouter {
 
     function ccExchange(
         // Bitcoin tx
-        bytes4 version,
-        bytes memory vin,
-        bytes calldata vout,
-        bytes4 locktime,
+        bytes4 _version,
+        bytes memory _vin,
+        bytes calldata _vout,
+        bytes4 _locktime,
         // Bitcoin block number
-        uint256 blockNumber,
+        uint256 _blockNumber,
         // Merkle proof
-        bytes calldata intermediateNodes,
-        uint index,
-        address lockerBitcoinDecodedAddress
+        bytes calldata _intermediateNodes,
+        uint _index,
+        bytes calldata _lockerLockingScript
     ) external payable returns(bool);
 }

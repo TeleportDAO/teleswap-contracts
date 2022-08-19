@@ -7,15 +7,14 @@ interface ILockers {
 
     event RequestAddLocker(
         address indexed lockerTargetAddress,
-        bytes lockerRedeemScript,
+        bytes lockerLockingScript,
         uint TDTLockedAmount,
-        uint nativeTokenLockedAmount,
-        bool indexed isScriptHash
+        uint nativeTokenLockedAmount
     );
 
     event RequestRemoveLocker(
         address indexed lockerTargetAddress,
-        bytes lockerRedeemScript,
+        bytes lockerLockingScript,
         uint TDTUnlockedAmount,
         uint nativeTokenUnlockedAmount,
         uint netMinted        //   = totalMinted  - totalBurnt which needs to be burnt
@@ -23,16 +22,15 @@ interface ILockers {
 
     event LockerAdded(
         address indexed lockerTargetAddress,
-        bytes lockerRedeemScript,
+        bytes lockerLockingScript,
         uint TDTLockedAmount,
         uint nativeTokenLockedAmount,
-        bool isScriptHash
-    // uint addingTime
+        uint addingTime
     );
 
     event LockerRemoved(
         address indexed lockerTargetAddress,
-        bytes lockerRedeemScript,
+        bytes lockerLockingScript,
         uint TDTUnlockedAmount,
         uint nativeTokenUnlockedAmount
     );
@@ -44,13 +42,13 @@ interface ILockers {
 
     // Read-only functions
 
-    function getLockerTargetAddress(address  _lockerScriptHash) external view returns (address);
+    function getLockerTargetAddress(bytes calldata _lockerLockingScript) external view returns (address);
 
-    function isLocker(address _lockerScriptHash) external view returns (bool);
+    function isLocker(bytes calldata _lockerLockingScript) external view returns (bool);
 
     function getNumberOfLockers() external view returns (uint);
 
-    function getLockerRedeemScript(address _lockerTargetAddress) external view returns (bytes memory);
+    function getLockerLockingScript(address _lockerTargetAddress) external view returns (bytes memory);
 
     function isActive(address _lockerTargetAddress) external view returns (bool);
 
@@ -70,9 +68,9 @@ interface ILockers {
 
     function removeBurner(address _account) external;
 
-    function mint(address _lockerScriptHash, address _receiver, uint _amount) external returns(uint);
+    function mint(bytes calldata _lockerLockingScript, address _receiver, uint _amount) external returns(uint);
 
-    function burn(address _lockerScriptHash, uint256 _amount) external returns(uint);
+    function burn(bytes calldata _lockerLockingScript, uint256 _amount) external returns(uint);
 
     function setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) external;
 
@@ -94,8 +92,7 @@ interface ILockers {
     ) external returns (bool);
 
     function requestToBecomeLocker(
-        bytes memory _candidateBitcoinAddress,
-        address _candidateBitcoinDecodedAddress,
+        bytes calldata _lockerLockingScript,
         uint _lockedTDTAmount,
         uint _lockedNativeTokenAmount
     ) external payable returns (bool);
