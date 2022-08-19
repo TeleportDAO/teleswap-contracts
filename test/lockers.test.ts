@@ -800,4 +800,130 @@ describe("Lockers", async () => {
 
     });
 
+    describe("#pauseLocker", async () => {
+
+        beforeEach(async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+        });
+
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("only admin can pause locker", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.pauseLocker()
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+        });
+
+        it("contract paused successsfully", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockers.pauseLocker()
+
+            await expect(
+                lockerSigner1.selfRemoveLocker()
+            ).to.be.revertedWith("Pausable: paused")
+
+            await expect(
+                lockerSigner1.slashLocker(
+                    signer1Address,
+                    0,
+                    deployerAddress,
+                    10000,
+                    ccBurnSimulatorAddress
+                )
+            ).to.be.revertedWith("Pausable: paused")
+
+            await expect(
+                lockerSigner1.liquidateLocker(
+                    signer1Address,
+                    10000
+                )
+            ).to.be.revertedWith("Pausable: paused")
+
+            await expect(
+                lockerSigner1.mint(
+                    signer1Address,
+                    signer2Address,
+                    10000
+                )
+            ).to.be.revertedWith("Pausable: paused")
+
+            await expect(
+                lockerSigner1.burn(
+                    signer1Address,
+                    10000
+                )
+            ).to.be.revertedWith("Pausable: paused")
+
+        });
+
+        it("can't pause when already paused", async function () {
+
+            await lockers.pauseLocker()
+
+            await expect(
+                lockers.pauseLocker()
+            ).to.be.revertedWith("Pausable: paused")
+
+        });
+
+    });
+
+    describe("#unPauseLocker", async () => {
+
+        beforeEach(async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+        });
+
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("only admin can un-pause locker", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.unPauseLocker()
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+        });
+
+        it("can't un-pause when already un-paused", async function () {
+
+            await expect(
+                lockers.unPauseLocker()
+            ).to.be.revertedWith("Pausable: not paused")
+
+        });
+
+        it("contract un-paused successsfully", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockers.pauseLocker()
+
+            await expect(
+                lockerSigner1.liquidateLocker(
+                    signer1Address,
+                    10000
+                )
+            ).to.be.revertedWith("Pausable: paused")
+
+            await lockers.unPauseLocker()
+
+            await expect(
+                lockerSigner1.liquidateLocker(
+                    signer1Address,
+                    10000
+                )
+            ).to.be.revertedWith("Lockers: target address is not locker")
+
+        });
+
+    });
+
 })
