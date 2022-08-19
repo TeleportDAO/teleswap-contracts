@@ -185,13 +185,15 @@ library ViewBTC {
     // @return             the scriptPubkey
     function scriptPubkey(bytes29 _output) internal pure typeAssert(_output, BTCTypes.TxOut) returns (bytes29) {
         uint64 scriptLength = indexCompactInt(_output, 8);
-        return _output.slice(8, compactIntLength(scriptLength) + scriptLength, uint40(BTCTypes.ScriptPubkey));
+        return _output.slice(8 + compactIntLength(scriptLength), scriptLength, uint40(BTCTypes.ScriptPubkey));
     }
 
-    function scriptPubkeyBytes(bytes29 _output) internal pure typeAssert(_output, BTCTypes.TxOut) returns (bytes32) {
+    // @notice             extracts the scriptPubkey from an output
+    // @param _output      the output
+    // @return             the scriptPubkey
+    function scriptPubkeyWithLength(bytes29 _output) internal pure typeAssert(_output, BTCTypes.TxOut) returns (bytes29) {
         uint64 scriptLength = indexCompactInt(_output, 8);
-        bytes29 scriptPubkeyView = _output.slice(8, compactIntLength(scriptLength) + scriptLength, uint40(BTCTypes.ScriptPubkey));
-        return scriptPubkeyView.index(compactIntLength(scriptLength), uint8(scriptLength));
+        return _output.slice(8, compactIntLength(scriptLength) + scriptLength, uint40(BTCTypes.ScriptPubkey));
     }
 
     // @notice             determines the length of the first output in an array of outputs

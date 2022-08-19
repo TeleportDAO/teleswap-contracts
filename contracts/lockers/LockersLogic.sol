@@ -73,16 +73,16 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         _unpause();
     }
 
-    function getLockerTargetAddress(address  _lockerScriptHash) external view override returns (address) {
-        return lockerTargetAddress[_lockerScriptHash];
+    function getLockerTargetAddress(bytes calldata  _lockerLockingScript) external view override returns (address) {
+        return lockerTargetAddress[_lockerLockingScript];
     }
 
     /// @notice                           Checks whether an address is locker
     /// @dev
     /// @param _lockerTargetAddress       Address of locker on the target chain
     /// @return                           True if user is locker
-    function isLocker(address _lockerScriptHash) external override view nonZeroAddress(_lockerScriptHash) returns(bool) {
-        return lockersMapping[lockerTargetAddress[_lockerScriptHash]].isLocker;
+    function isLocker(bytes calldata _lockerLockingScript) external override view returns(bool) {
+        return lockersMapping[lockerTargetAddress[_lockerLockingScript]].isLocker;
     }
 
     /// @notice                           Give number of lockers
@@ -96,10 +96,10 @@ contract LockersLogic is LockersStorageStructure, ILockers {
     /// @dev
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             Bitcoin public key of locker
-    function getLockerRedeemScript(
+    function getLockerLockingScript(
         address _lockerTargetAddress
     ) external override view nonZeroAddress(_lockerTargetAddress) returns (bytes memory) {
-        return lockersMapping[_lockerTargetAddress].lockerRedeemScript;
+        return lockersMapping[_lockerTargetAddress].lockerLockingScript;
     }
 
     /// @notice                             Tells if a locker is active or not
@@ -174,21 +174,15 @@ contract LockersLogic is LockersStorageStructure, ILockers {
 
     /// @notice                                 Adds user to candidates list
     /// @dev
-    /// @param _candidateRedeemScript         Bitcoin address of the candidate
+    /// @param _candidateLockingScript         Bitcoin address of the candidate
     /// @param _lockedTDTAmount                 Bond amount of locker in TDT
     /// @param _lockedNativeTokenAmount         Bond amount of locker in native token of the target chain
     /// @return                                 True if candidate is added successfully
     function requestToBecomeLocker(
-        bytes memory _candidateRedeemScript,
-        address _candidateScriptHash,
+        bytes calldata _candidateLockingScript,
         uint _lockedTDTAmount,
         uint _lockedNativeTokenAmount
-    ) external override payable nonZeroAddress(_candidateScriptHash) nonReentrant returns (bool) {
-
-        require(
-            _doubleHash(_candidateRedeemScript) == _candidateScriptHash,
-            "Lockers: redeem script hash doesn't match with redeem script"
-        );
+    ) external override payable nonReentrant returns (bool) {
 
         require(
             !lockersMapping[msg.sender].isCandidate,
@@ -211,14 +205,13 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         );
 
         require(
-            lockerTargetAddress[_candidateScriptHash] == address(0),
+            lockerTargetAddress[_candidateLockingScript] == address(0),
             "Lockers: redeem script hash is used before"
         );
 
         require(IERC20(TeleportDAOToken).transferFrom(msg.sender, address(this), _lockedTDTAmount));
         locker memory locker_;
-        locker_.lockerRedeemScript = _candidateRedeemScript;
-        locker_.lockerScriptHash = _candidateScriptHash;
+        locker_.lockerLockingScript = _candidateLockingScript;
         locker_.TDTLockedAmount = _lockedTDTAmount;
         locker_.nativeTokenLockedAmount = _lockedNativeTokenAmount;
         locker_.isCandidate = true;
@@ -229,10 +222,9 @@ contract LockersLogic is LockersStorageStructure, ILockers {
 
         emit RequestAddLocker(
             msg.sender,
-            _candidateRedeemScript,
+            _candidateLockingScript,
             _lockedTDTAmount,
-            0,
-            false
+            0
         );
 
         return true;
@@ -283,14 +275,14 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         totalNumberOfCandidates = totalNumberOfCandidates -1;
         totalNumberOfLockers = totalNumberOfLockers + 1;
 
-        lockerTargetAddress[lockersMapping[_lockerTargetAddress].lockerScriptHash] = _lockerTargetAddress;
+        lockerTargetAddress[lockersMapping[_lockerTargetAddress].lockerLockingScript] = _lockerTargetAddress;
 
         emit LockerAdded(
             _lockerTargetAddress,
-            lockersMapping[_lockerTargetAddress].lockerRedeemScript,
+            lockersMapping[_lockerTargetAddress].lockerLockingScript,
             lockersMapping[_lockerTargetAddress].TDTLockedAmount,
             lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
-            lockersMapping[_lockerTargetAddress].isScriptHash
+            block.timestamp
         );
         return true;
     }
@@ -312,7 +304,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
 
         emit RequestRemoveLocker(
             msg.sender,
-            lockersMapping[_msgSender()].lockerRedeemScript,
+            lockersMapping[_msgSender()].lockerLockingScript,
             lockersMapping[_msgSender()].TDTLockedAmount,
             lockersMapping[_msgSender()].nativeTokenLockedAmount,
             lockersMapping[_msgSender()].netMinted
@@ -354,7 +346,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
 
         emit LockerRemoved(
             _lockerTargetAddress,
-            _removingLokcer.lockerRedeemScript,
+            _removingLokcer.lockerLockingScript,
             _removingLokcer.TDTLockedAmount,
             _removingLokcer.nativeTokenLockedAmount
         );
@@ -394,7 +386,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
 
         emit LockerRemoved(
             _msgSender(),
-            _removingLokcer.lockerRedeemScript,
+            _removingLokcer.lockerLockingScript,
             _removingLokcer.TDTLockedAmount,
             _removingLokcer.nativeTokenLockedAmount
         );
@@ -514,13 +506,13 @@ contract LockersLogic is LockersStorageStructure, ILockers {
     }
 
     function mint(
-        address _lockerScriptHash,
+        bytes calldata _lockerLockingScript,
         address _receiver,
         uint _amount
-    ) external override nonZeroAddress(_lockerScriptHash) nonZeroAddress(_receiver)
+    ) external override nonZeroAddress(_receiver)
     nonZeroValue(_amount) nonReentrant whenNotPaused onlyMinter returns (uint) {
 
-        address _lockerTargetAddress = lockerTargetAddress[_lockerScriptHash];
+        address _lockerTargetAddress = lockerTargetAddress[_lockerLockingScript];
 
         uint theLockerCapacity = getLockerCapacity(_lockerTargetAddress);
 
@@ -545,12 +537,12 @@ contract LockersLogic is LockersStorageStructure, ILockers {
     }
 
     function burn(
-        address _lockerScriptHash,
+        bytes calldata _lockerLockingScript,
         uint _amount
-    ) external override nonZeroAddress(_lockerScriptHash) nonZeroValue(_amount)
+    ) external override nonZeroValue(_amount)
     nonReentrant whenNotPaused onlyBurner returns (uint) {
 
-        address _lockerTargetAddress = lockerTargetAddress[_lockerScriptHash];
+        address _lockerTargetAddress = lockerTargetAddress[_lockerLockingScript];
 
         // Transfers teleBTC from user
         ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), _amount);
