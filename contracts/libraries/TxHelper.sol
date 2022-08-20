@@ -92,7 +92,7 @@ library TxHelper {
     function extractOutpoint(
         bytes memory _vin, 
         uint _index
-    ) internal view returns (bytes32 _txId, uint _outputIndex) {
+    ) internal pure returns (bytes32 _txId, uint _outputIndex) {
         bytes29 vin = _vin.ref(0).tryAsVin();
         bytes29 input = ViewBTC.indexVin(vin, _index);
         bytes29 outpoint = ViewBTC.outpoint(input);

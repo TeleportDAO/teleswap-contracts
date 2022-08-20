@@ -18,6 +18,11 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         _;
     }
 
+    modifier nonZeroValue(uint _value) {
+        require(_value > 0, "CCBurnRouter: value is zero");
+        _;
+    }
+
     // Public variables
     address public override relay;
     address public override lockers;
@@ -141,7 +146,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint _amount,
         bytes memory _userLockingScript,
         bytes calldata _lockerLockingScript
-    ) external nonReentrant override returns (uint _burntAmount) {
+    ) external nonReentrant nonZeroValue(_amount) override returns (uint _burntAmount) {
         // Checks if the given locking script is locker
         require(
             ILockers(lockers).isLocker(_lockerLockingScript),
@@ -220,7 +225,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         address _lockerTargetAddress = ILockers(lockers)
         .getLockerTargetAddress(_lockerLockingScript);
 
-        // Checks if the locker address is valid
+        // Checks if the locking script is valid
         require(
             ILockers(lockers).isLocker(_lockerLockingScript),
             "CCBurnRouter: given locking script is not locker"
@@ -233,7 +238,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         require(
             _endIndex < burnRequests[_lockerTargetAddress].length &&
             _startIndex <= _endIndex,
-            'CCBurnRouter: burnProof wrong index input'
+            'CCBurnRouter: wrong index'
         );
 
         // Checks inclusion of transaction
@@ -351,7 +356,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         );
 
         // Finds input tx id and checks its inclusion
-        bytes32 _inputTxId = _calculateTxId(_versions[0], _inputVin, _inputVin, _locktimes[0]);
+        bytes32 _inputTxId = _calculateTxId(_versions[0], _inputVin, _inputVout, _locktimes[0]);
         require(
             _isConfirmed(
                 _inputTxId,
@@ -612,8 +617,9 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         // Calculates protocol fee
         uint protocolFee = _amount*protocolPercentageFee/10000;
 
+        require(_amount > protocolFee + bitcoinFee, "CCBurnRouter: amount is too low");
+        
         uint remainedAmount = _amount - protocolFee - bitcoinFee;
-        require(remainedAmount > 0, "CCBurnRouter: amount is too low");
 
         // Transfers protocol fee
         ITeleBTC(teleBTC).transfer(treasury, protocolFee);
