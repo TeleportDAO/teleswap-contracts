@@ -1,3 +1,4 @@
+const CC_BURN_REQUESTS = require('./test_fixtures/ccBurnRequests.json');
 require('dotenv').config({path:"../../.env"});
 
 import { expect } from "chai";
@@ -49,19 +50,12 @@ describe("CCBurnRouter", async () => {
     let TREASURY = "0x0000000000000000000000000000000000000002";
 
     let LOCKER_TARGET_ADDRESS = ONE_ADDRESS;
-    let LOCKER1_LOCKING_SCRIPT = '0xa914748284390f9e263a4b766a75d0633c50426eb87587';
+    let LOCKER1_LOCKING_SCRIPT = '0x76a914748284390f9e263a4b766a75d0633c50426eb87587ac';
 
     let btcPublicKey = "03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd"
     let btcAddress = "mmPPsxXdtqgHFrxZdtFCtkwhHynGTiTsVh"
     let userLockingScript = "0x76a91412ab8dc588ca9d5787dde7eb29569da63c3a238c88ac"
     let btcSegwitDecodedAddress = "0x751e76e8199196d454941c45d1b3a323f1433bd6"
-
-    // A user sends tokens to the locker
-    let btcUserVersion =  "0x02000000"
-    let btcUserVin = "0x01df4a990ad3c3a225862465bb660f06d445914a038ada819ace235afb9f23cff30200000000feffffff"
-    let btcUserVout = "0x0200e1f505000000001976a91412ab8dc588ca9d5787dde7eb29569da63c3a238c88ac984f42060100000016001447ef833107e0ad9998f8711813075ac62ec1104b"
-    let btcUserLocktime = "0x00000000"
-    let btcUserInterMediateNodes = "0x7451e7cd7a5afcd93d5a3f84e4d7976fb3bd771dc6aeab416d818ea1d72c0476"
 
     // The locker sends tokens to another wallet
     let btcLockerVersion =  "0x02000000"
@@ -167,8 +161,8 @@ describe("CCBurnRouter", async () => {
         await mockBitcoinRelay.mock.lastSubmittedHeight.returns(blockNumber);
     }
 
-    async function setRelayCheckTxProofReturn(isFinal: boolean): Promise<void> {
-        await mockBitcoinRelay.mock.getBlockHeaderFee.returns(0); // Fee of relay
+    async function setRelayCheckTxProofReturn(isFinal: boolean, relayFee?: number): Promise<void> {
+        await mockBitcoinRelay.mock.getBlockHeaderFee.returns(relayFee || 0); // Fee of relay
         await mockBitcoinRelay.mock.checkTxProof
             .returns(isFinal);
     }
@@ -228,12 +222,12 @@ describe("CCBurnRouter", async () => {
         // Provide proof that the locker has paid the burnt amount to the user(s)
         await expect(
             ccBurnRouterSigner2.burnProof(
-                btcUserVersion,
-                btcUserVin,
-                btcUserVout,
-                btcUserLocktime,
+                CC_BURN_REQUESTS.burnProof_valid.version,
+                CC_BURN_REQUESTS.burnProof_valid.vin,
+                CC_BURN_REQUESTS.burnProof_valid.vout,
+                CC_BURN_REQUESTS.burnProof_valid.locktime,
                 theBlockNumber,
-                btcUserInterMediateNodes,
+                CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                 1,
                 LOCKER_TARGET_ADDRESS,
                 0,
@@ -388,8 +382,8 @@ describe("CCBurnRouter", async () => {
     });
 
     describe("#burnProof", async () => {
-        let theBlockNumber = 100;
-        ;
+        let burnReqBlockNumber = 100;
+        
         let burntAmount: number;
 
         beforeEach(async () => {
@@ -399,7 +393,7 @@ describe("CCBurnRouter", async () => {
             await mintTeleBTCForTest();
     
             // Sends a burn request
-            burntAmount = await sendBurnRequest(theBlockNumber, userRequestedAmount);
+            burntAmount = await sendBurnRequest(burnReqBlockNumber, userRequestedAmount);
         });
     
         afterEach(async () => {
@@ -415,12 +409,12 @@ describe("CCBurnRouter", async () => {
 
             await expect(
                 ccBurnRouterSigner2.burnProof(
-                    btcUserVersion,
-                    btcUserVin,
-                    btcUserVout,
-                    btcUserLocktime,
-                    theBlockNumber + 5,
-                    btcUserInterMediateNodes,
+                    CC_BURN_REQUESTS.burnProof_valid.version,
+                    CC_BURN_REQUESTS.burnProof_valid.vin,
+                    CC_BURN_REQUESTS.burnProof_valid.vout,
+                    CC_BURN_REQUESTS.burnProof_valid.locktime,
+                    burnReqBlockNumber + 5,
+                    CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER1_LOCKING_SCRIPT,
                     0,
@@ -433,78 +427,78 @@ describe("CCBurnRouter", async () => {
                 LOCKER_TARGET_ADDRESS,
                 0
             );
+
+            expect(
+                await ccBurnRouter.isUsedAsBurnProof(
+                    CC_BURN_REQUESTS.burnProof_valid.txId
+                )
+            ).to.equal(true);
         })
 
-        it("Reverts if index range is not correct (wrong start or end index)", async function () {
+        it("Submits a valid burn proof which doesn't have change vout", async function () {
 
-            
-
-
-            // Set mock contracts outputs
+            // Sets mock contracts outputs
             await setRelayCheckTxProofReturn(true);
             await setLockersIsLocker(true);
             await setLockersGetLockerTargetAddress();
 
-            // Should revert
             await expect(
                 ccBurnRouterSigner2.burnProof(
-                    btcUserVersion,
-                    btcUserVin,
-                    btcUserVout,
-                    btcUserLocktime,
-                    theBlockNumber + 5,
-                    btcUserInterMediateNodes,
+                    CC_BURN_REQUESTS.burnProof_validWithoutChange.version,
+                    CC_BURN_REQUESTS.burnProof_validWithoutChange.vin,
+                    CC_BURN_REQUESTS.burnProof_validWithoutChange.vout,
+                    CC_BURN_REQUESTS.burnProof_validWithoutChange.locktime,
+                    burnReqBlockNumber + 5,
+                    CC_BURN_REQUESTS.burnProof_validWithoutChange.intermediateNodes,
                     1,
-                    LOCKER_TARGET_ADDRESS,
-                    1,
+                    LOCKER1_LOCKING_SCRIPT,
+                    0,
                     0
                 )
-            ).to.revertedWith("CCBurnRouter: wrong index")
+            ).to.emit(ccBurnRouter, "PaidCCBurn").withArgs(
+                signer1Address,
+                userLockingScript,
+                burntAmount,
+                LOCKER_TARGET_ADDRESS,
+                0
+            );
 
-            // Should revert with a wrong end index
+            expect(
+                await ccBurnRouter.isUsedAsBurnProof(
+                    CC_BURN_REQUESTS.burnProof_validWithoutChange.txId
+                )
+            ).to.equal(true);
+        })
+
+        it("Reverts since locktime is non-zero", async function () {
             await expect(
                 ccBurnRouterSigner2.burnProof(
-                    btcUserVersion,
-                    btcUserVin,
-                    btcUserVout,
-                    btcUserLocktime,
-                    theBlockNumber + 5,
-                    btcUserInterMediateNodes,
+                    CC_BURN_REQUESTS.burnProof_valid.version,
+                    CC_BURN_REQUESTS.burnProof_valid.vin,
+                    CC_BURN_REQUESTS.burnProof_valid.vout,
+                    '0x00000001',
+                    burnReqBlockNumber + 5,
+                    CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER_TARGET_ADDRESS,
                     0,
-                    1
+                    0
                 )
-            ).to.revertedWith("CCBurnRouter: wrong index")
+            ).to.revertedWith("CCBurnRouter: non-zero lock time")
         })
 
-        it("Reverts if locker is not valid", async function () {
-            let theBlockNumber = 100;
-
-            // Find the locker target address
-            // let LOCKER_TARGET_ADDRESS = await mockLockers.redeemScriptHash();
-            
-
-            // Mint TeleBTC for test
-            await mintTeleBTCForTest();
-
-            // Send a burn request
-            await sendBurnRequest(theBlockNumber, userRequestedAmount);
-
-            // Set mock contracts outputs
-            await setRelayCheckTxProofReturn(true);
+        it("Reverts if locking script is not valid", async function () {
+            // Sets mock contracts outputs
             await setLockersIsLocker(false);
-            await setLockersGetLockerTargetAddress();
 
-            // Should revert
             await expect(
                 ccBurnRouterSigner2.burnProof(
-                    btcUserVersion,
-                    btcUserVin,
-                    btcUserVout,
-                    btcUserLocktime,
-                    theBlockNumber + 5,
-                    btcUserInterMediateNodes,
+                    CC_BURN_REQUESTS.burnProof_valid.version,
+                    CC_BURN_REQUESTS.burnProof_valid.vin,
+                    CC_BURN_REQUESTS.burnProof_valid.vout,
+                    CC_BURN_REQUESTS.burnProof_valid.locktime,
+                    burnReqBlockNumber + 5,
+                    CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER_TARGET_ADDRESS,
                     0,
@@ -513,33 +507,82 @@ describe("CCBurnRouter", async () => {
             ).to.revertedWith("CCBurnRouter: given locking script is not locker")
         })
 
-        it("Reverts if locker's tx has not been finalized on relay", async function () {
-            let theBlockNumber = 100;
-
-            // Find the locker target address
-            // let LOCKER_TARGET_ADDRESS = await mockLockers.redeemScriptHash();
-            
-
-            // Mint TeleBTC for test
-            await mintTeleBTCForTest();
-
-            // Send a burn request
-            await sendBurnRequest(theBlockNumber, userRequestedAmount);
+        it("Reverts if index range is not correct (wrong start or end index)", async function () {
 
             // Set mock contracts outputs
+            await setRelayCheckTxProofReturn(true);
+            await setLockersIsLocker(true);
+            await setLockersGetLockerTargetAddress();
+
+            // Should revert when start index is bigger than end index
+            await expect(
+                ccBurnRouterSigner2.burnProof(
+                    CC_BURN_REQUESTS.burnProof_valid.version,
+                    CC_BURN_REQUESTS.burnProof_valid.vin,
+                    CC_BURN_REQUESTS.burnProof_valid.vout,
+                    CC_BURN_REQUESTS.burnProof_valid.locktime,
+                    burnReqBlockNumber + 5,
+                    CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
+                    1,
+                    LOCKER_TARGET_ADDRESS,
+                    1,
+                    0
+                )
+            ).to.revertedWith("CCBurnRouter: wrong index")
+
+            // Should revert when end index is bigger than total number of burn requests
+            await expect(
+                ccBurnRouterSigner2.burnProof(
+                    CC_BURN_REQUESTS.burnProof_valid.version,
+                    CC_BURN_REQUESTS.burnProof_valid.vin,
+                    CC_BURN_REQUESTS.burnProof_valid.vout,
+                    CC_BURN_REQUESTS.burnProof_valid.locktime,
+                    burnReqBlockNumber + 5,
+                    CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
+                    1,
+                    LOCKER_TARGET_ADDRESS,
+                    0,
+                    1
+                )
+            ).to.revertedWith("CCBurnRouter: wrong index")
+        })
+
+        it("Reverts since paid fee is not enough", async function () {
+            // Sets mock contracts outputs
+            await setRelayCheckTxProofReturn(true, 1);
+            await setLockersIsLocker(true);
+            await setLockersGetLockerTargetAddress();
+
+            await expect(
+                ccBurnRouterSigner2.burnProof(
+                    CC_BURN_REQUESTS.burnProof_valid.version,
+                    CC_BURN_REQUESTS.burnProof_valid.vin,
+                    CC_BURN_REQUESTS.burnProof_valid.vout,
+                    CC_BURN_REQUESTS.burnProof_valid.locktime,
+                    burnReqBlockNumber + 5,
+                    CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
+                    1,
+                    LOCKER_TARGET_ADDRESS,
+                    0,
+                    0
+                )
+            ).to.revertedWith("CCBurnRouter: relay fee is not sufficient");
+        })
+
+        it("Reverts if locker's tx has not been finalized on relay", async function () {
+            // Sets mock contracts outputs
             await setRelayCheckTxProofReturn(false);
             await setLockersIsLocker(true);
             await setLockersGetLockerTargetAddress();
 
-            // Should revert
             await expect(
                 ccBurnRouterSigner2.burnProof(
-                    btcUserVersion,
-                    btcUserVin,
-                    btcUserVout,
-                    btcUserLocktime,
-                    theBlockNumber + 5,
-                    btcUserInterMediateNodes,
+                    CC_BURN_REQUESTS.burnProof_valid.version,
+                    CC_BURN_REQUESTS.burnProof_valid.vin,
+                    CC_BURN_REQUESTS.burnProof_valid.vout,
+                    CC_BURN_REQUESTS.burnProof_valid.locktime,
+                    burnReqBlockNumber + 5,
+                    CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER_TARGET_ADDRESS,
                     0,
@@ -548,20 +591,11 @@ describe("CCBurnRouter", async () => {
             ).to.revertedWith("CCBurnRouter: transaction has not finalized yet");
         })
 
-        it("Reverts if provided tx doesn't exist", async function () {
-            let theBlockNumber = 100;
+        it("Reverts if vout is null", async function () {
+            // Sends a burn request
+            await sendBurnRequest(burnReqBlockNumber, userRequestedAmount);
 
-            // Find the locker target address
-            // let LOCKER_TARGET_ADDRESS = await mockLockers.redeemScriptHash();
-            
-
-            // Mint TeleBTC for test
-            await mintTeleBTCForTest();
-
-            // Send a burn request
-            await sendBurnRequest(theBlockNumber, userRequestedAmount);
-
-            // Set mock contracts outputs
+            // Sets mock contracts outputs
             await setRelayCheckTxProofReturn(true);
             await setLockersIsLocker(true);
             await setLockersGetLockerTargetAddress();
@@ -569,26 +603,26 @@ describe("CCBurnRouter", async () => {
             // Should revert with a wrong start index
             await expect(
                 ccBurnRouterSigner2.burnProof(
-                    btcUserVersion,
-                    btcUserVin,
-                    "0000",
-                    btcUserLocktime,
-                    theBlockNumber + 5,
-                    btcUserInterMediateNodes,
+                    CC_BURN_REQUESTS.burnProof_valid.version,
+                    CC_BURN_REQUESTS.burnProof_valid.vin,
+                    "0x0000",
+                    CC_BURN_REQUESTS.burnProof_valid.locktime,
+                    burnReqBlockNumber + 5,
+                    CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER_TARGET_ADDRESS,
                     0,
                     0
                 )
-            ).to.reverted
+            ).to.revertedWith("TxHelper: vout is null")
         })
 
-        it("Doesn't accept proof if the paid amount is not exact", async function () {
+        it("Doesn't accept burn proof since the paid amount is not exact", async function () {
             let wrongUserRequestAmount = BigNumber.from(100080000)  
-            let theBlockNumber = 100;
+            let burnReqBlockNumber = 100;
 
             // Send a burn request
-            await sendBurnRequest(theBlockNumber, wrongUserRequestAmount);
+            await sendBurnRequest(burnReqBlockNumber, wrongUserRequestAmount);
 
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(true);
@@ -598,18 +632,121 @@ describe("CCBurnRouter", async () => {
             // Should revert with a wrong start index
             await expect(
                 ccBurnRouterSigner2.burnProof(
-                    btcUserVersion,
-                    btcUserVin,
-                    btcUserVout,
-                    btcUserLocktime,
-                    theBlockNumber + 5,
-                    btcUserInterMediateNodes,
+                    CC_BURN_REQUESTS.burnProof_valid.version,
+                    CC_BURN_REQUESTS.burnProof_valid.vin,
+                    CC_BURN_REQUESTS.burnProof_valid.vout,
+                    CC_BURN_REQUESTS.burnProof_valid.locktime,
+                    burnReqBlockNumber + 5,
+                    CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER_TARGET_ADDRESS,
                     1,
                     1
                 )
             ).to.not.emit(ccBurnRouter, "PaidCCBurn");
+
+            expect(
+                await ccBurnRouterSigner2.isTransferred(LOCKER_TARGET_ADDRESS, 0)
+            ).to.equal(false);
+        })
+
+        it("Doesn't accept burn proof since the proof has been submitted before", async function () {
+
+            // Sets mock contracts outputs
+            await setRelayCheckTxProofReturn(true);
+            await setLockersIsLocker(true);
+            await setLockersGetLockerTargetAddress();
+
+            await ccBurnRouterSigner2.burnProof(
+                CC_BURN_REQUESTS.burnProof_valid.version,
+                CC_BURN_REQUESTS.burnProof_valid.vin,
+                CC_BURN_REQUESTS.burnProof_valid.vout,
+                CC_BURN_REQUESTS.burnProof_valid.locktime,
+                burnReqBlockNumber + 5,
+                CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
+                1,
+                LOCKER1_LOCKING_SCRIPT,
+                0,
+                0
+            );
+
+            expect(
+                await ccBurnRouterSigner2.isTransferred(LOCKER_TARGET_ADDRESS, 0)
+            ).to.equal(true);
+
+            await expect(
+                ccBurnRouterSigner2.burnProof(
+                    CC_BURN_REQUESTS.burnProof_valid.version,
+                    CC_BURN_REQUESTS.burnProof_valid.vin,
+                    CC_BURN_REQUESTS.burnProof_valid.vout,
+                    CC_BURN_REQUESTS.burnProof_valid.locktime,
+                    burnReqBlockNumber + 5,
+                    CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
+                    1,
+                    LOCKER1_LOCKING_SCRIPT,
+                    0,
+                    0
+                )
+            ).to.not.emit(ccBurnRouter, "PaidCCBurn");
+        })
+
+        it("Doesn't accept burn proof since deadline is passed", async function () {
+
+            // Sets mock contracts outputs
+            await setRelayCheckTxProofReturn(true);
+            await setLockersIsLocker(true);
+            await setLockersGetLockerTargetAddress();
+
+            await expect(
+                ccBurnRouterSigner2.burnProof(
+                    CC_BURN_REQUESTS.burnProof_valid.version,
+                    CC_BURN_REQUESTS.burnProof_valid.vin,
+                    CC_BURN_REQUESTS.burnProof_valid.vout,
+                    CC_BURN_REQUESTS.burnProof_valid.locktime,
+                    burnReqBlockNumber + TRANSFER_DEADLINE + 1,
+                    CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
+                    1,
+                    LOCKER1_LOCKING_SCRIPT,
+                    0,
+                    0
+                )
+            ).to.not.emit(ccBurnRouter, "PaidCCBurn");
+
+            expect(
+                await ccBurnRouterSigner2.isTransferred(LOCKER_TARGET_ADDRESS, 0)
+            ).to.equal(false);
+        })
+
+        it("Doesn't accept burn proof since change address is invalid", async function () {
+
+            // Sets mock contracts outputs
+            await setRelayCheckTxProofReturn(true);
+            await setLockersIsLocker(true);
+            await setLockersGetLockerTargetAddress();
+
+            await ccBurnRouterSigner2.burnProof(
+                CC_BURN_REQUESTS.burnProof_invalidChange.version,
+                CC_BURN_REQUESTS.burnProof_invalidChange.vin,
+                CC_BURN_REQUESTS.burnProof_invalidChange.vout,
+                CC_BURN_REQUESTS.burnProof_invalidChange.locktime,
+                burnReqBlockNumber + 5,
+                CC_BURN_REQUESTS.burnProof_invalidChange.intermediateNodes,
+                1,
+                LOCKER1_LOCKING_SCRIPT,
+                0,
+                0
+            );
+
+            expect(
+                await ccBurnRouterSigner2.isTransferred(LOCKER_TARGET_ADDRESS, 0)
+            ).to.equal(true);
+
+            expect(
+                await ccBurnRouter.isUsedAsBurnProof(
+                    CC_BURN_REQUESTS.burnProof_invalidChange.txId
+                )
+            ).to.equal(false);
+
         })
     });
 

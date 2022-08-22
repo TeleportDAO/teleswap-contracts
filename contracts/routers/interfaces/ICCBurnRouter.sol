@@ -87,6 +87,8 @@ interface ICCBurnRouter {
 
 	function isTransferred(address _lockerTargetAddress, uint _index) external view returns (bool);
 
+	function isUsedAsBurnProof(bytes32 _txId) external view returns (bool);
+
 	// State-changing functions
 
 	function setRelay(address _relay) external;
@@ -114,12 +116,12 @@ interface ICCBurnRouter {
 	function burnProof(
 		bytes4 _version,
 		bytes memory _vin,
-		bytes calldata _vout,
+		bytes memory _vout,
 		bytes4 _locktime,
 		uint256 _blockNumber,
-		bytes calldata _intermediateNodes,
+		bytes memory _intermediateNodes,
 		uint _index,
-		bytes calldata _lockerLockingScript,
+		bytes memory _lockerLockingScript,
 		uint _startIndex,
 		uint _endIndex
 	) external payable returns (bool);

@@ -33,9 +33,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     uint public override slasherPercentageReward; // Min amount is %1
     uint public override bitcoinFee; // Fee of submitting a tx on Bitcoin
     mapping(address => burnRequest[]) public burnRequests; // Mapping from locker target address to assigned burn requests
-
-    // Private variables
-    mapping(bytes32 => bool) private isUsedAsBurnProof; // Mapping that shows a txId has been submitted to pay a burn request 
+    mapping(bytes32 => bool) public override isUsedAsBurnProof; // Mapping that shows a txId has been submitted to pay a burn request 
 
     /// @notice                             Handles cross-chain burn requests
     /// @param _relay                       Address of relay contract
@@ -209,10 +207,10 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     function burnProof(
         bytes4 _version,
         bytes memory _vin,
-        bytes calldata _vout,
+        bytes memory _vout,
         bytes4 _locktime,
         uint256 _blockNumber,
-        bytes calldata _intermediateNodes,
+        bytes memory _intermediateNodes,
         uint _index,
         bytes memory _lockerLockingScript,
         uint _startIndex,
@@ -221,15 +219,15 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         // Checks that locker's tx doesn't have any locktime
         require(_locktime == bytes4(0), "CCBurnRouter: non-zero lock time");
 
-        // Get the target address of the locker from its locking script
-        address _lockerTargetAddress = ILockers(lockers)
-        .getLockerTargetAddress(_lockerLockingScript);
-
         // Checks if the locking script is valid
         require(
             ILockers(lockers).isLocker(_lockerLockingScript),
             "CCBurnRouter: given locking script is not locker"
         );
+
+        // Get the target address of the locker from its locking script
+        address _lockerTargetAddress = ILockers(lockers)
+        .getLockerTargetAddress(_lockerLockingScript);
 
         /* 
             Checks the correctness of input indices
@@ -255,6 +253,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         // Checks the paid burn requests
         uint paidOutputCounter = _checkPaidBurnRequests(
+            _blockNumber,
             _lockerTargetAddress,
             _vout,
             _startIndex,
@@ -450,12 +449,14 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     }
 
     /// @notice                             Checks the burn requests that get paid by this transaction
+    /// @param _paidBlockNumber             Block number in which locker paid the burn request
     /// @param _lockerTargetAddress         Address of the locker on the target chain
     /// @param _vout                        Outputs of a transaction
     /// @param _startIndex                  Index to start searching for unpaid burn requests in the list
     /// @param _endIndex                    Index to finish searching for unpaid burn requests in the list
     /// @return paidOutputCounter           Number of executed burn requests
     function _checkPaidBurnRequests(
+        uint _paidBlockNumber,
         address _lockerTargetAddress,
         bytes memory _vout,
         uint _startIndex,
@@ -465,18 +466,15 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         /*  
             Below variable is for checking that every output in vout (except one) 
             is related to a cc burn request so that we can 
-            set isUsedAsBurnProof = true for the whole txId
+            set "isUsedAsBurnProof = true" for the whole txId
         */
         paidOutputCounter = 0;
-
-        // Gets last submitted height on relay
-        uint _lastSubmittedHeight = IBitcoinRelay(relay).lastSubmittedHeight();
 
         for (uint i = _startIndex; i <= _endIndex; i++) {
             // Checks that the request has not been paid and its deadline has not passed
             if (
                 !burnRequests[_lockerTargetAddress][i].isTransferred &&
-                burnRequests[_lockerTargetAddress][i].deadline >= _lastSubmittedHeight
+                burnRequests[_lockerTargetAddress][i].deadline >= _paidBlockNumber
             ) {
             
                 parsedAmount = TxHelper.parseOutputValue(
@@ -518,7 +516,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         if (parsedAmount != 0 && _paidOutputCounter + 1 == numberOfOutputs) {
             // One output sends the remained value to locker
             isUsedAsBurnProof[_txId] = true;
-        } else if (parsedAmount == 0 && _paidOutputCounter == numberOfOutputs) {
+        } else if (_paidOutputCounter == numberOfOutputs) {
             // All output pays cc burn requests
             isUsedAsBurnProof[_txId] = true;
         }
