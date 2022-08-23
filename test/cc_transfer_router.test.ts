@@ -42,9 +42,11 @@ describe("CCTransferRouter", async () => {
     let liquidationRatio = 15000;
 
     // Accounts
+    let proxyAdmin: Signer;
     let deployer: Signer;
     let signer1: Signer;
     let locker: Signer;
+    let proxyAdminAddress: Address;
     let lockerAddress: Address;
 
     // Contracts
@@ -62,8 +64,9 @@ describe("CCTransferRouter", async () => {
 
     before(async () => {
         // Sets accounts
-        [deployer, signer1, locker] = await ethers.getSigners();
+        [proxyAdmin, deployer, signer1, locker] = await ethers.getSigners();
 
+        proxyAdminAddress = await proxyAdmin.getAddress();
         lockerAddress = await locker.getAddress();
 
         teleportDAOToken = await deployTeleportDAOToken();
@@ -150,11 +153,18 @@ describe("CCTransferRouter", async () => {
             _signer || deployer
         );
         const lockersProxy = await lockersProxyFactory.deploy(
-            lockersLogic.address
+            lockersLogic.address,
+            proxyAdminAddress,
+            "0x"
         )
 
+
+        const lockers = await lockersLogic.attach(
+            lockersProxy.address
+        );
+
         // Initializes lockers proxy
-        await lockersProxy.initialize(
+        await lockers.initialize(
             teleportDAOToken.address,
             ONE_ADDRESS,
             mockPriceOracle.address,
@@ -164,10 +174,6 @@ describe("CCTransferRouter", async () => {
             liquidationRatio,
             LOCKER_PERCENTAGE_FEE
         )
-
-        const lockers = await lockersLogic.attach(
-            lockersProxy.address
-        );
 
         return lockers;
     };
