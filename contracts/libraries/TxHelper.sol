@@ -96,7 +96,7 @@ library TxHelper {
         bytes29 vin = _vin.ref(0).tryAsVin();
         bytes29 input = ViewBTC.indexVin(vin, _index);
         bytes29 outpoint = ViewBTC.outpoint(input);
-        _txId = revertBytes32(ViewBTC.txidLE(outpoint)); // TxId is in BE form
+        _txId = ViewBTC.txidLE(outpoint);
         _outputIndex = ViewBTC.outpointIdx(outpoint);
     }
 

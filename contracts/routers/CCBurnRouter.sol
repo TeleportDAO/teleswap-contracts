@@ -303,6 +303,9 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
                 "CCBurnRouter: payback deadline has not passed yet"
             );
 
+            // Sets "isTransferred = true" to prevent slashing the locker again
+            burnRequests[_lockerTargetAddress][_indices[i]].isTransferred = true;
+
             // Slashes locker and sends the slashed amount to the user
             ILockers(lockers).slashLocker(
                 _lockerTargetAddress,
@@ -366,6 +369,16 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             "CCBurnRouter: input transaction is not finalized"
         );
 
+        /* 
+            Checks that input tx has not been provided as a burn proof
+            note: if a locker executes a cc burn request but doesn't provide burn proof before deadline,
+            we consider the transaction as a malicious tx
+        */
+        require(
+            !isUsedAsBurnProof[_inputTxId],
+            "CCBurnRouter: transaction has been used as burn proof"
+        );
+
         // Extracts outpoint id and index from input tx
         (bytes32 _outpointId, uint _outpointIndex) = TxHelper.extractOutpoint(
             _inputVin, 
@@ -385,19 +398,9 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             "CCBurnRouter: output tx doesn't belong to locker"
         );
 
-        /* 
-            Checks that input tx has not been provided as a burn proof
-            note: if a locker executes a cc burn request but doesn't provide burn proof before deadline,
-            we consider the transaction as a malicious tx
-        */
-        require(
-            !isUsedAsBurnProof[_inputTxId],
-            "CCBurnRouter: transaction has been used for burn proof"
-        );
-
         // Checks that deadline for using the tx as burn proof has passed
         require(
-            IBitcoinRelay(relay).lastSubmittedHeight() > (transferDeadline + _indexesAndBlockNumbers[2]),
+            IBitcoinRelay(relay).lastSubmittedHeight() > transferDeadline + _indexesAndBlockNumbers[2],
             "CCBurnRouter: payback deadline has not passed yet"
         );
 
