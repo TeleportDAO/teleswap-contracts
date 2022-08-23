@@ -7,6 +7,31 @@ import "hardhat/console.sol";
 
 contract LockersLogic is LockersStorageStructure, ILockers {
 
+    function initialize(
+        address _TeleportDAOToken,
+        address _exchangeConnector,
+        address _priceOracle,
+        uint _minRequiredTDTLockedAmount,
+        uint _minRequiredTNTLockedAmount,
+        uint _collateralRatio,
+        uint _liquidationRatio,
+        uint _lockerPercentageFee
+    ) public initializer {
+
+        OwnableUpgradeable.__Ownable_init();
+        ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
+        PausableUpgradeable.__Pausable_init();
+
+        TeleportDAOToken = _TeleportDAOToken;
+        exchangeConnector = _exchangeConnector;
+        priceOracle = _priceOracle;
+        minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
+        minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
+        collateralRatio = _collateralRatio;
+        liquidationRatio = _liquidationRatio;
+        lockerPercentageFee = _lockerPercentageFee;
+    }
+
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "Lockers: address is zero");
         _;

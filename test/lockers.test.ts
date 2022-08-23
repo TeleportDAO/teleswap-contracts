@@ -44,10 +44,12 @@ describe("Lockers", async () => {
     let REQUIRED_LOCKED_AMOUNT =  1000; // amount of required TDT
 
     // Accounts
+    let proxyAdmin: Signer;
     let deployer: Signer;
     let signer1: Signer;
     let signer2: Signer;
     let ccBurnSimulator: Signer;
+    let proxyAdminAddress: Address;
     let deployerAddress: Address;
     let signer1Address: Address;
     let signer2Address: Address;
@@ -55,6 +57,7 @@ describe("Lockers", async () => {
 
     // Contracts
     let lockers: Contract;
+    let lockersAsAdmin: Contract;
     let teleportDAOToken: ERC20;
     let teleBTC: TeleBTC;
 
@@ -64,7 +67,8 @@ describe("Lockers", async () => {
 
     before(async () => {
         // Sets accounts
-        [deployer, signer1, signer2,ccBurnSimulator] = await ethers.getSigners();
+        [proxyAdmin, deployer, signer1, signer2,ccBurnSimulator] = await ethers.getSigners();
+        proxyAdminAddress = await proxyAdmin.getAddress()
         deployerAddress = await deployer.getAddress();
         signer1Address = await signer1.getAddress();
         signer2Address = await signer2.getAddress();
@@ -99,6 +103,8 @@ describe("Lockers", async () => {
 
         await teleBTC.addMinter(lockers.address)
         await teleBTC.addBurner(lockers.address)
+
+        // lockersAsAdmin = await lockers.connect(proxyAdmin)
 
         await lockers.setTeleBTC(teleBTC.address)
 
@@ -164,11 +170,17 @@ describe("Lockers", async () => {
             _signer || deployer
         );
         const lockersProxy = await lockersProxyFactory.deploy(
-            lockersLogic.address
+            lockersLogic.address,
+            proxyAdminAddress,
+            "0x"
         )
 
+        const lockers = await lockersLogic.attach(
+            lockersProxy.address
+        );
+
         // Initializes lockers proxy
-        await lockersProxy.initialize(
+        await lockers.initialize(
             teleportDAOToken.address,
             mockExchangeConnector.address,
             mockPriceOracle.address,
@@ -178,10 +190,6 @@ describe("Lockers", async () => {
             liquidationRatio,
             LOCKER_PERCENTAGE_FEE
         )
-
-        const lockers = await lockersLogic.attach(
-            lockersProxy.address
-        );
 
         return lockers;
     };
