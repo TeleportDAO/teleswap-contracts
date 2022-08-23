@@ -5,14 +5,13 @@ interface ICCBurnRouter {
 
 	// Structures
 
-    /// @notice                 	Structure for recording burn requests
-    /// @param amount         		Amount of burnt tokens
-    /// @param burntAmount   	    Amount that user gets (after paying fees)
+    /// @notice                 	Structure for recording cc burn requests
+    /// @param amount         		Amount of tokens that user wants to burn
+    /// @param burntAmount   	    Amount that user will receive (after reducing fees from amount)
     /// @param sender       		Address of user who requests burning
-    /// @param userLockingScript    Public key hash of the user on Bitcoin
-    /// @param deadline         	Deadline of lockers for executing the request
+    /// @param userLockingScript    Locking script of the user on Bitcoin
+    /// @param deadline         	Deadline of locker for executing the request
     /// @param isTransferred    	True if the request has been executed
-    /// @param locker		    	The locker assigned to this burn request who should execute it
 	struct burnRequest {
 		uint amount;
 		uint burntAmount;
@@ -26,12 +25,12 @@ interface ICCBurnRouter {
 
 	/// @notice                 		Emits when a burn request gets submitted
     /// @param userTargetAddress        Target address of the user
-    /// @param userLockingScript        Public key hash of the user on Bitcoin
-    /// @param amount         			Amount of burnt tokens
-    /// @param burntAmount   		Amount that user gets (after paying fees)
+    /// @param userLockingScript        Locking script of user on Bitcoin
+    /// @param amount         			Toral requested amount
+    /// @param burntAmount   		    Amount that user will receive (after reducing fees)
 	/// @param lockerTargetAddress		Locker's address on the target chain
     /// @param index       				The index of a request for a locker
-    /// @param deadline         		Deadline of lockers for executing the request
+    /// @param deadline         		Deadline of locker for executing the request
   	event CCBurn(
 		address indexed userTargetAddress,
 		bytes userLockingScript,
@@ -42,10 +41,10 @@ interface ICCBurnRouter {
 		uint indexed deadline
 	);
 
-	/// @notice                 		Emits when a burn request gets executed
+	/// @notice                 		Emits when a burn proof is provided
     /// @param userTargetAddress        Target address of the user
-    /// @param userLockingScript        Public key hash of the user on Bitcoin
-    /// @param burntAmount   		    Amount that user gets (after paying fees)
+    /// @param userLockingScript        Locking script of the user on Bitcoin
+    /// @param burntAmount   		    Amount that user received
 	/// @param lockerTargetAddress		Locker's address on the target chain
     /// @param index       				The index of a request for a locker
 	event PaidCCBurn(
@@ -56,14 +55,16 @@ interface ICCBurnRouter {
 		uint index
 	);
 
-	/// @notice                 		Emits when a locker gets slashed for withdrawing BTC
+	/// @notice                 		Emits when a locker gets slashed for withdrawing BTC without proper reason
 	/// @param _lockerTargetAddress		Locker's address on the target chain
 	/// @param _blockNumber				Block number of the malicious tx
 	/// @param txId						Transaction ID of the malicious tx
+	/// @param amount					Slashed amount
 	event LockerDispute(
         address _lockerTargetAddress,
     	uint _blockNumber,
-        bytes32 txId
+        bytes32 txId,
+		uint amount
     );
 
 	// Read-only functions
@@ -85,6 +86,8 @@ interface ICCBurnRouter {
 	function bitcoinFee() external view returns (uint); // Bitcoin transaction fee
 
 	function isTransferred(address _lockerTargetAddress, uint _index) external view returns (bool);
+
+	function isUsedAsBurnProof(bytes32 _txId) external view returns (bool);
 
 	// State-changing functions
 
@@ -108,17 +111,17 @@ interface ICCBurnRouter {
 		uint _amount, 
 		bytes calldata _userLockingScript,
 		bytes calldata _lockerLockingScript
-	) external returns (bool);
+	) external returns (uint);
 
 	function burnProof(
 		bytes4 _version,
 		bytes memory _vin,
-		bytes calldata _vout,
+		bytes memory _vout,
 		bytes4 _locktime,
 		uint256 _blockNumber,
-		bytes calldata _intermediateNodes,
+		bytes memory _intermediateNodes,
 		uint _index,
-		bytes calldata _lockerLockingScript,
+		bytes memory _lockerLockingScript,
 		uint _startIndex,
 		uint _endIndex
 	) external payable returns (bool);
@@ -128,16 +131,15 @@ interface ICCBurnRouter {
 		uint[] memory _indices
 	) external returns (bool);
 
-	function disputeLocker(
-		bytes memory _lockerLockingScript,
-		bytes memory _lockerScript,
-        uint _inputIndex,
-		bytes4 _version,
-		bytes memory _vin,
-		bytes memory _vout,
-		bytes4 _locktime,
-		uint256 _blockNumber,
-		bytes memory _intermediateNodes,
-		uint _index
-	) external payable returns (bool);
+    function disputeLocker(
+        bytes memory _lockerLockingScript,
+        bytes4[] memory _versions, // [inputTxVersion, outputTxVersion]
+        bytes memory _inputVin,
+        bytes memory _inputVout,
+        bytes memory _outputVin,
+        bytes memory _outputVout,
+        bytes4[] memory _locktimes, // [inputTxLocktime, outputTxLocktime]
+        bytes memory _inputIntermediateNodes,
+        uint[] memory _indexesAndBlockNumbers // [inputIndex, inputTxIndex, outputTxIndex, inputTxBlockNumber, outputTxBlockNumber]
+    ) external payable returns (bool);
 }
