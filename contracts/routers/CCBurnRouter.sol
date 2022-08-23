@@ -122,7 +122,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @dev                               Only owner can call this
     /// @param _slasherPercentageReward    The new slasher percentage reward
     function setSlasherPercentageReward(uint _slasherPercentageReward) external override onlyOwner {
-        require(100 >= _slasherPercentageReward, "CCBurnRouter: slasher fee is out of range");
+        require(100 >= _slasherPercentageReward, "CCBurnRouter: slasher percentage reward is out of range");
         slasherPercentageReward = _slasherPercentageReward;
     }
 

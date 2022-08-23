@@ -1065,4 +1065,133 @@ describe("CCBurnRouter", async () => {
             ).to.revertedWith("CCBurnRouter: transaction has been used as burn proof");
         })
     });
+
+    describe("#setters", async () => {
+
+        beforeEach(async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+        });
+    
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("Sets protocol percentage fee", async function () {
+            await expect(
+                ccBurnRouter.setProtocolPercentageFee(100)
+            ).to.not.reverted;
+
+            expect(
+                await ccBurnRouter.protocolPercentageFee()
+            ).to.equal(100);
+        })
+
+        it("Reverts since protocol percentage fee is greater than 10000", async function () {
+            await expect(
+                ccBurnRouter.setProtocolPercentageFee(10001)
+            ).to.revertedWith("CCBurnRouter: protocol fee is out of range");
+        })
+
+        it("Sets transfer deadline", async function () {
+
+            await mockBitcoinRelay.mock.finalizationParameter.returns(10);
+
+            await expect(
+                ccBurnRouter.setTransferDeadline(100)
+            ).to.not.reverted;
+
+            expect(
+                await ccBurnRouter.transferDeadline()
+            ).to.equal(100);
+        })
+
+        it("Reverts since transfer deadline is smaller than relay finalizatio parameter", async function () {
+            await mockBitcoinRelay.mock.finalizationParameter.returns(10);
+
+            await expect(
+                ccBurnRouter.setTransferDeadline(9)
+            ).to.revertedWith("CCBurnRouter: transfer deadline is too low");
+
+        })
+
+        it("Sets slasher reward", async function () {
+            await expect(
+                ccBurnRouter.setSlasherPercentageReward(100)
+            ).to.not.reverted;
+
+            expect(
+                await ccBurnRouter.slasherPercentageReward()
+            ).to.equal(100);
+        })
+
+        it("Reverts since slasher reward is greater than 100", async function () {
+            await expect(
+                ccBurnRouter.setSlasherPercentageReward(101)
+            ).to.revertedWith("CCBurnRouter: slasher percentage reward is out of range");
+        })
+
+        it("Sets bitcoin fee", async function () {
+            await expect(
+                ccBurnRouter.setBitcoinFee(100)
+            ).to.not.reverted;
+
+            expect(
+                await ccBurnRouter.bitcoinFee()
+            ).to.equal(100);
+        })
+
+        it("Sets relay, lockers, instant router, teleBTC and treasury", async function () {
+            await expect(
+                ccBurnRouter.setRelay(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await ccBurnRouter.relay()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                ccBurnRouter.setLockers(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await ccBurnRouter.lockers()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                ccBurnRouter.setTeleBTC(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await ccBurnRouter.teleBTC()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                ccBurnRouter.setTreasury(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await ccBurnRouter.treasury()
+            ).to.equal(ONE_ADDRESS);
+
+        })
+
+        it("Reverts since given address is zero", async function () {
+            await expect(
+                ccBurnRouter.setRelay(ZERO_ADDRESS)
+            ).to.revertedWith("CCBurnRouter: address is zero");
+
+            await expect(
+                ccBurnRouter.setLockers(ZERO_ADDRESS)
+            ).to.revertedWith("CCBurnRouter: address is zero");
+
+            await expect(
+                ccBurnRouter.setTeleBTC(ZERO_ADDRESS)
+            ).to.revertedWith("CCBurnRouter: address is zero");
+
+            await expect(
+                ccBurnRouter.setTreasury(ZERO_ADDRESS)
+            ).to.revertedWith("CCBurnRouter: address is zero");
+        })
+
+    });
 });
