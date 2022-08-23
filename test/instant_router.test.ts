@@ -106,10 +106,7 @@ describe("Instant Router", async () => {
         const teleBTCFactory = new TeleBTC__factory(deployer);
         teleBTC = await teleBTCFactory.deploy(
             "teleBTC",
-            "TBTC",
-            // ONE_ADDRESS,
-            // ONE_ADDRESS,
-            // ONE_ADDRESS
+            "TBTC"
         );
 
         // Deploys instant router
@@ -120,7 +117,8 @@ describe("Instant Router", async () => {
             mockPriceOracle.address,
             mockCollateralPoolFactory.address,
             slasherPercentageReward,
-            paybackDeadline
+            paybackDeadline,
+            mockExchangeConnector.address
         );
 
         // Deploys bitcoin instant pool
@@ -900,7 +898,6 @@ describe("Instant Router", async () => {
 
             await expect(
                 await instantRouter.slashUser(
-                    deployerAddress, // exchange router address
                     deployerAddress,
                     0
                 )

@@ -14,7 +14,16 @@ import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import "hardhat/console.sol"; // Just for test
 
 contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
+    
+    modifier nonZeroAddress(address _address) {
+        require(_address != address(0), "InstantRouter: zero address");
+        _;
+    }
 
+    // Constants 
+    uint constant MAX_SLASHER_PERCENTAGE_REWARD = 10000;
+
+    // Public variables
     mapping(address => instantRequest[]) public instantRequests;
     uint public override slasherPercentageReward;
     uint public override paybackDeadline;
@@ -23,6 +32,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     address public override relay;
     address public override priceOracle;
     address public override collateralPoolFactory;
+    address public override defaultExchangeConnector;
 
     /// @notice                             This contract handles instant transfer and instant exchange requests
     /// @dev                                It manages instant pool contract
@@ -38,14 +48,20 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         address _priceOracle,
         address _collateralPoolFactory,
         uint _slasherPercentageReward,
-        uint _paybackDeadline
+        uint _paybackDeadline,
+        address _defaultExchangeConnector
     ) {
         teleBTC = _teleBTC;
         relay = _relay;
         priceOracle = _priceOracle;
         collateralPoolFactory = _collateralPoolFactory;
         slasherPercentageReward = _slasherPercentageReward;
+        require(
+            slasherPercentageReward <= MAX_SLASHER_PERCENTAGE_REWARD, 
+            "InstantRouter: wrong slasher percentage reward"
+        );
         paybackDeadline = _paybackDeadline;
+        defaultExchangeConnector = _defaultExchangeConnector;
     }
 
     /// @notice                  Gives the collateral amount corresponding to the request
@@ -53,6 +69,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     /// @param _index            Number of the instant request
     /// @return                  Amount of locked collateral
     function getLockedCollateralPoolTokenAmount(address _user, uint _index) external view override returns (uint) {
+        require(_index < instantRequests[_user].length, "InstantRouter: wrong index");
         return instantRequests[_user][_index].lockedCollateralPoolTokenAmount;
     }
 
@@ -68,6 +85,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     /// @param _index             Index of the request in user request list
     /// @return                   The deadline of that request
     function getUserRequestDeadline(address _user, uint _index) external view override returns (uint) {
+        require(_index < instantRequests[_user].length, "InstantRouter: wrong index");
         return instantRequests[_user][_index].deadline;
     }
 
@@ -75,6 +93,9 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     /// @dev                      Only owner can call this
     /// @param _paybackDeadline   The new payback _deadline
     function setPaybackDeadline(uint _paybackDeadline) external override onlyOwner {
+        uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
+        // Gives users enough time to pay back loans
+        require(_paybackDeadline >= _finalizationParameter, "InstantRouter: wrong payback deadline");
         paybackDeadline = _paybackDeadline;
     }
 
@@ -82,14 +103,29 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     /// @dev                                Only owner can call this
     /// @param _slasherPercentageReward     The new slasher reward
     function setSlasherPercentageReward(uint _slasherPercentageReward) external override onlyOwner {
+        require(
+            _slasherPercentageReward <= MAX_SLASHER_PERCENTAGE_REWARD, 
+            "InstantRouter: wrong slasher percentage reward"
+        );
         slasherPercentageReward = _slasherPercentageReward;
     }
 
     /// @notice                                 Sets the teleBTC instant pool address
     /// @dev                                    Only owner can call this
     /// @param _teleBTCInstantPool              The new teleBTC instant pool address
-    function setTeleBTCInstantPool(address _teleBTCInstantPool) external override onlyOwner {
+    function setTeleBTCInstantPool(
+        address _teleBTCInstantPool
+    ) external nonZeroAddress(_teleBTCInstantPool) override onlyOwner {
         teleBTCInstantPool = _teleBTCInstantPool;
+    }
+
+    /// @notice                                 Sets the teleBTC instant pool address
+    /// @dev                                    Only owner can call this
+    /// @param _defaultExchangeConnector        The new teleBTC instant pool address
+    function setDefaultExchangeConnector(
+        address _defaultExchangeConnector
+    ) external nonZeroAddress(_defaultExchangeConnector) override onlyOwner {
+        defaultExchangeConnector = _defaultExchangeConnector;
     }
 
     /// @notice                   Transfers the loan amount to the user
@@ -104,17 +140,17 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         uint _loanAmount,
         uint _deadline,
         address _collateralToken
-    ) external nonReentrant override returns (bool) {
+    ) external nonReentrant nonZeroAddress(_receiver) nonZeroAddress(_collateralToken) override returns (bool) {
         // Checks that deadline for getting loan has not passed
         require(_deadline >= block.timestamp, "InstantRouter: deadline has passed");
 
-        // Calculates the instant fee
-        uint instantFee = IInstantPool(teleBTCInstantPool).instantPercentageFee()*_loanAmount/10000;
+        // Gets the instant fee
+        uint instantFee = IInstantPool(teleBTCInstantPool).getFee(_loanAmount);
 
         // Locks the required amount of user's collateral
         _lockCollateral(msg.sender, _loanAmount + instantFee, _collateralToken);
 
-        // Gets loan from instant pool
+        // Gets loan from instant pool for receiver
         IInstantPool(teleBTCInstantPool).getLoan(_receiver, _loanAmount);
 
         emit InstantTransfer(
@@ -125,6 +161,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
             instantRequests[msg.sender][instantRequests[msg.sender].length - 1].deadline,
             _collateralToken
         );
+
         return true;
     }
 
@@ -136,8 +173,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     /// @param _path              Path of exchanging tokens
     /// @param _deadline          Deadline of getting the loan
     /// @param _collateralToken   Address of collateral token
-    /// @param _isFixedToken           Shows whether input or output is fixed in exchange
-    /// @return
+    /// @param _isFixedToken      Shows whether input or output is fixed in exchange
+    /// @return _amounts
     function instantCCExchange(
         address _exchangeConnector,
         address _receiver,
@@ -147,15 +184,15 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         uint _deadline,
         address _collateralToken,
         bool _isFixedToken
-    ) external nonReentrant override returns(uint[] memory) {
+    ) external nonReentrant nonZeroAddress(_exchangeConnector) override returns(uint[] memory _amounts) {
         // Checks that deadline for exchanging has not passed
         require(_deadline >= block.timestamp, "InstantRouter: deadline has passed");
 
-        // Checks that the first token in teleBTC
-        require(_path[0] == teleBTC, "InstantRouter: input token is not valid");
+        // Checks that the first token of path is teleBTC and its length is greater than one
+        require(_path[0] == teleBTC && _path.length > 1, "InstantRouter: path is invalid");
 
         // Calculates the instant fee
-        uint instantFee = IInstantPool(teleBTCInstantPool).instantPercentageFee()*_loanAmount/10000;
+        uint instantFee = IInstantPool(teleBTCInstantPool).getFee(_loanAmount);
 
         // Locks the required amount of user's collateral
         _lockCollateral(msg.sender, _loanAmount + instantFee, _collateralToken);
@@ -167,7 +204,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         IERC20(teleBTC).approve(_exchangeConnector, _loanAmount);
 
         // Exchanges teleBTC for output token
-        (bool result, uint[] memory amounts) = IExchangeConnector(_exchangeConnector).swap(
+        bool result;
+        (result, _amounts) = IExchangeConnector(_exchangeConnector).swap(
             _loanAmount,
             _amountOut,
             _path,
@@ -176,7 +214,10 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
             _isFixedToken
         );
 
-        // Checks the exchanging result
+        /* 
+            Reverts if exchanging was not successful since
+            user doesn't want to lock collateral without exchanging
+        */
         require(result == true, "InstantRouter: exchange was not successful");
 
         emit InstantExchange(
@@ -190,18 +231,21 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
             instantRequests[msg.sender][instantRequests[msg.sender].length - 1].deadline, // payback deadline
             _collateralToken
         );
-        return amounts;
     }
 
     /// @notice                             Settles loans of the user
     /// @param _user                        Address of the user who wants to pay back loans
     /// @param _teleBTCAmount               Amount of available teleBTC to pay back loans
     /// @return                             True if paying back is successful
-    function payBackLoan(address _user, uint _teleBTCAmount) external nonReentrant override returns (bool) {
+    function payBackLoan(
+        address _user, 
+        uint _teleBTCAmount
+    ) external nonReentrant nonZeroAddress(_user) override returns (bool) {
         uint remainedAmount = _teleBTCAmount;
         uint lastSubmittedHeight = IBitcoinRelay(relay).lastSubmittedHeight();
 
         for (uint i = 1; i <= instantRequests[_user].length; i++) {
+            // Checks that remained teleBTC is enough to pay back the loan and payback deadline has not passed
             if (
                 remainedAmount >= instantRequests[_user][i-1].paybackAmount &&
                 instantRequests[_user][i-1].deadline >= lastSubmittedHeight
@@ -238,7 +282,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
             }
         }
 
-        // Transfers rest of teleBTC to user
+        // Transfers remained teleBTC to user
         if (remainedAmount > 0) {
             IERC20(teleBTC).transferFrom(msg.sender, _user, remainedAmount);
         }
@@ -248,18 +292,13 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
 
     /// @notice                           Slashes collateral of user who did not pay back loan
     /// @dev                              Buys teleBTC using the collateral
-    /// @param _exchangeRouter            Address of exchange router that is used to exchange collateral tokens to teleBTC
     /// @param _user                      Address of the slashed user
     /// @param _requestIndex              Index of the request that have not been paid back before deadline
     /// @return                           True if slashing is successful
     function slashUser(
-        address _exchangeRouter,
         address _user,
         uint _requestIndex
-    ) override nonReentrant external returns (bool) {
-        // Gets exchange connector address
-        address _exchangeConnector = IPriceOracle(priceOracle).exchangeConnector(_exchangeRouter);
-        require(_exchangeConnector != address(0), "InstantRouter: exchange connector is not acceptable");
+    ) override nonReentrant nonZeroAddress(_user) external returns (bool) {
 
         require(instantRequests[_user].length > _requestIndex, "InstantRouter: request index does not exist");
 
@@ -279,10 +318,10 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         uint paybackAmount = instantRequests[_user][_requestIndex].paybackAmount;
 
         // Finds needed collateral token to pay back loan
-        (bool result, uint requiredCollateralToken) = IExchangeConnector(_exchangeConnector).getInputAmount(
-            paybackAmount,
-            collateralToken,
-            teleBTC
+        (bool result, uint requiredCollateralToken) = IExchangeConnector(defaultExchangeConnector).getInputAmount(
+            paybackAmount, // Output amount
+            collateralToken, // Input token
+            teleBTC // Output token
         );
         uint totalCollateralToken = ICollateralPool(collateralPool).equivalentCollateralToken(
             lockedCollateralPoolTokenAmount
@@ -299,45 +338,62 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         // Checks that locked collateral is enough to pay back loan
         if (totalCollateralToken >= requiredCollateralToken && result == true) {
             // Approves exchange connector to use collateral token
-            IERC20(collateralToken).approve(_exchangeConnector, requiredCollateralToken);
+            IERC20(collateralToken).approve(defaultExchangeConnector, requiredCollateralToken);
 
             // Exchanges collateral token for teleBTC
-            IExchangeConnector(_exchangeConnector).swap(
+            IExchangeConnector(defaultExchangeConnector).swap(
                 requiredCollateralToken,
-                paybackAmount,
+                paybackAmount, // Output amount
                 path,
                 teleBTCInstantPool,
                 block.timestamp + 1,
-                false
+                false // Output amount is fixed
             );
 
-            uint slasherReward = (totalCollateralToken - requiredCollateralToken)*slasherPercentageReward/100;
+            uint slasherReward = (totalCollateralToken - requiredCollateralToken)
+            *slasherPercentageReward/MAX_SLASHER_PERCENTAGE_REWARD;
 
             // Sends reward to slasher
             IERC20(collateralToken).transfer(msg.sender, slasherReward);
 
-            // Deposits rest of the tokens to collateral pool
+            // Deposits rest of the tokens to collateral pool on behalf of the user
             ICollateralPool(collateralPool).addCollateral(
                 _user,
                 totalCollateralToken - requiredCollateralToken - slasherReward
             );
 
-            emit SlashUser(_user, collateralToken, requiredCollateralToken, paybackAmount);
+            emit SlashUser(
+                _user, 
+                collateralToken, 
+                requiredCollateralToken, 
+                paybackAmount,
+                msg.sender,
+                slasherReward
+            );
         } else {
+            // Handles situations where locked collateral is not enough to pay back the loan
+
             // Approves exchange connector to use collateral token
-            IERC20(collateralToken).approve(_exchangeConnector, totalCollateralToken);
+            IERC20(collateralToken).approve(defaultExchangeConnector, totalCollateralToken);
 
             // Buys teleBTC as much as possible and sends it to instant pool
-            IExchangeConnector(_exchangeConnector).swap(
+            IExchangeConnector(defaultExchangeConnector).swap(
                 totalCollateralToken,
                 0,
                 path,
                 teleBTCInstantPool,
                 block.timestamp + 1,
-                true
+                true // Input amount is fixed 
             );
 
-            emit SlashUser(_user, collateralToken, totalCollateralToken, paybackAmount);
+            emit SlashUser(
+                _user, 
+                collateralToken, 
+                totalCollateralToken, 
+                paybackAmount,
+                msg.sender,
+                0 // Slasher reward is zero
+            );
         }
 
         // Deletes the request after slashing user
@@ -350,7 +406,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     /// @dev                Deletes and shifts the array
     /// @param _user        Address of the user whose instant requests array is considered
     /// @param _index       Index of the element that will be deleted
-    function _removeElement(address _user, uint _index) internal {
+    function _removeElement(address _user, uint _index) private {
         require(_index < instantRequests[_user].length, "InstantRouter: index is out of bound");
         for (uint i = _index; i < instantRequests[_user].length - 1; i++) {
             instantRequests[_user][i] = instantRequests[_user][i+1];
@@ -361,14 +417,13 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     /// @notice                   Locks the required amount of user's collateral
     /// @dev                      Records the instant request to be used in future
     /// @param _user              Address of the loan receiver
-    /// @param _payBackAmount     Amount of the (loan + fee) that should be paid back
+    /// @param _paybackAmount     Amount of the (loan + fee) that should be paid back
     /// @param _collateralToken   Address of the collateral
-    /// @return                   True if collateral is locked successfully
     function _lockCollateral(
         address _user,
-        uint _payBackAmount,
+        uint _paybackAmount,
         address _collateralToken
-    ) internal returns (bool) {
+    ) private nonZeroAddress(_collateralToken) {
         // Checks that collateral token is acceptable
         require(
             ICollateralPoolFactory(collateralPoolFactory).isCollateral(_collateralToken),
@@ -385,15 +440,17 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
 
         // Gets the equivalent amount of collateral token
         uint equivalentCollateralToken = IPriceOracle(priceOracle).equivalentOutputAmount(
-            _payBackAmount, // input amount
+            _paybackAmount, // input amount
             IERC20(teleBTC).decimals(),
             IERC20(_collateralToken).decimals(),
-            teleBTC,
+            teleBTC, // input token
             _collateralToken // output token
         );
 
         // Finds needed collateral token for getting loan
         uint requiredCollateralToken = equivalentCollateralToken*collateralizationRatio/100;
+
+        // Finds needed collateral pool token for getting loan
         uint requiredCollateralPoolToken = ICollateralPool(collateralPool).equivalentCollateralPoolToken(
             requiredCollateralToken
         );
@@ -401,16 +458,15 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         // Transfers collateral pool token from user to itself
         ICollateralPool(collateralPool).transferFrom(_user, address(this), requiredCollateralPoolToken);
 
-        // Records the instant request
+        // Records the instant request for user
         instantRequest memory request;
         request.user = _user;
-        request.paybackAmount = _payBackAmount;
+        request.paybackAmount = _paybackAmount;
         request.lockedCollateralPoolTokenAmount = requiredCollateralPoolToken;
         request.collateralPool = collateralPool;
         request.collateralToken = _collateralToken;
         request.deadline = IBitcoinRelay(relay).lastSubmittedHeight() + paybackDeadline;
         instantRequests[_user].push(request);
 
-        return true;
     }
 }

@@ -43,7 +43,9 @@ interface IInstantRouter {
 		address indexed user, 
 		address indexed collateralToken, 
 		uint slashedAmount, 
-		uint paybackAmount
+		uint paybackAmount,
+        address slasher,
+        uint slasherReward
 	);
 
     /// @notice                     Emits when a user submits instant transfer request
@@ -99,6 +101,8 @@ interface IInstantRouter {
     function slasherPercentageReward() external view returns (uint);
 
     function paybackDeadline() external view returns (uint);
+
+    function defaultExchangeConnector() external view returns (address);
     
     function getLockedCollateralPoolTokenAmount(address _user, uint _index) external view returns (uint);
 
@@ -113,6 +117,8 @@ interface IInstantRouter {
     function setSlasherPercentageReward(uint _slasherPercentageReward) external;
 
     function setTeleBTCInstantPool(address _teleBTCInstantPool) external;
+
+    function setDefaultExchangeConnector(address _defaultExchangeConnector) external;
 
     function instantCCTransfer(
         address _receiver,
@@ -134,8 +140,7 @@ interface IInstantRouter {
 
     function payBackLoan(address _user, uint _teleBTCAmount) external returns (bool);
 
-    function slashUser(		
-		address _exchangeConnector, 
+    function slashUser(
 		address _user, 
 		uint _requestIndex
 	) external returns (bool);
