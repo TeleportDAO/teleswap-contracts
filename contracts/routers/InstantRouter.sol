@@ -21,10 +21,10 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     }
 
     // Constants 
-    uint constant MAX_SLASHER_PERCENTAGE_REWARD = 10000;
+    uint constant MAX_SLASHER_PERCENTAGE_REWARD = 100;
 
     // Public variables
-    mapping(address => instantRequest[]) public instantRequests;
+    mapping(address => instantRequest[]) public instantRequests; // Mapping from user address to user's unpaid instant requests
     uint public override slasherPercentageReward;
     uint public override paybackDeadline;
     address public override teleBTC;
@@ -35,13 +35,14 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     address public override defaultExchangeConnector;
 
     /// @notice                             This contract handles instant transfer and instant exchange requests
-    /// @dev                                It manages instant pool contract
+    /// @dev                                It manages instant pool contract to give loan to users
     /// @param _teleBTC                     Address of teleBTC contract
-    /// @param _relay                       Address of price oracle contract
-    /// @param _priceOracle                 Address of collateral pool factory contract
-    /// @param _collateralPoolFactory       Address of relay contract
+    /// @param _relay                       Address of relay contract
+    /// @param _priceOracle                 Address of price oracle contract
+    /// @param _collateralPoolFactory       Address of collateral pool factory contrac
     /// @param _slasherPercentageReward     Percentage of total collateral that goes to slasher
-    /// @param _paybackDeadline             Dealine of paying back the borrowed tokens from instant pool
+    /// @param _paybackDeadline             Dealine of paying back the borrowed tokens
+    /// @param _defaultExchangeConnector    Exchange connector that is used for exchanging user's collateral to teleBTC (in the case of slashing)
     constructor(
         address _teleBTC,
         address _relay,
@@ -64,34 +65,37 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         defaultExchangeConnector = _defaultExchangeConnector;
     }
 
-    /// @notice                  Gives the collateral amount corresponding to the request
+    /// @notice                  Gives the locked collateral pool token corresponding to a request
     /// @param _user             Address of the user
-    /// @param _index            Number of the instant request
-    /// @return                  Amount of locked collateral
-    function getLockedCollateralPoolTokenAmount(address _user, uint _index) external view override returns (uint) {
+    /// @param _index            Index of the request in user's request list
+    /// @return                  Amount of locked collateral pool token (not collateral token)
+    function getLockedCollateralPoolTokenAmount(
+        address _user, 
+        uint _index
+    ) external view override returns (uint) {
         require(_index < instantRequests[_user].length, "InstantRouter: wrong index");
         return instantRequests[_user][_index].lockedCollateralPoolTokenAmount;
     }
 
-    /// @notice                   Gives the total number of user's requests
+    /// @notice                   Gives the total number of user's unpaid loans
     /// @param _user              Address of the user
     /// @return                   The total number of user's requests
     function getUserRequestsLength(address _user) external view override returns (uint) {
         return instantRequests[_user].length;
     }
 
-    /// @notice                   Gives the user request deadline
+    /// @notice                   Gives deadline of a specefic request
     /// @param _user              Address of the user
-    /// @param _index             Index of the request in user request list
-    /// @return                   The deadline of that request
+    /// @param _index             Index of the request in user's request list
+    /// @return                   Deadline of that request
     function getUserRequestDeadline(address _user, uint _index) external view override returns (uint) {
         require(_index < instantRequests[_user].length, "InstantRouter: wrong index");
         return instantRequests[_user][_index].deadline;
     }
 
-    /// @notice                   Changes the payback _deadline
-    /// @dev                      Only owner can call this
-    /// @param _paybackDeadline   The new payback _deadline
+    /// @notice                   Setter for payback deadline
+    /// @dev                      Only owner can call this. It should be greater than relay finalization parameter so user has enough time to payback loan
+    /// @param _paybackDeadline   The new payback deadline
     function setPaybackDeadline(uint _paybackDeadline) external override onlyOwner {
         uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
         // Gives users enough time to pay back loans
@@ -99,7 +103,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         paybackDeadline = _paybackDeadline;
     }
 
-    /// @notice                             Changes the slasher reward
+    /// @notice                             Setter for slasher percentage reward
     /// @dev                                Only owner can call this
     /// @param _slasherPercentageReward     The new slasher reward
     function setSlasherPercentageReward(uint _slasherPercentageReward) external override onlyOwner {
@@ -110,7 +114,43 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         slasherPercentageReward = _slasherPercentageReward;
     }
 
-    /// @notice                                 Sets the teleBTC instant pool address
+    /// @notice                                 Setter for teleBTC instant pool
+    /// @dev                                    Only owner can call this
+    /// @param _teleBTC                         The new teleBTC instant pool address
+    function setTeleBTC(
+        address _teleBTC
+    ) external nonZeroAddress(_teleBTC) override onlyOwner {
+        teleBTC = _teleBTC;
+    }
+
+    /// @notice                                 Setter for teleBTC instant pool
+    /// @dev                                    Only owner can call this
+    /// @param _relay              The new teleBTC instant pool address
+    function setRelay(
+        address _relay
+    ) external nonZeroAddress(_relay) override onlyOwner {
+        relay = _relay;
+    }
+
+    /// @notice                                 Setter for teleBTC instant pool
+    /// @dev                                    Only owner can call this
+    /// @param _collateralPoolFactory              The new teleBTC instant pool address
+    function setCollateralPoolFactory(
+        address _collateralPoolFactory
+    ) external nonZeroAddress(_collateralPoolFactory) override onlyOwner {
+        collateralPoolFactory = _collateralPoolFactory;
+    }
+
+    /// @notice                                 Setter for teleBTC instant pool
+    /// @dev                                    Only owner can call this
+    /// @param _priceOracle              The new teleBTC instant pool address
+    function setPriceOracle(
+        address _priceOracle
+    ) external nonZeroAddress(_priceOracle) override onlyOwner {
+        priceOracle = _priceOracle;
+    }
+
+    /// @notice                                 Setter for teleBTC instant pool
     /// @dev                                    Only owner can call this
     /// @param _teleBTCInstantPool              The new teleBTC instant pool address
     function setTeleBTCInstantPool(
@@ -119,20 +159,20 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         teleBTCInstantPool = _teleBTCInstantPool;
     }
 
-    /// @notice                                 Sets the teleBTC instant pool address
+    /// @notice                                 Setter for default exchange connector
     /// @dev                                    Only owner can call this
-    /// @param _defaultExchangeConnector        The new teleBTC instant pool address
+    /// @param _defaultExchangeConnector        The new defaultExchangeConnector address
     function setDefaultExchangeConnector(
         address _defaultExchangeConnector
     ) external nonZeroAddress(_defaultExchangeConnector) override onlyOwner {
         defaultExchangeConnector = _defaultExchangeConnector;
     }
 
-    /// @notice                   Transfers the loan amount to the user
+    /// @notice                   Transfers the loan amount (in teleBTC) to the user 
     /// @dev                      Transfes required collateral pool token of user to itself
     /// @param _receiver          Address of the loan receiver
     /// @param _loanAmount        Amount of the loan
-    /// @param _deadline          Deadline of getting the loan
+    /// @param _deadline          Deadline for getting the loan
     /// @param _collateralToken   Address of the collateral token
     /// @return                   True if getting loan was successful
     function instantCCTransfer(
@@ -159,22 +199,24 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
             _loanAmount,
             instantFee,
             instantRequests[msg.sender][instantRequests[msg.sender].length - 1].deadline,
-            _collateralToken
+            _collateralToken,
+            instantRequests[msg.sender][instantRequests[msg.sender].length - 1].lockedCollateralPoolTokenAmount
         );
 
         return true;
     }
 
-    /// @notice                   Exchanges the loan amount instantly for the user
+    /// @notice                   Exchanges the loan amount (in teleBTC) for the user
     /// @dev                      Locks the required collateral amount of the user
+    /// @param _exchangeConnector Address of exchange connector that user wants to exchange the borrowed teleBTC in it
     /// @param _receiver          Address of the loan receiver
     /// @param _loanAmount        Amount of the loan
     /// @param _amountOut         Amount of the output token
     /// @param _path              Path of exchanging tokens
-    /// @param _deadline          Deadline of getting the loan
+    /// @param _deadline          Deadline for getting the loan
     /// @param _collateralToken   Address of collateral token
     /// @param _isFixedToken      Shows whether input or output is fixed in exchange
-    /// @return _amounts
+    /// @return _amounts          Amounts of tokens involved in the exchange
     function instantCCExchange(
         address _exchangeConnector,
         address _receiver,
@@ -229,12 +271,14 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
             _path,
             _isFixedToken,
             instantRequests[msg.sender][instantRequests[msg.sender].length - 1].deadline, // payback deadline
-            _collateralToken
+            _collateralToken, 
+            instantRequests[msg.sender][instantRequests[msg.sender].length - 1].lockedCollateralPoolTokenAmount
         );
     }
 
     /// @notice                             Settles loans of the user
-    /// @param _user                        Address of the user who wants to pay back loans
+    /// @dev                                Caller should give allowance for teleBTC to instant router
+    /// @param _user                        Address of user who wants to pay back loans
     /// @param _teleBTCAmount               Amount of available teleBTC to pay back loans
     /// @return                             True if paying back is successful
     function payBackLoan(
@@ -290,8 +334,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         return true;
     }
 
-    /// @notice                           Slashes collateral of user who did not pay back loan
-    /// @dev                              Buys teleBTC using the collateral
+    /// @notice                           Slashes collateral of user who did not pay back loan before its deadline
+    /// @dev                              Buys teleBTC using the collateral and sends it to instant pool
     /// @param _user                      Address of the slashed user
     /// @param _requestIndex              Index of the request that have not been paid back before deadline
     /// @return                           True if slashing is successful
@@ -323,6 +367,9 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
             collateralToken, // Input token
             teleBTC // Output token
         );
+
+        require(result == true, "InstantRouter: liquidity pool doesn't exist");
+
         uint totalCollateralToken = ICollateralPool(collateralPool).equivalentCollateralToken(
             lockedCollateralPoolTokenAmount
         );
@@ -336,7 +383,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         ICollateralPool(collateralPool).removeCollateral(lockedCollateralPoolTokenAmount);
 
         // Checks that locked collateral is enough to pay back loan
-        if (totalCollateralToken >= requiredCollateralToken && result == true) {
+        if (totalCollateralToken >= requiredCollateralToken) {
             // Approves exchange connector to use collateral token
             IERC20(collateralToken).approve(defaultExchangeConnector, requiredCollateralToken);
 
@@ -350,10 +397,9 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
                 false // Output amount is fixed
             );
 
+            // Sends reward to slasher
             uint slasherReward = (totalCollateralToken - requiredCollateralToken)
             *slasherPercentageReward/MAX_SLASHER_PERCENTAGE_REWARD;
-
-            // Sends reward to slasher
             IERC20(collateralToken).transfer(msg.sender, slasherReward);
 
             // Deposits rest of the tokens to collateral pool on behalf of the user
@@ -370,12 +416,11 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
                 msg.sender,
                 slasherReward
             );
-        } else {
-            // Handles situations where locked collateral is not enough to pay back the loan
+        } else { // Handles situations where locked collateral is not enough to pay back the loan
 
             // Approves exchange connector to use collateral token
             IERC20(collateralToken).approve(defaultExchangeConnector, totalCollateralToken);
-
+            
             // Buys teleBTC as much as possible and sends it to instant pool
             IExchangeConnector(defaultExchangeConnector).swap(
                 totalCollateralToken,
@@ -417,8 +462,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     /// @notice                   Locks the required amount of user's collateral
     /// @dev                      Records the instant request to be used in future
     /// @param _user              Address of the loan receiver
-    /// @param _paybackAmount     Amount of the (loan + fee) that should be paid back
-    /// @param _collateralToken   Address of the collateral
+    /// @param _paybackAmount     Amount of the (loan + fee) that should be paid back by user
+    /// @param _collateralToken   Address of the collateral token
     function _lockCollateral(
         address _user,
         uint _paybackAmount,
