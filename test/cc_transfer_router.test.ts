@@ -158,7 +158,6 @@ describe("CCTransferRouter", async () => {
             "0x"
         )
 
-
         const lockers = await lockersLogic.attach(
             lockersProxy.address
         );
