@@ -7,10 +7,10 @@ interface IInstantRouter {
     /// @notice                                 Structure for recording instant requests
     /// @param user                             Address of user who recieves loan
     /// @param collateralPool                   Address of collateral pool
-    /// @param paybackAmount                    Amount of requested loan
+    /// @param paybackAmount                    Amount of (loan + instant fee)
     /// @param collateralToken                  Address of underlying collateral token
     /// @param lockedCollateralPoolTokenAmount  Amount of locked collateral pool token for getting loan
-    /// @param deadline                         Deadline of paying back the loan
+    /// @param deadline                         Deadline for paying back the loan
     struct instantRequest {
         address user;
         address collateralPool;
@@ -21,6 +21,48 @@ interface IInstantRouter {
     }
 
     // Events
+
+    /// @notice                             Emits when a user gets loan for transfer
+    /// @param user                         Address of the user who made the request
+    /// @param receiver                     Address of the loan receiver
+    /// @param loanAmount                   Amount of the loan
+    /// @param instantFee                   Amount of the instant loan fee
+    /// @param deadline                     Deadline of paying back the loan
+    /// @param collateralToken              Address of the collateral token
+    /// @param lockedCollateralPoolToken    Amount of collateral pool token that got locked
+    event InstantTransfer(
+        address indexed user, 
+        address receiver, 
+        uint loanAmount, 
+        uint instantFee, 
+        uint indexed deadline, 
+        address indexed collateralToken,
+        uint lockedCollateralPoolToken
+    );
+
+    /// @notice                             Emits when a user gets loan for exchange
+    /// @param user                         Address of the user who made the request
+    /// @param receiver                     Address of the loan receiver
+    /// @param loanAmount                   Amount of the loan
+    /// @param instantFee                   Amount of the instant loan fee
+    /// @param amountOut                    Amount of the output token
+    /// @param path                         Path of exchanging tokens
+    /// @param isFixed                      Shows whether input or output is fixed in exchange
+    /// @param deadline                     Deadline of getting the loan
+    /// @param collateralToken              Address of the collateral token
+    /// @param lockedCollateralPoolToken    Amount of collateral pool token that got locked
+    event InstantExchange(
+        address indexed user, 
+        address receiver, 
+        uint loanAmount, 
+        uint instantFee,
+        uint amountOut,
+        address[] path,
+        bool isFixed,
+        uint indexed deadline, 
+        address indexed collateralToken,
+        uint lockedCollateralPoolToken
+    );
 
     /// @notice                            Emits when a loan gets paid back
     /// @param user                        Address of user who recieves loan
@@ -39,50 +81,16 @@ interface IInstantRouter {
     /// @param collateralToken          Address of collateral underlying token
 	/// @param slashedAmount            How much user got slashed
 	/// @param paybackAmount            Address of collateral underlying token
+	/// @param slasher                  Address of slasher
+	/// @param slasherReward            Slasher reward (in collateral token)
     event SlashUser(
 		address indexed user, 
 		address indexed collateralToken, 
 		uint slashedAmount, 
-		uint paybackAmount
+		uint paybackAmount,
+        address slasher,
+        uint slasherReward
 	);
-
-    /// @notice                     Emits when a user submits instant transfer request
-    /// @param user                 Address of the user who made the request
-    /// @param receiver             Address of the loan receiver
-    /// @param loanAmount           Amount of the loan
-    /// @param instantFee           Amount of the instant loan fee
-    /// @param deadline             Deadline of paying back the loan
-    /// @param collateralToken      Address of the collateral token
-    event InstantTransfer(
-        address indexed user, 
-        address receiver, 
-        uint loanAmount, 
-        uint instantFee, 
-        uint indexed deadline, 
-        address indexed collateralToken
-    );
-
-    /// @notice                     Emits when a user submits instant exchange request
-    /// @param user                 Address of the user who made the request
-    /// @param receiver             Address of the loan receiver
-    /// @param loanAmount           Amount of the loan
-    /// @param instantFee           Amount of the instant loan fee
-    /// @param amountOut            Amount of the output token
-    /// @param path                 Path of exchanging tokens
-    /// @param isFixed              Shows whether input or output is fixed in exchange
-    /// @param deadline             Deadline of getting the loan
-    /// @param collateralToken      Address of the collateral token
-    event InstantExchange(
-        address indexed user, 
-        address receiver, 
-        uint loanAmount, 
-        uint instantFee,
-        uint amountOut,
-        address[] path,
-        bool isFixed,
-        uint indexed deadline, 
-        address indexed collateralToken
-    );
 
     // Read-only functions
 
@@ -99,6 +107,8 @@ interface IInstantRouter {
     function slasherPercentageReward() external view returns (uint);
 
     function paybackDeadline() external view returns (uint);
+
+    function defaultExchangeConnector() external view returns (address);
     
     function getLockedCollateralPoolTokenAmount(address _user, uint _index) external view returns (uint);
 
@@ -112,7 +122,17 @@ interface IInstantRouter {
 
     function setSlasherPercentageReward(uint _slasherPercentageReward) external;
 
+    function setPriceOracle(address _priceOracle) external;
+
+    function setCollateralPoolFactory(address _collateralPoolFactory) external;
+
+    function setRelay(address _relay) external;
+
+    function setTeleBTC(address _teleBTC) external;
+
     function setTeleBTCInstantPool(address _teleBTCInstantPool) external;
+
+    function setDefaultExchangeConnector(address _defaultExchangeConnector) external;
 
     function instantCCTransfer(
         address _receiver,
@@ -134,8 +154,7 @@ interface IInstantRouter {
 
     function payBackLoan(address _user, uint _teleBTCAmount) external returns (bool);
 
-    function slashUser(		
-		address _exchangeConnector, 
+    function slashUser(
 		address _user, 
 		uint _requestIndex
 	) external returns (bool);
