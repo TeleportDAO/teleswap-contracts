@@ -1,4 +1,8 @@
 {
+    "periodStart" : {
+        "height": 6048,
+        "blockHash": "3f4f668eb267a61a258b45bdae9b27f898dda3dd693026d925176bd9b6faf70d"
+    },
     "forkedChain" :[
         {
             "blockNumber": 6605,
@@ -868,33 +872,6 @@
         },
         "blockHash": "4095d8fe22c56ce4ed879ced11dd57c5b379018c6fcda4f1fe8393722339c30e",
         "blockHeader": "000000200034ff26d5dceb6e99c078640d343d8cd1a26ce509ab66c1f74c5e1497c2f145122b3f5e2932ccd99bdf03b9472fef3b0ec058521333f46c41dfc19e6e7959cd79f4ff62ffff7f2000000000"
-        },
-        {
-        "blockNumber": 6620,
-        "block": {
-            "hash": "3f4f668eb267a61a258b45bdae9b27f898dda3dd693026d925176bd9b6faf70d",
-            "confirmations": 1,
-            "height": 6620,
-            "version": 536870912,
-            "versionHex": "20000000",
-            "merkleroot": "2ee9de6e921bcaa623b1728bc2904aa57e277e9cfe31cc5e069370004852f83d",
-            "time": 1660941433,
-            "mediantime": 1660941432,
-            "nonce": 1,
-            "bits": "207fffff",
-            "difficulty": 4.656542373906925e-10,
-            "chainwork": "00000000000000000000000000000000000000000000000000000000000033ba",
-            "nTx": 1,
-            "previousblockhash": "4095d8fe22c56ce4ed879ced11dd57c5b379018c6fcda4f1fe8393722339c30e",
-            "strippedsize": 215,
-            "size": 251,
-            "weight": 896,
-            "tx": [
-            "2ee9de6e921bcaa623b1728bc2904aa57e277e9cfe31cc5e069370004852f83d"
-            ]
-        },
-        "blockHash": "3f4f668eb267a61a258b45bdae9b27f898dda3dd693026d925176bd9b6faf70d",
-        "blockHeader": "000000200ec33923729383fef1a4cd6f8c0179b3c557dd11ed9c87ede46cc522fed895403df85248007093065ecc31fe9c7e277ea54a90c28b72b123a6ca1b926edee92e79f4ff62ffff7f2001000000"
         }
     ]
 }

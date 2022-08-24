@@ -72,7 +72,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         initialHeight = _height;
         lastSubmittedHeight = _height;
         TeleportDAOToken = _TeleportDAOToken;
-        relayerPercentageFee = 0;
+        relayerPercentageFee = 5;
         epochLength = 2016;
         baseQueries = epochLength;
         lastEpochQueries = baseQueries;
@@ -105,7 +105,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param  _index      The index of the desired block header in that height
     /// @return             Block header's fee price for a query
     function getBlockHeaderFee (uint _height, uint _index) external view override returns(uint) {
-        return (submissionGasUsed * chain[_height][_index].gasPrice * (1 + relayerPercentageFee / 100) * (epochLength)) / lastEpochQueries;
+        return (submissionGasUsed * chain[_height][_index].gasPrice * (100 + relayerPercentageFee) * epochLength) / lastEpochQueries / 100;
     }
 
     /// @notice             Getter for the number of block headers in the same height
@@ -326,7 +326,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @return                 True if the fee payment was successful
     function _getFee(uint gasPrice) internal returns (bool){
         uint feeAmount;
-        feeAmount = (submissionGasUsed * gasPrice * (1 + relayerPercentageFee / 100) * (epochLength)) / lastEpochQueries;
+        feeAmount = (submissionGasUsed * gasPrice * (100 + relayerPercentageFee) * epochLength) / lastEpochQueries / 100;
         require(msg.value >= feeAmount, "BitcoinRelay: fee is not enough");
         Address.sendValue(payable(msg.sender), msg.value - feeAmount);
         return true;
@@ -402,12 +402,12 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @dev                        We pay the block submission cost in TNT and the extra reward in TDT
     /// @param  _relayer            The relayer address
     /// @return                     True if the amount is paid and False if treasury is empty
-    function _sendReward(address _relayer) internal returns (uint, uint) {
+    function _sendReward(address _relayer, uint _height) internal returns (uint, uint) {
 
         // Reward in TNT
-        uint rewardAmountInTNT = submissionGasUsed * tx.gasprice * (1 + relayerPercentageFee / 100);
+        uint rewardAmountInTNT = submissionGasUsed * chain[_height][0].gasPrice * (100 + relayerPercentageFee) / 100;
 
-        // Reward in TDT
+        // Reward in TDT (not in this version & not tested)
         uint contractTDTBalance;
         if (TeleportDAOToken != address(0)) {
             contractTDTBalance = IERC20(TeleportDAOToken).balanceOf(address(this));
@@ -415,7 +415,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
             contractTDTBalance = 0;
         }
 
-        // Send reward in TDT
+        // Send reward in TDT (not in this version & not tested)
         bool sentTDT;
         if (rewardAmountInTDT <= contractTDTBalance && rewardAmountInTDT > 0) {
             // Call ERC20 token contract to transfer reward tokens to the relayer
@@ -430,17 +430,9 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         }
 
         if (sentTNT) {
-            if (sentTDT) {
-                return (rewardAmountInTNT, rewardAmountInTDT);
-            } else {
-                return (rewardAmountInTNT, 0);
-            }
+            return sentTDT ? (rewardAmountInTNT, rewardAmountInTDT) : (rewardAmountInTNT, 0);
         } else {
-            if (sentTDT) {
-                return (0, rewardAmountInTDT);
-            } else {
-                return (0, 0);
-            }
+            return sentTDT ? (0, rewardAmountInTDT) : (0, 0);
         }
     }
 
@@ -475,7 +467,9 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     }
 
     /// @notice                     Finalizes a block header and removes all the other headers in the same height
-    /// @dev
+    /// @dev                        Note that when a chain gets pruned, it only deletes other blocks in the same 
+    ///                             height as the finalized blocks. Other blocks on top of the non finalized blocks 
+    ///                             of that height will exist until their height gets finalized.
     function _pruneChain() internal {
         // Make sure that we have at least finalizationParameter blocks on relay
         if ((lastSubmittedHeight - initialHeight) >= finalizationParameter){
@@ -493,20 +487,20 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
             chain[currentHeight][0] = chain[currentHeight][stableIdx];
             if(chain[currentHeight].length > 1){
                 _pruneHeight(currentHeight);
-                // A new block has been finalized, we send its relayer's reward
-                uint rewardAmountTNT;
-                uint rewardAmountTDT;
-                (rewardAmountTNT, rewardAmountTDT) = _sendReward(chain[currentHeight][0].relayer);
-
-                emit BlockFinalized(
-                    currentHeight,
-                    chain[currentHeight][0].selfHash,
-                    chain[currentHeight][0].parentHash,
-                    chain[currentHeight][0].relayer,
-                    rewardAmountTNT,
-                    rewardAmountTDT
-                );
             }
+            // A new block has been finalized, we send its relayer's reward
+            uint rewardAmountTNT;
+            uint rewardAmountTDT;
+            (rewardAmountTNT, rewardAmountTDT) = _sendReward(chain[currentHeight][0].relayer, currentHeight);
+
+            emit BlockFinalized(
+                currentHeight,
+                chain[currentHeight][0].selfHash,
+                chain[currentHeight][0].parentHash,
+                chain[currentHeight][0].relayer,
+                rewardAmountTNT,
+                rewardAmountTDT
+            );
         }
     }
 
@@ -528,10 +522,10 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @dev                        The first header is the one that has gotten finalized
     /// @param  _height             The height of the new block header
     function _pruneHeight(uint _height) internal {
-        uint idx = 1;
-        while(idx < chain[_height].length){
-            delete chain[_height][idx]; // check if it should be backwards?
-            idx += 1;
+        uint idx = chain[_height].length - 1;
+        while(idx > 0){
+            chain[_height].pop();
+            idx -= 1;
         }
     }
 
