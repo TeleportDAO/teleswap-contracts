@@ -300,6 +300,20 @@ describe("Instant Router", async () => {
             
         });
 
+        it("Reverts since contract is paused", async function () {
+
+            await instantRouter.pause();
+
+            expect(
+                instantRouter.instantCCTransfer(
+                    signer1Address,
+                    loanAmount,
+                    0,
+                    collateralToken.address
+                )
+            ).to.revertedWith("Pausable: paused")
+        });
+
         it("Reverts since deadline has paased", async function () {
             // Gets last block timestamp
             let lastBlockTimestamp = await getTimestamp();
@@ -432,6 +446,24 @@ describe("Instant Router", async () => {
                 collateralToken.address,
                 requiredCollateralPoolToken
             );
+        });
+
+        it("Reverts since contract is paused", async function () {
+
+            await instantRouter.pause();
+
+            expect(
+                instantRouter.instantCCExchange(
+                    mockExchangeConnector.address,
+                    signer1Address,
+                    loanAmount,
+                    amountOut,
+                    path,
+                    0,
+                    collateralToken.address,
+                    isFixedToken
+                )
+            ).to.revertedWith("Pausable: paused")
         });
 
         it("Reverts since deadline has paased", async function () {
