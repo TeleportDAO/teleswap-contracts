@@ -11,9 +11,10 @@ import '../oracle/interfaces/IPriceOracle.sol';
 import "../relay/interfaces/IBitcoinRelay.sol";
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import '@openzeppelin/contracts/security/Pausable.sol';
 import "hardhat/console.sol"; // Just for test
 
-contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
+contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "InstantRouter: zero address");
@@ -63,6 +64,16 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         );
         paybackDeadline = _paybackDeadline;
         defaultExchangeConnector = _defaultExchangeConnector;
+    }
+
+    /// @notice       Pause the contract
+    function pause() external override onlyOwner {
+        _pause();
+    }
+
+    /// @notice       Unpause the contract
+    function unpause() external override onlyOwner {
+        _unpause();
     }
 
     /// @notice                  Gives the locked collateral pool token corresponding to a request
@@ -169,7 +180,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     }
 
     /// @notice                   Transfers the loan amount (in teleBTC) to the user 
-    /// @dev                      Transfes required collateral pool token of user to itself
+    /// @dev                      Transfes required collateral pool token of user to itself. Only works when contract is not paused.
     /// @param _receiver          Address of the loan receiver
     /// @param _loanAmount        Amount of the loan
     /// @param _deadline          Deadline for getting the loan
@@ -180,7 +191,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         uint _loanAmount,
         uint _deadline,
         address _collateralToken
-    ) external nonReentrant nonZeroAddress(_receiver) nonZeroAddress(_collateralToken) override returns (bool) {
+    ) external nonReentrant nonZeroAddress(_receiver) nonZeroAddress(_collateralToken) 
+        whenNotPaused override returns (bool) {
         // Checks that deadline for getting loan has not passed
         require(_deadline >= block.timestamp, "InstantRouter: deadline has passed");
 
@@ -207,7 +219,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
     }
 
     /// @notice                   Exchanges the loan amount (in teleBTC) for the user
-    /// @dev                      Locks the required collateral amount of the user
+    /// @dev                      Locks the required collateral amount of the user. Only works when contract is not paused.
     /// @param _exchangeConnector Address of exchange connector that user wants to exchange the borrowed teleBTC in it
     /// @param _receiver          Address of the loan receiver
     /// @param _loanAmount        Amount of the loan
@@ -226,7 +238,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard {
         uint _deadline,
         address _collateralToken,
         bool _isFixedToken
-    ) external nonReentrant nonZeroAddress(_exchangeConnector) override returns(uint[] memory _amounts) {
+    ) external nonReentrant nonZeroAddress(_exchangeConnector) 
+        whenNotPaused override returns(uint[] memory _amounts) {
         // Checks that deadline for exchanging has not passed
         require(_deadline >= block.timestamp, "InstantRouter: deadline has passed");
 

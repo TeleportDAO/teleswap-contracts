@@ -94,6 +94,10 @@ interface IInstantRouter {
 
     // Read-only functions
 
+    function pause() external;
+
+    function unpause() external;
+
     function teleBTCInstantPool() external view returns (address);
 
     function teleBTC() external view returns (address);
