@@ -284,7 +284,7 @@ describe("CCTransferRouter", async () => {
 
             // Calculates amount that user should have received
             let receivedAmount = CC_REQUESTS.normalCCTransfer.bitcoinAmount - lockerFee - teleporterFee - protocolFee;
-
+            
             // Checks that ccTransfer is executed successfully
             expect(
                 await ccTransferRouter.ccTransfer(
@@ -305,7 +305,7 @@ describe("CCTransferRouter", async () => {
                 await deployer.getAddress(),
                 teleporterFee
             );
-
+            
             await checkFees(
                 CC_REQUESTS.normalCCTransfer.recipientAddress,
                 receivedAmount,
