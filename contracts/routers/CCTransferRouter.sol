@@ -141,7 +141,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
 
         // Finds txId on the source chain
         bytes32 txId = TxHelper.calculateTxId(_version, _vin, _vout, _locktime);
-
+        
         require(
             !ccTransferRequests[txId].isUsed,
             "CCTransferRouter: request has been used before"
