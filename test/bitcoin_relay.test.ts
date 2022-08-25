@@ -431,7 +431,7 @@ describe("Bitcoin Relay", async () => {
             ).to.revertedWith("Pausable: paused")
             
             // unpause the relay
-            await bitcoinRelayDeployer.unPauseRelay();
+            await bitcoinRelayDeployer.unpauseRelay();
         });
 
         it('transaction id should be non-zero',async() => {
@@ -687,7 +687,7 @@ describe("Bitcoin Relay", async () => {
         });
     });
 
-    describe('#unPauseRelay', async () => {
+    describe('#unpauseRelay', async () => {
         /* eslint-disable-next-line camelcase */
         const { genesis, orphan_562630 } = REGULAR_CHAIN;
 
@@ -708,7 +708,7 @@ describe("Bitcoin Relay", async () => {
             await bitcoinRelayDeployer.pauseRelay();
 
             await expect(
-                bitcoinRelaySigner1.unPauseRelay()
+                bitcoinRelaySigner1.unpauseRelay()
             ).to.revertedWith("Ownable: caller is not the owner")
         });
     });
@@ -1371,4 +1371,68 @@ describe("Bitcoin Relay", async () => {
         });
     });
 
+    describe('#ownerAddHeaders', async () => {
+        /* eslint-disable-next-line camelcase */
+        const { chain_header_hex, chain, genesis, orphan_562630 } = REGULAR_CHAIN;
+        // const headerHex = chain.map(header=> header.hex);
+        const headerHex = chain_header_hex;
+
+        const headers = utils.concatenateHexStrings(headerHex.slice(0, 6));
+
+        beforeEach(async () => {
+
+            instance = await bitcoinRelayFactory.deploy(
+                genesis.hex,
+                genesis.height,
+                orphan_562630.digest_le,
+                mockTDT.address
+            );
+
+            // initialize mock contract
+            await setTDTbalanceOf(0);
+            await setTDTtransfer(true);
+        });
+
+        it('appends new links to the chain and fires an event', async () => {
+
+            // owner is the deployer
+            let bitcoinRelayDeployer = await instance.connect(deployer);
+
+            await expect(
+                bitcoinRelayDeployer.ownerAddHeaders(
+                    genesis.hex,
+                    headers
+                )
+            ).to.emit(instance, "BlockAdded")
+        });
+
+        it('only owner can call it', async () => {
+
+            // signer1 is not the owner
+            let bitcoinRelaySigner1 = await instance.connect(signer1);
+
+            await expect(
+                bitcoinRelaySigner1.ownerAddHeaders(
+                    genesis.hex,
+                    headers
+                )
+            ).revertedWith("Ownable: caller is not the owner")
+        });
+
+        it('can be called even when the relay is paused', async () => {
+
+            let bitcoinRelaySigner1 = await instance.connect(signer1);
+            let bitcoinRelayDeployer = await instance.connect(deployer);
+
+            await bitcoinRelayDeployer.pauseRelay();
+
+            await expect(
+                bitcoinRelayDeployer.ownerAddHeaders(
+                    genesis.hex,
+                    headers
+                )
+            ).to.emit(instance, "BlockAdded")
+        });
+
+    });
 });
