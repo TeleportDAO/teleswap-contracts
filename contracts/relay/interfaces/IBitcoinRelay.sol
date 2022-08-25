@@ -93,7 +93,7 @@ interface IBitcoinRelay {
 
     function pauseRelay() external;
 
-    function unPauseRelay() external;
+    function unpauseRelay() external;
 
     function setRewardAmountInTDT(uint _rewardAmountInTDT) external;
 

@@ -92,7 +92,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
 
     /// @notice        Unpause the relay
     /// @dev           Only functions with whenNotPaused modifier can be called
-    function unPauseRelay() external override onlyOwner {
+    function unpauseRelay() external override onlyOwner {
         _unpause();
     }
 
@@ -246,8 +246,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
         bytes29 _anchorView = _anchor.ref(0).tryAsHeader();
 
-        require(_headersView.notNull(), "BitcoinRelay: header array length must be divisible by 80");
-        require(_anchorView.notNull(), "BitcoinRelay: anchor must be 80 bytes");
+        _checkInputSizeAddHeaders(_headersView, _anchorView);
 
         return _addHeaders(_anchorView, _headersView, false);
     }
@@ -267,15 +266,12 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         bytes29 _oldEnd = _oldPeriodEndHeader.ref(0).tryAsHeader();
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
 
-        require(
-            _oldStart.notNull() && _oldEnd.notNull() && _headersView.notNull(),
-            "BitcoinRelay: bad args. Check header and array byte lengths."
-        );
+        _checkInputSizeAddHeadersWithRetarget(_oldStart, _oldEnd, _headersView);
 
         return _addHeadersWithRetarget(_oldStart, _oldEnd, _headersView);
     }
 
-/// @notice             Adds headers to storage after validating
+    /// @notice             Adds headers to storage after validating
     /// @dev                Works like the other addHeaders; we use this function when relay is paused
     /// then only owner can add the new blocks, like when a fork happens
     /// @param  _anchor     The header immediately preceeding the new chain
@@ -285,8 +281,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
         bytes29 _anchorView = _anchor.ref(0).tryAsHeader();
 
-        require(_headersView.notNull(), "BitcoinRelay: header array length must be divisible by 80");
-        require(_anchorView.notNull(), "BitcoinRelay: anchor must be 80 bytes");
+        _checkInputSizeAddHeaders(_headersView, _anchorView);
 
         return _addHeaders(_anchorView, _headersView, false);
     }
@@ -307,14 +302,34 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         bytes29 _oldEnd = _oldPeriodEndHeader.ref(0).tryAsHeader();
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
 
+        _checkInputSizeAddHeadersWithRetarget(_oldStart, _oldEnd, _headersView);
+
+        return _addHeadersWithRetarget(_oldStart, _oldEnd, _headersView);
+    }
+
+    /// @notice                 Checks the size of addHeaders inputs 
+    /// @param  _headersView    Input to the addHeaders functions
+    /// @param  _anchorView     Input to the addHeaders functions
+    function _checkInputSizeAddHeaders(bytes29 _headersView, bytes29 _anchorView) internal view {
+        require(_headersView.notNull(), "BitcoinRelay: header array length must be divisible by 80");
+        require(_anchorView.notNull(), "BitcoinRelay: anchor must be 80 bytes");
+    }
+
+    /// @notice                     Checks the size of addHeadersWithRetarget inputs 
+    /// @param  _oldStart           Input to the addHeadersWithRetarget functions
+    /// @param  _oldEnd             Input to the addHeadersWithRetarget functions
+    /// @param  _headersView        Input to the addHeadersWithRetarget functions
+    function _checkInputSizeAddHeadersWithRetarget(
+        bytes29 _oldStart,
+        bytes29 _oldEnd,
+        bytes29 _headersView
+    ) internal view {
         require(
             _oldStart.notNull() && _oldEnd.notNull() && _headersView.notNull(),
             "BitcoinRelay: bad args. Check header and array byte lengths."
         );
-
-        return _addHeadersWithRetarget(_oldStart, _oldEnd, _headersView);
     }
-    
+
     /// @notice         Finds the height of a header by its hash
     /// @dev            Will fail if the header is unknown
     /// @param _hash    The header hash to search for
