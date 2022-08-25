@@ -14,16 +14,19 @@ contract PriceOracle is IPriceOracle, Ownable {
         _;
     }
 
+    // Public variables
     mapping(address => mapping (address => address)) public override ChainlinkPriceProxy; // Given two token addresses returns related Chainlink price proxy
     mapping(address => address) public override exchangeConnector; // Mapping from exchange router to exchnage connector
     address[] public override exchangeRoutersList; // List of available exchange routers
     uint public override acceptableDelay;
     address public constant NATIVE_TOKEN = address(1); // ONE_ADDRESS is used for getting price of blockchain native token 
+    address public override oracleNativeToken;
 
     /// @notice                         This contract is used to get relative price of two assets from Chainlink and available exchanges 
     /// @param _acceptableDelay         Maximum acceptable delay for data given from Chainlink
-    constructor(uint _acceptableDelay) {
+    constructor(uint _acceptableDelay,address _oracleNativeToken) {
         acceptableDelay = _acceptableDelay;
+        oracleNativeToken = _oracleNativeToken;
     }
 
     /// @notice                 Getter for the length of exchange router list
@@ -153,6 +156,7 @@ contract PriceOracle is IPriceOracle, Ownable {
         address _exchangeRouter, 
         address _exchangeConnector
     ) external nonZeroAddress(_exchangeRouter) nonZeroAddress(_exchangeConnector) override onlyOwner {
+        require(exchangeConnector[_exchangeRouter] == address(0), "PriceOracle: exchange router already exists");
         exchangeRoutersList.push(_exchangeRouter);
         exchangeConnector[_exchangeRouter] = _exchangeConnector;
         emit ExchangeConnectorAdded(_exchangeRouter, _exchangeConnector);
@@ -191,6 +195,11 @@ contract PriceOracle is IPriceOracle, Ownable {
     /// @param _acceptableDelay     Maximum acceptable delay (in seconds)
     function setAcceptableDelay(uint _acceptableDelay) external override onlyOwner {
         acceptableDelay = _acceptableDelay;
+    }
+
+    /// @notice                     Sets oracle native token address
+    function setOracleNativeToken(address _oracleNativeToken) external nonZeroAddress(_oracleNativeToken) override onlyOwner {
+        oracleNativeToken = _oracleNativeToken;
     }
 
     /// @notice                         Finds amount of output token that has same value 
@@ -255,6 +264,14 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint decimals;
         int price;
 
+        if (_inputToken == NATIVE_TOKEN) {
+            _inputToken = oracleNativeToken;
+        }
+
+        if (_outputToken == NATIVE_TOKEN) {
+            _outputToken = oracleNativeToken;
+        }
+
         if (ChainlinkPriceProxy[_inputToken][_outputToken] != address(0)) {
             // Gets price of _inputToken/_outputToken
             (
@@ -267,6 +284,8 @@ contract PriceOracle is IPriceOracle, Ownable {
 
             // Gets number of decimals
             decimals = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken][_outputToken]).decimals();
+
+            require(price != 0, "PriceOracle: zero price");
 
             // note: to make inside of power parentheses greater than zero, we add them with one
             _outputAmount = uint(price)*_inputAmount*(10**(_outputDecimals + 1))/(10**(decimals + _inputDecimals + 1));
@@ -285,6 +304,8 @@ contract PriceOracle is IPriceOracle, Ownable {
             // Gets number of decimals
             decimals = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken][_inputToken]).decimals();
             
+            require(price != 0, "PriceOracle: zero price");
+
             // note: to make inside of power parentheses greater than zero, we add them with one
             _outputAmount = (10**(decimals + _outputDecimals + 1))*_inputAmount/(10**(_inputDecimals + 1)*uint(price));
             

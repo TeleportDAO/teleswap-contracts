@@ -40,6 +40,8 @@ interface IPriceOracle {
 
     function acceptableDelay() external view returns (uint);
 
+    function oracleNativeToken() external view returns (address);
+
     function equivalentOutputAmount(
         uint _inputAmount,
         uint _inputDecimals,
@@ -72,4 +74,6 @@ interface IPriceOracle {
     function setPriceProxy(address _firstToken, address _secondToken, address _priceProxyAddress) external;
 
     function setAcceptableDelay(uint _acceptableDelay) external;
+
+    function setOracleNativeToken(address _oracleNativeToken) external;
 }
