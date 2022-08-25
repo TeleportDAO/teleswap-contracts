@@ -46,6 +46,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param  _genesisHeader    The starting header
     /// @param  _height           The starting height
     /// @param  _periodStart      The hash of the first header in the genesis epoch
+    /// @param  _TeleportDAOToken The address of the TeleportDAO ERC20 token contract
     constructor(
         bytes memory _genesisHeader,
         uint256 _height,
@@ -64,6 +65,9 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         newBlockHeader.relayer = msg.sender;
         newBlockHeader.gasPrice = 0;
         chain[_height].push(newBlockHeader);
+        require(
+            _periodStart & bytes32(0x0000000000000000000000000000000000000000000000000000000000ffffff) == bytes32(0),
+            "Period start hash does not have work. Hint: wrong byte order?");
         blockHeight[_genesisHash] = _height;
         blockHeight[_periodStart] = _height - (_height % 2016);
 
@@ -208,10 +212,16 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         bytes calldata _intermediateNodes, // In LE form
         uint _index
     ) external payable nonReentrant whenNotPaused override returns (bool) {
+        require(_txid != bytes32(0), "BitcoinRelay: txid should be non-zero");
         // Revert if the block is not finalized
         require(
             _blockHeight + finalizationParameter < lastSubmittedHeight + 1,
             "BitcoinRelay: block is not finalized on the relay"
+        );
+        // Block header exists on the relay
+        require(
+            _blockHeight >= initialHeight,
+            "BitcoinRelay: the requested height is not submitted on the relay (too old)"
         );
         // Get the relay fee from the user
         require(
@@ -407,15 +417,13 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         // Reward in TNT
         uint rewardAmountInTNT = submissionGasUsed * chain[_height][0].gasPrice * (100 + relayerPercentageFee) / 100;
 
-        // Reward in TDT (not in this version & not tested)
-        uint contractTDTBalance;
+        // Reward in TDT
+        uint contractTDTBalance = 0;
         if (TeleportDAOToken != address(0)) {
             contractTDTBalance = IERC20(TeleportDAOToken).balanceOf(address(this));
-        } else {
-            contractTDTBalance = 0;
         }
 
-        // Send reward in TDT (not in this version & not tested)
+        // Send reward in TDT
         bool sentTDT;
         if (rewardAmountInTDT <= contractTDTBalance && rewardAmountInTDT > 0) {
             // Call ERC20 token contract to transfer reward tokens to the relayer
@@ -515,7 +523,6 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
                 return index;
             }
         }
-        return 0;
     }
 
     /// @notice                     Deletes all the block header in the same height except the first header
@@ -540,11 +547,11 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         bytes29 _oldEnd,
         bytes29 _headers
     ) internal returns (bool) {
-        /* NB: requires that both blocks are known */
+        // requires that both blocks are known
         uint256 _startHeight = _findHeight(_oldStart.hash256());
         uint256 _endHeight = _findHeight(_oldEnd.hash256());
 
-        /* NB: retargets should happen at 2016 block intervals */
+        // retargets should happen at 2016 block intervals
         require(
             _endHeight % 2016 == 2015,
             "BitcoinRelay: must provide the last header of the closing difficulty period");
@@ -564,7 +571,8 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
             _oldEnd.time()
         );
         require(
-            (_actualTarget & _expectedTarget) == _actualTarget, // shouldn't it be == _expected??
+            (_actualTarget & _expectedTarget) == _actualTarget, // is this correct?
+            // it was in the original code, and we are not sure why is it this way
             "BitcoinRelay: invalid retarget provided");
 
         // Pass all but the first through to be added
