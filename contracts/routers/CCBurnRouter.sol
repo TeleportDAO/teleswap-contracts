@@ -207,8 +207,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _intermediateNodes           Merkle inclusion proof for transaction containing the burn transaction
     /// @param _index                       Index of transaction containing the burn transaction in the block
     /// @param _lockerLockingScript         Locker's locking script (on Bitcoin) that this burn request belongs to
-    /// @param _burnReqIndexes              Index to start searching for unpaid burn requests in the list
-    /// @param _voutIndexes                 Index to finish searching for unpaid burn requests in the list
+    /// @param _burnReqIndexes              Indexes of requests that locker wants to provide proof for them
+    /// @param _voutIndexes                 Indexes of outputs that were used to pay burn requests (_voutIndexes[i] belongs to _burnReqIndexes[i])
     /// @return
     function burnProof(
         bytes4 _version,
@@ -456,8 +456,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _paidBlockNumber             Block number in which locker paid the burn request
     /// @param _lockerTargetAddress         Address of the locker on the target chain
     /// @param _vout                        Outputs of a transaction
-    /// @param _burnReqIndexes              Index to start searching for unpaid burn requests in the list
-    /// @param _voutIndexes                 Index to finish searching for unpaid burn requests in the list
+    /// @param _burnReqIndexes              Indexes of requests that locker wants to provide proof for them
+    /// @param _voutIndexes                 Indexes of outputs that were used to pay burn requests (_voutIndexes[i] belongs to _burnReqIndexes[i])
     /// @return paidOutputCounter           Number of executed burn requests
     function _checkPaidBurnRequests(
         uint _paidBlockNumber,
