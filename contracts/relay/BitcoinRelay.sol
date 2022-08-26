@@ -304,7 +304,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @notice                 Checks the size of addHeaders inputs 
     /// @param  _headersView    Input to the addHeaders functions
     /// @param  _anchorView     Input to the addHeaders functions
-    function _checkInputSizeAddHeaders(bytes29 _headersView, bytes29 _anchorView) internal view {
+    function _checkInputSizeAddHeaders(bytes29 _headersView, bytes29 _anchorView) internal pure {
         require(_headersView.notNull(), "BitcoinRelay: header array length must be divisible by 80");
         require(_anchorView.notNull(), "BitcoinRelay: anchor must be 80 bytes");
     }
@@ -317,51 +317,11 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         bytes29 _oldStart,
         bytes29 _oldEnd,
         bytes29 _headersView
-    ) internal view {
+    ) internal pure {
         require(
             _oldStart.notNull() && _oldEnd.notNull() && _headersView.notNull(),
             "BitcoinRelay: bad args. Check header and array byte lengths."
         );
-    }
-
-    /// @notice             Adds headers to storage after validating
-    /// @dev                Works like the other addHeaders; we use this function when relay is paused
-    /// then only owner can add the new blocks, like when a fork happens
-    /// @param  _anchor     The header immediately preceeding the new chain
-    /// @param  _headers    A tightly-packed list of 80-byte Bitcoin headers
-    /// @return             True if successfully written, error otherwise
-    function ownerAddHeaders(bytes calldata _anchor, bytes calldata _headers) external nonReentrant onlyOwner override returns (bool) {
-        bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
-        bytes29 _anchorView = _anchor.ref(0).tryAsHeader();
-
-        require(_headersView.notNull(), "BitcoinRelay: header array length must be divisible by 80");
-        require(_anchorView.notNull(), "BitcoinRelay: anchor must be 80 bytes");
-
-        return _addHeaders(_anchorView, _headersView, false);
-    }
-
-    /// @notice                       Adds headers to storage, performs additional validation of retarget
-    /// @dev                          Works like the other addHeadersWithRetarget; we use this function when relay is paused
-    /// then only owner can add the new blocks, like when a fork happens
-    /// @param  _oldPeriodStartHeader The first header in the difficulty period being closed
-    /// @param  _oldPeriodEndHeader   The last header in the difficulty period being closed (anchor of new headers)
-    /// @param  _headers              A tightly-packed list of 80-byte Bitcoin headers
-    /// @return                       True if successfully written, error otherwise
-    function ownerAddHeadersWithRetarget(
-        bytes calldata _oldPeriodStartHeader,
-        bytes calldata _oldPeriodEndHeader,
-        bytes calldata _headers
-    ) external nonReentrant onlyOwner override returns (bool) {
-        bytes29 _oldStart = _oldPeriodStartHeader.ref(0).tryAsHeader();
-        bytes29 _oldEnd = _oldPeriodEndHeader.ref(0).tryAsHeader();
-        bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
-
-        require(
-            _oldStart.notNull() && _oldEnd.notNull() && _headersView.notNull(),
-            "BitcoinRelay: bad args. Check header and array byte lengths."
-        );
-
-        return _addHeadersWithRetarget(_oldStart, _oldEnd, _headersView);
     }
 
     /// @notice         Finds the height of a header by its hash
@@ -605,11 +565,11 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @dev
     /// @param  _headerHash         The block header hash
     /// @param  _height             The height of the block header
-    /// @return                     Index of the block header
-    function _findIndex(bytes32 _headerHash, uint _height) internal view returns(uint) {
-        for(uint256 index = 0; index < chain[_height].length; index++) {
-            if(_headerHash == chain[_height][index].selfHash) {
-                return index;
+    /// @return  index              Index of the block header
+    function _findIndex(bytes32 _headerHash, uint _height) internal view returns(uint index) {
+        for(uint256 _index = 0; _index < chain[_height].length; _index++) {
+            if(_headerHash == chain[_height][_index].selfHash) {
+                index = _index;
             }
         }
     }

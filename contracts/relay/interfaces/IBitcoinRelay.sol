@@ -129,8 +129,4 @@ interface IBitcoinRelay {
         bytes calldata _oldPeriodEndHeader,
         bytes calldata _headers
     ) external returns (bool);
-<<<<<<< HEAD
-
-=======
->>>>>>> efbf892e2dd34b080ee14674758e70acca71be78
 }
