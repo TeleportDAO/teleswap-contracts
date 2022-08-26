@@ -15,7 +15,8 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         uint _minRequiredTNTLockedAmount,
         uint _collateralRatio,
         uint _liquidationRatio,
-        uint _lockerPercentageFee
+        uint _lockerPercentageFee,
+        uint _priceWithDiscountRatio
     ) public initializer {
 
         OwnableUpgradeable.__Ownable_init();
@@ -30,6 +31,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         collateralRatio = _collateralRatio;
         liquidationRatio = _liquidationRatio;
         lockerPercentageFee = _lockerPercentageFee;
+        priceWithDiscountRatio= _priceWithDiscountRatio;
     }
 
     modifier nonZeroAddress(address _address) {
@@ -384,6 +386,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
     /// @return                           True if locker is removed successfully
     function selfRemoveLocker() external override nonReentrant whenNotPaused returns (bool) {
 
+        // TODO: check the lockerLeavingAcceptance also
         require(
             lockersMapping[_msgSender()].isLocker,
             "Lockers: no locker with this address"
@@ -528,6 +531,93 @@ contract LockersLogic is LockersStorageStructure, ILockers {
 
         result = true;
 
+    }
+
+    function liquidateLockerV2(
+        address _lockerTargetAddress,
+        uint _collateralAmount
+    ) external nonZeroAddress(_lockerTargetAddress) nonZeroValue(_collateralAmount)
+    nonReentrant whenNotPaused returns (bool result) {
+
+        require(
+            lockersMapping[_lockerTargetAddress].isLocker,
+            "Lockers: target address is not locker"
+        );
+
+        locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
+        uint priceOfCollateral = _priceOfOneUnitOfCollateralInBTC();
+
+        require(
+            _calculateHealthFactor(_lockerTargetAddress, priceOfCollateral) < HEALTH_FACTOR,
+            "Lockers: the locker's collateral is healthy"
+        );
+
+        /*
+            Maximum buyable amount of collateral comes from:
+            (BtcWorthOfCollateral - x)/(netMinted -x) = collateralRatio/10000
+        */
+
+        uint maxBuyableCollateral = _maxBuyableCollateral(_lockerTargetAddress, priceOfCollateral);
+
+        if (maxBuyableCollateral > theLiquidatingLocker.nativeTokenLockedAmount) {
+            maxBuyableCollateral = theLiquidatingLocker.nativeTokenLockedAmount;
+        }
+
+        require(
+            _collateralAmount <= maxBuyableCollateral,
+            "Lockers: more than possible buyable"
+        );
+
+        uint teleBTCPriceWithDiscount = (_collateralAmount * priceWithDiscountRatio)/10000;
+
+
+        IERC20(teleBTC).transferFrom(_msgSender(), address(this), teleBTCPriceWithDiscount);
+
+        lockersMapping[_lockerTargetAddress].netMinted = lockersMapping[_lockerTargetAddress].netMinted - teleBTCPriceWithDiscount;
+        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount= lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - _collateralAmount;
+
+        Address.sendValue(payable(_msgSender()), _collateralAmount);
+
+        result = true;
+
+    }
+
+    function _priceOfOneUnitOfCollateralInBTC() internal view returns (uint) {
+
+        return IPriceOracle(priceOracle).equivalentOutputAmount(
+            (10**18), // 1 Ether is 10^18 wei
+        // TODO: get decimals from token contracts
+            18,
+            8,
+            NATIVE_TOKEN,
+            teleBTC
+        );
+
+    }
+
+    function _calculateHealthFactor(
+        address _lockerTargetAddress,
+        uint _priceOfOneUnitOfCollateral
+    ) internal view nonZeroAddress(_lockerTargetAddress) returns (uint) {
+        locker memory theLocker = lockersMapping[_lockerTargetAddress];
+
+        // return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount * 100000000)/(theLocker.netMinted * liquidationRatio * (10 ** 18));
+        return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount)/(theLocker.netMinted * liquidationRatio * (10 ** 10));
+
+    }
+
+    function _maxBuyableCollateral(
+        address _lockerTargetAddress,
+        uint _priceOfOneUnitOfCollateral
+    ) internal view nonZeroAddress(_lockerTargetAddress) returns (uint) {
+        locker memory theLocker = lockersMapping[_lockerTargetAddress];
+
+        // (UPPER_HEALTH_FACTOR * theLocker.netMinted * liquidationRatio) - ((theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** 8))/(10 ** 18));
+        uint antecedent = (UPPER_HEALTH_FACTOR * theLocker.netMinted * liquidationRatio * (10 ** 18)) - (theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** 8));
+
+        uint consequent = ((UPPER_HEALTH_FACTOR * liquidationRatio * _priceOfOneUnitOfCollateral * priceWithDiscountRatio)/10000) -(_priceOfOneUnitOfCollateral * (10 ** 8));
+
+        return antecedent/consequent;
     }
 
     function mint(

@@ -35,6 +35,7 @@ describe("Lockers", async () => {
     let collateralRatio = 20000;
     let liquidationRatio = 15000;
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
+    const PRICE_WITH_DISCOUNT_RATIO = 9500; // Means %95
 
     // Bitcoin public key (32 bytes)
     let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
@@ -188,7 +189,8 @@ describe("Lockers", async () => {
             minRequiredNativeTokenLockedAmount,
             collateralRatio,
             liquidationRatio,
-            LOCKER_PERCENTAGE_FEE
+            LOCKER_PERCENTAGE_FEE,
+            PRICE_WITH_DISCOUNT_RATIO
         )
 
         return lockers;
@@ -206,7 +208,8 @@ describe("Lockers", async () => {
                     minRequiredNativeTokenLockedAmount,
                     collateralRatio,
                     liquidationRatio,
-                    LOCKER_PERCENTAGE_FEE
+                    LOCKER_PERCENTAGE_FEE,
+                    PRICE_WITH_DISCOUNT_RATIO
                 )
             ).to.be.revertedWith("Initializable: contract is already initialized")
         })

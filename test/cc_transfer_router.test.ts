@@ -30,6 +30,7 @@ describe("CCTransferRouter", async () => {
     const APP_ID = 0;
     const PROTOCOL_PERCENTAGE_FEE = 10; // Means %0.1
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
+    const PRICE_WITH_DISCOUNT_RATIO = 9500; // Means %95
     const STARTING_BLOCK_NUMBER = 1;
     const TREASURY = "0x0000000000000000000000000000000000000002";
 
@@ -171,7 +172,8 @@ describe("CCTransferRouter", async () => {
             0,
             collateralRatio,
             liquidationRatio,
-            LOCKER_PERCENTAGE_FEE
+            LOCKER_PERCENTAGE_FEE,
+            PRICE_WITH_DISCOUNT_RATIO
         )
 
         return lockers;
@@ -284,7 +286,7 @@ describe("CCTransferRouter", async () => {
 
             // Calculates amount that user should have received
             let receivedAmount = CC_REQUESTS.normalCCTransfer.bitcoinAmount - lockerFee - teleporterFee - protocolFee;
-            
+
             // Checks that ccTransfer is executed successfully
             expect(
                 await ccTransferRouter.ccTransfer(
@@ -305,7 +307,7 @@ describe("CCTransferRouter", async () => {
                 await deployer.getAddress(),
                 teleporterFee
             );
-            
+
             await checkFees(
                 CC_REQUESTS.normalCCTransfer.recipientAddress,
                 receivedAmount,
