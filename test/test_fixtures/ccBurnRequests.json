@@ -7,6 +7,14 @@
 		"locktime": "0x00000000",
 		"intermediateNodes": "0x7451e7cd7a5afcd93d5a3f84e4d7976fb3bd771dc6aeab416d818ea1d72c0476"
 	},
+	"burnProof_validP2WPKH": {
+		"txId": "0xb6fc22336bde61f3de20faa223a79b82494912800d7a2a1a5a511bdf46c91191",
+		"version": "0x02000000",
+		"vin": "0x01df4a990ad3c3a225862465bb660f06d445914a038ada819ace235afb9f23cff30200000000feffffff",
+		"vout": "0x0200e1f50500000000160014751e76e8199196d454941c45d1b3a323f1433bd600e1f505000000001976a914748284390f9e263a4b766a75d0633c50426eb87587ac",
+		"locktime": "0x00000000",
+		"intermediateNodes": "0x7451e7cd7a5afcd93d5a3f84e4d7976fb3bd771dc6aeab416d818ea1d72c0476"
+	},
 	"burnProof_validWithoutChange": {
 		"txId": "0x46ce5895e363a7db5f0926e54d488130dbae6879ee3f43b4c06bb73f7bf4915c",
 		"version": "0x02000000",

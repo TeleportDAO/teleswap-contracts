@@ -54,16 +54,12 @@ describe("CCBurnRouter", async () => {
 
     let btcPublicKey = "03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd"
     let btcAddress = "mmPPsxXdtqgHFrxZdtFCtkwhHynGTiTsVh"
-    let userLockingScript = "0x76a91412ab8dc588ca9d5787dde7eb29569da63c3a238c88ac"
-    let btcSegwitDecodedAddress = "0x751e76e8199196d454941c45d1b3a323f1433bd6"
 
-    // The locker sends tokens to another wallet
-    let btcLockerVersion =  "0x02000000"
-    let btcLockerVin = "0x017b1eabe0209b1fe794124575ef807057c77ada2138ae4fa8d6c4de0398a14f3f000000004241044d05240cfbd8a2786eda9dadd520c1609b8593ff8641018d57703d02ba687cf2f187f0cee2221c3afb1b5ff7888caced2423916b61444666ca1216f26181398cffffffff"
-    let btcLockerVout = "0x0200e1f505000000001976a9144062c8aeed4f81c2d73ff854a2957021191e20b688ac984f42060100000016001447ef833107e0ad9998f8711813075ac62ec1104b"
-    let btcLockerLocktime = "0x00000000"
-    let btcLockerInterMediateNodes = "0x7451e7cd7a5afcd93d5a3f84e4d7976fb3bd771dc6aeab416d818ea1d72c0476"
-    let lockerRedeemScript = "0x044d05240cfbd8a2786eda9dadd520c1609b8593ff8641018d57703d02ba687cf2f187f0cee2221c3afb1b5ff7888caced2423916b61444666ca1216f26181398c"
+    let USER_SCRIPT_P2PKH = "0x12ab8dc588ca9d5787dde7eb29569da63c3a238c";
+    let USER_SCRIPT_P2PKH_TYPE = 1; // P2PKH
+
+    let USER_SCRIPT_P2WPKH = "0x751e76e8199196d454941c45d1b3a323f1433bd6";
+    let USER_SCRIPT_P2WPKH_TYPE = 3; // P2WPKH
 
     before(async () => {
 
@@ -174,7 +170,9 @@ describe("CCBurnRouter", async () => {
 
     async function sendBurnRequest(
         burnReqBlockNumber: number, 
-        _userRequestedAmount: BigNumber
+        _userRequestedAmount: BigNumber,
+        USER_SCRIPT: any,
+        USER_SCRIPT_TYPE: any
     ): Promise<number> {
         // Gives allowance to ccBurnRouter
         await TeleBTCSigner1.approve(
@@ -195,7 +193,8 @@ describe("CCBurnRouter", async () => {
         // Burns eleBTC
         await ccBurnRouterSigner1.ccBurn(
             _userRequestedAmount,
-            userLockingScript,
+            USER_SCRIPT,
+            USER_SCRIPT_TYPE,
             LOCKER1_LOCKING_SCRIPT
         );
 
@@ -226,8 +225,8 @@ describe("CCBurnRouter", async () => {
                 CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                 1,
                 LOCKER1_LOCKING_SCRIPT,
-                0,
-                0
+                [0],
+                [0]
             )
         ).to.emit(ccBurnRouter, "PaidCCBurn")
     }
@@ -270,12 +269,14 @@ describe("CCBurnRouter", async () => {
             await expect(
                 ccBurnRouterSigner1.ccBurn(
                     userRequestedAmount,
-                    userLockingScript,
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
                     LOCKER1_LOCKING_SCRIPT
                 )
             ).to.emit(ccBurnRouter, "CCBurn").withArgs(
                 signer1Address,
-                userLockingScript,
+                USER_SCRIPT_P2PKH,
+                USER_SCRIPT_P2PKH_TYPE,
                 userRequestedAmount,
                 burntAmount,
                 ONE_ADDRESS,
@@ -314,7 +315,8 @@ describe("CCBurnRouter", async () => {
             await expect(
                 ccBurnRouterSigner1.ccBurn(
                     0,
-                    userLockingScript,
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
                     LOCKER1_LOCKING_SCRIPT
                 )
             ).to.revertedWith("CCBurnRouter: value is zero")
@@ -339,7 +341,8 @@ describe("CCBurnRouter", async () => {
             await expect(
                 ccBurnRouterSigner1.ccBurn(
                     BITCOIN_FEE - 1,
-                    userLockingScript,
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
                     LOCKER1_LOCKING_SCRIPT
                 )
             ).to.revertedWith("CCBurnRouter: amount is too low");
@@ -356,7 +359,8 @@ describe("CCBurnRouter", async () => {
             await expect(
                 ccBurnRouterSigner1.ccBurn(
                     userRequestedAmount,
-                    userLockingScript,
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
                     LOCKER1_LOCKING_SCRIPT
                 )
             ).to.revertedWith("ERC20: transfer amount exceeds allowance")
@@ -369,7 +373,8 @@ describe("CCBurnRouter", async () => {
             await expect(
                 ccBurnRouterSigner1.ccBurn(
                     userRequestedAmount,
-                    userLockingScript,
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
                     LOCKER1_LOCKING_SCRIPT
                 )
             ).to.revertedWith("CCBurnRouter: given locking script is not locker")
@@ -389,14 +394,19 @@ describe("CCBurnRouter", async () => {
             await mintTeleBTCForTest();
     
             // Sends a burn request
-            burntAmount = await sendBurnRequest(burnReqBlockNumber, userRequestedAmount);
+            burntAmount = await sendBurnRequest(
+                burnReqBlockNumber, 
+                userRequestedAmount,
+                USER_SCRIPT_P2PKH,
+                USER_SCRIPT_P2PKH_TYPE
+            );
         });
     
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
-        it("Submits a valid burn proof", async function () {
+        it("Submits a valid burn proof (for P2PKH)", async function () {
 
             // Sets mock contracts outputs
             await setRelayCheckTxProofReturn(true);
@@ -413,12 +423,12 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER1_LOCKING_SCRIPT,
-                    0,
-                    0
+                    [0],
+                    [0]
                 )
             ).to.emit(ccBurnRouter, "PaidCCBurn").withArgs(
                 signer1Address,
-                userLockingScript,
+                USER_SCRIPT_P2PKH,
                 burntAmount,
                 LOCKER_TARGET_ADDRESS,
                 0
@@ -427,6 +437,49 @@ describe("CCBurnRouter", async () => {
             expect(
                 await ccBurnRouter.isUsedAsBurnProof(
                     CC_BURN_REQUESTS.burnProof_valid.txId
+                )
+            ).to.equal(true);
+        })
+
+        it("Submits a valid burn proof (for P2WPKH)", async function () {
+
+            // Sends a burn request
+            burntAmount = await sendBurnRequest(
+                burnReqBlockNumber, 
+                userRequestedAmount,
+                USER_SCRIPT_P2WPKH,
+                USER_SCRIPT_P2WPKH_TYPE
+            );
+
+            // Sets mock contracts outputs
+            await setRelayCheckTxProofReturn(true);
+            await setLockersIsLocker(true);
+            await setLockersGetLockerTargetAddress();
+
+            await expect(
+                ccBurnRouterSigner2.burnProof(
+                    CC_BURN_REQUESTS.burnProof_validP2WPKH.version,
+                    CC_BURN_REQUESTS.burnProof_validP2WPKH.vin,
+                    CC_BURN_REQUESTS.burnProof_validP2WPKH.vout,
+                    CC_BURN_REQUESTS.burnProof_validP2WPKH.locktime,
+                    burnReqBlockNumber + 5,
+                    CC_BURN_REQUESTS.burnProof_validP2WPKH.intermediateNodes,
+                    1,
+                    LOCKER1_LOCKING_SCRIPT,
+                    [1], // Burn req index
+                    [0]
+                )
+            ).to.emit(ccBurnRouter, "PaidCCBurn").withArgs(
+                signer1Address,
+                USER_SCRIPT_P2WPKH,
+                burntAmount,
+                LOCKER_TARGET_ADDRESS,
+                1
+            );
+
+            expect(
+                await ccBurnRouter.isUsedAsBurnProof(
+                    CC_BURN_REQUESTS.burnProof_validP2WPKH.txId
                 )
             ).to.equal(true);
         })
@@ -448,12 +501,12 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.burnProof_validWithoutChange.intermediateNodes,
                     1,
                     LOCKER1_LOCKING_SCRIPT,
-                    0,
-                    0
+                    [0],
+                    [0]
                 )
             ).to.emit(ccBurnRouter, "PaidCCBurn").withArgs(
                 signer1Address,
-                userLockingScript,
+                USER_SCRIPT_P2PKH,
                 burntAmount,
                 LOCKER_TARGET_ADDRESS,
                 0
@@ -477,8 +530,8 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER_TARGET_ADDRESS,
-                    0,
-                    0
+                    [0],
+                    [0]
                 )
             ).to.revertedWith("CCBurnRouter: non-zero lock time")
         })
@@ -497,13 +550,13 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER_TARGET_ADDRESS,
-                    0,
-                    0
+                    [0],
+                    [0]
                 )
             ).to.revertedWith("CCBurnRouter: given locking script is not locker")
         })
 
-        it("Reverts if index range is not correct (wrong start or end index)", async function () {
+        it("Reverts if given indexes doesn't match", async function () {
 
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(true);
@@ -521,10 +574,10 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER_TARGET_ADDRESS,
-                    1,
-                    0
+                    [0, 1],
+                    [0]
                 )
-            ).to.revertedWith("CCBurnRouter: wrong index")
+            ).to.revertedWith("CCBurnRouter: wrong indexes")
 
             // Should revert when end index is bigger than total number of burn requests
             await expect(
@@ -537,8 +590,8 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER_TARGET_ADDRESS,
-                    0,
-                    1
+                    [0],
+                    [0, 1]
                 )
             ).to.revertedWith("CCBurnRouter: wrong index")
         })
@@ -559,8 +612,8 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER_TARGET_ADDRESS,
-                    0,
-                    0
+                    [0],
+                    [0]
                 )
             ).to.revertedWith("CCBurnRouter: relay fee is not sufficient");
         })
@@ -581,15 +634,15 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER_TARGET_ADDRESS,
-                    0,
-                    0
+                    [0],
+                    [0]
                 )
             ).to.revertedWith("CCBurnRouter: transaction has not finalized yet");
         })
 
         it("Reverts if vout is null", async function () {
             // Sends a burn request
-            await sendBurnRequest(burnReqBlockNumber, userRequestedAmount);
+            await sendBurnRequest(burnReqBlockNumber, userRequestedAmount, USER_SCRIPT_P2PKH, USER_SCRIPT_P2PKH_TYPE);
 
             // Sets mock contracts outputs
             await setRelayCheckTxProofReturn(true);
@@ -607,8 +660,8 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER_TARGET_ADDRESS,
-                    0,
-                    0
+                    [0],
+                    [0]
                 )
             ).to.revertedWith("TxHelper: vout is null")
         })
@@ -618,7 +671,7 @@ describe("CCBurnRouter", async () => {
             let burnReqBlockNumber = 100;
 
             // Send a burn request
-            await sendBurnRequest(burnReqBlockNumber, wrongUserRequestAmount);
+            await sendBurnRequest(burnReqBlockNumber, wrongUserRequestAmount, USER_SCRIPT_P2PKH, USER_SCRIPT_P2PKH_TYPE);
 
             // Set mock contracts outputs
             await setRelayCheckTxProofReturn(true);
@@ -636,8 +689,8 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER_TARGET_ADDRESS,
-                    1,
-                    1
+                    [1],
+                    [1]
                 )
             ).to.not.emit(ccBurnRouter, "PaidCCBurn");
 
@@ -662,8 +715,8 @@ describe("CCBurnRouter", async () => {
                 CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                 1,
                 LOCKER1_LOCKING_SCRIPT,
-                0,
-                0
+                [0],
+                [0]
             );
 
             expect(
@@ -680,8 +733,8 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER1_LOCKING_SCRIPT,
-                    0,
-                    0
+                    [0],
+                    [0]
                 )
             ).to.not.emit(ccBurnRouter, "PaidCCBurn");
         })
@@ -703,8 +756,8 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     1,
                     LOCKER1_LOCKING_SCRIPT,
-                    0,
-                    0
+                    [0],
+                    [0]
                 )
             ).to.not.emit(ccBurnRouter, "PaidCCBurn");
 
@@ -729,8 +782,8 @@ describe("CCBurnRouter", async () => {
                 CC_BURN_REQUESTS.burnProof_invalidChange.intermediateNodes,
                 1,
                 LOCKER1_LOCKING_SCRIPT,
-                0,
-                0
+                [0],
+                [0]
             );
 
             expect(
@@ -755,7 +808,7 @@ describe("CCBurnRouter", async () => {
             await mintTeleBTCForTest();
 
             // Sends a burn request
-            await sendBurnRequest(100, userRequestedAmount);
+            await sendBurnRequest(100, userRequestedAmount, USER_SCRIPT_P2PKH, USER_SCRIPT_P2PKH_TYPE);
         });
     
         afterEach(async () => {
@@ -1047,7 +1100,7 @@ describe("CCBurnRouter", async () => {
             await setLockersSlashLockerReturn();
 
             // User sends a burn request and locker provides burn proof for it
-            await sendBurnRequest(100, userRequestedAmount);
+            await sendBurnRequest(100, userRequestedAmount, USER_SCRIPT_P2PKH, USER_SCRIPT_P2PKH_TYPE);
             await provideProof(burnReqBlockNumber + 5);
 
             await expect(

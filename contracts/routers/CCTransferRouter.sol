@@ -250,7 +250,10 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         ccTransferRequest memory request; // Defines it to save gas
         bytes memory arbitraryData;
         
-        (request.inputAmount, arbitraryData) = TxHelper.parseOutputValueAndData(_vout, _lockerLockingScript);
+        (request.inputAmount, arbitraryData) = TxHelper.parseOutputValueAndDataHavingLockingScript(
+            _vout, 
+            _lockerLockingScript
+        );
 
         // Checks that input amount is not zero
         require(request.inputAmount > 0, "CCTransferRouter: input amount is zero");

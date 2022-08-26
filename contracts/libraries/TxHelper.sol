@@ -13,13 +13,22 @@ library TxHelper {
     using TypedMemView for bytes29;
     using ViewBTC for bytes29;
 
+	// Enums
+    enum ScriptTypes {
+        P2PK, // 32 bytes
+        P2PKH, // 20 bytes        
+        P2SH, // 20 bytes          
+        P2WPKH, // 20 bytes          
+        P2WSH // 32 bytes               
+    }
+
     /// @notice                           Parse the bitcoin amount and the op_return of a transaction as data
     /// @dev                              Support 3 types of transaction outputs, p2pkh, p2sh and p2wpkh
     /// @param _vout                      The vout of a bitcoin transaction
     /// @param _lockingScript             20 bytes, public_key hash or redeem_script hash which is using in bitcoin locking script
     /// @return                           bitcoinAmount of the _desiredRecipient (20 bytes, public_key hash or redeem_script hash)
     /// @return                           arbitraryData or the op_return of the transaction
-    function parseOutputValueAndData(
+    function parseOutputValueAndDataHavingLockingScript(
         bytes memory _vout,
         bytes memory _lockingScript
     ) internal view returns (uint64 bitcoinAmount, bytes memory arbitraryData) {
@@ -54,7 +63,7 @@ library TxHelper {
         }
     }
 
-    function parseOutputValue(
+    function parseOutputValueHavingLockingScript(
         bytes memory _vout,
         bytes memory _lockingScript
     ) internal view returns (uint64 bitcoinAmount) {
@@ -77,6 +86,37 @@ library TxHelper {
                 break;
             }
         }
+    }
+
+    function parseValueFromSpecificOutputHavingScript(
+        bytes memory _vout,
+        uint _voutIndex,
+        bytes memory _script,
+        ScriptTypes _scriptType
+    ) internal view returns (uint64 bitcoinAmount) {
+
+        bytes29 voutView = _vout.ref(0).tryAsVout();
+        require(!voutView.isNull(), "TxHelper: vout is null");
+        bytes29 output = ViewBTC.indexVout(voutView, _voutIndex);
+        bytes29 scriptPubkey = ViewBTC.scriptPubkey(output);
+
+        if (_scriptType == ScriptTypes.P2PK) {
+            // note: first byte is Pushdata Bytelength           
+            bitcoinAmount = keccak256(_script) == keccak256(abi.encodePacked(scriptPubkey.index(1, 32))) ? ViewBTC.value(output) : 0;
+        } else if (_scriptType == ScriptTypes.P2PKH) { 
+            // note: first three bytes are OP_DUP, OP_HASH160, Pushdata Bytelength         
+            bitcoinAmount = keccak256(_script) == keccak256(abi.encodePacked(scriptPubkey.indexAddress(3))) ? ViewBTC.value(output) : 0;
+        } else if (_scriptType == ScriptTypes.P2SH) {
+            // note: first two bytes are OP_HASH160, Pushdata Bytelength                     
+            bitcoinAmount = keccak256(_script) == keccak256(abi.encodePacked(scriptPubkey.indexAddress(2))) ? ViewBTC.value(output) : 0;
+        } else if (_scriptType == ScriptTypes.P2WPKH) {               
+            // note: first two bytes are OP_0, Pushdata Bytelength
+            bitcoinAmount = keccak256(_script) == keccak256(abi.encodePacked(scriptPubkey.indexAddress(2))) ? ViewBTC.value(output) : 0;
+        } else if (_scriptType == ScriptTypes.P2WSH) {
+            // note: first two bytes are OP_0, Pushdata Bytelength           
+            bitcoinAmount = keccak256(_script) == keccak256(abi.encodePacked(scriptPubkey.index(2, 32))) ? ViewBTC.value(output) : 0;
+        }
+        
     }
 
     function getLockingScript(
