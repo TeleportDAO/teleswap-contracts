@@ -3,29 +3,40 @@ pragma solidity ^0.8.0;
 
 interface ICCBurnRouter {
 
+	// Enums
+
+    enum ScriptTypes {
+        P2PK, // 32 bytes
+        P2PKH, // 20 bytes        
+        P2SH, // 20 bytes          
+        P2WPKH, // 20 bytes          
+        P2WSH // 32 bytes               
+    }
+
 	// Structures
 
     /// @notice                 	Structure for recording cc burn requests
     /// @param amount         		Amount of tokens that user wants to burn
     /// @param burntAmount   	    Amount that user will receive (after reducing fees from amount)
     /// @param sender       		Address of user who requests burning
-    /// @param userLockingScript    Locking script of the user on Bitcoin
+    /// @param userScript    Locking script of the user on Bitcoin
     /// @param deadline         	Deadline of locker for executing the request
     /// @param isTransferred    	True if the request has been executed
 	struct burnRequest {
 		uint amount;
 		uint burntAmount;
 		address sender;
-		bytes userLockingScript;
+		bytes userScript;
 		uint deadline;
 		bool isTransferred;
+		ScriptTypes scriptType;
   	}
 
   	// Events
 
 	/// @notice                 		Emits when a burn request gets submitted
     /// @param userTargetAddress        Target address of the user
-    /// @param userLockingScript        Locking script of user on Bitcoin
+    /// @param userScript        Locking script of user on Bitcoin
     /// @param amount         			Toral requested amount
     /// @param burntAmount   		    Amount that user will receive (after reducing fees)
 	/// @param lockerTargetAddress		Locker's address on the target chain
@@ -33,7 +44,8 @@ interface ICCBurnRouter {
     /// @param deadline         		Deadline of locker for executing the request
   	event CCBurn(
 		address indexed userTargetAddress,
-		bytes userLockingScript,
+		bytes userScript,
+		ScriptTypes scriptType,
 		uint amount, 
 		uint burntAmount, 
 		address indexed lockerTargetAddress,
@@ -43,13 +55,13 @@ interface ICCBurnRouter {
 
 	/// @notice                 		Emits when a burn proof is provided
     /// @param userTargetAddress        Target address of the user
-    /// @param userLockingScript        Locking script of the user on Bitcoin
+    /// @param userScript        Locking script of the user on Bitcoin
     /// @param burntAmount   		    Amount that user received
 	/// @param lockerTargetAddress		Locker's address on the target chain
     /// @param index       				The index of a request for a locker
 	event PaidCCBurn(
 		address indexed userTargetAddress, 
-		bytes userLockingScript, 
+		bytes userScript, 
 		uint burntAmount, 
 		address indexed lockerTargetAddress, 
 		uint index
@@ -109,7 +121,8 @@ interface ICCBurnRouter {
 
 	function ccBurn(
 		uint _amount, 
-		bytes calldata _userLockingScript,
+		bytes calldata _userScript,
+		ScriptTypes _scriptType,
 		bytes calldata _lockerLockingScript
 	) external returns (uint);
 
@@ -122,8 +135,8 @@ interface ICCBurnRouter {
 		bytes memory _intermediateNodes,
 		uint _index,
 		bytes memory _lockerLockingScript,
-		uint _startIndex,
-		uint _endIndex
+        uint[] memory _burnReqIndexes,
+        uint[] memory _voutIndexes
 	) external payable returns (bool);
 
 	function disputeBurn(
