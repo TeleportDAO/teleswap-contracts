@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "../libraries/TypedMemView.sol";
 import "../libraries/ViewBTC.sol";
-import "../libraries/ViewSPV.sol";
 import "./interfaces/IBitcoinRelay.sol";
 import "../erc20/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -14,14 +13,9 @@ import "hardhat/console.sol";
 
 contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
 
-    /*  using BytesLib for bytes;
-        using BTCUtils for bytes;
-        using ValidateSPV for bytes; 
-    */
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
     using ViewBTC for bytes29;
-    using ViewSPV for bytes29;
 
     // Public variables
     uint public override initialHeight;
@@ -234,7 +228,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         bytes32 _merkleRoot = _revertBytes32(chain[_blockHeight][0].merkleRoot);
         bytes29 intermediateNodes = _intermediateNodes.ref(0).tryAsMerkleArray(); // Check for errors if any
         bytes32 txIdLE = _revertBytes32(_txid);
-        return ViewSPV.prove(txIdLE, _merkleRoot, intermediateNodes, _index);
+        return ViewBTC.prove(txIdLE, _merkleRoot, intermediateNodes, _index);
     }
 
     /// @notice             Adds headers to storage after validating
