@@ -1126,11 +1126,8 @@ describe("Bitcoin Relay", async () => {
         const preChange = utils.concatenateHexStrings(headerHex.slice(2, 9));
         const headers = utils.concatenateHexStrings(headerHex.slice(9, 15));
 
-        // let btcutils
-
         beforeEach(async () => {
 
-            // btcutils = await BTCUtils.new()
             instance = await bitcoinRelayFactory.deploy(
                 genesis.hex,
                 genesis.height,
@@ -1163,7 +1160,7 @@ describe("Bitcoin Relay", async () => {
                     lastHeader.hex,
                     headers
                 )
-            ).to.revertedWith("Bad args. Check header and array byte lengths.")
+            ).to.revertedWith("BitcoinRelay: bad args. Check header and array byte lengths.")
 
         });
 
@@ -1175,7 +1172,7 @@ describe("Bitcoin Relay", async () => {
                     chain[15].hex,
                     headers
                 )
-            ).to.revertedWith("Unknown block")
+            ).to.revertedWith("BitcoinRelay: unknown block")
 
         });
 
@@ -1186,7 +1183,7 @@ describe("Bitcoin Relay", async () => {
                     firstHeader.hex,
                     firstHeader.hex,
                     headers)
-            ).to.revertedWith("Must provide the last header of the closing difficulty period")
+            ).to.revertedWith("BitcoinRelay: must provide the last header of the closing difficulty period")
 
         });
 
@@ -1198,7 +1195,7 @@ describe("Bitcoin Relay", async () => {
                     lastHeader.hex,
                     headers
                 )
-            ).to.revertedWith("Must provide exactly 1 difficulty period")
+            ).to.revertedWith("BitcoinRelay: must provide exactly 1 difficulty period")
 
         });
 
@@ -1220,7 +1217,7 @@ describe("Bitcoin Relay", async () => {
                     genesis.hex,
                     headers
                 )
-            ).to.revertedWith("Invalid retarget provided")
+            ).to.revertedWith("BitcoinRelay: invalid retarget provided")
 
         });
 
@@ -1421,7 +1418,6 @@ describe("Bitcoin Relay", async () => {
 
         it('can be called even when the relay is paused', async () => {
 
-            let bitcoinRelaySigner1 = await instance.connect(signer1);
             let bitcoinRelayDeployer = await instance.connect(deployer);
 
             await bitcoinRelayDeployer.pauseRelay();
@@ -1432,6 +1428,83 @@ describe("Bitcoin Relay", async () => {
                     headers
                 )
             ).to.emit(instance, "BlockAdded")
+        });
+
+    });
+
+    describe('#ownerAddHeadersWithRetarget', async () => {
+
+        /* eslint-disable-next-line camelcase */
+        const { chain, chain_header_hex } = RETARGET_CHAIN;
+        const headerHex = chain_header_hex;
+        const genesis = chain[1];
+
+        const firstHeader = RETARGET_CHAIN.oldPeriodStart;
+        const lastHeader = chain[8];
+        const preChange = utils.concatenateHexStrings(headerHex.slice(2, 9));
+        const headers = utils.concatenateHexStrings(headerHex.slice(9, 15));
+
+        
+        beforeEach(async () => {
+            
+            instance = await bitcoinRelayFactory.deploy(
+                genesis.hex,
+                genesis.height,
+                firstHeader.digest_le,
+                ZERO_ADDRESS
+            );
+            await instance.ownerAddHeaders(genesis.hex, preChange);
+        });
+
+        it('appends new links to the chain and fires an event', async () => {
+            let bitcoinRelayDeployer = await instance.connect(deployer);
+
+            await expect(
+                bitcoinRelayDeployer.ownerAddHeadersWithRetarget(
+                    firstHeader.hex,
+                    lastHeader.hex,
+                    headers
+                )
+            ).to.emit(instance, "BlockAdded")
+
+            expect(
+                await bitcoinRelayDeployer.findHeight(chain[10].digest_le)
+            ).to.equal(lastHeader.height + 2)
+
+        });
+
+        it('only owner can call it', async () => {
+
+            // signer1 is not the owner
+            let bitcoinRelaySigner1 = await instance.connect(signer1);
+
+            await expect(
+                bitcoinRelaySigner1.ownerAddHeadersWithRetarget(
+                    firstHeader.hex,
+                    lastHeader.hex,
+                    headers
+                )
+            ).revertedWith("Ownable: caller is not the owner")
+            
+        });
+
+        it('can be called even when the relay is paused', async () => {
+
+            let bitcoinRelayDeployer = await instance.connect(deployer);
+
+            await bitcoinRelayDeployer.pauseRelay();
+
+            await expect(
+                bitcoinRelayDeployer.ownerAddHeadersWithRetarget(
+                    firstHeader.hex,
+                    lastHeader.hex,
+                    headers
+                )
+            ).to.emit(instance, "BlockAdded")
+
+            expect(
+                await bitcoinRelayDeployer.findHeight(chain[10].digest_le)
+            ).to.equal(lastHeader.height + 2)
         });
 
     });
