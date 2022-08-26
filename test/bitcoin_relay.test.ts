@@ -431,7 +431,7 @@ describe("Bitcoin Relay", async () => {
             ).to.revertedWith("Pausable: paused")
             
             // unpause the relay
-            await bitcoinRelayDeployer.unPauseRelay();
+            await bitcoinRelayDeployer.unpauseRelay();
         });
 
         it('transaction id should be non-zero',async() => {
@@ -687,7 +687,7 @@ describe("Bitcoin Relay", async () => {
         });
     });
 
-    describe('#unPauseRelay', async () => {
+    describe('#unpauseRelay', async () => {
         /* eslint-disable-next-line camelcase */
         const { genesis, orphan_562630 } = REGULAR_CHAIN;
 
@@ -708,7 +708,7 @@ describe("Bitcoin Relay", async () => {
             await bitcoinRelayDeployer.pauseRelay();
 
             await expect(
-                bitcoinRelaySigner1.unPauseRelay()
+                bitcoinRelaySigner1.unpauseRelay()
             ).to.revertedWith("Ownable: caller is not the owner")
         });
     });

@@ -93,7 +93,7 @@ interface IBitcoinRelay {
 
     function pauseRelay() external;
 
-    function unPauseRelay() external;
+    function unpauseRelay() external;
 
     function setRewardAmountInTDT(uint _rewardAmountInTDT) external;
 
@@ -129,5 +129,8 @@ interface IBitcoinRelay {
         bytes calldata _oldPeriodEndHeader,
         bytes calldata _headers
     ) external returns (bool);
+<<<<<<< HEAD
 
+=======
+>>>>>>> efbf892e2dd34b080ee14674758e70acca71be78
 }
