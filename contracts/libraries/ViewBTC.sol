@@ -37,11 +37,10 @@ library ViewBTC {
         MerkleArray         // 0x14
     }
 
-    // TODO: any way to bubble up more info?
     /// @notice             requires `memView` to be of a specified type
+    /// @dev                passes if it is the correct type, errors if not
     /// @param memView      a 29-byte view with a 5-byte type
     /// @param t            the expected type (e.g. BTCTypes.Outpoint, BTCTypes.TxIn, etc)
-    /// @return             passes if it is the correct type, errors if not
     modifier typeAssert(bytes29 memView, BTCTypes t) {
         memView.assertType(uint40(t));
         _;
@@ -62,7 +61,7 @@ library ViewBTC {
     /// @notice             reads a compact int from the view at the specified index
     /// @param memView      a 29-byte view with a 5-byte type
     /// @param _index       the index
-    /// @return             the compact int at the specified index
+    /// @return number      returns the compact int at the specified index
     function indexCompactInt(bytes29 memView, uint256 _index) internal pure returns (uint64 number) {
         uint256 flag = memView.indexUint(_index, 1);
         if (flag <= 0xfc) {
@@ -82,7 +81,7 @@ library ViewBTC {
     /// @notice         gives the total length (in bytes) of a CompactInt-encoded number
     /// @param number   the number as uint64
     /// @return         the compact integer as uint8
-    function compactIntLength(uint64 number) internal pure returns (uint8) {
+    function compactIntLength(uint64 number) private pure returns (uint8) {
         if (number <= 0xfc) {
             return 1;
         } else if (number <= 0xffff) {
@@ -126,7 +125,7 @@ library ViewBTC {
     /// @notice         determines the length of the first input in an array of inputs
     /// @param _inputs  the vin without its length prefix
     /// @return         the input length
-    function inputLength(bytes29 _inputs) internal pure typeAssert(_inputs, BTCTypes.IntermediateTxIns) returns (uint256) {
+    function inputLength(bytes29 _inputs) private pure typeAssert(_inputs, BTCTypes.IntermediateTxIns) returns (uint256) {
         uint64 scriptLength = indexCompactInt(_inputs, 36);
         return uint256(compactIntLength(scriptLength)) + uint256(scriptLength) + 36 + 4;
     }
@@ -178,7 +177,7 @@ library ViewBTC {
     /// @notice             determines the length of the first output in an array of outputs
     /// @param _outputs     the vout without its length prefix
     /// @return             the output length
-    function outputLength(bytes29 _outputs) internal pure typeAssert(_outputs, BTCTypes.IntermediateTxOuts) returns (uint256) {
+    function outputLength(bytes29 _outputs) private pure typeAssert(_outputs, BTCTypes.IntermediateTxOuts) returns (uint256) {
         uint64 scriptLength = indexCompactInt(_outputs, 8);
         return uint256(compactIntLength(scriptLength)) + uint256(scriptLength) + 8;
     }
@@ -205,19 +204,29 @@ library ViewBTC {
     }
 
     /// @notice         extracts the Op Return Payload
+    /// @dev            structure of the input is: 1 byte op return + 2 bytes indicating the length of payload + max length for op return payload is 80 bytes
     /// @param _spk     the scriptPubkey
     /// @return         the Op Return Payload (or null if not a valid Op Return output)
-    function opReturnPayload(bytes29 _spk) internal pure typeAssert(_spk, BTCTypes.ScriptPubkey) returns (bytes29) {
+    function opReturnPayloadBig(bytes29 _spk) internal pure typeAssert(_spk, BTCTypes.ScriptPubkey) returns (bytes29) {
         uint64 _bodyLength = indexCompactInt(_spk, 0);
         uint64 _payloadLen = uint64(_spk.indexUint(3, 1));
-
-        // TODO: the max length of op return (with the prefixes) is 83, please check it for other consequences
-        // Also the _spk.indexUint(3, 1) != _bodyLength - 3 has changed from _spk.indexUint(2, 1) != _bodyLength - 2
         if (_bodyLength > 83 || _bodyLength < 4 || _spk.indexUint(1, 1) != 0x6a || _spk.indexUint(3, 1) != _bodyLength - 3) {
             return TypedMemView.nullView();
         }
-        // TODO: check, the previous starting index of slice was 3
         return _spk.slice(4, _payloadLen, uint40(BTCTypes.OpReturnPayload));
+    }
+
+    /// @notice         extracts the Op Return Payload
+    /// @dev            structure of the input is: 1 byte op return + 1 bytes indicating the length of payload + max length for op return payload is 75 bytes
+    /// @param _spk     the scriptPubkey
+    /// @return         the Op Return Payload (or null if not a valid Op Return output)
+    function opReturnPayloadSmall(bytes29 _spk) internal pure typeAssert(_spk, BTCTypes.ScriptPubkey) returns (bytes29) {
+        uint64 _bodyLength = indexCompactInt(_spk, 0);
+        uint64 _payloadLen = uint64(_spk.indexUint(2, 1));
+        if (_bodyLength > 77 || _bodyLength < 4 || _spk.indexUint(1, 1) != 0x6a || _spk.indexUint(2, 1) != _bodyLength - 2) {
+            return TypedMemView.nullView();
+        }
+        return _spk.slice(3, _payloadLen, uint40(BTCTypes.OpReturnPayload));
     }
 
     /// @notice     verifies the vin and converts to a typed memory
@@ -344,7 +353,7 @@ library ViewBTC {
     /// @notice         calculates the difficulty from a target
     /// @param _target  the target
     /// @return         the difficulty
-    function toDiff(uint256  _target) internal pure returns (uint256) {
+    function toDiff(uint256  _target) private pure returns (uint256) {
         return DIFF1_TARGET / (_target);
     }
 
@@ -381,7 +390,7 @@ library ViewBTC {
     /// @notice                     Validates a tx inclusion in the block
     /// @dev                        `index` is not a reliable indicator of location within a block
     /// @param _txid                The txid (LE)
-    /// @param _merkleRoot          The merkle root (as in the block header)
+    /// @param _merkleRoot          The merkle root
     /// @param _intermediateNodes   The proof's intermediate nodes (digests between leaf and root)
     /// @param _index               The leaf's index in the tree (0-indexed)
     /// @return                     true if fully valid, false otherwise
@@ -393,7 +402,7 @@ library ViewBTC {
     ) internal view typeAssert(_intermediateNodes, ViewBTC.BTCTypes.MerkleArray) returns (bool) {
         // Shortcut the empty-block case
         if (
-            revertBytes32(_txid) == _merkleRoot &&
+            _txid == _merkleRoot &&
                 _index == 0 &&
                     _intermediateNodes.len() == 0
         ) {
@@ -404,9 +413,10 @@ library ViewBTC {
     }
 
     /// @notice         verifies a merkle proof
-    /// @param _leaf    the leaf in LE format
-    /// @param _proof   the proof nodes in LE format
-    /// @param _root    the merkle root in BE format (same as the merkle root that is stored in the block header)
+    /// @dev            leaf, proof, and root are in LE format
+    /// @param _leaf    the leaf
+    /// @param _proof   the proof nodes
+    /// @param _root    the merkle root
     /// @param _index   the index
     /// @return         true if valid, false if otherwise
     function checkMerkle(
@@ -414,7 +424,7 @@ library ViewBTC {
         bytes29 _proof,
         bytes32 _root,
         uint256 _index
-    ) internal view typeAssert(_proof, BTCTypes.MerkleArray) returns (bool) {
+    ) private view typeAssert(_proof, BTCTypes.MerkleArray) returns (bool) {
         uint256 nodes = _proof.len() / 32;
         if (nodes == 0) {
             return _leaf == _root;
@@ -426,22 +436,22 @@ library ViewBTC {
         for (uint i = 0; i < nodes; i++) {
             bytes32 _next = _proof.index(i * 32, 32);
             if (_idx % 2 == 1) {
-                _current = _merkleStep(_next, _current);
+                _current = merkleStep(_next, _current);
             } else {
-                _current = _merkleStep(_current, _next);
+                _current = merkleStep(_current, _next);
             }
             _idx >>= 1;
         }
 
-        return revertBytes32(_current) == _root;
+        return _current == _root;
     }
 
     /// @notice          Concatenates and hashes two inputs for merkle proving
     /// @dev             Not recommended to call directly.
     /// @param _a        The first hash
     /// @param _b        The second hash
-    /// @return          The double-sha256 of the concatenated hashes
-    function _merkleStep(bytes32 _a, bytes32 _b) internal view returns (bytes32 digest) {
+    /// @return digest   The double-sha256 of the concatenated hashes
+    function merkleStep(bytes32 _a, bytes32 _b) private view returns (bytes32 digest) {
         assembly {
         // solium-disable-previous-line security/no-inline-assembly
             let ptr := mload(0x40)
@@ -453,17 +463,6 @@ library ViewBTC {
         }
     }
 
-    function revertBytes32(bytes32 input) internal pure returns(bytes32) {
-        bytes memory temp;
-        bytes32 result;
-        for (uint i = 0; i < 32; i++) {
-            temp = abi.encodePacked(temp, input[31-i]);
-        }
-        assembly {
-            result := mload(add(temp, 32))
-        }
-        return result;
-    }
     /// @notice                 performs the bitcoin difficulty retarget
     /// @dev                    implements the Bitcoin algorithm precisely
     /// @param _previousTarget  the target of the previous period
