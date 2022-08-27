@@ -7,6 +7,33 @@ import "hardhat/console.sol";
 
 contract LockersLogic is LockersStorageStructure, ILockers {
 
+    function initialize(
+        address _TeleportDAOToken,
+        address _exchangeConnector,
+        address _priceOracle,
+        uint _minRequiredTDTLockedAmount,
+        uint _minRequiredTNTLockedAmount,
+        uint _collateralRatio,
+        uint _liquidationRatio,
+        uint _lockerPercentageFee,
+        uint _priceWithDiscountRatio
+    ) public initializer {
+
+        OwnableUpgradeable.__Ownable_init();
+        ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
+        PausableUpgradeable.__Pausable_init();
+
+        TeleportDAOToken = _TeleportDAOToken;
+        exchangeConnector = _exchangeConnector;
+        priceOracle = _priceOracle;
+        minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
+        minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
+        collateralRatio = _collateralRatio;
+        liquidationRatio = _liquidationRatio;
+        lockerPercentageFee = _lockerPercentageFee;
+        priceWithDiscountRatio= _priceWithDiscountRatio;
+    }
+
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "Lockers: address is zero");
         _;
@@ -216,7 +243,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         locker_.nativeTokenLockedAmount = _lockedNativeTokenAmount;
         locker_.isCandidate = true;
 
-        lockersMapping[msg.sender] = locker_;
+        lockersMapping[_msgSender()] = locker_;
 
         totalNumberOfCandidates = totalNumberOfCandidates + 1;
 
@@ -224,7 +251,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
             msg.sender,
             _candidateLockingScript,
             _lockedTDTAmount,
-            0
+            _lockedNativeTokenAmount
         );
 
         return true;
@@ -359,6 +386,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
     /// @return                           True if locker is removed successfully
     function selfRemoveLocker() external override nonReentrant whenNotPaused returns (bool) {
 
+        // TODO: check the lockerLeavingAcceptance also
         require(
             lockersMapping[_msgSender()].isLocker,
             "Lockers: no locker with this address"
@@ -449,10 +477,16 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         return true;
     }
 
+    /// @notice                           Liquidate the locker with an unhealthy collateral
+    /// @dev                              Everyone can liquidate a locker which its health factor
+    /// is less than 10000 (100%) by providing a sufficient amount of teleBTC
+    /// @param _lockerTargetAddress       Locker's target chain address
+    /// @param _collateralAmount          Amount of collateral that someone is intend to buy with discount
+    /// @return result
     function liquidateLocker(
         address _lockerTargetAddress,
-        uint _btcAmount
-    ) external override nonZeroAddress(_lockerTargetAddress) nonZeroValue(_btcAmount)
+        uint _collateralAmount
+    ) external override nonZeroAddress(_lockerTargetAddress) nonZeroValue(_collateralAmount)
     nonReentrant whenNotPaused returns (bool result) {
 
         require(
@@ -461,50 +495,99 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         );
 
         locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
-        uint theLockerCollateralBTCequivalent = _lockerCollateralInTeleBTC(_lockerTargetAddress);
+        uint priceOfCollateral = _priceOfOneUnitOfCollateralInBTC();
 
         require(
-            (theLiquidatingLocker.netMinted*liquidationRatio/10000) > theLockerCollateralBTCequivalent,
-            "Lockers: this locker is above luquidation ratio"
+            _calculateHealthFactor(_lockerTargetAddress, priceOfCollateral) < HEALTH_FACTOR,
+            "Lockers: the locker's collateral is healthy"
         );
 
-        /*
-            Maximum buyable amount of collateral comes from:
-            (BtcWorthOfCollateral - x)/(netMinted -x) = collateralRatio/10000
-        */
+        uint maxBuyableCollateral = _maxBuyableCollateral(_lockerTargetAddress, priceOfCollateral);
 
-        uint maxBuyable =
-        ((theLiquidatingLocker.netMinted*collateralRatio/10000) -
-        theLockerCollateralBTCequivalent)/((collateralRatio-10000)/10000);
-
-        if (maxBuyable > theLiquidatingLocker.netMinted) {
-            maxBuyable = theLiquidatingLocker.netMinted;
+        if (maxBuyableCollateral > theLiquidatingLocker.nativeTokenLockedAmount) {
+            maxBuyableCollateral = theLiquidatingLocker.nativeTokenLockedAmount;
         }
 
         require(
-            _btcAmount <= maxBuyable,
-            "Lockers: above the locker's luquidation penalty"
+            _collateralAmount <= maxBuyableCollateral,
+            "Lockers: more than maximum buyable"
         );
 
-        IERC20(teleBTC).transferFrom(_msgSender(), address(this), _btcAmount);
+        uint teleBTCPriceWithDiscount = (priceOfCollateral * priceWithDiscountRatio)/10000;
+        uint neededTeleBTC = (_collateralAmount * teleBTCPriceWithDiscount)/(10 ** 18);
 
-        uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
-            _btcAmount,
-        // TODO: get decimals from token contracts
-            8,
-            18,
-            teleBTC,
-            NATIVE_TOKEN
-        );
 
-        lockersMapping[_lockerTargetAddress].netMinted = lockersMapping[_lockerTargetAddress].netMinted - _btcAmount;
+        IERC20(teleBTC).transferFrom(_msgSender(), address(this), neededTeleBTC);
 
-        Address.sendValue(payable(_msgSender()), equivalentNativeToken);
+        lockersMapping[_lockerTargetAddress].netMinted = lockersMapping[_lockerTargetAddress].netMinted - neededTeleBTC;
+        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount= lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - _collateralAmount;
+
+        Address.sendValue(payable(_msgSender()), _collateralAmount);
 
         result = true;
 
     }
 
+    /**
+     * @dev Return the price of one unit of native token (10^18) in teleBTC
+     * @return uint
+     */
+    function _priceOfOneUnitOfCollateralInBTC() internal view returns (uint) {
+
+        return IPriceOracle(priceOracle).equivalentOutputAmount(
+            (10**18), // 1 Ether is 10^18 wei
+        // TODO: get decimals from token contracts
+            18,
+            8,
+            NATIVE_TOKEN,
+            teleBTC
+        );
+
+    }
+
+    /**
+     * @dev                                 Calculate the health factor of a specific locker
+     * @param _lockerTargetAddress          The locker's target address
+     * @param _priceOfOneUnitOfCollateral   The price of one unit of native token (10^18) in teleBTC
+     * @return uint
+     */
+    function _calculateHealthFactor(
+        address _lockerTargetAddress,
+        uint _priceOfOneUnitOfCollateral
+    ) internal view nonZeroAddress(_lockerTargetAddress) returns (uint) {
+        locker memory theLocker = lockersMapping[_lockerTargetAddress];
+
+        // return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount * 100000000)/(theLocker.netMinted * liquidationRatio * (10 ** 18));
+        return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount)/(theLocker.netMinted * liquidationRatio * (10 ** 10));
+
+    }
+
+    /**
+     * @dev                                 Calculate the maximum buyable amount of collateral
+     * @param _lockerTargetAddress          The locker's target address
+     * @param _priceOfOneUnitOfCollateral   The price of one unit of native token (10^18) in teleBTC
+     * @return uint
+     */
+    function _maxBuyableCollateral(
+        address _lockerTargetAddress,
+        uint _priceOfOneUnitOfCollateral
+    ) internal view nonZeroAddress(_lockerTargetAddress) returns (uint) {
+        locker memory theLocker = lockersMapping[_lockerTargetAddress];
+
+        // (UPPER_HEALTH_FACTOR * theLocker.netMinted * liquidationRatio) - ((theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** 8))/(10 ** 18));
+        uint antecedent = (UPPER_HEALTH_FACTOR * theLocker.netMinted * liquidationRatio * (10 ** 18)) - (theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** 8));
+
+        uint consequent = ((UPPER_HEALTH_FACTOR * liquidationRatio * _priceOfOneUnitOfCollateral * priceWithDiscountRatio)/10000) -(_priceOfOneUnitOfCollateral * (10 ** 8));
+
+        return antecedent/consequent;
+    }
+
+    /// @notice                       Mint teleBTC for an account
+    /// @dev                          Mint teleBTC for an account and got the locker fee as well
+    /// @param _lockerLockingScript   Locking script of a locker
+    /// @param _receiver              Address of the receiver of the minted teleBTCs
+    /// @param _amount                Amount of the teleBTC which is minted, including the locker's fee
+    /// @return uint                  The amount of teleBTC minted for the receiver
     function mint(
         bytes calldata _lockerLockingScript,
         address _receiver,
@@ -536,6 +619,11 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         return _amount - lockerFee;
     }
 
+    /// @notice                       Burn teleBTC of an account
+    /// @dev                          Burn teleBTC and also get the locker's fee
+    /// @param _lockerLockingScript   Locking script of a locker
+    /// @param _amount                Amount of the teleBTC which is minted, including the locker's fee
+    /// @return uint                  The amount of teleBTC burned the
     function burn(
         bytes calldata _lockerLockingScript,
         uint _amount

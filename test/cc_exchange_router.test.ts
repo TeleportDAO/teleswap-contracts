@@ -39,6 +39,7 @@ describe("CCExchangeRouter", async () => {
     const APP_ID = 1;
     const PROTOCOL_PERCENTAGE_FEE = 10; // Means %0.1
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
+    const PRICE_WITH_DISCOUNT_RATIO = 9500; // Means %95
     const STARTING_BLOCK_NUMBER = 1;
     const TREASURY = "0x0000000000000000000000000000000000000002";
 
@@ -53,9 +54,11 @@ describe("CCExchangeRouter", async () => {
     let liquidationRatio = 15000;
 
     // Accounts
+    let proxyAdmin: Signer;
     let deployer: Signer;
     let signer1: Signer;
     let locker: Signer;
+    let proxyAdminAddress: string;
     let deployerAddress: string;
     let lockerAddress: string;
 
@@ -80,7 +83,8 @@ describe("CCExchangeRouter", async () => {
 
     before(async () => {
         // Sets accounts
-        [deployer, signer1, locker] = await ethers.getSigners();
+        [proxyAdmin, deployer, signer1, locker] = await ethers.getSigners();
+        proxyAdminAddress = await proxyAdmin.getAddress();
         deployerAddress = await deployer.getAddress();
         lockerAddress = await locker.getAddress();
 
@@ -219,11 +223,17 @@ describe("CCExchangeRouter", async () => {
             _signer || deployer
         );
         const lockersProxy = await lockersProxyFactory.deploy(
-            lockersLogic.address
+            lockersLogic.address,
+            proxyAdminAddress,
+            "0x"
         )
 
+        const lockers = await lockersLogic.attach(
+            lockersProxy.address
+        );
+
         // Initializes lockers proxy
-        await lockersProxy.initialize(
+        await lockers.initialize(
             teleportDAOToken.address,
             ONE_ADDRESS,
             mockPriceOracle.address,
@@ -231,12 +241,9 @@ describe("CCExchangeRouter", async () => {
             0,
             collateralRatio,
             liquidationRatio,
-            LOCKER_PERCENTAGE_FEE
+            LOCKER_PERCENTAGE_FEE,
+            PRICE_WITH_DISCOUNT_RATIO
         )
-
-        const lockers = await lockersLogic.attach(
-            lockersProxy.address
-        );
 
         return lockers;
     };
@@ -290,11 +297,11 @@ describe("CCExchangeRouter", async () => {
             isFixedToken: boolean,
             recipientAddress: string,
             bitcoinAmount: number,
-            teleporterFee: number, 
-            protocolFee: number, 
+            teleporterFee: number,
+            protocolFee: number,
             lockerFee: number,
-            expectedOutputAmount: number, 
-            requiredInputAmount?: number 
+            expectedOutputAmount: number,
+            requiredInputAmount?: number
         ) {
             // General checks
 
@@ -342,7 +349,7 @@ describe("CCExchangeRouter", async () => {
             expect(newUserBalanceTT).to.equal(
                 oldUserBalanceTT.add(expectedOutputAmount)
             );
-            
+
             if (isFixedToken == true) {
                 // Checks that user teleBTC balance hasn't changed
                 expect(newUserBalanceTeleBTC).to.equal(
@@ -352,11 +359,11 @@ describe("CCExchangeRouter", async () => {
                 // Checks that user received unused teleBTC
                 if (requiredInputAmount != undefined) {
                     expect(newUserBalanceTeleBTC).to.equal(
-                        oldUserBalanceTeleBTC.toNumber() + 
-                        bitcoinAmount - 
-                        teleporterFee - 
-                        lockerFee - 
-                        protocolFee - 
+                        oldUserBalanceTeleBTC.toNumber() +
+                        bitcoinAmount -
+                        teleporterFee -
+                        lockerFee -
+                        protocolFee -
                         requiredInputAmount
                     );
                 }
@@ -366,8 +373,8 @@ describe("CCExchangeRouter", async () => {
         async function checksWhenExchangeFails(
             recipientAddress: string,
             bitcoinAmount: number,
-            teleporterFee: number, 
-            protocolFee: number, 
+            teleporterFee: number,
+            protocolFee: number,
             lockerFee: number
         ) {
             // Records new supply of teleBTC
@@ -517,7 +524,7 @@ describe("CCExchangeRouter", async () => {
                 deployerAddress,
                 teleporterFee
             );
-            
+
             await checksWhenExchangeSucceed(
                 true,
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
@@ -569,7 +576,7 @@ describe("CCExchangeRouter", async () => {
                 deployerAddress,
                 teleporterFee
             );
-            
+
             await checksWhenExchangeSucceed(
                 false,
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
@@ -604,7 +611,7 @@ describe("CCExchangeRouter", async () => {
             ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
                 CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.bitcoinAmount - teleporterFee - protocolFee - lockerFee
-                ).and.not.emit(ccExchangeRouter, 'CCExchange');
+            ).and.not.emit(ccExchangeRouter, 'CCExchange');
 
             // Checks needed conditions when exchange fails
             await checksWhenExchangeFails(
@@ -657,7 +664,7 @@ describe("CCExchangeRouter", async () => {
 
         it("Mints teleBTC since slippage is high (input amount < required output amount)", async function () {
             // note: isFixedToken = false (output is fixed)
-            
+
             // Replaces dummy address in vout with exchange token address
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
@@ -864,7 +871,7 @@ describe("CCExchangeRouter", async () => {
             ).to.revertedWith("CCExchangeRouter: chain id is not correct");
         })
 
-    
+
         it("Reverts if the request speed is out of range {0,1}", async function () {
             // Replaces dummy address in vout with exchange token address
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.vout;
@@ -1053,7 +1060,7 @@ describe("CCExchangeRouter", async () => {
             snapshotId = await takeSnapshot(signer1.provider);
             await addLockerToLockers();
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
@@ -1106,7 +1113,7 @@ describe("CCExchangeRouter", async () => {
         beforeEach(async () => {
             snapshotId = await takeSnapshot(signer1.provider);
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });

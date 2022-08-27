@@ -30,6 +30,7 @@ describe("CCTransferRouter", async () => {
     const APP_ID = 0;
     const PROTOCOL_PERCENTAGE_FEE = 10; // Means %0.1
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
+    const PRICE_WITH_DISCOUNT_RATIO = 9500; // Means %95
     const STARTING_BLOCK_NUMBER = 1;
     const TREASURY = "0x0000000000000000000000000000000000000002";
 
@@ -42,9 +43,11 @@ describe("CCTransferRouter", async () => {
     let liquidationRatio = 15000;
 
     // Accounts
+    let proxyAdmin: Signer;
     let deployer: Signer;
     let signer1: Signer;
     let locker: Signer;
+    let proxyAdminAddress: Address;
     let lockerAddress: Address;
 
     // Contracts
@@ -62,8 +65,9 @@ describe("CCTransferRouter", async () => {
 
     before(async () => {
         // Sets accounts
-        [deployer, signer1, locker] = await ethers.getSigners();
+        [proxyAdmin, deployer, signer1, locker] = await ethers.getSigners();
 
+        proxyAdminAddress = await proxyAdmin.getAddress();
         lockerAddress = await locker.getAddress();
 
         teleportDAOToken = await deployTeleportDAOToken();
@@ -150,11 +154,17 @@ describe("CCTransferRouter", async () => {
             _signer || deployer
         );
         const lockersProxy = await lockersProxyFactory.deploy(
-            lockersLogic.address
+            lockersLogic.address,
+            proxyAdminAddress,
+            "0x"
         )
 
+        const lockers = await lockersLogic.attach(
+            lockersProxy.address
+        );
+
         // Initializes lockers proxy
-        await lockersProxy.initialize(
+        await lockers.initialize(
             teleportDAOToken.address,
             ONE_ADDRESS,
             mockPriceOracle.address,
@@ -162,12 +172,9 @@ describe("CCTransferRouter", async () => {
             0,
             collateralRatio,
             liquidationRatio,
-            LOCKER_PERCENTAGE_FEE
+            LOCKER_PERCENTAGE_FEE,
+            PRICE_WITH_DISCOUNT_RATIO
         )
-
-        const lockers = await lockersLogic.attach(
-            lockersProxy.address
-        );
 
         return lockers;
     };
