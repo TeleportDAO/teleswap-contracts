@@ -803,6 +803,39 @@ describe("Lockers", async () => {
 
         })
 
+
+        it("a redeem script hash can't be used twice", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+
+            let lockerSigner2 = lockers.connect(signer2)
+
+            await expect(
+                lockerSigner2.requestToBecomeLocker(
+                    // TELEPORTER1,
+                    TELEPORTER1_PublicKeyHash,
+                    minRequiredTDTLockedAmount,
+                    minRequiredNativeTokenLockedAmount,
+                    {value: minRequiredNativeTokenLockedAmount}
+                )
+            ).to.be.revertedWith("Lockers: redeem script hash is used before")
+
+        })
+
     });
 
     describe("#revokeRequest", async () => {
@@ -968,6 +1001,40 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("Lockers: locker didn't request to be removed")
         })
 
+
+        it("the locker can't be removed because netMinted is not zero", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+
+            await lockers.addLocker(signer1Address)
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
+            await lockers.addMinter(signer2Address);
+            let lockerSigner2 = lockers.connect(signer2)
+
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 1000);
+
+            await lockerSigner1.requestToRemoveLocker()
+
+            await expect(
+                lockers.removeLocker(signer1Address)
+            ).to.be.revertedWith("Lockers: net minted is not zero")
+        })
+
         it("the locker is removed successfully", async function () {
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
@@ -1047,6 +1114,39 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("Lockers: locker didn't request to be removed")
         })
 
+        it("the locker can't be removed because netMinted is not zero", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+
+            await lockers.addLocker(signer1Address)
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
+            await lockers.addMinter(signer2Address);
+            let lockerSigner2 = lockers.connect(signer2)
+
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 1000);
+
+            await lockerSigner1.requestToRemoveLocker()
+
+            await expect(
+                lockerSigner1.selfRemoveLocker()
+            ).to.be.revertedWith("Lockers: net minted is not zero")
+        })
+
         it("the locker is removed successfully", async function () {
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
@@ -1083,7 +1183,7 @@ describe("Lockers", async () => {
 
     describe("#slashLocker", async () => {
 
-        it("only admin can call slash locker function", async function () {
+        it("only cc burn can call slash locker function", async function () {
             let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
@@ -1111,11 +1211,54 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("Lockers: target address is not locker")
         })
 
-        it("only admin can slash a locker", async function () {
+        it("can't slash above collateral", async function () {
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(
+                BigNumber.from(10).pow(18).mul(6)
+            )
+            // await mockExchangeConnector.mock.getInputAmount.returns(true, minRequiredTDTLockedAmount.div(10))
+            // await mockExchangeConnector.mock.swap.returns(true, [2500, 5000])
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+
+            expect(
+                await lockers.addLocker(signer1Address)
+            ).to.emit(lockers, "LockerAdded")
+
+            let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
+
+            await expect(
+                lockerCCBurnSigner.slashLocker(
+                    signer1Address,
+                    0,
+                    deployerAddress,
+                    10000,
+                    ccBurnSimulatorAddress
+                )
+            ).to.be.revertedWith("Lockers: insufficient native token collateral")
+
+        })
+
+
+        it("cc burn can slash a locker", async function () {
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
-            await mockExchangeConnector.mock.getInputAmount.returns(true, minRequiredTDTLockedAmount.div(10))
-            await mockExchangeConnector.mock.swap.returns(true, [2500, 5000])
+            // await mockExchangeConnector.mock.getInputAmount.returns(true, minRequiredTDTLockedAmount.div(10))
+            // await mockExchangeConnector.mock.swap.returns(true, [2500, 5000])
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
@@ -1321,127 +1464,16 @@ describe("Lockers", async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
-        it("can't liquidate because it's above liquidation ratio", async function () {
-
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
-
-            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
-
-            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
-
-            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
-
-            let lockerSigner1 = lockers.connect(signer1)
-
-            await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
-                minRequiredTDTLockedAmount,
-                minRequiredNativeTokenLockedAmount,
-                {value: minRequiredNativeTokenLockedAmount}
-            );
-
-            await lockers.addLocker(signer1Address);
-
-            await lockers.addMinter(signer2Address);
-
-            let lockerSigner2 = lockers.connect(signer2)
-
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5000);
+        it("liquidate locker reverts when the target address is not locker", async function () {
+            let lockerCCBurnSimulator = lockers.connect(ccBurnSimulator)
 
             await expect(
-                lockerSigner2.liquidateLocker(signer1Address, 5000)
-            ).to.be.revertedWith("Lockers: this locker is above luquidation ratio")
-
-        });
-
-        it("can't liquidate because it's above the liquidated amount", async function () {
-
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
-
-            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
-
-            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
-
-            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
-
-            let lockerSigner1 = lockers.connect(signer1)
-
-            await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
-                minRequiredTDTLockedAmount,
-                minRequiredNativeTokenLockedAmount,
-                {value: minRequiredNativeTokenLockedAmount}
-            );
-
-            await lockers.addLocker(signer1Address);
-
-            await lockers.addMinter(signer2Address);
-
-            let lockerSigner2 = lockers.connect(signer2)
-
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5000);
-
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(6000);
-
-            await expect(
-                lockerSigner2.liquidateLocker(signer1Address, 5000)
-            ).to.be.revertedWith("Lockers: above the locker's luquidation penalty")
-
-        });
-
-        it("successfully liquidate the locker", async function () {
-
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
-
-            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
-
-            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
-
-            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
-
-            let lockerSigner1 = lockers.connect(signer1)
-
-            await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
-                minRequiredTDTLockedAmount,
-                minRequiredNativeTokenLockedAmount,
-                {value: minRequiredNativeTokenLockedAmount}
-            );
-
-            await lockers.addLocker(signer1Address);
-
-            await lockers.addMinter(signer2Address);
-
-            let lockerSigner2 = lockers.connect(signer2)
-
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, signer2Address, 5000);
-
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(6000);
-
-            let teleBTCSigner2 = await teleBTC.connect(signer2);
-
-            await teleBTCSigner2.approve(lockers.address, 3500)
-
-            // let nativeTokenBalanceOfSigner2BeforeLiquidatingLocker =
-
-            await lockerSigner2.liquidateLocker(signer1Address, 3500)
-
-        });
-
-    });
-
-    describe("#liquidateLockerV2", async () => {
-
-        beforeEach(async () => {
-            snapshotId = await takeSnapshot(signer1.provider);
-        });
-
-        afterEach(async () => {
-            await revertProvider(signer1.provider, snapshotId);
-        });
+                lockerCCBurnSimulator.liquidateLocker(
+                    signer1Address,
+                    1000
+                )
+            ).to.be.revertedWith("Lockers: target address is not locker")
+        })
 
         it("can't liquidate because it's above liquidation ratio", async function () {
 
@@ -1472,7 +1504,7 @@ describe("Lockers", async () => {
             await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5000000);
 
             await expect(
-                lockerSigner2.liquidateLockerV2(signer1Address, 5000)
+                lockerSigner2.liquidateLocker(signer1Address, 5000)
             ).to.be.revertedWith("Lockers: the locker's collateral is healthy")
 
         });
@@ -1509,7 +1541,7 @@ describe("Lockers", async () => {
             await mockPriceOracle.mock.equivalentOutputAmount.returns(7000000);
 
             await expect(
-                lockerSigner2.liquidateLockerV2(
+                lockerSigner2.liquidateLocker(
                     signer1Address,
                     BigNumber.from(10).pow(18).mul(3)
                 )
@@ -1555,7 +1587,7 @@ describe("Lockers", async () => {
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(7000000);
 
-            await lockerSigner2.liquidateLockerV2(
+            await lockerSigner2.liquidateLocker(
                 signer1Address,
                 BigNumber.from(10).pow(18).mul(2)
             )

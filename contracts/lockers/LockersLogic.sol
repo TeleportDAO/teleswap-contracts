@@ -477,66 +477,11 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         return true;
     }
 
+
     function liquidateLocker(
         address _lockerTargetAddress,
-        uint _btcAmount
-    ) external override nonZeroAddress(_lockerTargetAddress) nonZeroValue(_btcAmount)
-    nonReentrant whenNotPaused returns (bool result) {
-
-        require(
-            lockersMapping[_lockerTargetAddress].isLocker,
-            "Lockers: target address is not locker"
-        );
-
-        locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
-        uint theLockerCollateralBTCequivalent = _lockerCollateralInTeleBTC(_lockerTargetAddress);
-
-        require(
-            (theLiquidatingLocker.netMinted*liquidationRatio/10000) > theLockerCollateralBTCequivalent,
-            "Lockers: this locker is above luquidation ratio"
-        );
-
-        /*
-            Maximum buyable amount of collateral comes from:
-            (BtcWorthOfCollateral - x)/(netMinted -x) = collateralRatio/10000
-        */
-
-        uint maxBuyable =
-        ((theLiquidatingLocker.netMinted*collateralRatio/10000) -
-        theLockerCollateralBTCequivalent)/((collateralRatio-10000)/10000);
-
-        if (maxBuyable > theLiquidatingLocker.netMinted) {
-            maxBuyable = theLiquidatingLocker.netMinted;
-        }
-
-        require(
-            _btcAmount <= maxBuyable,
-            "Lockers: above the locker's luquidation penalty"
-        );
-
-        IERC20(teleBTC).transferFrom(_msgSender(), address(this), _btcAmount);
-
-        uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
-            _btcAmount,
-        // TODO: get decimals from token contracts
-            8,
-            18,
-            teleBTC,
-            NATIVE_TOKEN
-        );
-
-        lockersMapping[_lockerTargetAddress].netMinted = lockersMapping[_lockerTargetAddress].netMinted - _btcAmount;
-
-        Address.sendValue(payable(_msgSender()), equivalentNativeToken);
-
-        result = true;
-
-    }
-
-    function liquidateLockerV2(
-        address _lockerTargetAddress,
         uint _collateralAmount
-    ) external nonZeroAddress(_lockerTargetAddress) nonZeroValue(_collateralAmount)
+    ) external override nonZeroAddress(_lockerTargetAddress) nonZeroValue(_collateralAmount)
     nonReentrant whenNotPaused returns (bool result) {
 
         require(
