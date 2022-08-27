@@ -77,10 +77,6 @@ interface IBitcoinRelay {
 
     function getNumberOfSubmittedHeaders(uint height) external view returns (uint);
 
-    function getCurrentEpochDifficulty() external view returns (uint256);
-
-    function getPrevEpochDifficulty() external view returns (uint256);
-
     function availableTDT() external view returns(uint);
 
     function availableTNT() external view returns(uint);
@@ -97,7 +93,7 @@ interface IBitcoinRelay {
 
     function pauseRelay() external;
 
-    function unPauseRelay() external;
+    function unpauseRelay() external;
 
     function setRewardAmountInTDT(uint _rewardAmountInTDT) external;
 
@@ -126,4 +122,11 @@ interface IBitcoinRelay {
         bytes calldata _headers
     ) external returns (bool);
 
+    function ownerAddHeaders(bytes calldata _anchor, bytes calldata _headers) external returns (bool);
+
+    function ownerAddHeadersWithRetarget(
+        bytes calldata _oldPeriodStartHeader,
+        bytes calldata _oldPeriodEndHeader,
+        bytes calldata _headers
+    ) external returns (bool);
 }

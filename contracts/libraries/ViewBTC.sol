@@ -487,6 +487,40 @@ library ViewBTC {
         }
     }
 
+    // @notice                     Checks validity of header chain
+    // @dev                        Compares current header parent to previous header's digest
+    // @param _header              The raw bytes header
+    // @param _prevHeaderDigest    The previous header's digest
+    // @return                     true if the connect is valid, false otherwise
+    function checkParent(bytes29 _header, bytes32 _prevHeaderDigest) internal pure typeAssert(_header, ViewBTC.BTCTypes.Header) returns (bool) {
+        return parent(_header) == _prevHeaderDigest;
+    }
+
+    // @notice                     Validates a tx inclusion in the block
+    // @dev                        `index` is not a reliable indicator of location within a block
+    // @param _txid                The txid (LE)
+    // @param _merkleRoot          The merkle root (as in the block header)
+    // @param _intermediateNodes   The proof's intermediate nodes (digests between leaf and root)
+    // @param _index               The leaf's index in the tree (0-indexed)
+    // @return                     true if fully valid, false otherwise
+    function prove( 
+        bytes32 _txid,
+        bytes32 _merkleRoot,
+        bytes29 _intermediateNodes,
+        uint _index
+    ) internal view typeAssert(_intermediateNodes, ViewBTC.BTCTypes.MerkleArray) returns (bool) {
+        // Shortcut the empty-block case
+        if (
+            revertBytes32(_txid) == _merkleRoot &&
+                _index == 0 &&
+                    _intermediateNodes.len() == 0
+        ) {
+            return true;
+        }
+
+        return checkMerkle(_txid, _intermediateNodes, _merkleRoot, _index);
+    }
+
     // @notice         verifies a merkle proof
     // @param _leaf    the leaf in LE format
     // @param _proof   the proof nodes in LE format

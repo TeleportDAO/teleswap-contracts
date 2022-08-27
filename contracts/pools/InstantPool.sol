@@ -2,14 +2,15 @@
 pragma solidity ^0.8.0; 
 
 import './interfaces/IInstantPool.sol'; 
-import '../libraries/SafeMath.sol'; 
 import '../erc20/ERC20.sol'; 
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
 contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
 
-    using SafeMath for uint256; 
+    // Constants
+    uint constant MAX_INSTANT_PERCENTAGE_FEE = 10000;
+
     address public override teleBTC; 
     uint public override instantPercentageFee; // a number between 0-10000 to show %0.01
     uint public override totalAddedTeleBTC;
@@ -59,7 +60,11 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
     /// @param _teleBTC         The new teleBTC contract address
     function setTeleBTC(address _teleBTC) external override onlyOwner {
         teleBTC = _teleBTC;
-    } 
+    }
+
+    function getFee(uint _loanAmount) external view override returns (uint) {
+        return _loanAmount*instantPercentageFee/MAX_INSTANT_PERCENTAGE_FEE;
+    }  
 
     /// @notice               Adds liquidity to instant pool
     /// @dev                           

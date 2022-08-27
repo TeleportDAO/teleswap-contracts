@@ -137,14 +137,18 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @dev                                After submitting the burn request, lockers have a limited time 
     ///                                     to send BTC and provide burn proof
     /// @param _amount                      Amount of teleBTC that user wants to burn
-    /// @param _userLockingScript           User's locking script
+    /// @param _userScript                  User's script
     /// @param _lockerLockingScript	        Locking script of locker that should execute the burn request
     /// @return _burntAmount                Amount of teleBTC that user will receive (after reducing fees)
     function ccBurn(
         uint _amount,
-        bytes memory _userLockingScript,
+        bytes memory _userScript,
+        ScriptTypes _scriptType,
         bytes calldata _lockerLockingScript
     ) external nonReentrant nonZeroValue(_amount) override returns (uint _burntAmount) {
+        // Checks validity of user's script
+        _checkScriptType(_userScript, _scriptType);
+
         // Checks if the given locking script is locker
         require(
             ILockers(lockers).isLocker(_lockerLockingScript),
@@ -174,14 +178,16 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         _saveBurnRequest(
             _amount,
             _burntAmount,
-            _userLockingScript,
+            _userScript,
+            _scriptType, 
             IBitcoinRelay(relay).lastSubmittedHeight(),
             _lockerTargetAddress
         );
 
         emit CCBurn(
             msg.sender,
-            _userLockingScript,
+            _userScript,
+            _scriptType,
             _amount,
             _burntAmount,
             _lockerTargetAddress,
@@ -201,8 +207,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _intermediateNodes           Merkle inclusion proof for transaction containing the burn transaction
     /// @param _index                       Index of transaction containing the burn transaction in the block
     /// @param _lockerLockingScript         Locker's locking script (on Bitcoin) that this burn request belongs to
-    /// @param _startIndex                  Index to start searching for unpaid burn requests in the list
-    /// @param _endIndex                    Index to finish searching for unpaid burn requests in the list
+    /// @param _burnReqIndexes              Indexes of requests that locker wants to provide proof for them
+    /// @param _voutIndexes                 Indexes of outputs that were used to pay burn requests (_voutIndexes[i] belongs to _burnReqIndexes[i])
     /// @return
     function burnProof(
         bytes4 _version,
@@ -213,8 +219,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         bytes memory _intermediateNodes,
         uint _index,
         bytes memory _lockerLockingScript,
-        uint _startIndex,
-        uint _endIndex
+        uint[] memory _burnReqIndexes,
+        uint[] memory _voutIndexes
     ) external payable nonReentrant override returns (bool) {
         // Checks that locker's tx doesn't have any locktime
         require(_locktime == bytes4(0), "CCBurnRouter: non-zero lock time");
@@ -229,14 +235,9 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         address _lockerTargetAddress = ILockers(lockers)
         .getLockerTargetAddress(_lockerLockingScript);
 
-        /* 
-            Checks the correctness of input indices
-            _endIndex should be less than total assigned requests to the locker
-        */
         require(
-            _endIndex < burnRequests[_lockerTargetAddress].length &&
-            _startIndex <= _endIndex,
-            'CCBurnRouter: wrong index'
+            _burnReqIndexes.length == _voutIndexes.length,
+            'CCBurnRouter: wrong indexes'
         );
 
         // Checks inclusion of transaction
@@ -256,8 +257,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             _blockNumber,
             _lockerTargetAddress,
             _vout,
-            _startIndex,
-            _endIndex
+            _burnReqIndexes,
+            _voutIndexes
         );
 
         /* 
@@ -455,15 +456,15 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _paidBlockNumber             Block number in which locker paid the burn request
     /// @param _lockerTargetAddress         Address of the locker on the target chain
     /// @param _vout                        Outputs of a transaction
-    /// @param _startIndex                  Index to start searching for unpaid burn requests in the list
-    /// @param _endIndex                    Index to finish searching for unpaid burn requests in the list
+    /// @param _burnReqIndexes              Indexes of requests that locker wants to provide proof for them
+    /// @param _voutIndexes                 Indexes of outputs that were used to pay burn requests (_voutIndexes[i] belongs to _burnReqIndexes[i])
     /// @return paidOutputCounter           Number of executed burn requests
     function _checkPaidBurnRequests(
         uint _paidBlockNumber,
         address _lockerTargetAddress,
         bytes memory _vout,
-        uint _startIndex,
-        uint _endIndex
+        uint[] memory _burnReqIndexes,
+        uint[] memory _voutIndexes
     ) private returns (uint paidOutputCounter) {
         uint parsedAmount;
         /*  
@@ -473,28 +474,31 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         */
         paidOutputCounter = 0;
 
-        for (uint i = _startIndex; i <= _endIndex; i++) {
+        for (uint i = 0; i < _burnReqIndexes.length; i++) {
+            uint _burnReqIndex = _burnReqIndexes[i];
             // Checks that the request has not been paid and its deadline has not passed
             if (
-                !burnRequests[_lockerTargetAddress][i].isTransferred &&
-                burnRequests[_lockerTargetAddress][i].deadline >= _paidBlockNumber
+                !burnRequests[_lockerTargetAddress][_burnReqIndex].isTransferred &&
+                burnRequests[_lockerTargetAddress][_burnReqIndex].deadline >= _paidBlockNumber
             ) {
-            
-                parsedAmount = TxHelper.parseOutputValue(
+                
+                parsedAmount = TxHelper.parseValueFromSpecificOutputHavingScript(
                     _vout,
-                    burnRequests[_lockerTargetAddress][i].userLockingScript
+                    _voutIndexes[i],
+                    burnRequests[_lockerTargetAddress][_burnReqIndex].userScript,
+                    TxHelper.ScriptTypes(uint(burnRequests[_lockerTargetAddress][_burnReqIndex].scriptType))
                 );
                 
                 // Checks that locker has sent required teleBTC amount
-                if (burnRequests[_lockerTargetAddress][i].burntAmount == parsedAmount) {
-                    burnRequests[_lockerTargetAddress][i].isTransferred = true;
+                if (burnRequests[_lockerTargetAddress][_burnReqIndex].burntAmount == parsedAmount) {
+                    burnRequests[_lockerTargetAddress][_burnReqIndex].isTransferred = true;
                     paidOutputCounter = paidOutputCounter + 1;
                     emit PaidCCBurn(
-                        burnRequests[_lockerTargetAddress][i].sender,
-                        burnRequests[_lockerTargetAddress][i].userLockingScript,
+                        burnRequests[_lockerTargetAddress][_burnReqIndex].sender,
+                        burnRequests[_lockerTargetAddress][_burnReqIndex].userScript,
                         parsedAmount,
                         _lockerTargetAddress,
-                        i // Index of request
+                        _burnReqIndex // Index of request
                     );
                 }
             }
@@ -513,7 +517,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         bytes memory _lockerLockingScript,
         bytes32 _txId
     ) private {
-        uint parsedAmount = TxHelper.parseOutputValue(_vout, _lockerLockingScript);
+        uint parsedAmount = TxHelper.parseOutputValueHavingLockingScript(_vout, _lockerLockingScript);
         uint numberOfOutputs = TxHelper.numberOfOutputs(_vout);
 
         if (parsedAmount != 0 && _paidOutputCounter + 1 == numberOfOutputs) {
@@ -525,38 +529,47 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         }
     }
 
-    /// @notice                      Checks if the locker is among transaction senders
-    /// @param _vin                  Inputs of the transaction
-    /// @param _inputIndex           Index of the input that is from the locker
-    /// @param _lockerRedeemScript   Address of the locker on Bitcoin
-    /// @return                      True if the transaction sender is the locker
-    function _isTxFromLocker(
-        bytes memory _vin,
-        uint _inputIndex,
-        bytes memory _lockerRedeemScript
-    ) private view returns (bool) {
-        bytes memory scriptSig;
-        bytes memory txInputAddress;
-        scriptSig = TxHelper.parseInputScriptSig(_vin, _inputIndex);
-        txInputAddress = TxHelper.sliceBytes(
-            scriptSig,
-            scriptSig.length - _lockerRedeemScript.length,
-            scriptSig.length - 1
-        );
-        return txInputAddress.length == _lockerRedeemScript.length &&
-        keccak256(txInputAddress) == keccak256(_lockerRedeemScript);
+    // /// @notice                      Checks if the locker is among transaction senders
+    // /// @param _vin                  Inputs of the transaction
+    // /// @param _inputIndex           Index of the input that is from the locker
+    // /// @param _lockerRedeemScript   Address of the locker on Bitcoin
+    // /// @return                      True if the transaction sender is the locker
+    // function _isTxFromLocker(
+    //     bytes memory _vin,
+    //     uint _inputIndex,
+    //     bytes memory _lockerRedeemScript
+    // ) private view returns (bool) {
+    //     bytes memory scriptSig;
+    //     bytes memory txInputAddress;
+    //     scriptSig = TxHelper.parseInputScriptSig(_vin, _inputIndex);
+    //     txInputAddress = TxHelper.sliceBytes(
+    //         scriptSig,
+    //         scriptSig.length - _lockerRedeemScript.length,
+    //         scriptSig.length - 1
+    //     );
+    //     return txInputAddress.length == _lockerRedeemScript.length &&
+    //     keccak256(txInputAddress) == keccak256(_lockerRedeemScript);
+    // }
+
+    function _checkScriptType(bytes memory _userScript, ScriptTypes _scriptType) private pure {
+        if (_scriptType == ScriptTypes.P2PK || _scriptType == ScriptTypes.P2WSH) {
+            require(_userScript.length == 32, "CCBurnRouter: invalid user script");
+        } else {
+            require(_userScript.length == 20, "CCBurnRouter: invalid user script");
+        }
     }
 
     /// @notice                           Records burn request of user
     /// @param _amount                    Amount of wrapped token that user wants to burn
     /// @param _burntAmount               Amount of wrapped token that actually gets burnt after deducting fees from the original value (_amount)
-    /// @param _userLockingScript         User's Bitcoin address
+    /// @param _userScript                User's Bitcoin address
     /// @param _lastSubmittedHeight       Last block header height submitted on the relay contract
     /// @param _lockerTargetAddress       Locker's target chain address that the request belongs to
     function _saveBurnRequest(
         uint _amount,
         uint _burntAmount,
-        bytes memory _userLockingScript,
+        bytes memory _userScript,
+        ScriptTypes _scriptType,
         uint _lastSubmittedHeight,
         address _lockerTargetAddress
     ) private {
@@ -564,7 +577,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         request.amount = _amount;
         request.burntAmount = _burntAmount;
         request.sender = msg.sender;
-        request.userLockingScript = _userLockingScript;
+        request.userScript = _userScript;
+        request.scriptType = _scriptType;
         request.deadline = _lastSubmittedHeight + transferDeadline;
         request.isTransferred = false;
         burnRequests[_lockerTargetAddress].push(request);

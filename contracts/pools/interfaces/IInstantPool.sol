@@ -39,6 +39,8 @@ interface IInstantPool is IERC20 {
 
 	function instantPercentageFee() external view returns (uint);
 
+	function getFee(uint _loanAmount) external view returns (uint);
+
 	// State-changing functions
 
 	function setInstantRouter(address _instantRouter) external;

@@ -9,14 +9,24 @@ import "hardhat/console.sol"; // Just for test
 
 contract PriceOracle is IPriceOracle, Ownable {
 
-    mapping(address => mapping (address => address)) public override ChainlinkPriceProxy;
-    mapping(address => address) public override exchangeConnector;
-    address[] public override exchangeRoutersList;
-    uint public override acceptableDelay;
-    address public constant NATIVE_TOKEN = address(1);
+    modifier nonZeroAddress(address _address) {
+        require(_address != address(0), "PriceOracle: zero address");
+        _;
+    }
 
-    constructor(uint _acceptableDelay) {
+    // Public variables
+    mapping(address => mapping (address => address)) public override ChainlinkPriceProxy; // Given two token addresses returns related Chainlink price proxy
+    mapping(address => address) public override exchangeConnector; // Mapping from exchange router to exchnage connector
+    address[] public override exchangeRoutersList; // List of available exchange routers
+    uint public override acceptableDelay;
+    address public constant NATIVE_TOKEN = address(1); // ONE_ADDRESS is used for getting price of blockchain native token 
+    address public override oracleNativeToken;
+
+    /// @notice                         This contract is used to get relative price of two assets from Chainlink and available exchanges 
+    /// @param _acceptableDelay         Maximum acceptable delay for data given from Chainlink
+    constructor(uint _acceptableDelay,address _oracleNativeToken) {
         acceptableDelay = _acceptableDelay;
+        oracleNativeToken = _oracleNativeToken;
     }
 
     /// @notice                 Getter for the length of exchange router list
@@ -24,7 +34,10 @@ contract PriceOracle is IPriceOracle, Ownable {
         return exchangeRoutersList.length;
     }
 
-    /// @notice                         Finds amount of output token that has equal value to the input amount of the input token
+    /// @notice                         Finds amount of output token that has same value as the input amount of the input token
+    /// @dev                            First we try to get the output amount from Chain Link
+    ///                                 Only if the price is not available or out-of-date we will 
+    ///                                 reach to exchange routers
     /// @param _inputAmount             Amount of the input token
     /// @param _inputDecimals           Number of input token decimals
     /// @param _outputDecimals          Number of output token decimals
@@ -37,7 +50,7 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) external view override returns (uint) {
+    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint) {
         // Gets output amount from oracle
         (bool result, uint outputAmount, uint timestamp) = _equivalentOutputAmountFromOracle(
             _inputAmount,
@@ -51,38 +64,40 @@ contract PriceOracle is IPriceOracle, Ownable {
         if (result == true && _abs(int(timestamp) - int(block.timestamp)) < acceptableDelay) {
             return outputAmount;
         } else {
-            bool _result;
-            uint _outputAmount;
             uint _totalAmount;
             uint _totalNumber;
 
+            // If Chainlink price is available but out-of-date, we still use it
             if (result == true) {
                 _totalAmount = outputAmount;
                 _totalNumber = 1;
             }
 
             // Gets output amounts from exchange routers
+            // note: we assume that the decimal of exchange returned result is _outputDecimals. Is that right?
             for (uint i = 0; i < getExchangeRoutersListLength(); i++) {
-                (_result, _outputAmount) = _equivalentOutputAmountFromExchange(
+                (result, outputAmount) = _equivalentOutputAmountFromExchange(
                     exchangeRoutersList[i],
                     _inputAmount,
                     _inputToken,
                     _outputToken
                 );
 
-                if (_result == true) {
+                if (result == true) {
                     _totalNumber = _totalNumber + 1;
-                    _totalAmount = _totalAmount + _outputAmount;
+                    _totalAmount = _totalAmount + outputAmount;
                 }
             }
 
-            // Returns average of results from different sources
-            return _totalNumber > 0 ? _totalAmount/_totalNumber : 0;
+            require(_totalNumber > 0, "PriceOracle: no price feed is available");
 
+            // Returns average of results from different sources
+            return _totalAmount/_totalNumber;
         }
     }
 
-    /// @notice                         Finds amount of output token that is equal to the input amount of the input token
+    /// @notice                         Finds amount of output token that has equal value
+    ///                                 as the input amount of the input token
     /// @dev                            The oracle is ChainLink
     /// @param _inputAmount             Amount of the input token
     /// @param _inputDecimals           Number of input token decimals
@@ -96,7 +111,7 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) external view override returns (uint _outputAmount) {
+    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint _outputAmount) {
         bool result;
         (result, _outputAmount, /*timestamp*/) = _equivalentOutputAmountFromOracle(
             _inputAmount,
@@ -108,8 +123,11 @@ contract PriceOracle is IPriceOracle, Ownable {
         require(result == true, "PriceOracle: Price proxy does not exist");
     }
 
-    /// @notice                         Finds amount of output token that is equal to the input amount of the input token
-    /// @param _exchangeRouter          Address of the exchange we are reading the price from
+    /// @notice                         Finds amount of output token that has same value 
+    ///                                 as the input amount of the input token
+    /// @dev                            Input amount should have the same decimal as input token
+    ///                                 Output amount has the same decimal as output token
+    /// @param _exchangeRouter          Address of the exchange router we are reading the price from
     /// @param _inputAmount             Amount of the input token
     /// @param _inputToken              Address of the input token
     /// @param _outputToken             Address of output token
@@ -119,7 +137,7 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _inputAmount,
         address _inputToken,
         address _outputToken
-    ) external view override returns (uint) {
+    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint) {
         (bool result, uint outputAmount) = _equivalentOutputAmountFromExchange(
             _exchangeRouter,
             _inputAmount,
@@ -134,7 +152,11 @@ contract PriceOracle is IPriceOracle, Ownable {
     /// @dev                       Only owner can call this
     /// @param _exchangeRouter     Exchange router contract address
     /// @param _exchangeConnector  New exchange connector contract address
-    function addExchangeConnector(address _exchangeRouter, address _exchangeConnector) external override onlyOwner {
+    function addExchangeConnector(
+        address _exchangeRouter, 
+        address _exchangeConnector
+    ) external nonZeroAddress(_exchangeRouter) nonZeroAddress(_exchangeConnector) override onlyOwner {
+        require(exchangeConnector[_exchangeRouter] == address(0), "PriceOracle: exchange router already exists");
         exchangeRoutersList.push(_exchangeRouter);
         exchangeConnector[_exchangeRouter] = _exchangeConnector;
         emit ExchangeConnectorAdded(_exchangeRouter, _exchangeConnector);
@@ -144,6 +166,7 @@ contract PriceOracle is IPriceOracle, Ownable {
     /// @dev                          Only owner can call this
     /// @param _exchangeRouterIndex   The exchange router index in the list
     function removeExchangeConnector(uint _exchangeRouterIndex) external override onlyOwner {
+        require(_exchangeRouterIndex < exchangeRoutersList.length, "PriceOracle: Index is out of bound");
         address exchangeRouterAddress = exchangeRoutersList[_exchangeRouterIndex];
         _removeElementFromExchangeRoutersList(_exchangeRouterIndex);
         exchangeConnector[exchangeRouterAddress] = address(0);
@@ -152,24 +175,36 @@ contract PriceOracle is IPriceOracle, Ownable {
 
     /// @notice                     Sets a price proxy for a pair of tokens
     /// @dev                        Only owner can call this
+    ///                             This price proxy gives exchange rate of _firstToken/_secondToken
+    ///                             Setting price proxy address to zero means that we remove it
     /// @param _firstToken          Address of the first token
     /// @param _secondToken         Address of the second token
     /// @param _priceProxyAddress   The address of the proxy price
-    function setPriceProxy(address _firstToken, address _secondToken, address _priceProxyAddress) external override onlyOwner {
+    function setPriceProxy(
+        address _firstToken, 
+        address _secondToken, 
+        address _priceProxyAddress
+    ) external nonZeroAddress(_firstToken) nonZeroAddress(_secondToken) override onlyOwner {
         ChainlinkPriceProxy[_firstToken][_secondToken] = _priceProxyAddress;
         emit SetPriceProxy(_firstToken, _secondToken, _priceProxyAddress);
     }
 
     /// @notice                     Sets acceptable delay for oracle responses
-    /// @dev                        If oracle data has not been updated for a while, we will get data from exchange routers
+    /// @dev                        If oracle data has not been updated for a while, 
+    ///                             we will get data from exchange routers
     /// @param _acceptableDelay     Maximum acceptable delay (in seconds)
     function setAcceptableDelay(uint _acceptableDelay) external override onlyOwner {
         acceptableDelay = _acceptableDelay;
     }
 
-    /// @notice                         Finds amount of output token that is equal to the input amount of the input token
-    /// @dev                            The exchange should be Uniswap like. And have getReserves() and getAmountOut()
-    /// @param _exchangeRouter         Address of the exchange we are reading the price from
+    /// @notice                     Sets oracle native token address
+    function setOracleNativeToken(address _oracleNativeToken) external nonZeroAddress(_oracleNativeToken) override onlyOwner {
+        oracleNativeToken = _oracleNativeToken;
+    }
+
+    /// @notice                         Finds amount of output token that has same value 
+    ///                                 as the input amount of the input token
+    /// @param _exchangeRouter          Address of the exchange we are reading the price from
     /// @param _inputAmount             Amount of the input token
     /// @param _inputToken              Address of the input token
     /// @param _outputToken             Address of output token
@@ -180,16 +215,20 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _inputAmount,
         address _inputToken,
         address _outputToken
-    ) internal view returns (bool _result, uint _outputAmount) {
+    ) private view returns (bool _result, uint _outputAmount) {
         if (_inputToken == NATIVE_TOKEN) {
+            // note: different exchanges may use different wrapped native token versions
             address wrappedNativeToken = IExchangeConnector(exchangeConnector[_exchangeRouter]).wrappedNativeToken();
+
             (_result, _outputAmount) = IExchangeConnector(exchangeConnector[_exchangeRouter]).getOutputAmount(
                 _inputAmount,
                 wrappedNativeToken,
                 _outputToken
             );
         } else if (_outputToken == NATIVE_TOKEN) {
+            // note: different exchanges may use different wrapped native token versions
             address wrappedNativeToken = IExchangeConnector(exchangeConnector[_exchangeRouter]).wrappedNativeToken();
+
             (_result, _outputAmount) = IExchangeConnector(exchangeConnector[_exchangeRouter]).getOutputAmount(
                 _inputAmount,
                 _inputToken,
@@ -205,7 +244,7 @@ contract PriceOracle is IPriceOracle, Ownable {
 
     }
 
-    /// @notice                         Finds amount of output token that is equal to the input amount of the input token
+    /// @notice                         Finds amount of output token that is equal as the input amount of the input token
     /// @dev                            The oracle is ChainLink
     /// @param _inputAmount             Amount of the input token
     /// @param _inputDecimals           Number of input token decimals
@@ -221,9 +260,17 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) internal view returns (bool _result, uint _outputAmount, uint _timestamp) {
+    ) private view returns (bool _result, uint _outputAmount, uint _timestamp) {
         uint decimals;
         int price;
+
+        if (_inputToken == NATIVE_TOKEN) {
+            _inputToken = oracleNativeToken;
+        }
+
+        if (_outputToken == NATIVE_TOKEN) {
+            _outputToken = oracleNativeToken;
+        }
 
         if (ChainlinkPriceProxy[_inputToken][_outputToken] != address(0)) {
             // Gets price of _inputToken/_outputToken
@@ -238,8 +285,11 @@ contract PriceOracle is IPriceOracle, Ownable {
             // Gets number of decimals
             decimals = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken][_outputToken]).decimals();
 
-            // TODO: check the logic again
+            require(price != 0, "PriceOracle: zero price");
+
+            // note: to make inside of power parentheses greater than zero, we add them with one
             _outputAmount = uint(price)*_inputAmount*(10**(_outputDecimals + 1))/(10**(decimals + _inputDecimals + 1));
+
             _result = true;
         } else if (ChainlinkPriceProxy[_outputToken][_inputToken] != address(0)) {
             // Gets price of _outputToken/_inputToken
@@ -253,8 +303,12 @@ contract PriceOracle is IPriceOracle, Ownable {
 
             // Gets number of decimals
             decimals = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken][_inputToken]).decimals();
+            
+            require(price != 0, "PriceOracle: zero price");
 
-            _outputAmount = (10**(decimals + 1))*_inputAmount*(10**(_outputDecimals + 1))/10/(10**(_inputDecimals + 1))/uint(price);
+            // note: to make inside of power parentheses greater than zero, we add them with one
+            _outputAmount = (10**(decimals + _outputDecimals + 1))*_inputAmount/(10**(_inputDecimals + 1)*uint(price));
+            
             _result = true;
         } else {
             return (false, 0, 0);
@@ -265,16 +319,16 @@ contract PriceOracle is IPriceOracle, Ownable {
     /// @notice             Removes an element of excahngeRouterList
     /// @dev                Deletes and shifts the array
     /// @param _index       Index of the element that will be deleted
-    function _removeElementFromExchangeRoutersList(uint _index) internal {
-        require(_index < exchangeRoutersList.length, "PriceOracle: Index is out of bound");
+    function _removeElementFromExchangeRoutersList(uint _index) private {
         for (uint i = _index; i < exchangeRoutersList.length - 1; i++) {
             exchangeRoutersList[i] = exchangeRoutersList[i+1];
         }
         exchangeRoutersList.pop();
     }
 
-    function _abs(int x) internal pure returns (uint) {
-        return x >= 0 ? uint(x) : uint(-x);
+    /// @notice             Returns absolute value
+    function _abs(int _value) private pure returns (uint) {
+        return _value >= 0 ? uint(_value) : uint(-_value);
     }
 
 }

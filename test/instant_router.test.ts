@@ -106,10 +106,7 @@ describe("Instant Router", async () => {
         const teleBTCFactory = new TeleBTC__factory(deployer);
         teleBTC = await teleBTCFactory.deploy(
             "teleBTC",
-            "TBTC",
-            // ONE_ADDRESS,
-            // ONE_ADDRESS,
-            // ONE_ADDRESS
+            "TBTC"
         );
 
         // Deploys instant router
@@ -120,7 +117,8 @@ describe("Instant Router", async () => {
             mockPriceOracle.address,
             mockCollateralPoolFactory.address,
             slasherPercentageReward,
-            paybackDeadline
+            paybackDeadline,
+            mockExchangeConnector.address
         );
 
         // Deploys bitcoin instant pool
@@ -221,7 +219,7 @@ describe("Instant Router", async () => {
             swapResult, amounts
         );
         await mockExchangeConnector.mock.getInputAmount.returns(
-            true,
+            swapResult,
             inputAmount
         );
     }
@@ -273,44 +271,47 @@ describe("Instant Router", async () => {
                 deployerAddress,
                 signer1Address,
                 loanAmount,
-                Math.floor(loanAmount*instantPercentageFee/10000),
+                Math.floor(loanAmount*instantPercentageFee/10000), // Instant fee
                 lastSubmittedHeight + paybackDeadline,
-                collateralToken.address
+                collateralToken.address,
+                requiredCollateralPoolToken
             );
 
             // Checks that signer1 has received loan amount
             await expect(
                 await teleBTC.balanceOf(signer1Address)
             ).to.equal(loanAmount);
+
+            await expect(
+                await instantRouter.getLockedCollateralPoolTokenAmount(deployerAddress, 0)
+            ).to.equal(requiredCollateralPoolToken);
+
+            await expect(
+                await instantRouter.getUserRequestDeadline(deployerAddress, 0)
+            ).to.equal(lastSubmittedHeight + paybackDeadline);
+            
+            await expect(
+                instantRouter.getLockedCollateralPoolTokenAmount(deployerAddress, 1)
+            ).to.revertedWith("InstantRouter: wrong index");
+
+            await expect(
+                instantRouter.getUserRequestDeadline(deployerAddress, 1)
+            ).to.revertedWith("InstantRouter: wrong index");
+            
         });
 
-        it("Reverts since instant pool liquidity is not enough", async function () {
-            // Set parameters
-            loanAmount = 200;
-            equivalentCollateralToken = 50; // Assumes that: 1 collateralToken = 2 teleBTC
-            requiredCollateralPoolToken = equivalentCollateralToken*collateralizationRatio; // Assumes that: 1 collateralToken = 1 collateralPoolToken
-            lastSubmittedHeight = 100;
-            isCollateral = true;
-            transferFromResult = true;
+        it("Reverts since contract is paused", async function () {
 
-            // Mocks functions
-            await mockFunctionsCollateralPoolFactory(isCollateral, mockCollateralPool.address);
-            await mockFunctionsCollateralPool(collateralizationRatio, requiredCollateralPoolToken);
-            await mockFunctionsPriceOracle(equivalentCollateralToken);
-            await mockFunctionsBitcoinRelay(lastSubmittedHeight);
+            await instantRouter.pause();
 
-            // Gets last block timestamp
-            let lastBlockTimestamp = await getTimestamp();
-
-            // Checks that loan has been issued successfully
-            await expect(
+            expect(
                 instantRouter.instantCCTransfer(
                     signer1Address,
                     loanAmount,
-                    lastBlockTimestamp*2,
+                    0,
                     collateralToken.address
                 )
-            ).to.revertedWith("InstantPool: liquidity is not sufficient")
+            ).to.revertedWith("Pausable: paused")
         });
 
         it("Reverts since deadline has paased", async function () {
@@ -345,6 +346,34 @@ describe("Instant Router", async () => {
                     collateralToken.address
                 )
             ).to.revertedWith("InstantRouter: collateral token is not acceptable")
+        });
+
+        it("Reverts since instant pool liquidity is not enough", async function () {
+            // Set parameters
+            loanAmount = 200;
+            equivalentCollateralToken = 50; // Assumes that: 1 collateralToken = 2 teleBTC
+            requiredCollateralPoolToken = equivalentCollateralToken*collateralizationRatio; // Assumes that: 1 collateralToken = 1 collateralPoolToken
+            lastSubmittedHeight = 100;
+            isCollateral = true;
+            transferFromResult = true;
+
+            // Mocks functions
+            await mockFunctionsCollateralPoolFactory(isCollateral, mockCollateralPool.address);
+            await mockFunctionsCollateralPool(collateralizationRatio, requiredCollateralPoolToken);
+            await mockFunctionsPriceOracle(equivalentCollateralToken);
+            await mockFunctionsBitcoinRelay(lastSubmittedHeight);
+
+            // Gets last block timestamp
+            let lastBlockTimestamp = await getTimestamp();
+
+            await expect(
+                instantRouter.instantCCTransfer(
+                    signer1Address,
+                    loanAmount,
+                    lastBlockTimestamp*2,
+                    collateralToken.address
+                )
+            ).to.revertedWith("InstantPool: liquidity is not sufficient")
         });
 
     });
@@ -414,8 +443,139 @@ describe("Instant Router", async () => {
                 path,
                 isFixedToken,
                 lastSubmittedHeight + paybackDeadline,
-                collateralToken.address
+                collateralToken.address,
+                requiredCollateralPoolToken
             );
+        });
+
+        it("Reverts since contract is paused", async function () {
+
+            await instantRouter.pause();
+
+            expect(
+                instantRouter.instantCCExchange(
+                    mockExchangeConnector.address,
+                    signer1Address,
+                    loanAmount,
+                    amountOut,
+                    path,
+                    0,
+                    collateralToken.address,
+                    isFixedToken
+                )
+            ).to.revertedWith("Pausable: paused")
+        });
+
+        it("Reverts since deadline has paased", async function () {
+            // Gets last block timestamp
+            let lastBlockTimestamp = await getTimestamp();
+
+            // Checks that loan has been issued successfully
+            await expect(
+                instantRouter.instantCCExchange(
+                    mockExchangeConnector.address,
+                    signer1Address,
+                    loanAmount,
+                    amountOut,
+                    path,
+                    lastBlockTimestamp -1,
+                    collateralToken.address,
+                    isFixedToken
+                )
+            ).to.revertedWith("InstantRouter: deadline has passed")
+        });
+
+        it("Reverts since path is invalid", async function () {
+            // Gets last block timestamp
+            let lastBlockTimestamp = await getTimestamp();
+
+            // Path's first token is not teleBTC
+            await expect(
+                instantRouter.instantCCExchange(
+                    mockExchangeConnector.address,
+                    signer1Address,
+                    loanAmount,
+                    amountOut,
+                    [deployerAddress, collateralToken.address],
+                    lastBlockTimestamp*2,
+                    collateralToken.address,
+                    isFixedToken
+                )
+            ).to.revertedWith("InstantRouter: path is invalid");
+            
+            // Path only has one token
+            await expect(
+                instantRouter.instantCCExchange(
+                    mockExchangeConnector.address,
+                    signer1Address,
+                    loanAmount,
+                    amountOut,
+                    [teleBTC.address],
+                    lastBlockTimestamp*2,
+                    collateralToken.address,
+                    isFixedToken
+                )
+            ).to.revertedWith("InstantRouter: path is invalid");
+        });
+
+        it("Reverts since instant pool liquidity is not enough", async function () {
+            // Set parameters
+            loanAmount = 200;
+            amountOut = 10;
+            path = [teleBTC.address, collateralToken.address];
+            isFixedToken = true;
+            equivalentCollateralToken = 50; // Assumes that: 1 collateralToken = 2 teleBTC
+            requiredCollateralPoolToken = equivalentCollateralToken*collateralizationRatio; // Assumes that: 1 collateralToken = 1 collateralPoolToken
+            lastSubmittedHeight = 100;
+            isCollateral = true;
+            transferFromResult = true;
+            swapResult = true;
+
+            // Mocks functions
+            await mockFunctionsCollateralPoolFactory(isCollateral, mockCollateralPool.address);
+            await mockFunctionsCollateralPool(collateralizationRatio, requiredCollateralPoolToken);
+            await mockFunctionsPriceOracle(equivalentCollateralToken);
+            await mockFunctionsBitcoinRelay(lastSubmittedHeight);
+            await mockFunctionsExchangeConnector(swapResult, [loanAmount, amountOut], 0);
+
+            // Gets last block timestamp
+            let lastBlockTimestamp = await getTimestamp();
+
+            await expect(
+                instantRouter.instantCCExchange(
+                    mockExchangeConnector.address,
+                    signer1Address,
+                    loanAmount,
+                    amountOut,
+                    path,
+                    lastBlockTimestamp*2,
+                    collateralToken.address,
+                    isFixedToken
+                )
+            ).to.revertedWith("InstantPool: liquidity is not sufficient")
+        });
+
+        it("Reverts since collateral is not acceptable", async function () {
+            // Mocks functions
+            isCollateral = false;
+            await mockFunctionsCollateralPoolFactory(isCollateral, mockCollateralPool.address);
+
+            // Gets last block timestamp
+            let lastBlockTimestamp = await getTimestamp();
+
+            // Checks that loan has been issued successfully
+            await expect(
+                instantRouter.instantCCExchange(
+                    mockExchangeConnector.address,
+                    signer1Address,
+                    loanAmount,
+                    amountOut,
+                    path,
+                    lastBlockTimestamp*2,
+                    collateralToken.address,
+                    isFixedToken
+                )
+            ).to.revertedWith("InstantRouter: collateral token is not acceptable")
         });
 
         it("Reverts since swap was not successful", async function () {
@@ -455,47 +615,6 @@ describe("Instant Router", async () => {
             ).to.revertedWith("InstantRouter: exchange was not successful");
         });
 
-        it("Reverts since deadline has paased", async function () {
-            // Gets last block timestamp
-            let lastBlockTimestamp = await getTimestamp();
-
-            // Checks that loan has been issued successfully
-            await expect(
-                instantRouter.instantCCExchange(
-                    mockExchangeConnector.address,
-                    signer1Address,
-                    loanAmount,
-                    amountOut,
-                    path,
-                    lastBlockTimestamp - 1,
-                    collateralToken.address,
-                    isFixedToken
-                )
-            ).to.revertedWith("InstantRouter: deadline has passed")
-        });
-
-        it("Reverts since collateral is not acceptable", async function () {
-            // Mocks functions
-            isCollateral = false;
-            await mockFunctionsCollateralPoolFactory(isCollateral, mockCollateralPool.address);
-
-            // Gets last block timestamp
-            let lastBlockTimestamp = await getTimestamp();
-
-            // Checks that loan has been issued successfully
-            await expect(
-                instantRouter.instantCCExchange(
-                    mockExchangeConnector.address,
-                    signer1Address,
-                    loanAmount,
-                    amountOut,
-                    path,
-                    lastBlockTimestamp*2,
-                    collateralToken.address,
-                    isFixedToken
-                )
-            ).to.revertedWith("InstantRouter: collateral token is not acceptable")
-        });
     });
 
     describe("#payBackLoan", async () => {
@@ -529,7 +648,7 @@ describe("Instant Router", async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
-        it("Paybacks a debt", async function () {
+        it("Paybacks a debt when user has one unpaid debt", async function () {
 
             // Gets last block timestamp
             let lastBlockTimestamp = await getTimestamp();
@@ -552,7 +671,8 @@ describe("Instant Router", async () => {
                     deployerAddress
                 )
             ).to.equal(1);
-
+            
+            // User has one unpaid loan
             expect(
                 await teleBTCInstantPool.totalUnpaidLoan()
             ).to.equal(loanAmount + instantFee);
@@ -562,8 +682,14 @@ describe("Instant Router", async () => {
                     deployerAddress,
                     loanAmount + instantFee
                 )
-            ).to.emit(instantRouter, "PaybackLoan");
-
+            ).to.emit(instantRouter, "PaybackLoan").withArgs(
+                deployerAddress,
+                loanAmount + instantFee,
+                collateralToken.address,
+                requiredCollateralPoolToken
+            );
+            
+            // User doesn't have any unpaid loan
             expect(
                 await instantRouter.getUserRequestsLength(
                     deployerAddress
@@ -575,7 +701,7 @@ describe("Instant Router", async () => {
             ).to.equal(0);
         });
 
-        it("Paybacks a debt when user has two active debts", async function () {
+        it("Paybacks a debt when user has two unpaid debts", async function () {
 
             // Gets last block timestamp
             let lastBlockTimestamp = await getTimestamp();
@@ -618,9 +744,14 @@ describe("Instant Router", async () => {
                     deployerAddress,
                     loanAmount + instantFee
                 )
-            ).to.emit(instantRouter, "PaybackLoan");
+            ).to.emit(instantRouter, "PaybackLoan").withArgs(
+                deployerAddress,
+                loanAmount + instantFee,
+                collateralToken.address,
+                requiredCollateralPoolToken  
+            );
 
-            // User only paybacks one of debts
+            // User only pays back one of debts
             expect(
                 await instantRouter.getUserRequestsLength(
                     deployerAddress
@@ -632,7 +763,7 @@ describe("Instant Router", async () => {
             ).to.equal(loanAmount + instantFee);
         });
 
-        it("Paybacks a debt and sends remained amount to user when user has two active debts", async function () {
+        it("Paybacks a debt and sends remained amount to user when user has two unpaid debts", async function () {
 
             // Gets last block timestamp
             let lastBlockTimestamp = await getTimestamp();
@@ -677,9 +808,14 @@ describe("Instant Router", async () => {
                     deployerAddress,
                     loanAmount + instantFee
                 )
-            ).to.emit(instantRouter, "PaybackLoan");
+            ).to.emit(instantRouter, "PaybackLoan").withArgs(
+                deployerAddress,
+                loanAmount + instantFee,
+                collateralToken.address,
+                requiredCollateralPoolToken
+            );
 
-            // User only paybacks one of debts
+            // User only pays back one of debts
             expect(
                 await instantRouter.getUserRequestsLength(
                     deployerAddress
@@ -695,7 +831,7 @@ describe("Instant Router", async () => {
             ).to.equal(deployerBalance.toNumber() - loanAmount - instantFee);
         });
 
-        it("Paybacks debts when user has two active debts", async function () {
+        it("Paybacks debts when user has two unpaid debts", async function () {
 
             // Gets last block timestamp
             let lastBlockTimestamp = await getTimestamp();
@@ -738,7 +874,12 @@ describe("Instant Router", async () => {
                     deployerAddress,
                     2*(loanAmount + instantFee)
                 )
-            ).to.emit(instantRouter, "PaybackLoan");
+            ).to.emit(instantRouter, "PaybackLoan").withArgs(
+                deployerAddress,
+                loanAmount + instantFee,
+                collateralToken.address,
+                requiredCollateralPoolToken
+            )
 
             // User only paybacks one of debts
             expect(
@@ -752,7 +893,43 @@ describe("Instant Router", async () => {
             ).to.equal(0);
         });
 
-        it("Gives teleBTC to user since deadline has passed", async function () {
+        it("Sends teleBTC back to user since payback amount is not enough", async function () {
+
+            // Gets last block timestamp
+            let lastBlockTimestamp = await getTimestamp();
+
+            // Creates a debt for deployer
+            await instantRouter.instantCCTransfer(
+                signer1Address,
+                loanAmount,
+                lastBlockTimestamp*2,
+                collateralToken.address
+            );
+
+            // Mints teleBTC for deployer to payback loan
+            await teleBTC.mintTestToken();
+            await teleBTC.approve(instantRouter.address, loanAmount - 1);
+
+            let deployerBalance = await teleBTC.balanceOf(
+                deployerAddress
+            );
+
+            await expect(
+                await instantRouter.payBackLoan(
+                    deployerAddress,
+                    loanAmount - 1
+                )
+            ).to.not.emit(instantRouter, "PaybackLoan");
+
+            // Checks that deployer receives its teleBTC
+            await expect(
+                await teleBTC.balanceOf(
+                    deployerAddress
+                )
+            ).to.equal(deployerBalance);
+        });
+
+        it("Sends teleBTC back to user since deadline has passed", async function () {
 
             // Gets last block timestamp
             let lastBlockTimestamp = await getTimestamp();
@@ -792,41 +969,6 @@ describe("Instant Router", async () => {
             ).to.equal(deployerBalance);
         });
 
-        it("Gives teleBTC to user since payback amount is not enough", async function () {
-
-            // Gets last block timestamp
-            let lastBlockTimestamp = await getTimestamp();
-
-            // Creates a debt for deployer
-            await instantRouter.instantCCTransfer(
-                signer1Address,
-                loanAmount,
-                lastBlockTimestamp*2,
-                collateralToken.address
-            );
-
-            // Mints teleBTC for deployer to payback loan
-            await teleBTC.mintTestToken();
-            await teleBTC.approve(instantRouter.address, loanAmount - 1);
-
-            let deployerBalance = await teleBTC.balanceOf(
-                deployerAddress
-            );
-
-            await expect(
-                await instantRouter.payBackLoan(
-                    deployerAddress,
-                    loanAmount - 1
-                )
-            ).to.not.emit(instantRouter, "PaybackLoan");
-
-            // Checks that deployer receives its teleBTC
-            await expect(
-                await teleBTC.balanceOf(
-                    deployerAddress
-                )
-            ).to.equal(deployerBalance);
-        });
     });
 
     describe("#slashUser", async () => {
@@ -865,14 +1007,11 @@ describe("Instant Router", async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
-        it("Slashes user", async function () {
+        it("Slashes user and pays instant loan fully", async function () {
 
             // Gets last block timestamp
             let lastBlockTimestamp = await getTimestamp();
 
-            /* Sends totalCollateralToken to instant router since collateral pool was mocked:
-                ICollateralPool(collateralPool).removeCollateral(lockedCollateralPoolTokenAmount);
-            */
             await collateralToken.transfer(instantRouter.address, totalCollateralToken);
 
             // Creates a debt for deployer
@@ -900,33 +1039,285 @@ describe("Instant Router", async () => {
 
             await expect(
                 await instantRouter.slashUser(
-                    deployerAddress, // exchange router address
                     deployerAddress,
                     0
                 )
-            ).to.emit(instantRouter, "SlashUser");
-
-            /* Sends paybackAmount to instant router since exchange connector was mocked:
-                IExchangeConnector(_exchangeConnector).swap(
-                    requiredCollateralToken,
-                    paybackAmount,
-                    path,
-                    teleBTCInstantPool,
-                    block.timestamp + 1,
-                    false
-                );
-            */
-            await teleBTC.transfer(teleBTCInstantPool.address, loanAmount + instantFee);
+            ).to.emit(instantRouter, "SlashUser").withArgs(
+                deployerAddress, 
+                collateralToken.address, 
+                requiredCollateralToken, 
+                loanAmount + instantFee,
+                deployerAddress,
+                Math.floor((totalCollateralToken-requiredCollateralToken)*slasherPercentageReward/100)
+            )
 
             expect(
                 await instantRouter.getUserRequestsLength(
                     deployerAddress
                 )
             ).to.equal(0);
+        });
+
+        it("Slashes user and pays instant loan partially", async function () {
+
+            // Gets last block timestamp
+            let lastBlockTimestamp = await getTimestamp();
+
+            await collateralToken.transfer(instantRouter.address, totalCollateralToken);
+
+            // Creates a debt for deployer
+            await instantRouter.instantCCTransfer(
+                signer1Address,
+                loanAmount,
+                lastBlockTimestamp*2,
+                collateralToken.address
+            );
+
+            let instantFee = Math.floor(loanAmount*instantPercentageFee/10000);
+
+            expect(
+                await instantRouter.getUserRequestsLength(
+                    deployerAddress
+                )
+            ).to.equal(1);
 
             expect(
                 await teleBTCInstantPool.totalUnpaidLoan()
+            ).to.equal(loanAmount + instantFee);
+
+            // Passes payback deadline
+            await mockFunctionsBitcoinRelay(lastSubmittedHeight*2);
+            
+            //
+            await mockExchangeConnector.mock.getInputAmount.returns(
+                true,
+                totalCollateralToken + 1
+            );
+
+            await expect(
+                await instantRouter.slashUser(
+                    deployerAddress,
+                    0
+                )
+            ).to.emit(instantRouter, "SlashUser").withArgs(
+                deployerAddress, 
+                collateralToken.address, 
+                totalCollateralToken, 
+                loanAmount + instantFee,
+                deployerAddress,
+                0 // Slasher reward is zero
+            );
+
+            expect(
+                await instantRouter.getUserRequestsLength(
+                    deployerAddress
+                )
             ).to.equal(0);
         });
+
+        it("Reverts since request index is out of range", async function () {
+            await expect(
+                instantRouter.slashUser(
+                    deployerAddress,
+                    0
+                )
+            ).to.revertedWith("InstantRouter: request index does not exist");
+        });
+
+        it("Reverts since payback deadline has not passed yet", async function () {
+
+            // Gets last block timestamp
+            let lastBlockTimestamp = await getTimestamp();
+
+            await collateralToken.transfer(instantRouter.address, totalCollateralToken);
+
+            // Creates a debt for deployer
+            await instantRouter.instantCCTransfer(
+                signer1Address,
+                loanAmount,
+                lastBlockTimestamp*2,
+                collateralToken.address
+            );
+
+            await mockFunctionsBitcoinRelay(lastSubmittedHeight);
+
+            await expect(
+                instantRouter.slashUser(
+                    deployerAddress,
+                    0
+                )
+            ).to.revertedWith("InstantRouter: deadline has not passed yet");
+        });
+
+        it("Reverts since liquidity pool doesn't exist", async function () {
+
+            // Gets last block timestamp
+            let lastBlockTimestamp = await getTimestamp();
+
+            await collateralToken.transfer(instantRouter.address, totalCollateralToken);
+
+            // Creates a debt for deployer
+            await instantRouter.instantCCTransfer(
+                signer1Address,
+                loanAmount,
+                lastBlockTimestamp*2,
+                collateralToken.address
+            );
+
+            let instantFee = Math.floor(loanAmount*instantPercentageFee/10000);
+
+            expect(
+                await instantRouter.getUserRequestsLength(
+                    deployerAddress
+                )
+            ).to.equal(1);
+
+            expect(
+                await teleBTCInstantPool.totalUnpaidLoan()
+            ).to.equal(loanAmount + instantFee);
+
+            // Passes payback deadline
+            await mockFunctionsBitcoinRelay(lastSubmittedHeight*2);
+            await mockFunctionsExchangeConnector(false, [], requiredCollateralToken);
+
+            await expect(
+                instantRouter.slashUser(
+                    deployerAddress,
+                    0
+                )
+            ).to.revertedWith("InstantRouter: liquidity pool doesn't exist");
+        });
+
     });
+
+    describe("#setters", async () => {
+
+        beforeEach(async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+        });
+
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("Sets slasher percentage reward", async function () {
+            await expect(
+                instantRouter.setSlasherPercentageReward(100)
+            ).to.not.reverted;
+
+            expect(
+                await instantRouter.slasherPercentageReward()
+            ).to.equal(100);
+        })
+
+        it("Reverts since slasher percentage reward is greater than 100", async function () {
+            await expect(
+                instantRouter.setSlasherPercentageReward(101)
+            ).to.revertedWith("InstantRouter: wrong slasher percentage reward");
+        })
+
+        it("Sets payback deadline", async function () {
+            await mockBitcoinRelay.mock.finalizationParameter.returns(1);
+
+            await expect(
+                instantRouter.setPaybackDeadline(2)
+            ).to.not.reverted;
+
+            expect(
+                await instantRouter.paybackDeadline()
+            ).to.equal(2);
+        })
+
+        it("Reverts since payback deadline is lower than relay finalization parameter", async function () {
+            await mockBitcoinRelay.mock.finalizationParameter.returns(2);
+
+            await expect(
+                instantRouter.setPaybackDeadline(1)
+            ).to.revertedWith("InstantRouter: wrong payback deadline");
+        })
+
+        it("Sets relay, lockers, instant router, teleBTC and treasury", async function () {
+            await expect(
+                instantRouter.setRelay(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await instantRouter.relay()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                instantRouter.setTeleBTC(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await instantRouter.teleBTC()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                instantRouter.setCollateralPoolFactory(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await instantRouter.collateralPoolFactory()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                instantRouter.setPriceOracle(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await instantRouter.priceOracle()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                instantRouter.setDefaultExchangeConnector(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await instantRouter.defaultExchangeConnector()
+            ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                instantRouter.setTeleBTCInstantPool(ONE_ADDRESS)
+            ).to.not.reverted;
+
+            expect(
+                await instantRouter.teleBTCInstantPool()
+            ).to.equal(ONE_ADDRESS);
+
+        })
+
+        it("Reverts since given address is zero", async function () {
+            await expect(
+                instantRouter.setRelay(ZERO_ADDRESS)
+            ).to.revertedWith("InstantRouter: zero address");
+
+            await expect(
+                instantRouter.setTeleBTC(ZERO_ADDRESS)
+            ).to.revertedWith("InstantRouter: zero address");
+
+            await expect(
+                instantRouter.setPriceOracle(ZERO_ADDRESS)
+            ).to.revertedWith("InstantRouter: zero address");
+
+            await expect(
+                instantRouter.setTeleBTC(ZERO_ADDRESS)
+            ).to.revertedWith("InstantRouter: zero address");
+
+            await expect(
+                instantRouter.setTeleBTCInstantPool(ZERO_ADDRESS)
+            ).to.revertedWith("InstantRouter: zero address");
+
+
+            await expect(
+                instantRouter.setDefaultExchangeConnector(ZERO_ADDRESS)
+            ).to.revertedWith("InstantRouter: zero address");
+
+            await expect(
+                instantRouter.setCollateralPoolFactory(ZERO_ADDRESS)
+            ).to.revertedWith("InstantRouter: zero address");
+        })
+
+    });
+
 });
