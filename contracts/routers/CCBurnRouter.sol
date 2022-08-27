@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../libraries/TxHelper.sol";
 import "./interfaces/ICCBurnRouter.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../relay/interfaces/IBitcoinRelay.sol";
 import "../lockers/interfaces/ILockers.sol";
+import "../libraries/TxHelper.sol";
 import '@openzeppelin/contracts/access/Ownable.sol';
 import "@openzeppelin/contracts/utils/Address.sol";
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
@@ -241,7 +241,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         );
 
         // Checks inclusion of transaction
-        bytes32 txId = _calculateTxId(_version, _vin, _vout, _locktime);
+        bytes32 txId = TxHelper.calculateTxId(_version, _vin, _vout, _locktime);
         require(
             _isConfirmed(
                 txId,
@@ -359,7 +359,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         );
 
         // Finds input tx id and checks its inclusion
-        bytes32 _inputTxId = _calculateTxId(_versions[0], _inputVin, _inputVout, _locktimes[0]);
+        bytes32 _inputTxId = TxHelper.calculateTxId(_versions[0], _inputVin, _inputVout, _locktimes[0]);
         require(
             _isConfirmed(
                 _inputTxId,
@@ -388,7 +388,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         
         // Checks that "outpoint tx id == output tx id"
         require(
-            _outpointId == _calculateTxId(_versions[1], _outputVin, _outputVout, _locktimes[1]),
+            _outpointId == TxHelper.calculateTxId(_versions[1], _outputVin, _outputVout, _locktimes[1]),
             "CCBurnRouter: outpoint tx doesn't match with output tx"
         );
 
@@ -486,7 +486,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
                     _vout,
                     _voutIndexes[i],
                     burnRequests[_lockerTargetAddress][_burnReqIndex].userScript,
-                    TxHelper.ScriptTypes(uint(burnRequests[_lockerTargetAddress][_burnReqIndex].scriptType))
+                    ScriptTypes(uint(burnRequests[_lockerTargetAddress][_burnReqIndex].scriptType))
                 );
                 
                 // Checks that locker has sent required teleBTC amount
@@ -528,28 +528,6 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             isUsedAsBurnProof[_txId] = true;
         }
     }
-
-    // /// @notice                      Checks if the locker is among transaction senders
-    // /// @param _vin                  Inputs of the transaction
-    // /// @param _inputIndex           Index of the input that is from the locker
-    // /// @param _lockerRedeemScript   Address of the locker on Bitcoin
-    // /// @return                      True if the transaction sender is the locker
-    // function _isTxFromLocker(
-    //     bytes memory _vin,
-    //     uint _inputIndex,
-    //     bytes memory _lockerRedeemScript
-    // ) private view returns (bool) {
-    //     bytes memory scriptSig;
-    //     bytes memory txInputAddress;
-    //     scriptSig = TxHelper.parseInputScriptSig(_vin, _inputIndex);
-    //     txInputAddress = TxHelper.sliceBytes(
-    //         scriptSig,
-    //         scriptSig.length - _lockerRedeemScript.length,
-    //         scriptSig.length - 1
-    //     );
-    //     return txInputAddress.length == _lockerRedeemScript.length &&
-    //     keccak256(txInputAddress) == keccak256(_lockerRedeemScript);
-    // }
 
     function _checkScriptType(bytes memory _userScript, ScriptTypes _scriptType) private pure {
         if (_scriptType == ScriptTypes.P2PK || _scriptType == ScriptTypes.P2WSH) {
@@ -643,39 +621,6 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         ITeleBTC(teleBTC).transfer(_lockerTargetAddress, bitcoinFee);
 
         return remainedAmount;
-    }
-
-    /// @notice                      Calculates the required transaction Id from the transaction details
-    /// @dev                         Calculates the hash of transaction details two consecutive times
-    /// @param _version              Version of the transaction
-    /// @param _vin                  Inputs of the transaction
-    /// @param _vout                 Outputs of the transaction
-    /// @param _locktime             Lock time of the transaction
-    /// @return                      Transaction Id of the required transaction
-    function _calculateTxId(
-        bytes4 _version,
-        bytes memory _vin,
-        bytes memory _vout,
-        bytes4 _locktime
-    ) private pure returns (bytes32) {
-        bytes32 inputHash1 = sha256(abi.encodePacked(_version, _vin, _vout, _locktime));
-        bytes32 inputHash2 = sha256(abi.encodePacked(inputHash1));
-        return _revertBytes32(inputHash2);
-    }
-
-    /// @notice                      Reverts a Bytes32 input
-    /// @param _input                Bytes32 input that we want to revert
-    /// @return                      Reverted bytes32
-    function _revertBytes32(bytes32 _input) internal pure returns (bytes32) {
-        bytes memory temp;
-        bytes32 result;
-        for (uint i = 0; i < 32; i++) {
-            temp = abi.encodePacked(temp, _input[31-i]);
-        }
-        assembly {
-            result := mload(add(temp, 32))
-        }
-        return result;
     }
 
 }
