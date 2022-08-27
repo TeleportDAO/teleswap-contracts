@@ -565,15 +565,16 @@ contract LockersLogic is LockersStorageStructure, ILockers {
 
         require(
             _collateralAmount <= maxBuyableCollateral,
-            "Lockers: more than possible buyable"
+            "Lockers: more than maximum buyable"
         );
 
-        uint teleBTCPriceWithDiscount = (_collateralAmount * priceWithDiscountRatio)/10000;
+        uint teleBTCPriceWithDiscount = (priceOfCollateral * priceWithDiscountRatio)/10000;
+        uint neededTeleBTC = (_collateralAmount * teleBTCPriceWithDiscount)/(10 ** 18);
 
 
-        IERC20(teleBTC).transferFrom(_msgSender(), address(this), teleBTCPriceWithDiscount);
+        IERC20(teleBTC).transferFrom(_msgSender(), address(this), neededTeleBTC);
 
-        lockersMapping[_lockerTargetAddress].netMinted = lockersMapping[_lockerTargetAddress].netMinted - teleBTCPriceWithDiscount;
+        lockersMapping[_lockerTargetAddress].netMinted = lockersMapping[_lockerTargetAddress].netMinted - neededTeleBTC;
         lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount= lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - _collateralAmount;
 
         Address.sendValue(payable(_msgSender()), _collateralAmount);

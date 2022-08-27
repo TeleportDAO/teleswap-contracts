@@ -1469,7 +1469,7 @@ describe("Lockers", async () => {
 
             let lockerSigner2 = lockers.connect(signer2)
 
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5000);
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5000000);
 
             await expect(
                 lockerSigner2.liquidateLockerV2(signer1Address, 5000)
@@ -1504,22 +1504,22 @@ describe("Lockers", async () => {
             let lockerSigner2 = lockers.connect(signer2)
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(50000000);
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 20000000);
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 25000000);
 
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(5000000);
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(7000000);
 
             await expect(
                 lockerSigner2.liquidateLockerV2(
                     signer1Address,
-                    BigNumber.from(10).pow(18).mul(4)
+                    BigNumber.from(10).pow(18).mul(3)
                 )
-            ).to.be.revertedWith("Lockers: more than possible buyable")
+            ).to.be.revertedWith("Lockers: more than maximum buyable")
 
         });
 
         it("successfully liquidate the locker", async function () {
 
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
@@ -1543,17 +1543,29 @@ describe("Lockers", async () => {
 
             let lockerSigner2 = lockers.connect(signer2)
 
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, signer2Address, 5000);
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(50000000);
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, signer2Address, 25000000);
 
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(6000);
 
             let teleBTCSigner2 = await teleBTC.connect(signer2);
 
-            await teleBTCSigner2.approve(lockers.address, 3500)
+            await teleBTCSigner2.approve(lockers.address, 13300000)
 
-            // let nativeTokenBalanceOfSigner2BeforeLiquidatingLocker =
+            let signer2NativeTokenBalanceBefore = await teleBTC.provider.getBalance(signer2Address)
 
-            await lockerSigner2.liquidateLocker(signer1Address, 3500)
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(7000000);
+
+            await lockerSigner2.liquidateLockerV2(
+                signer1Address,
+                BigNumber.from(10).pow(18).mul(2)
+            )
+
+            let signer2NativeTokenBalanceAfter = await teleBTC.provider.getBalance(signer2Address)
+
+            expect(
+                signer2NativeTokenBalanceAfter.sub(signer2NativeTokenBalanceBefore)
+            ).to.be.closeTo(BigNumber.from(10).pow(18).mul(2), BigNumber.from(10).pow(15).mul(1))
+
 
         });
 
