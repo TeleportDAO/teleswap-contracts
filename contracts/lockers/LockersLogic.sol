@@ -243,7 +243,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         locker_.nativeTokenLockedAmount = _lockedNativeTokenAmount;
         locker_.isCandidate = true;
 
-        lockersMapping[msg.sender] = locker_;
+        lockersMapping[_msgSender()] = locker_;
 
         totalNumberOfCandidates = totalNumberOfCandidates + 1;
 
@@ -251,7 +251,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
             msg.sender,
             _candidateLockingScript,
             _lockedTDTAmount,
-            0
+            _lockedNativeTokenAmount
         );
 
         return true;
@@ -477,7 +477,12 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         return true;
     }
 
-
+    /// @notice                           Liquidate the locker with an unhealthy collateral
+    /// @dev                              Everyone can liquidate a locker which its health factor
+    /// is less than 10000 (100%) by providing a sufficient amount of teleBTC
+    /// @param _lockerTargetAddress       Locker's target chain address
+    /// @param _collateralAmount          Amount of collateral that someone is intend to buy with discount
+    /// @return result
     function liquidateLocker(
         address _lockerTargetAddress,
         uint _collateralAmount
@@ -496,11 +501,6 @@ contract LockersLogic is LockersStorageStructure, ILockers {
             _calculateHealthFactor(_lockerTargetAddress, priceOfCollateral) < HEALTH_FACTOR,
             "Lockers: the locker's collateral is healthy"
         );
-
-        /*
-            Maximum buyable amount of collateral comes from:
-            (BtcWorthOfCollateral - x)/(netMinted -x) = collateralRatio/10000
-        */
 
         uint maxBuyableCollateral = _maxBuyableCollateral(_lockerTargetAddress, priceOfCollateral);
 
@@ -528,6 +528,10 @@ contract LockersLogic is LockersStorageStructure, ILockers {
 
     }
 
+    /**
+     * @dev Return the price of one unit of native token (10^18) in teleBTC
+     * @return uint
+     */
     function _priceOfOneUnitOfCollateralInBTC() internal view returns (uint) {
 
         return IPriceOracle(priceOracle).equivalentOutputAmount(
@@ -541,6 +545,12 @@ contract LockersLogic is LockersStorageStructure, ILockers {
 
     }
 
+    /**
+     * @dev                                 Calculate the health factor of a specific locker
+     * @param _lockerTargetAddress          The locker's target address
+     * @param _priceOfOneUnitOfCollateral   The price of one unit of native token (10^18) in teleBTC
+     * @return uint
+     */
     function _calculateHealthFactor(
         address _lockerTargetAddress,
         uint _priceOfOneUnitOfCollateral
@@ -552,6 +562,12 @@ contract LockersLogic is LockersStorageStructure, ILockers {
 
     }
 
+    /**
+     * @dev                                 Calculate the maximum buyable amount of collateral
+     * @param _lockerTargetAddress          The locker's target address
+     * @param _priceOfOneUnitOfCollateral   The price of one unit of native token (10^18) in teleBTC
+     * @return uint
+     */
     function _maxBuyableCollateral(
         address _lockerTargetAddress,
         uint _priceOfOneUnitOfCollateral
@@ -566,6 +582,12 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         return antecedent/consequent;
     }
 
+    /// @notice                       Mint teleBTC for an account
+    /// @dev                          Mint teleBTC for an account and got the locker fee as well
+    /// @param _lockerLockingScript   Locking script of a locker
+    /// @param _receiver              Address of the receiver of the minted teleBTCs
+    /// @param _amount                Amount of the teleBTC which is minted, including the locker's fee
+    /// @return uint                  The amount of teleBTC minted for the receiver
     function mint(
         bytes calldata _lockerLockingScript,
         address _receiver,
@@ -597,6 +619,11 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         return _amount - lockerFee;
     }
 
+    /// @notice                       Burn teleBTC of an account
+    /// @dev                          Burn teleBTC and also get the locker's fee
+    /// @param _lockerLockingScript   Locking script of a locker
+    /// @param _amount                Amount of the teleBTC which is minted, including the locker's fee
+    /// @return uint                  The amount of teleBTC burned the
     function burn(
         bytes calldata _lockerLockingScript,
         uint _amount

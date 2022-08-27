@@ -822,6 +822,8 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
+            await lockers.addLocker(signer1Address)
+
             let lockerSigner2 = lockers.connect(signer2)
 
             await expect(
