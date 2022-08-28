@@ -225,7 +225,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         // Count the query for next epoch fee calculation
         currentEpochQueries += 1;
         // Check the inclusion of the transaction
-        bytes32 _merkleRoot = _revertBytes32(chain[_blockHeight][0].merkleRoot);
+        bytes32 _merkleRoot = chain[_blockHeight][0].merkleRoot;
         bytes29 intermediateNodes = _intermediateNodes.ref(0).tryAsMerkleArray(); // Check for errors if any
         bytes32 txIdLE = _revertBytes32(_txid);
         return ViewBTC.prove(txIdLE, _merkleRoot, intermediateNodes, _index);
