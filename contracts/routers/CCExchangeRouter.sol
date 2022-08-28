@@ -207,22 +207,40 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             remainedInputAmount
         );
         
-        // Exchanges minted teleBTC for output token
-        (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
-            remainedInputAmount,
-            ccExchangeRequests[_txId].outputAmount,
-            ccExchangeRequests[_txId].path,
-            ccExchangeRequests[_txId].recipientAddress,
-            ccExchangeRequests[_txId].deadline,
-            ccExchangeRequests[_txId].isFixedToken
-        );
+        if (IExchangeConnector(_exchangeConnector).isPathValid(ccExchangeRequests[_txId].path)) {
+            // Exchanges minted teleBTC for output token
+            (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
+                remainedInputAmount,
+                ccExchangeRequests[_txId].outputAmount,
+                ccExchangeRequests[_txId].path,
+                ccExchangeRequests[_txId].recipientAddress,
+                ccExchangeRequests[_txId].deadline,
+                ccExchangeRequests[_txId].isFixedToken
+            );
+        } else {
+            // Exchanges minted teleBTC for output token via wrappedNativeToken
+            // note: path is [teleBTC, wrappedNativeToken, outputToken]
+            address[] memory _path = new address[](3);
+            _path[0] = ccExchangeRequests[_txId].path[0];
+            _path[1] = IExchangeConnector(_exchangeConnector).wrappedNativeToken();
+            _path[2] = ccExchangeRequests[_txId].path[1];
+
+            (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
+                remainedInputAmount,
+                ccExchangeRequests[_txId].outputAmount,
+                _path,
+                ccExchangeRequests[_txId].recipientAddress,
+                ccExchangeRequests[_txId].deadline,
+                ccExchangeRequests[_txId].isFixedToken
+            );
+        }
 
         if (result) {
             // Emits CCExchange if exchange was successful
             emit CCExchange(
                 ccExchangeRequests[_txId].recipientAddress,
                 ccExchangeRequests[_txId].path[0], // input token
-                ccExchangeRequests[_txId].path[ccExchangeRequests[_txId].path.length-1], // output token
+                ccExchangeRequests[_txId].path[1], // output token
                 amounts[0], // input amount
                 amounts[amounts.length-1], // output amount
                 ccExchangeRequests[_txId].speed,

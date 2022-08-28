@@ -226,64 +226,64 @@ library TxHelper {
         _numberOfOutputs = uint256(ViewBTC.indexCompactInt(voutView, 0));
     }
 
-    function parseChainId(bytes memory arbitraryData) internal pure returns (uint8 parsedValue) {
-        bytes memory slicedBytes = sliceBytes(arbitraryData, 0, 0);
+    function parseChainId(bytes memory _arbitraryData) internal pure returns (uint8 parsedValue) {
+        bytes memory slicedBytes = sliceBytes(_arbitraryData, 0, 0);
         assembly {
             parsedValue := mload(add(slicedBytes, 1))
         }
     }
 
-    function parseAppId(bytes memory arbitraryData) internal pure returns (uint16 parsedValue) {
-        bytes memory slicedBytes = sliceBytes(arbitraryData, 1, 2);
+    function parseAppId(bytes memory _arbitraryData) internal pure returns (uint16 parsedValue) {
+        bytes memory slicedBytes = sliceBytes(_arbitraryData, 1, 2);
         assembly {
             parsedValue := mload(add(slicedBytes, 2))
         }
     }
 
-    function parseRecipientAddress(bytes memory arbitraryData) internal pure returns (address parsedValue) {
-        bytes memory slicedBytes = sliceBytes(arbitraryData, 3, 22);
+    function parseRecipientAddress(bytes memory _arbitraryData) internal pure returns (address parsedValue) {
+        bytes memory slicedBytes = sliceBytes(_arbitraryData, 3, 22);
         assembly {
             parsedValue := mload(add(slicedBytes, 20))
         }
     }
 
-    function parsePercentageFee(bytes memory arbitraryData) internal pure returns (uint16 parsedValue) {
-        bytes memory slicedBytes = sliceBytes(arbitraryData, 23, 24);
+    function parsePercentageFee(bytes memory _arbitraryData) internal pure returns (uint16 parsedValue) {
+        bytes memory slicedBytes = sliceBytes(_arbitraryData, 23, 24);
         assembly {
             parsedValue := mload(add(slicedBytes, 2))
         }
     }
 
-    function parseSpeed(bytes memory arbitraryData) internal pure returns (uint8 parsedValue) {
-        bytes memory slicedBytes = sliceBytes(arbitraryData, 25, 25);
+    function parseSpeed(bytes memory _arbitraryData) internal pure returns (uint8 parsedValue) {
+        bytes memory slicedBytes = sliceBytes(_arbitraryData, 25, 25);
         assembly {
             parsedValue := mload(add(slicedBytes, 1))
         }
     }
 
-    function parseExchangeToken(bytes memory arbitraryData) internal pure returns (address parsedValue){
-        bytes memory slicedBytes = sliceBytes(arbitraryData, 26, 45);
+    function parseExchangeToken(bytes memory _arbitraryData) internal pure returns (address parsedValue){
+        bytes memory slicedBytes = sliceBytes(_arbitraryData, 26, 45);
         assembly {
             parsedValue := mload(add(slicedBytes, 20))
         }
     }
 
-    function parseExchangeOutputAmount(bytes memory arbitraryData) internal pure returns (uint224 parsedValue){
-        bytes memory slicedBytes = sliceBytes(arbitraryData, 46, 73);
+    function parseExchangeOutputAmount(bytes memory _arbitraryData) internal pure returns (uint224 parsedValue){
+        bytes memory slicedBytes = sliceBytes(_arbitraryData, 46, 73);
         assembly {
             parsedValue := mload(add(slicedBytes, 28))
         }
     }
 
-    function parseDeadline(bytes memory arbitraryData) internal pure returns (uint32 parsedValue){
-        bytes memory slicedBytes = sliceBytes(arbitraryData, 74, 77);
+    function parseDeadline(bytes memory _arbitraryData) internal pure returns (uint32 parsedValue){
+        bytes memory slicedBytes = sliceBytes(_arbitraryData, 74, 77);
         assembly {
             parsedValue := mload(add(slicedBytes, 4))
         }
     }
 
-    function parseIsFixedToken(bytes memory arbitraryData) internal pure returns (uint8 parsedValue){
-        bytes memory slicedBytes = sliceBytes(arbitraryData, 78, 78);
+    function parseIsFixedToken(bytes memory _arbitraryData) internal pure returns (uint8 parsedValue){
+        bytes memory slicedBytes = sliceBytes(_arbitraryData, 78, 78);
         assembly {
             parsedValue := mload(add(slicedBytes, 1))
         }
@@ -302,7 +302,7 @@ library TxHelper {
     }
 
     // TODO: add exchange path to arbitrary data (for now, user only gives us the exchnage token address)
-    // function parsePath(bytes memory arbitraryData)
+    // function parsePath(bytes memory _arbitraryData)
     //     internal
     //     returns (address[] memory)
     // {
