@@ -165,8 +165,7 @@ describe("CCExchangeRouter", async () => {
         const exchangeConnectorFactory = new UniswapV2Connector__factory(deployer);
         exchangeConnector = await exchangeConnectorFactory.deploy(
             "TheExchangeConnector",
-            uniswapV2Router02.address,
-            weth.address // WETH
+            uniswapV2Router02.address
         );
 
         // Deploys exchange token

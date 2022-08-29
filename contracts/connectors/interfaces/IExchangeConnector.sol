@@ -35,7 +35,7 @@ interface IExchangeConnector {
 
     function setLiquidityPoolFactory() external;
 
-    function setWrappedNativeToken(address _wrappedNativeToken) external;
+    function setWrappedNativeToken() external;
 
     function swap(
         uint256 _inputAmount,
