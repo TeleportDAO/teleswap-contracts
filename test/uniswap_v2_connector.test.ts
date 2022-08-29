@@ -18,6 +18,9 @@ describe("UniswapV2Connector", async () => {
 
     let snapshotId: any;
 
+    // Constants
+    const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
     // Accounts
     let deployer: Signer;
     let signer1: Signer;
@@ -77,8 +80,7 @@ describe("UniswapV2Connector", async () => {
         const uniswapV2ConnectorFactory = new UniswapV2Connector__factory(deployer);
         uniswapV2Connector = await uniswapV2ConnectorFactory.deploy(
             "Uniswap-Connector",
-            uniswapV2Router02.address,
-            WETH.address
+            uniswapV2Router02.address
         );
 
         // Deploys erc20 token
@@ -174,63 +176,122 @@ describe("UniswapV2Connector", async () => {
                 oldReserveD
             );
 
-            await expect(
-                uniswapV2Connector.getInputAmount(
-                    outputAmount,
-                    erc20.address,
-                    _erc20.address
-                )
-            ).to.not.reverted;
+            let result = await uniswapV2Connector.getInputAmount(
+                outputAmount,
+                erc20.address,
+                _erc20.address
+            );
+
+            expect(result[0]).to.equal(true);
+            expect(result[1]).to.equal(inputAmount);
         })
 
         it("Returns false since liquidity pool does not exist", async function () {
             let outputAmount = 1000;
 
+            let result = await uniswapV2Connector.getInputAmount(
+                outputAmount,
+                deployerAddress,
+                _erc20.address
+            );
+
+            expect(result[0]).to.equal(false);
+            expect(result[1]).to.equal(0);
+        })
+
+        it("Returns false since output amount is greater than output reserve", async function () {
+            let outputAmount = 10000000;
+
+            let result = await uniswapV2Connector.getInputAmount(
+                outputAmount,
+                erc20.address,
+                _erc20.address
+            );
+
+            expect(result[0]).to.equal(false);
+            expect(result[1]).to.equal(0);
+        })
+
+        it("Reverts since one of token's addresses is zero", async function () {
+            let outputAmount = 1000;
+
             await expect(
                 uniswapV2Connector.getInputAmount(
                     outputAmount,
-                    deployerAddress,
+                    ZERO_ADDRESS,
                     _erc20.address
                 )
-            ).to.not.reverted;
+            ).to.revertedWith("UniswapV2Connector: zero address");
+
+            await expect(
+                uniswapV2Connector.getInputAmount(
+                    outputAmount,
+                    erc20.address,
+                    ZERO_ADDRESS
+                )
+            ).to.revertedWith("UniswapV2Connector: zero address");
         })
+
     });
 
     describe("#getOutputAmount", async () => {
 
         it("Finds output amount", async function () {
             let inputAmount = 1000;
+
             let outputAmount = await uniswapV2Router02.getAmountOut(
                 inputAmount,
                 oldReserveC,
                 oldReserveD
             );
 
-            await expect(
-                uniswapV2Connector.getOutputAmount(
-                    inputAmount,
-                    erc20.address,
-                    _erc20.address
-                )
-            ).to.not.reverted;
+            let result = await uniswapV2Connector.getOutputAmount(
+                inputAmount,
+                erc20.address,
+                _erc20.address
+            );
+
+            expect(result[0]).to.equal(true);
+            expect(result[1]).to.equal(outputAmount);
         })
 
         it("Returns false since liquidity pool does not exist", async function () {
             let inputAmount = 1000;
 
+            let result = await uniswapV2Connector.getOutputAmount(
+                inputAmount,
+                deployerAddress,
+                _erc20.address
+            );
+
+            expect(result[0]).to.equal(false);
+            expect(result[1]).to.equal(0);
+        })
+
+        it("Reverts since one of token's addresses is zero", async function () {
+            let inputAmount = 1000;
+
             await expect(
-                uniswapV2Connector.getInputAmount(
+                uniswapV2Connector.getOutputAmount(
                     inputAmount,
-                    deployerAddress,
+                    ZERO_ADDRESS,
                     _erc20.address
                 )
-            ).to.not.reverted;
+            ).to.revertedWith("UniswapV2Connector: zero address");
+
+            await expect(
+                uniswapV2Connector.getOutputAmount(
+                    inputAmount,
+                    erc20.address,
+                    ZERO_ADDRESS
+                )
+            ).to.revertedWith("UniswapV2Connector: zero address");
         })
     });
 
     describe("#swap", async () => {
 
-        beforeEach("Adds liquidity to liquidity pool", async () => {
+        beforeEach(async () => {
             // Takes snapshot before adding liquidity
             snapshotId = await takeSnapshot(deployer.provider);
         });
@@ -479,6 +540,32 @@ describe("UniswapV2Connector", async () => {
             );
             let path = [erc20.address, deployerAddress];
             let to = deployerAddress;
+            let deadline = 10000000000000;
+            let isFixedToken = true;
+
+            await erc20.approve(uniswapV2Connector.address, inputAmount);
+            await expect(
+                uniswapV2Connector.swap(
+                    inputAmount,
+                    outputAmount,
+                    path,
+                    to,
+                    deadline,
+                    isFixedToken
+                )
+            ).to.not.emit(uniswapV2Connector, 'Swap');
+        })
+
+        it("Should not exchange since path only has one element", async function () {
+
+            let outputAmount = 1000;
+            let inputAmount = await uniswapV2Router02.getAmountIn(
+                outputAmount,
+                oldReserveA,
+                oldReserveB
+            );
+            let path = [erc20.address];
+            let to = deployerAddress;
             let deadline = 0;
             let isFixedToken = true;
 
@@ -493,6 +580,102 @@ describe("UniswapV2Connector", async () => {
                     isFixedToken
                 )
             ).to.not.emit(uniswapV2Connector, 'Swap');
+        })
+    });
+
+    describe("#isPathValid", async () => {
+
+        beforeEach(async () => {
+            // Takes snapshot before adding liquidity
+            snapshotId = await takeSnapshot(deployer.provider);
+        });
+
+        afterEach(async () => {
+            // Reverts the state to the beginning
+            await revertProvider(deployer.provider, snapshotId);
+        });
+
+        it("Returns true since path is valid", async function () {
+            expect(
+                await uniswapV2Connector.isPathValid([erc20.address, _erc20.address, WETH.address])
+            ).to.equal(false);
+        })
+
+        it("Returns false since path is empty", async function () {
+            expect(
+                await uniswapV2Connector.isPathValid([erc20.address])
+            ).to.equal(false);
+        })
+
+        it("Returns false since path only has one element", async function () {
+            expect(
+                await uniswapV2Connector.isPathValid([erc20.address])
+            ).to.equal(false);
+        })
+
+        it("Returns false since liquidity pool doesn't exist", async function () {
+            expect(
+                await uniswapV2Connector.isPathValid([erc20.address, deployerAddress])
+            ).to.equal(false);
+        })
+
+        it("Returns false since path is invalid", async function () {
+            expect(
+                await uniswapV2Connector.isPathValid([erc20.address, _erc20.address, deployerAddress])
+            ).to.equal(false);
+        })
+    })
+
+    describe("#setters", async () => {
+        let newUniswapV2Router02: any;
+
+        beforeEach(async () => {
+            // Takes snapshot before adding liquidity
+            snapshotId = await takeSnapshot(deployer.provider);
+
+            // Deploys new uniswapV2Router02 contract
+            const uniswapV2Router02Factory = await ethers.getContractFactory("UniswapV2Router02");
+            newUniswapV2Router02 = await uniswapV2Router02Factory.deploy(
+                uniswapV2Factory.address,
+                WETH.address // WETH
+            );
+        });
+
+        afterEach(async () => {
+            // Reverts the state to the beginning
+            await revertProvider(deployer.provider, snapshotId);
+        });
+
+        it("Sets new exchange router", async function () {
+            await expect(
+                uniswapV2Connector.setExchangeRouter(newUniswapV2Router02.address)
+            ).to.not.reverted;
+
+            expect(
+                await uniswapV2Connector.exchangeRouter()
+            ).to.equal(newUniswapV2Router02.address);
+        })
+
+        it("Reverts since exchange router address is zero", async function () {
+            await expect(
+                uniswapV2Connector.setExchangeRouter(ZERO_ADDRESS)
+            ).to.revertedWith("UniswapV2Connector: zero address");
+        })
+
+        it("Reverts since exchange router address is invalid", async function () {
+            await expect(
+                uniswapV2Connector.setExchangeRouter(deployerAddress)
+            ).to.reverted;
+        })
+
+        it("Sets liquidity pool factory and wrapped native token", async function () {
+            await expect(
+                uniswapV2Connector.setLiquidityPoolFactory()
+            ).to.not.reverted;
+
+            await expect(
+                uniswapV2Connector.setWrappedNativeToken()
+            ).to.not.reverted;
         })
 
     });
