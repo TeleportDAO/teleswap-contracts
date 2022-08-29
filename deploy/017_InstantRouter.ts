@@ -14,6 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const bitcoinRelay = await deployments.get("BitcoinRelay")
     const priceOracle = await deployments.get("PriceOracle")
     const collateralPoolFactory = await deployments.get("CollateralPoolFactory")
+    const defaultExchangeConnector = await deployments.get("UniswapV2Connector")
 
 
     await deploy("InstantRouter", {
@@ -26,7 +27,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             priceOracle.address,
             collateralPoolFactory.address,
             slasherPercentageReward,
-            paybackDeadline
+            paybackDeadline,
+            defaultExchangeConnector.address
         ],
     });
 };

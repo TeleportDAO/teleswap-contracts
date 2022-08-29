@@ -435,10 +435,10 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
             "BitcoinRelay: the block header exists on the relay");
 
             // Blocks that are multiplies of 2016 should be submitted using addHeadersWithRetarget
-//            require(
-//                _internal || _height % 2016 != 0,
-//                "BitcoinRelay: headers should be submitted by calling addHeadersWithRetarget"
-//            );
+            require(
+                _internal || _height % 2016 != 0,
+                "BitcoinRelay: headers should be submitted by calling addHeadersWithRetarget"
+            );
 
             require(_header.target() == _target, "BitcoinRelay: target changed unexpectedly");
             require(_header.checkParent(_previousHash), "BitcoinRelay: headers do not form a consistent chain");
@@ -601,12 +601,12 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         uint256 _endHeight = _findHeight(_oldEnd.hash256());
 
         // retargets should happen at 2016 block intervals
-//        require(
-//            _endHeight % 2016 == 2015,
-//            "BitcoinRelay: must provide the last header of the closing difficulty period");
-//        require(
-//            _endHeight == _startHeight + 2015,
-//            "BitcoinRelay: must provide exactly 1 difficulty period");
+        require(
+            _endHeight % 2016 == 2015,
+            "BitcoinRelay: must provide the last header of the closing difficulty period");
+        require(
+            _endHeight == _startHeight + 2015,
+            "BitcoinRelay: must provide exactly 1 difficulty period");
         require(
             _oldStart.diff() == _oldEnd.diff(),
             "BitcoinRelay: period header difficulties do not match");

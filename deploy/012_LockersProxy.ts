@@ -14,7 +14,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            lockersLogic.address
+            lockersLogic.address,
+            deployer,
+            "0x"
         ],
     });
 };

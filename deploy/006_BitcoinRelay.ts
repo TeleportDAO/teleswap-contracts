@@ -34,6 +34,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     let periodStartHeight = height - height%2016;
     let periodStart = await bitcoinRESTAPI.getHexBlockHash(periodStartHeight);
+    periodStart = Buffer.from(periodStart , 'hex').reverse().toString('hex');
 
     const tdtToken = await deployments.get("ERC20")
 
