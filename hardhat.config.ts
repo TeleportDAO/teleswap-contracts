@@ -10,6 +10,7 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "hardhat-deploy";
 import "hardhat-deploy-tenderly";
+import "hardhat-contract-sizer";
 
 dotenv.config();
 
