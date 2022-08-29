@@ -107,7 +107,7 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         address _to,
         uint256 _deadline,
         bool _isFixedToken
-    ) external override nonReentrant returns(bool _result, uint[] memory _amounts) {
+    ) external override nonReentrant returns (bool _result, uint[] memory _amounts) {
         uint neededInputAmount;
         (_result, neededInputAmount) = _checkExchangeConditions(
             _inputAmount,
@@ -116,6 +116,7 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
             _deadline,
             _isFixedToken
         );
+        
         if (_result) {
             // Gets tokens from user
             IERC20(_path[0]).transferFrom(msg.sender, address(this), neededInputAmount);
@@ -165,6 +166,27 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         }
     }
 
+    /// @notice                     Returns true if the exchange path is valid
+    /// @param _path                List of tokens that are used for exchanging
+    function isPathValid(address[] memory _path) public view override returns (bool _result) {
+        address liquidityPool;
+
+        // Checks that path length is greater than one
+        if (_path.length < 2) {
+            return false;
+        }
+
+        for (uint i = 0; i < _path.length - 1; i++) {
+            liquidityPool =
+                IUniswapV2Factory(liquidityPoolFactory).getPair(_path[i], _path[i + 1]);
+            if (liquidityPool == address(0)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /// @notice                           Checks if exchanging can happen successfully
     /// @dev                              Avoids reverting the request by exchange router
     /// @return                           True if exchange conditions are satisfied
@@ -186,36 +208,29 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         // }
 
         // Checks that the liquidity pool exists
-        address liquidityPool =
-        IUniswapV2Factory(liquidityPoolFactory).getPair(_path[0], _path[_path.length-1]);
-        if (liquidityPool == address(0)) {
+        if (!isPathValid(_path)) {
             return (false, 0);
         }
 
-        // Gets reserves of input token and output token
-        (uint reserveIn, uint reserveOut, /*timestamp*/) = IUniswapV2Pair(liquidityPool).getReserves();
-
-        // Checks that enough liquidity for output token exists
-        if (_outputAmount > reserveOut) {
-            return (false, 0);
-        }
-
-        if (_isFixedToken == false) {
-            // Checks that the input amount is enough
-            uint requiredAmountIn = IUniswapV2Router02(exchangeRouter).getAmountIn(
-                _outputAmount,
-                reserveIn,
-                reserveOut
-            );
-            return (_inputAmount >= requiredAmountIn ? true : false, requiredAmountIn);
-        } else {
-            // Checks that the output amount is enough
-            uint exchangedAmountOut = IUniswapV2Router02(exchangeRouter).getAmountOut(
+        // Finds maximum output amount
+        uint[] memory outputResult = IUniswapV2Router02(exchangeRouter).getAmountsOut(
                 _inputAmount,
-                reserveIn,
-                reserveOut
-            );
-            return (exchangedAmountOut >= _outputAmount ? true : false, _inputAmount);
+                _path
+        );
+
+        // Checks that exchanging is possible or not
+        if (_outputAmount > outputResult[_path.length - 1]) {
+            return (false, 0);
+        } else {
+            if (_isFixedToken == true) {
+                return (true, _inputAmount);
+            } else {
+                uint[] memory inputResult = IUniswapV2Router02(exchangeRouter).getAmountsIn(
+                    _outputAmount, 
+                    _path
+                );
+                return (true, inputResult[0]);
+            }
         }
     }
 

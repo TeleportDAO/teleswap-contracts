@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 interface IExchangeConnector {
 
     // Events
+    
     event Swap(address[] path, uint[] amounts, address receiver);
 
     // Read-only functions
@@ -43,5 +44,7 @@ interface IExchangeConnector {
         address _to,
         uint256 _deadline,
         bool _isFixedToken
-    ) external returns(bool, uint[] memory);
+    ) external returns (bool, uint[] memory);
+
+    function isPathValid(address[] memory _path) external view returns(bool);
 }

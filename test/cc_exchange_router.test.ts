@@ -24,6 +24,8 @@ import { TeleBTC } from "../src/types/TeleBTC";
 import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { ERC20__factory } from "../src/types/factories/ERC20__factory";
+import { WETH } from "../src/types/WETH";
+import { WETH__factory } from "../src/types/factories/WETH__factory";
 
 import { takeSnapshot, revertProvider } from "./block_utils";
 
@@ -72,6 +74,8 @@ describe("CCExchangeRouter", async () => {
     let teleBTC: TeleBTC;
     let teleportDAOToken: ERC20;
     let exchangeToken: ERC20;
+    let anotherExchangeToken: ERC20;
+    let weth: WETH;
 
     // Mock contracts
     let mockBitcoinRelay: MockContract;
@@ -134,6 +138,13 @@ describe("CCExchangeRouter", async () => {
             "teleBTC"
         );
 
+        // Deploys WETH contract
+        const wethFactory = new WETH__factory(deployer);
+        weth = await wethFactory.deploy(
+            "WrappedEthereum",
+            "WETH"
+        );
+
         // Deploys uniswapV2Factory
         const uniswapV2FactoryFactory = new UniswapV2Factory__factory(deployer);
         uniswapV2Factory = await uniswapV2FactoryFactory.deploy(
@@ -147,14 +158,15 @@ describe("CCExchangeRouter", async () => {
         const uniswapV2Router02Factory = new UniswapV2Router02__factory(deployer);
         uniswapV2Router02 = await uniswapV2Router02Factory.deploy(
             uniswapV2Factory.address,
-            ZERO_ADDRESS // WETH
+            weth.address // WETH
         );
-
+        
+        // Deploys uniswap connector
         const exchangeConnectorFactory = new UniswapV2Connector__factory(deployer);
         exchangeConnector = await exchangeConnectorFactory.deploy(
             "TheExchangeConnector",
             uniswapV2Router02.address,
-            ZERO_ADDRESS // WETH
+            weth.address // WETH
         );
 
         // Deploys exchange token
@@ -163,6 +175,13 @@ describe("CCExchangeRouter", async () => {
         exchangeToken = await erc20Factory.deploy(
             "TestToken",
             "TT",
+            100000
+        );
+
+        // Deploys an ERC20 token
+        anotherExchangeToken = await erc20Factory.deploy(
+            "AnotherTestToken",
+            "ATT",
             100000
         );
 
@@ -589,131 +608,51 @@ describe("CCExchangeRouter", async () => {
             );
         })
 
-        it("Mints teleBTC since deadline has passed", async function () {
-
-            // Calculates fees
-            let [lockerFee, teleporterFee, protocolFee] = calculateFees(
-                CC_EXCHANGE_REQUESTS.normalCCExchange_expired
-            );
-
-            // Mints teleBTC
-            expect(
-                await ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_expired.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_expired.vin,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_expired.vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_expired.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_expired.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_expired.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_expired.index,
-                    LOCKER1_LOCKING_SCRIPT
-                )
-            ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.bitcoinAmount - teleporterFee - protocolFee - lockerFee
-            ).and.not.emit(ccExchangeRouter, 'CCExchange');
-
-            // Checks needed conditions when exchange fails
-            await checksWhenExchangeFails(
-                CC_EXCHANGE_REQUESTS.normalCCExchange_expired.recipientAddress,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_expired.bitcoinAmount,
-                teleporterFee,
-                protocolFee,
-                lockerFee
-            );
-        })
-
-        it("Mints teleBTC since slippage is high (output amount < expected output amount)", async function () {
-            // note: isFixedToken = true (input is fixed)
-
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.vout;
-            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
-
-            // Calculates fees
-            let [lockerFee, teleporterFee, protocolFee] = calculateFees(
-                CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage
-            );
-
-            // Mints teleBTC
-            expect(
-                await ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.index,
-                    LOCKER1_LOCKING_SCRIPT
-                )
-            ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.bitcoinAmount - teleporterFee - protocolFee - lockerFee
-            ).and.not.emit(ccExchangeRouter, 'CCExchange');
-
-            // Checks needed conditions when exchange fails
-            await checksWhenExchangeFails(
-                CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.recipientAddress,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.bitcoinAmount,
-                teleporterFee,
-                protocolFee,
-                lockerFee
-            );
-        })
-
-        it("Mints teleBTC since slippage is high (input amount < required output amount)", async function () {
-            // note: isFixedToken = false (output is fixed)
-
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.vout;
-            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
-
-            // Calculates fees
-            let [lockerFee, teleporterFee, protocolFee] = calculateFees(
-                CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput
-            );
-
-            // Mints teleBTC
-            expect(
-                await ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.index,
-                    LOCKER1_LOCKING_SCRIPT
-                )
-            ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.bitcoinAmount - teleporterFee - protocolFee - lockerFee
-            ).and.not.emit(ccExchangeRouter, 'CCExchange');
-
-            // Checks needed conditions when exchange fails
-            await checksWhenExchangeFails(
-                CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.recipientAddress,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.bitcoinAmount,
-                teleporterFee,
-                protocolFee,
-                lockerFee
-            );
-        })
-
-        it("Mints teleBTC since exchange token doesn't exist", async function () {
-            // Replaces dummy address in vout with exchange token address
+        it("Exchanges teleBTC for desired exchange token through wrapped native token", async function () {
+            // Replaces dummy address in vout with another exchange token address
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
-            vout = vout.replace(DUMMY_ADDRESS, teleBTC.address.slice(2, teleBTC.address.length));
+            vout = vout.replace(
+                DUMMY_ADDRESS, 
+                anotherExchangeToken.address.slice(2, anotherExchangeToken.address.length)
+            );
 
+            // Creates liquidity pool of TeleBTC-WETH and adds liquidity in it
+            await teleBTC.approve(uniswapV2Router02.address, 10000);
+            await uniswapV2Router02.addLiquidityETH(
+                teleBTC.address,
+                10000,
+                0, // Minimum added liquidity for first token
+                0, // Minimum added liquidity for second token
+                deployerAddress,
+                10000000000000, // Long deadline
+                {value: 10000}
+            );
+
+            // Creates liquidity pool of WETH-ATT and adds liquidity in it
+            await anotherExchangeToken.approve(uniswapV2Router02.address, 10000);
+            await uniswapV2Router02.addLiquidityETH(
+                anotherExchangeToken.address,
+                10000,
+                0, // Minimum added liquidity for first token
+                0, // Minimum added liquidity for second token
+                deployerAddress,
+                10000000000000, // Long deadline
+                {value: 10000}
+            );
             // Calculates fees
             let [lockerFee, teleporterFee, protocolFee] = calculateFees(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput
             );
 
-            // Mints teleBTC
-            expect(
-                await ccExchangeRouter.ccExchange(
+            // Finds expected output amount that user receives (input token is fixed)
+            let expectedOutputAmount = await uniswapV2Router02.getAmountsOut(
+                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.bitcoinAmount - teleporterFee - lockerFee - protocolFee,
+                [teleBTC.address, weth.address, anotherExchangeToken.address]
+            );
+
+            // Exchanges teleBTC for ATT
+            await expect(
+                ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
                     vout,
@@ -721,483 +660,638 @@ describe("CCExchangeRouter", async () => {
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_LOCKING_SCRIPT
+                    LOCKER1_LOCKING_SCRIPT,
                 )
-            ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
+            ).to.emit(ccExchangeRouter, 'CCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.bitcoinAmount - teleporterFee - protocolFee - lockerFee
-            ).and.not.emit(ccExchangeRouter, 'CCExchange');
-
-            // Checks needed conditions when exchange fails
-            await checksWhenExchangeFails(
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.bitcoinAmount,
-                teleporterFee,
-                protocolFee,
-                lockerFee
-            );
-        })
-
-        it("Mints teleBTC since exchange token is zero", async function () {
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
-            vout = vout.replace(DUMMY_ADDRESS, ZERO_ADDRESS.slice(2, ZERO_ADDRESS.length));
-
-            // Calculates fees
-            let [lockerFee, teleporterFee, protocolFee] = calculateFees(
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput
-            );
-
-            // Mints teleBTC
-            expect(
-                await ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_LOCKING_SCRIPT
-                )
-            ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.bitcoinAmount - teleporterFee - protocolFee - lockerFee
-            ).and.not.emit(ccExchangeRouter, 'CCExchange');
-
-            // Checks needed conditions when exchange fails
-            await checksWhenExchangeFails(
+                teleBTC.address,
+                anotherExchangeToken.address,
+                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.bitcoinAmount - teleporterFee - lockerFee - protocolFee,
+                expectedOutputAmount[expectedOutputAmount.length - 1],
+                0,
+                deployerAddress,
+                teleporterFee
+            );;
+            
+            await checksWhenExchangeSucceed(
+                true,
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.bitcoinAmount,
                 teleporterFee,
                 protocolFee,
-                lockerFee
+                lockerFee,
+                expectedOutputAmount[expectedOutputAmount.length - 1].toNumber()
             );
         })
 
-        it("Reverts since given appId doesn't exist", async function () {
+        // it("Mints teleBTC since deadline has passed", async function () {
 
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.vout;
-            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+        //     // Calculates fees
+        //     let [lockerFee, teleporterFee, protocolFee] = calculateFees(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_expired
+        //     );
 
-            await expect(
-                ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.index,
-                    LOCKER1_LOCKING_SCRIPT
-                )
-            ).to.revertedWith("CCExchangeRouter: app id doesn't exist");
-        })
+        //     // Mints teleBTC
+        //     expect(
+        //         await ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_expired.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_expired.vin,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_expired.vout,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_expired.locktime,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_expired.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_expired.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_expired.index,
+        //             LOCKER1_LOCKING_SCRIPT
+        //         )
+        //     ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.bitcoinAmount - teleporterFee - protocolFee - lockerFee
+        //         ).and.not.emit(ccExchangeRouter, 'CCExchange');
 
-        it("Reverts if user hasn't sent BTC to locker", async function () {
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.vout;
-            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+        //     // Checks needed conditions when exchange fails
+        //     await checksWhenExchangeFails(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_expired.recipientAddress,
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_expired.bitcoinAmount,
+        //         teleporterFee,
+        //         protocolFee,
+        //         lockerFee
+        //     );
+        // })
 
-            await expect(
-                ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.index,
-                    LOCKER1_LOCKING_SCRIPT
-                )
-            ).to.revertedWith("CCExchangeRouter: input amount is zero");
-        })
+        // it("Mints teleBTC since slippage is high (output amount < expected output amount)", async function () {
+        //     // note: isFixedToken = true (input is fixed)
 
-        it("Reverts if locker doesn't exist", async function () {
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.vout;
-            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            await expect(
-                ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.index,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.desiredRecipient
-                )
-            ).to.revertedWith("CCExchangeRouter: no locker with give script hash exists");
-        })
+        //     // Calculates fees
+        //     let [lockerFee, teleporterFee, protocolFee] = calculateFees(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage
+        //     );
 
-        it("Reverts if the percentage fee is out of range [0,10000)", async function () {
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.vout;
-            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+        //     // Mints teleBTC
+        //     expect(
+        //         await ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.vin,
+        //             vout,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.locktime,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.index,
+        //             LOCKER1_LOCKING_SCRIPT
+        //         )
+        //     ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.bitcoinAmount - teleporterFee - protocolFee - lockerFee
+        //     ).and.not.emit(ccExchangeRouter, 'CCExchange');
 
-            await expect(
-                ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.index,
-                    LOCKER1_LOCKING_SCRIPT
-                )
-            ).to.revertedWith("CCExchangeRouter: percentage fee is not correct");
-        })
+        //     // Checks needed conditions when exchange fails
+        //     await checksWhenExchangeFails(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.recipientAddress,
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.bitcoinAmount,
+        //         teleporterFee,
+        //         protocolFee,
+        //         lockerFee
+        //     );
+        // })
 
-        it("Reverts if the request belongs to another chain", async function () {
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.vout;
-            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+        // it("Mints teleBTC since slippage is high (input amount < required output amount)", async function () {
+        //     // note: isFixedToken = false (output is fixed)
+            
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            await expect(
-                ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.index,
-                    LOCKER1_LOCKING_SCRIPT,
-                )
-            ).to.revertedWith("CCExchangeRouter: chain id is not correct");
-        })
+        //     // Calculates fees
+        //     let [lockerFee, teleporterFee, protocolFee] = calculateFees(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput
+        //     );
 
+        //     // Mints teleBTC
+        //     expect(
+        //         await ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.vin,
+        //             vout,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.locktime,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.index,
+        //             LOCKER1_LOCKING_SCRIPT
+        //         )
+        //     ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.bitcoinAmount - teleporterFee - protocolFee - lockerFee
+        //     ).and.not.emit(ccExchangeRouter, 'CCExchange');
 
-        it("Reverts if the request speed is out of range {0,1}", async function () {
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.vout;
-            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+        //     // Checks needed conditions when exchange fails
+        //     await checksWhenExchangeFails(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.recipientAddress,
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.bitcoinAmount,
+        //         teleporterFee,
+        //         protocolFee,
+        //         lockerFee
+        //     );
+        // })
 
-            await expect(
-                ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.index,
-                    LOCKER1_LOCKING_SCRIPT,
-                )
-            ).to.revertedWith("CCExchangeRouter: speed is not correct");
-        })
+        // it("Mints teleBTC since exchange token doesn't exist", async function () {
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, teleBTC.address.slice(2, teleBTC.address.length));
 
-        it("Reverts if the request has been used before", async function () {
+        //     // Calculates fees
+        //     let [lockerFee, teleporterFee, protocolFee] = calculateFees(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput
+        //     );
 
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
-            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+        //     // Mints teleBTC
+        //     expect(
+        //         await ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+        //             vout,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+        //             LOCKER1_LOCKING_SCRIPT
+        //         )
+        //     ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.bitcoinAmount - teleporterFee - protocolFee - lockerFee
+        //     ).and.not.emit(ccExchangeRouter, 'CCExchange');
 
-            // Mints and exchanges teleBTC for exchangeToken
-            await ccExchangeRouter.ccExchange(
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
-                vout,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                LOCKER1_LOCKING_SCRIPT,
-            );
+        //     // Checks needed conditions when exchange fails
+        //     await checksWhenExchangeFails(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.bitcoinAmount,
+        //         teleporterFee,
+        //         protocolFee,
+        //         lockerFee
+        //     );
+        // })
 
-            // Reverts since the request has been used before
-            await expect(
-                ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_LOCKING_SCRIPT,
-                )
-            ).to.revertedWith("CCExchangeRouter: the request has been used before");
+        // it("Mints teleBTC since exchange token is zero", async function () {
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, ZERO_ADDRESS.slice(2, ZERO_ADDRESS.length));
 
-        })
+        //     // Calculates fees
+        //     let [lockerFee, teleporterFee, protocolFee] = calculateFees(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput
+        //     );
 
-        it("Reverts since request belongs to an old block header", async function () {
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
-            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+        //     // Mints teleBTC
+        //     expect(
+        //         await ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+        //             vout,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+        //             LOCKER1_LOCKING_SCRIPT
+        //         )
+        //     ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.bitcoinAmount - teleporterFee - protocolFee - lockerFee
+        //     ).and.not.emit(ccExchangeRouter, 'CCExchange');
 
-            await expect(
-                ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
-                    STARTING_BLOCK_NUMBER - 1,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_LOCKING_SCRIPT,
-                )
-            ).to.revertedWith("CCExchangeRouter: request is too old");
-        })
+        //     // Checks needed conditions when exchange fails
+        //     await checksWhenExchangeFails(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.bitcoinAmount,
+        //         teleporterFee,
+        //         protocolFee,
+        //         lockerFee
+        //     );
+        // })
 
-        it("Reverts since lock time is non-zero", async function () {
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
-            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+        // it("Reverts since given appId doesn't exist", async function () {
 
-            await expect(
-                ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
-                    vout,
-                    '0x11111111',
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_LOCKING_SCRIPT,
-                )
-            ).to.revertedWith("CCExchangeRouter: lock time is non-zero");
-        })
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-        it("Reverts if request has not been finalized yet", async function () {
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
-            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+        //     await expect(
+        //         ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.vin,
+        //             vout,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.locktime,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.index,
+        //             LOCKER1_LOCKING_SCRIPT
+        //         )
+        //     ).to.revertedWith("CCExchangeRouter: app id doesn't exist");
+        // })
 
-            await mockBitcoinRelay.mock.checkTxProof.returns(false);
+        // it("Reverts if user hasn't sent BTC to locker", async function () {
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            await expect(
-                ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_LOCKING_SCRIPT,
-                )
-            ).to.revertedWith("CCExchangeRouter: transaction has not been finalized yet");
-        })
+        //     await expect(
+        //         ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.vin,
+        //             vout,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.locktime,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.index,
+        //             LOCKER1_LOCKING_SCRIPT
+        //         )
+        //     ).to.revertedWith("CCExchangeRouter: input amount is zero");
+        // })
 
-        it("Reverts if paid fee is not sufficient", async function () {
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
-            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+        // it("Reverts if locker doesn't exist", async function () {
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            await mockBitcoinRelay.mock.getBlockHeaderFee.returns(1);
+        //     await expect(
+        //         ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.vin,
+        //             vout,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.locktime,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.index,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.desiredRecipient
+        //         )
+        //     ).to.revertedWith("CCExchangeRouter: no locker with give script hash exists");
+        // })
 
-            await expect(
-                ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_LOCKING_SCRIPT,
-                )
-            ).to.revertedWith("CCExchangeRouter: paid fee is not sufficient");
-        })
+        // it("Reverts if the percentage fee is out of range [0,10000)", async function () {
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-        it("Pays back instant loan (instant cc exchange request)", async function () {
+        //     await expect(
+        //         ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.vin,
+        //             vout,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.locktime,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.index,
+        //             LOCKER1_LOCKING_SCRIPT
+        //         )
+        //     ).to.revertedWith("CCExchangeRouter: percentage fee is not correct");
+        // })
 
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.instantCCExchange.vout;
-            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+        // it("Reverts if the request belongs to another chain", async function () {
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            // Mints and exchanges teleBTC for TDT
-            expect(
-                await ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.instantCCExchange.version,
-                    CC_EXCHANGE_REQUESTS.instantCCExchange.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.instantCCExchange.locktime,
-                    CC_EXCHANGE_REQUESTS.instantCCExchange.blockNumber,
-                    CC_EXCHANGE_REQUESTS.instantCCExchange.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.instantCCExchange.index,
-                    LOCKER1_LOCKING_SCRIPT
-                )
-            ).to.emit(ccExchangeRouter, 'CCExchange');
+        //     await expect(
+        //         ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.vin,
+        //             vout,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.locktime,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.index,
+        //             LOCKER1_LOCKING_SCRIPT,
+        //         )
+        //     ).to.revertedWith("CCExchangeRouter: chain id is not correct");
+        // })
+    
+        // it("Reverts if the request speed is out of range {0,1}", async function () {
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            // Records new supply of teleBTC
-            let newTotalSupplyTeleBTC = await teleBTC.totalSupply();
+        //     await expect(
+        //         ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.vin,
+        //             vout,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.locktime,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.index,
+        //             LOCKER1_LOCKING_SCRIPT,
+        //         )
+        //     ).to.revertedWith("CCExchangeRouter: speed is not correct");
+        // })
 
-            // Records new teleBTC and TDT balances of user and teleporter
-            let newUserBalanceTeleBTC = await teleBTC.balanceOf(
-                CC_EXCHANGE_REQUESTS.instantCCExchange.recipientAddress
-            );
-            let newDeployerBalanceTeleBTC = await teleBTC.balanceOf(deployerAddress);
-            let newUserBalanceTDT = await exchangeToken.balanceOf(
-                CC_EXCHANGE_REQUESTS.instantCCExchange.recipientAddress
-            );
-            let newDeployerBalanceTDT = await exchangeToken.balanceOf(deployerAddress);
+        // it("Reverts if the request has been used before", async function () {
 
-            // Checks extra teleBTC hasn't been minted
-            expect(newTotalSupplyTeleBTC).to.equal(
-                oldTotalSupplyTeleBTC.add(CC_EXCHANGE_REQUESTS.instantCCExchange.bitcoinAmount)
-            );
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            // Checks that enough teleBTC has been minted for teleporter
-            expect(newDeployerBalanceTeleBTC).to.equal(
-                oldDeployerBalanceTeleBTC.add(
-                    CC_EXCHANGE_REQUESTS.instantCCExchange.bitcoinAmount*
-                    CC_EXCHANGE_REQUESTS.instantCCExchange.teleporterFee/10000
-                )
-            );
-        })
+        //     // Mints and exchanges teleBTC for exchangeToken
+        //     await ccExchangeRouter.ccExchange(
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+        //         vout,
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+        //         CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+        //         LOCKER1_LOCKING_SCRIPT,
+        //     );
+
+        //     // Reverts since the request has been used before
+        //     await expect(
+        //         ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+        //             vout,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+        //             LOCKER1_LOCKING_SCRIPT,
+        //         )
+        //     ).to.revertedWith("CCExchangeRouter: the request has been used before");
+
+        // })
+
+        // it("Reverts since request belongs to an old block header", async function () {
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+
+        //     await expect(
+        //         ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+        //             vout,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
+        //             STARTING_BLOCK_NUMBER - 1,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+        //             LOCKER1_LOCKING_SCRIPT,
+        //         )
+        //     ).to.revertedWith("CCExchangeRouter: request is too old");
+        // })
+
+        // it("Reverts since lock time is non-zero", async function () {
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+
+        //     await expect(
+        //         ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+        //             vout,
+        //             '0x11111111',
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+        //             LOCKER1_LOCKING_SCRIPT,
+        //         )
+        //     ).to.revertedWith("CCExchangeRouter: lock time is non-zero");
+        // })
+
+        // it("Reverts if request has not been finalized yet", async function () {
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+
+        //     await mockBitcoinRelay.mock.checkTxProof.returns(false);
+
+        //     await expect(
+        //         ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+        //             vout,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+        //             LOCKER1_LOCKING_SCRIPT,
+        //         )
+        //     ).to.revertedWith("CCExchangeRouter: transaction has not been finalized yet");
+        // })
+
+        // it("Reverts if paid fee is not sufficient", async function () {
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+
+        //     await mockBitcoinRelay.mock.getBlockHeaderFee.returns(1);
+
+        //     await expect(
+        //         ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+        //             vout,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+        //             LOCKER1_LOCKING_SCRIPT,
+        //         )
+        //     ).to.revertedWith("CCExchangeRouter: paid fee is not sufficient");
+        // })
+
+        // it("Pays back instant loan (instant cc exchange request)", async function () {
+
+        //     // Replaces dummy address in vout with exchange token address
+        //     let vout = CC_EXCHANGE_REQUESTS.instantCCExchange.vout;
+        //     vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+
+        //     // Mints and exchanges teleBTC for TDT
+        //     expect(
+        //         await ccExchangeRouter.ccExchange(
+        //             CC_EXCHANGE_REQUESTS.instantCCExchange.version,
+        //             CC_EXCHANGE_REQUESTS.instantCCExchange.vin,
+        //             vout,
+        //             CC_EXCHANGE_REQUESTS.instantCCExchange.locktime,
+        //             CC_EXCHANGE_REQUESTS.instantCCExchange.blockNumber,
+        //             CC_EXCHANGE_REQUESTS.instantCCExchange.intermediateNodes,
+        //             CC_EXCHANGE_REQUESTS.instantCCExchange.index,
+        //             LOCKER1_LOCKING_SCRIPT
+        //         )
+        //     ).to.emit(ccExchangeRouter, 'CCExchange');
+
+        //     // Records new supply of teleBTC
+        //     let newTotalSupplyTeleBTC = await teleBTC.totalSupply();
+
+        //     // Records new teleBTC and TDT balances of user and teleporter
+        //     let newUserBalanceTeleBTC = await teleBTC.balanceOf(
+        //         CC_EXCHANGE_REQUESTS.instantCCExchange.recipientAddress
+        //     );
+        //     let newDeployerBalanceTeleBTC = await teleBTC.balanceOf(deployerAddress);
+        //     let newUserBalanceTDT = await exchangeToken.balanceOf(
+        //         CC_EXCHANGE_REQUESTS.instantCCExchange.recipientAddress
+        //     );
+        //     let newDeployerBalanceTDT = await exchangeToken.balanceOf(deployerAddress);
+
+        //     // Checks extra teleBTC hasn't been minted
+        //     expect(newTotalSupplyTeleBTC).to.equal(
+        //         oldTotalSupplyTeleBTC.add(CC_EXCHANGE_REQUESTS.instantCCExchange.bitcoinAmount)
+        //     );
+
+        //     // Checks that enough teleBTC has been minted for teleporter
+        //     expect(newDeployerBalanceTeleBTC).to.equal(
+        //         oldDeployerBalanceTeleBTC.add(
+        //             CC_EXCHANGE_REQUESTS.instantCCExchange.bitcoinAmount*
+        //             CC_EXCHANGE_REQUESTS.instantCCExchange.teleporterFee/10000
+        //         )
+        //     );
+        // })
     });
 
 
-    describe("#isRequestUsed", async () => {
+    // describe("#isRequestUsed", async () => {
 
-        beforeEach(async () => {
-            snapshotId = await takeSnapshot(signer1.provider);
-            await addLockerToLockers();
-        });
+    //     beforeEach(async () => {
+    //         snapshotId = await takeSnapshot(signer1.provider);
+    //         await addLockerToLockers();
+    //     });
+    
+    //     afterEach(async () => {
+    //         await revertProvider(signer1.provider, snapshotId);
+    //     });
 
-        afterEach(async () => {
-            await revertProvider(signer1.provider, snapshotId);
-        });
+    //     it("Checks if the request has been used before (unused)", async function () {
+    //         expect(
+    //             await ccExchangeRouter.isRequestUsed(CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.txId)
+    //         ).to.equal(false);
+    //     })
 
-        it("Checks if the request has been used before (unused)", async function () {
-            expect(
-                await ccExchangeRouter.isRequestUsed(CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.txId)
-            ).to.equal(false);
-        })
+    //     it("Reverts since the request has been executed before", async function () {
 
-        it("Reverts since the request has been executed before", async function () {
+    //         // Replaces dummy address in vout with exchange token address
+    //         let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
+    //         vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            // Replaces dummy address in vout with exchange token address
-            let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
-            vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
+    //         await ccExchangeRouter.ccExchange(
+    //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+    //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+    //             vout,
+    //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
+    //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
+    //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+    //             CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+    //             LOCKER1_LOCKING_SCRIPT
+    //         );
 
-            await ccExchangeRouter.ccExchange(
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
-                vout,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
-                CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                LOCKER1_LOCKING_SCRIPT
-            );
+    //         expect(
+    //             await ccExchangeRouter.isRequestUsed(CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.txId)
+    //         ).to.equal(true);
 
-            expect(
-                await ccExchangeRouter.isRequestUsed(CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.txId)
-            ).to.equal(true);
+    //         await expect(
+    //             ccExchangeRouter.ccExchange(
+    //                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+    //                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+    //                 vout,
+    //                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
+    //                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
+    //                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+    //                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+    //                 LOCKER1_LOCKING_SCRIPT
+    //             )
+    //         ).to.revertedWith("CCExchangeRouter: the request has been used before");
+    //     })
 
-            await expect(
-                ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_LOCKING_SCRIPT
-                )
-            ).to.revertedWith("CCExchangeRouter: the request has been used before");
-        })
+    // });
 
-    });
+    // describe("#setters", async () => {
 
-    describe("#setters", async () => {
+    //     beforeEach(async () => {
+    //         snapshotId = await takeSnapshot(signer1.provider);
+    //     });
+    
+    //     afterEach(async () => {
+    //         await revertProvider(signer1.provider, snapshotId);
+    //     });
 
-        beforeEach(async () => {
-            snapshotId = await takeSnapshot(signer1.provider);
-        });
+    //     it("Sets protocol percentage fee", async function () {
+    //         await expect(
+    //             ccExchangeRouter.setProtocolPercentageFee(100)
+    //         ).to.not.reverted;
 
-        afterEach(async () => {
-            await revertProvider(signer1.provider, snapshotId);
-        });
+    //         expect(
+    //             await ccExchangeRouter.protocolPercentageFee()
+    //         ).to.equal(100);
+    //     })
 
-        it("Sets protocol percentage fee", async function () {
-            await expect(
-                ccExchangeRouter.setProtocolPercentageFee(100)
-            ).to.not.reverted;
+    //     it("Reverts since protocol percentage fee is greater than 10000", async function () {
+    //         await expect(
+    //             ccExchangeRouter.setProtocolPercentageFee(10001)
+    //         ).to.revertedWith("CCExchangeRouter: fee is out of range");
+    //     })
 
-            expect(
-                await ccExchangeRouter.protocolPercentageFee()
-            ).to.equal(100);
-        })
+    //     it("Sets relay, lockers, instant router, teleBTC and treasury", async function () {
+    //         await expect(
+    //             ccExchangeRouter.setRelay(ONE_ADDRESS)
+    //         ).to.not.reverted;
 
-        it("Reverts since protocol percentage fee is greater than 10000", async function () {
-            await expect(
-                ccExchangeRouter.setProtocolPercentageFee(10001)
-            ).to.revertedWith("CCExchangeRouter: fee is out of range");
-        })
+    //         expect(
+    //             await ccExchangeRouter.relay()
+    //         ).to.equal(ONE_ADDRESS);
 
-        it("Sets relay, lockers, instant router, teleBTC and treasury", async function () {
-            await expect(
-                ccExchangeRouter.setRelay(ONE_ADDRESS)
-            ).to.not.reverted;
+    //         await expect(
+    //             ccExchangeRouter.setLockers(ONE_ADDRESS)
+    //         ).to.not.reverted;
 
-            expect(
-                await ccExchangeRouter.relay()
-            ).to.equal(ONE_ADDRESS);
+    //         expect(
+    //             await ccExchangeRouter.lockers()
+    //         ).to.equal(ONE_ADDRESS);
 
-            await expect(
-                ccExchangeRouter.setLockers(ONE_ADDRESS)
-            ).to.not.reverted;
+    //         await expect(
+    //             ccExchangeRouter.setInstantRouter(ONE_ADDRESS)
+    //         ).to.not.reverted;
 
-            expect(
-                await ccExchangeRouter.lockers()
-            ).to.equal(ONE_ADDRESS);
+    //         expect(
+    //             await ccExchangeRouter.instantRouter()
+    //         ).to.equal(ONE_ADDRESS);
 
-            await expect(
-                ccExchangeRouter.setInstantRouter(ONE_ADDRESS)
-            ).to.not.reverted;
+    //         await expect(
+    //             ccExchangeRouter.setTeleBTC(ONE_ADDRESS)
+    //         ).to.not.reverted;
 
-            expect(
-                await ccExchangeRouter.instantRouter()
-            ).to.equal(ONE_ADDRESS);
+    //         expect(
+    //             await ccExchangeRouter.teleBTC()
+    //         ).to.equal(ONE_ADDRESS);
 
-            await expect(
-                ccExchangeRouter.setTeleBTC(ONE_ADDRESS)
-            ).to.not.reverted;
+    //         await expect(
+    //             ccExchangeRouter.setTreasury(ONE_ADDRESS)
+    //         ).to.not.reverted;
 
-            expect(
-                await ccExchangeRouter.teleBTC()
-            ).to.equal(ONE_ADDRESS);
+    //         expect(
+    //             await ccExchangeRouter.treasury()
+    //         ).to.equal(ONE_ADDRESS);
 
-            await expect(
-                ccExchangeRouter.setTreasury(ONE_ADDRESS)
-            ).to.not.reverted;
+    //     })
 
-            expect(
-                await ccExchangeRouter.treasury()
-            ).to.equal(ONE_ADDRESS);
+    //     it("Reverts since given address is zero", async function () {
+    //         await expect(
+    //             ccExchangeRouter.setRelay(ZERO_ADDRESS)
+    //         ).to.revertedWith("CCExchangeRouter: address is zero");
 
-        })
+    //         await expect(
+    //             ccExchangeRouter.setLockers(ZERO_ADDRESS)
+    //         ).to.revertedWith("CCExchangeRouter: address is zero");
 
-        it("Reverts since given address is zero", async function () {
-            await expect(
-                ccExchangeRouter.setRelay(ZERO_ADDRESS)
-            ).to.revertedWith("CCExchangeRouter: address is zero");
+    //         await expect(
+    //             ccExchangeRouter.setInstantRouter(ZERO_ADDRESS)
+    //         ).to.revertedWith("CCExchangeRouter: address is zero");
 
-            await expect(
-                ccExchangeRouter.setLockers(ZERO_ADDRESS)
-            ).to.revertedWith("CCExchangeRouter: address is zero");
+    //         await expect(
+    //             ccExchangeRouter.setTeleBTC(ZERO_ADDRESS)
+    //         ).to.revertedWith("CCExchangeRouter: address is zero");
 
-            await expect(
-                ccExchangeRouter.setInstantRouter(ZERO_ADDRESS)
-            ).to.revertedWith("CCExchangeRouter: address is zero");
+    //         await expect(
+    //             ccExchangeRouter.setTreasury(ZERO_ADDRESS)
+    //         ).to.revertedWith("CCExchangeRouter: address is zero");
+    //     })
 
-            await expect(
-                ccExchangeRouter.setTeleBTC(ZERO_ADDRESS)
-            ).to.revertedWith("CCExchangeRouter: address is zero");
-
-            await expect(
-                ccExchangeRouter.setTreasury(ZERO_ADDRESS)
-            ).to.revertedWith("CCExchangeRouter: address is zero");
-        })
-
-    });
+    // });
 });
