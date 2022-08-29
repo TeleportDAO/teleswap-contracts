@@ -73,7 +73,7 @@ library TxHelper {
             output = ViewBTC.indexVout(voutView, index);
             scriptPubkey = ViewBTC.scriptPubkey(output);
             scriptPubkeyWithLength = ViewBTC.scriptPubkeyWithLength(output);
-            _arbitraryData = ViewBTC.opReturnPayload(scriptPubkeyWithLength);
+            _arbitraryData = ViewBTC.opReturnPayloadBig(scriptPubkeyWithLength);
 
             // Checks whether the output is an arbitarary data or not
             if(_arbitraryData == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
