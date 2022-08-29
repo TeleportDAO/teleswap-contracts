@@ -6,7 +6,6 @@ import "./ViewBTC.sol";
 import "./ScriptTypesEnum.sol";
 import "hardhat/console.sol";
 
-
 // A library for parsing bitcoin transactions
 library TxHelper {
 
@@ -300,28 +299,5 @@ library TxHelper {
             result = abi.encodePacked(result, temp);
         }
     }
-
-    // TODO: add exchange path to arbitrary data (for now, user only gives us the exchnage token address)
-    // function parsePath(bytes memory _arbitraryData)
-    //     internal
-    //     returns (address[] memory)
-    // {
-    //     uint256 sizeofPath;
-    //     assembly {
-    //         sizeofPath := mload(add(arbitraryData, 356)) // bias = 4*32 + 4
-    //     } // found the postion using testing
-    //     address temp;
-    //     uint256 index;
-    //     index = 356 + 32;
-
-    //     for (uint256 i = 0; i < sizeofPath; i++) {
-    //         assembly {
-    //             temp := mload(add(arbitraryData, index))
-    //         }
-    //         parsedPath.push(temp);
-    //         index = index + 32;
-    //     }
-    //     return parsedPath;
-    // }
 
 }
