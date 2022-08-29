@@ -49,6 +49,11 @@ contract LockersStorageStructure is OwnableUpgradeable, ReentrancyGuardUpgradeab
     // 10000 means 100%
     uint public collateralRatio;
     uint public liquidationRatio;
+    uint public priceWithDiscountRatio;
+
+    uint public constant HEALTH_FACTOR = 10000;
+    uint public constant UPPER_HEALTH_FACTOR = 12000;
+
     // ^ this is because of price volitility and making minted coins for some collateral secure
     address public priceOracle;
 
@@ -56,7 +61,7 @@ contract LockersStorageStructure is OwnableUpgradeable, ReentrancyGuardUpgradeab
 
     uint public totalNumberOfCandidates;
     uint public totalNumberOfLockers;
-    
+
     mapping(address => bool) public lockerLeavingRequests;
     mapping(address => bool) public lockerLeavingAcceptance;
 

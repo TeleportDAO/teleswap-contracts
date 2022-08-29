@@ -35,6 +35,7 @@ describe("Lockers", async () => {
     let collateralRatio = 20000;
     let liquidationRatio = 15000;
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
+    const PRICE_WITH_DISCOUNT_RATIO = 9500; // Means %95
 
     // Bitcoin public key (32 bytes)
     let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
@@ -44,10 +45,12 @@ describe("Lockers", async () => {
     let REQUIRED_LOCKED_AMOUNT =  1000; // amount of required TDT
 
     // Accounts
+    let proxyAdmin: Signer;
     let deployer: Signer;
     let signer1: Signer;
     let signer2: Signer;
     let ccBurnSimulator: Signer;
+    let proxyAdminAddress: Address;
     let deployerAddress: Address;
     let signer1Address: Address;
     let signer2Address: Address;
@@ -55,6 +58,7 @@ describe("Lockers", async () => {
 
     // Contracts
     let lockers: Contract;
+    let lockersAsAdmin: Contract;
     let teleportDAOToken: ERC20;
     let teleBTC: TeleBTC;
 
@@ -64,7 +68,8 @@ describe("Lockers", async () => {
 
     before(async () => {
         // Sets accounts
-        [deployer, signer1, signer2,ccBurnSimulator] = await ethers.getSigners();
+        [proxyAdmin, deployer, signer1, signer2,ccBurnSimulator] = await ethers.getSigners();
+        proxyAdminAddress = await proxyAdmin.getAddress()
         deployerAddress = await deployer.getAddress();
         signer1Address = await signer1.getAddress();
         signer2Address = await signer2.getAddress();
@@ -99,6 +104,8 @@ describe("Lockers", async () => {
 
         await teleBTC.addMinter(lockers.address)
         await teleBTC.addBurner(lockers.address)
+
+        // lockersAsAdmin = await lockers.connect(proxyAdmin)
 
         await lockers.setTeleBTC(teleBTC.address)
 
@@ -164,11 +171,17 @@ describe("Lockers", async () => {
             _signer || deployer
         );
         const lockersProxy = await lockersProxyFactory.deploy(
-            lockersLogic.address
+            lockersLogic.address,
+            proxyAdminAddress,
+            "0x"
         )
 
+        const lockers = await lockersLogic.attach(
+            lockersProxy.address
+        );
+
         // Initializes lockers proxy
-        await lockersProxy.initialize(
+        await lockers.initialize(
             teleportDAOToken.address,
             mockExchangeConnector.address,
             mockPriceOracle.address,
@@ -176,15 +189,519 @@ describe("Lockers", async () => {
             minRequiredNativeTokenLockedAmount,
             collateralRatio,
             liquidationRatio,
-            LOCKER_PERCENTAGE_FEE
+            LOCKER_PERCENTAGE_FEE,
+            PRICE_WITH_DISCOUNT_RATIO
         )
-
-        const lockers = await lockersLogic.attach(
-            lockersProxy.address
-        );
 
         return lockers;
     };
+
+    describe("#initialize", async () => {
+
+        it("initialize can be called only once", async function () {
+            await expect(
+                lockers.initialize(
+                    teleportDAOToken.address,
+                    mockExchangeConnector.address,
+                    mockPriceOracle.address,
+                    minRequiredTDTLockedAmount,
+                    minRequiredNativeTokenLockedAmount,
+                    collateralRatio,
+                    liquidationRatio,
+                    LOCKER_PERCENTAGE_FEE,
+                    PRICE_WITH_DISCOUNT_RATIO
+                )
+            ).to.be.revertedWith("Initializable: contract is already initialized")
+        })
+
+    })
+
+    describe("#addMinter", async () => {
+
+        it("can't add zero address as minter", async function () {
+            await expect(
+                lockers.addMinter(
+                    ZERO_ADDRESS
+                )
+            ).to.be.revertedWith("Lockers: address is zero")
+        })
+
+        it("only owner can add a minter", async function () {
+
+            let lockersSigner1 = await lockers.connect(signer1)
+
+            await expect(
+                lockersSigner1.addMinter(
+                    ONE_ADDRESS
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("owner successfully adds a minter", async function () {
+
+            await lockers.addMinter(
+                ONE_ADDRESS
+            )
+        })
+
+        it("can't add an account that already is minter", async function () {
+
+            await lockers.addMinter(
+                ONE_ADDRESS
+            )
+
+            await expect(
+                lockers.addMinter(
+                    ONE_ADDRESS
+                )
+            ).to.be.revertedWith("Lockers: account already has role")
+        })
+
+    })
+
+    describe("#removeMinter", async () => {
+
+        it("can't remove zero address as minter", async function () {
+            await expect(
+                lockers.removeMinter(
+                    ZERO_ADDRESS
+                )
+            ).to.be.revertedWith("Lockers: address is zero")
+        })
+
+        it("only owner can add a minter", async function () {
+
+            let lockersSigner1 = await lockers.connect(signer1)
+
+            await expect(
+                lockersSigner1.removeMinter(
+                    ONE_ADDRESS
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("owner can't remove an account from minter that it's not minter ATM", async function () {
+
+            await expect(
+                lockers.removeMinter(
+                    ONE_ADDRESS
+                )
+            ).to.be.revertedWith("Lockers: account does not have role")
+        })
+
+        it("owner successfully removes an account from minters", async function () {
+
+            await lockers.addMinter(
+                ONE_ADDRESS
+            )
+
+            await lockers.removeMinter(
+                ONE_ADDRESS
+            )
+        })
+
+    })
+
+    describe("#addBurner", async () => {
+
+        it("can't add zero address as burner", async function () {
+            await expect(
+                lockers.addBurner(
+                    ZERO_ADDRESS
+                )
+            ).to.be.revertedWith("Lockers: address is zero")
+        })
+
+        it("only owner can add a burner", async function () {
+
+            let lockersSigner1 = await lockers.connect(signer1)
+
+            await expect(
+                lockersSigner1.addBurner(
+                    ONE_ADDRESS
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("owner successfully adds a burner", async function () {
+
+            await lockers.addBurner(
+                ONE_ADDRESS
+            )
+        })
+
+        it("can't add an account that already is burner", async function () {
+
+            await lockers.addBurner(
+                ONE_ADDRESS
+            )
+
+            await expect(
+                lockers.addBurner(
+                    ONE_ADDRESS
+                )
+            ).to.be.revertedWith("Lockers: account already has role")
+        })
+
+    })
+
+    describe("#removeBurner", async () => {
+
+        it("can't remove zero address as burner", async function () {
+            await expect(
+                lockers.removeBurner(
+                    ZERO_ADDRESS
+                )
+            ).to.be.revertedWith("Lockers: address is zero")
+        })
+
+        it("only owner can add a burner", async function () {
+
+            let lockersSigner1 = await lockers.connect(signer1)
+
+            await expect(
+                lockersSigner1.removeBurner(
+                    ONE_ADDRESS
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("owner can't remove an account from burners that it's not burner ATM", async function () {
+
+            await expect(
+                lockers.removeBurner(
+                    ONE_ADDRESS
+                )
+            ).to.be.revertedWith("Lockers: account does not have role")
+        })
+
+        it("owner successfully removes an account from burner", async function () {
+
+            await lockers.addBurner(
+                ONE_ADDRESS
+            )
+
+            await lockers.removeBurner(
+                ONE_ADDRESS
+            )
+        })
+
+    })
+
+    describe("#pauseLocker", async () => {
+
+        it("only admin can pause locker", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.pauseLocker()
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+        });
+
+        it("contract paused successsfully", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockers.pauseLocker()
+
+            await expect(
+                lockerSigner1.selfRemoveLocker()
+            ).to.be.revertedWith("Pausable: paused")
+
+            await expect(
+                lockerSigner1.slashLocker(
+                    signer1Address,
+                    0,
+                    deployerAddress,
+                    10000,
+                    ccBurnSimulatorAddress
+                )
+            ).to.be.revertedWith("Pausable: paused")
+
+            await expect(
+                lockerSigner1.liquidateLocker(
+                    signer1Address,
+                    10000
+                )
+            ).to.be.revertedWith("Pausable: paused")
+
+            await expect(
+                lockerSigner1.mint(
+                    signer1Address,
+                    signer2Address,
+                    10000
+                )
+            ).to.be.revertedWith("Pausable: paused")
+
+            await expect(
+                lockerSigner1.burn(
+                    signer1Address,
+                    10000
+                )
+            ).to.be.revertedWith("Pausable: paused")
+
+        });
+
+        it("can't pause when already paused", async function () {
+
+            await lockers.pauseLocker()
+
+            await expect(
+                lockers.pauseLocker()
+            ).to.be.revertedWith("Pausable: paused")
+
+        });
+
+    });
+
+    describe("#unPauseLocker", async () => {
+
+        it("only admin can un-pause locker", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.unPauseLocker()
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+        });
+
+        it("can't un-pause when already un-paused", async function () {
+
+            await expect(
+                lockers.unPauseLocker()
+            ).to.be.revertedWith("Pausable: not paused")
+
+        });
+
+        it("contract un-paused successsfully", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockers.pauseLocker()
+
+            await expect(
+                lockerSigner1.liquidateLocker(
+                    signer1Address,
+                    10000
+                )
+            ).to.be.revertedWith("Pausable: paused")
+
+            await lockers.unPauseLocker()
+
+            await expect(
+                lockerSigner1.liquidateLocker(
+                    signer1Address,
+                    10000
+                )
+            ).to.be.revertedWith("Lockers: target address is not locker")
+
+        });
+
+    });
+
+
+    describe("#setMinRequiredTDTLockedAmount",async () => {
+        it("non owners can't call setMinRequiredTDTLockedAmount", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.setMinRequiredTDTLockedAmount(
+                    REQUIRED_LOCKED_AMOUNT
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("only owner can call setMinRequiredTDTLockedAmount", async function () {
+
+            await lockers.setMinRequiredTDTLockedAmount(
+                REQUIRED_LOCKED_AMOUNT + 55
+            )
+
+            expect(
+                await lockers.minRequiredTDTLockedAmount()
+            ).to.equal(REQUIRED_LOCKED_AMOUNT + 55)
+        })
+    })
+
+    describe("#setMinRequiredTNTLockedAmount",async () => {
+        it("non owners can't call setMinRequiredTNTLockedAmount", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.setMinRequiredTNTLockedAmount(
+                    REQUIRED_LOCKED_AMOUNT
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("only owner can call setMinRequiredTNTLockedAmount", async function () {
+
+            await lockers.setMinRequiredTNTLockedAmount(
+                REQUIRED_LOCKED_AMOUNT + 55
+            )
+
+            expect(
+                await lockers.minRequiredTNTLockedAmount()
+            ).to.equal(REQUIRED_LOCKED_AMOUNT + 55)
+        })
+    })
+
+    describe("#setPriceOracle",async () => {
+
+        it("price oracle can't be zero address", async function () {
+
+            await expect(
+                lockers.setPriceOracle(
+                    ZERO_ADDRESS
+                )
+            ).to.be.revertedWith("Lockers: address is zero")
+        })
+
+        it("non owners can't call setPriceOracle", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.setPriceOracle(
+                    ONE_ADDRESS
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("only owner can call setPriceOracle", async function () {
+
+            await lockers.setPriceOracle(
+                ONE_ADDRESS
+            )
+
+            expect(
+                await lockers.priceOracle()
+            ).to.equal(ONE_ADDRESS)
+        })
+    })
+
+
+    describe("#setCCBurnRouter",async () => {
+
+        it("cc burn router can't be zero address", async function () {
+
+            await expect(
+                lockers.setCCBurnRouter(
+                    ZERO_ADDRESS
+                )
+            ).to.be.revertedWith("Lockers: address is zero")
+        })
+
+        it("non owners can't call setCCBurnRouter", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.setCCBurnRouter(
+                    ONE_ADDRESS
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("only owner can call setCCBurnRouter", async function () {
+
+            await lockers.setCCBurnRouter(
+                ONE_ADDRESS
+            )
+
+            expect(
+                await lockers.ccBurnRouter()
+            ).to.equal(ONE_ADDRESS)
+        })
+    })
+
+    describe("#setExchangeConnector",async () => {
+
+        it("exchange connector can't be zero address", async function () {
+
+            await expect(
+                lockers.setExchangeConnector(
+                    ZERO_ADDRESS
+                )
+            ).to.be.revertedWith("Lockers: address is zero")
+        })
+
+        it("non owners can't call setExchangeConnector", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.setExchangeConnector(
+                    ONE_ADDRESS
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("only owner can call setExchangeConnector", async function () {
+
+            await lockers.setExchangeConnector(
+                ONE_ADDRESS
+            )
+
+            expect(
+                await lockers.exchangeConnector()
+            ).to.equal(ONE_ADDRESS)
+        })
+    })
+
+    describe("#setTeleBTC",async () => {
+
+        it("tele BTC can't be zero address", async function () {
+
+            await expect(
+                lockers.setTeleBTC(
+                    ZERO_ADDRESS
+                )
+            ).to.be.revertedWith("Lockers: address is zero")
+        })
+
+        it("non owners can't call setTeleBTC", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.setTeleBTC(
+                    ONE_ADDRESS
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("only owner can call setTeleBTC", async function () {
+
+            await lockers.setTeleBTC(
+                ONE_ADDRESS
+            )
+
+            expect(
+                await lockers.teleBTC()
+            ).to.equal(ONE_ADDRESS)
+        })
+    })
+
+    describe("#setCollateralRatio",async () => {
+
+        it("non owners can't call setCollateralRatio", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.setCollateralRatio(
+                    1234
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("only owner can call setCollateralRatio", async function () {
+
+            await lockers.setCollateralRatio(
+                1234
+            )
+
+            expect(
+                await lockers.collateralRatio()
+            ).to.equal(1234)
+        })
+    })
+
 
     describe("#requestToBecomeLocker", async () => {
 
@@ -216,6 +733,20 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
         })
 
+        it("low message value", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.requestToBecomeLocker(
+                    // TELEPORTER1,
+                    TELEPORTER1_PublicKeyHash,
+                    minRequiredTDTLockedAmount,
+                    minRequiredNativeTokenLockedAmount,
+                    {value: minRequiredNativeTokenLockedAmount.sub(10)}
+                )
+            ).to.be.revertedWith("Lockers: low locking TNT amount")
+        })
+
         it("successful request to become locker", async function () {
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
@@ -239,6 +770,71 @@ describe("Lockers", async () => {
             expect(
                 await lockers.totalNumberOfCandidates()
             ).to.equal(1)
+
+        })
+
+        it("a locker can't requestToBecomeLocker twice", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+
+            await expect(
+                lockerSigner1.requestToBecomeLocker(
+                    // TELEPORTER1,
+                    TELEPORTER1_PublicKeyHash,
+                    minRequiredTDTLockedAmount,
+                    minRequiredNativeTokenLockedAmount,
+                    {value: minRequiredNativeTokenLockedAmount}
+                )
+            ).to.be.revertedWith("Lockers: user is already a candidate")
+
+        })
+
+
+        it("a redeem script hash can't be used twice", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+
+            await lockers.addLocker(signer1Address)
+
+            let lockerSigner2 = lockers.connect(signer2)
+
+            await expect(
+                lockerSigner2.requestToBecomeLocker(
+                    // TELEPORTER1,
+                    TELEPORTER1_PublicKeyHash,
+                    minRequiredTDTLockedAmount,
+                    minRequiredNativeTokenLockedAmount,
+                    {value: minRequiredNativeTokenLockedAmount}
+                )
+            ).to.be.revertedWith("Lockers: redeem script hash is used before")
 
         })
 
@@ -277,7 +873,6 @@ describe("Lockers", async () => {
             expect(
                 await lockers.totalNumberOfCandidates()
             ).to.equal(0)
-
         })
 
     });
@@ -377,6 +972,12 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("Ownable: caller is not the owner")
         })
 
+        it("a non-existing locker can't be removed", async function () {
+            await expect(
+                lockers.removeLocker(signer1Address)
+            ).to.be.revertedWith("Lockers: no locker with this address")
+        })
+
         it("can't remove a locker if it doesn't request to be removed", async function () {
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
@@ -402,7 +1003,41 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("Lockers: locker didn't request to be removed")
         })
 
-        it("can't remove a locker if it doesn't request to be removed", async function () {
+
+        it("the locker can't be removed because netMinted is not zero", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+
+            await lockers.addLocker(signer1Address)
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
+            await lockers.addMinter(signer2Address);
+            let lockerSigner2 = lockers.connect(signer2)
+
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 1000);
+
+            await lockerSigner1.requestToRemoveLocker()
+
+            await expect(
+                lockers.removeLocker(signer1Address)
+            ).to.be.revertedWith("Lockers: net minted is not zero")
+        })
+
+        it("the locker is removed successfully", async function () {
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
@@ -437,12 +1072,112 @@ describe("Lockers", async () => {
 
     describe("#selfRemoveLocker", async () => {
 
-        it("only admin can call remove locker function", async function () {
-            let lockerSigner1 = lockers.connect(signer1)
+        it("a locker can't remove itself when the contract is paused", async function () {
+            await lockers.pauseLocker()
+
+            let lockerSigner1 = await lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.selfRemoveLocker()
+            ).to.be.revertedWith("Pausable: paused")
+        })
+
+        it("a non-existing locker can't be removed", async function () {
+
+            let lockerSigner1 = await lockers.connect(signer1)
 
             await expect(
                 lockerSigner1.selfRemoveLocker()
             ).to.be.revertedWith("Lockers: no locker with this address")
+        })
+
+        it("can't remove a locker if it doesn't request to be removed", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+
+            await lockers.addLocker(signer1Address)
+
+            await expect(
+                lockerSigner1.selfRemoveLocker()
+            ).to.be.revertedWith("Lockers: locker didn't request to be removed")
+        })
+
+        it("the locker can't be removed because netMinted is not zero", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+
+            await lockers.addLocker(signer1Address)
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
+            await lockers.addMinter(signer2Address);
+            let lockerSigner2 = lockers.connect(signer2)
+
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 1000);
+
+            await lockerSigner1.requestToRemoveLocker()
+
+            await expect(
+                lockerSigner1.selfRemoveLocker()
+            ).to.be.revertedWith("Lockers: net minted is not zero")
+        })
+
+        it("the locker is removed successfully", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+
+            await lockers.addLocker(signer1Address)
+
+            await lockerSigner1.requestToRemoveLocker()
+
+            expect(
+                await lockerSigner1.selfRemoveLocker()
+            ).to.emit(lockers, "LockerRemoved")
+
+            expect(
+                await lockers.totalNumberOfLockers()
+            ).to.equal(0)
         })
 
     });
@@ -450,7 +1185,7 @@ describe("Lockers", async () => {
 
     describe("#slashLocker", async () => {
 
-        it("only admin can call slash locker function", async function () {
+        it("only cc burn can call slash locker function", async function () {
             let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
@@ -478,11 +1213,54 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("Lockers: target address is not locker")
         })
 
-        it("only admin can slash a locker", async function () {
+        it("can't slash above collateral", async function () {
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(
+                BigNumber.from(10).pow(18).mul(6)
+            )
+            // await mockExchangeConnector.mock.getInputAmount.returns(true, minRequiredTDTLockedAmount.div(10))
+            // await mockExchangeConnector.mock.swap.returns(true, [2500, 5000])
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+
+            expect(
+                await lockers.addLocker(signer1Address)
+            ).to.emit(lockers, "LockerAdded")
+
+            let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
+
+            await expect(
+                lockerCCBurnSigner.slashLocker(
+                    signer1Address,
+                    0,
+                    deployerAddress,
+                    10000,
+                    ccBurnSimulatorAddress
+                )
+            ).to.be.revertedWith("Lockers: insufficient native token collateral")
+
+        })
+
+
+        it("cc burn can slash a locker", async function () {
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
-            await mockExchangeConnector.mock.getInputAmount.returns(true, minRequiredTDTLockedAmount.div(10))
-            await mockExchangeConnector.mock.swap.returns(true, [2500, 5000])
+            // await mockExchangeConnector.mock.getInputAmount.returns(true, minRequiredTDTLockedAmount.div(10))
+            // await mockExchangeConnector.mock.swap.returns(true, [2500, 5000])
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
@@ -688,9 +1466,20 @@ describe("Lockers", async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
+        it("liquidate locker reverts when the target address is not locker", async function () {
+            let lockerCCBurnSimulator = lockers.connect(ccBurnSimulator)
+
+            await expect(
+                lockerCCBurnSimulator.liquidateLocker(
+                    signer1Address,
+                    1000
+                )
+            ).to.be.revertedWith("Lockers: target address is not locker")
+        })
+
         it("can't liquidate because it's above liquidation ratio", async function () {
 
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
@@ -714,17 +1503,17 @@ describe("Lockers", async () => {
 
             let lockerSigner2 = lockers.connect(signer2)
 
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5000);
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5000000);
 
             await expect(
                 lockerSigner2.liquidateLocker(signer1Address, 5000)
-            ).to.be.revertedWith("Lockers: this locker is above luquidation ratio")
+            ).to.be.revertedWith("Lockers: the locker's collateral is healthy")
 
         });
 
         it("can't liquidate because it's above the liquidated amount", async function () {
 
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
@@ -748,19 +1537,23 @@ describe("Lockers", async () => {
 
             let lockerSigner2 = lockers.connect(signer2)
 
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5000);
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(50000000);
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 25000000);
 
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(6000);
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(7000000);
 
             await expect(
-                lockerSigner2.liquidateLocker(signer1Address, 5000)
-            ).to.be.revertedWith("Lockers: above the locker's luquidation penalty")
+                lockerSigner2.liquidateLocker(
+                    signer1Address,
+                    BigNumber.from(10).pow(18).mul(3)
+                )
+            ).to.be.revertedWith("Lockers: more than maximum buyable")
 
         });
 
         it("successfully liquidate the locker", async function () {
 
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
@@ -784,146 +1577,31 @@ describe("Lockers", async () => {
 
             let lockerSigner2 = lockers.connect(signer2)
 
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, signer2Address, 5000);
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(50000000);
+            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, signer2Address, 25000000);
 
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(6000);
 
             let teleBTCSigner2 = await teleBTC.connect(signer2);
 
-            await teleBTCSigner2.approve(lockers.address, 3500)
+            await teleBTCSigner2.approve(lockers.address, 13300000)
 
-            // let nativeTokenBalanceOfSigner2BeforeLiquidatingLocker =
+            let signer2NativeTokenBalanceBefore = await teleBTC.provider.getBalance(signer2Address)
 
-            await lockerSigner2.liquidateLocker(signer1Address, 3500)
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(7000000);
 
-        });
+            await lockerSigner2.liquidateLocker(
+                signer1Address,
+                BigNumber.from(10).pow(18).mul(2)
+            )
 
-    });
+            let signer2NativeTokenBalanceAfter = await teleBTC.provider.getBalance(signer2Address)
 
-    describe("#pauseLocker", async () => {
+            expect(
+                signer2NativeTokenBalanceAfter.sub(signer2NativeTokenBalanceBefore)
+            ).to.be.closeTo(BigNumber.from(10).pow(18).mul(2), BigNumber.from(10).pow(15).mul(1))
 
-        beforeEach(async () => {
-            snapshotId = await takeSnapshot(signer1.provider);
-        });
-
-        afterEach(async () => {
-            await revertProvider(signer1.provider, snapshotId);
-        });
-
-        it("only admin can pause locker", async function () {
-            let lockerSigner1 = lockers.connect(signer1)
-
-            await expect(
-                lockerSigner1.pauseLocker()
-            ).to.be.revertedWith("Ownable: caller is not the owner")
-
-        });
-
-        it("contract paused successsfully", async function () {
-            let lockerSigner1 = lockers.connect(signer1)
-
-            await lockers.pauseLocker()
-
-            await expect(
-                lockerSigner1.selfRemoveLocker()
-            ).to.be.revertedWith("Pausable: paused")
-
-            await expect(
-                lockerSigner1.slashLocker(
-                    signer1Address,
-                    0,
-                    deployerAddress,
-                    10000,
-                    ccBurnSimulatorAddress
-                )
-            ).to.be.revertedWith("Pausable: paused")
-
-            await expect(
-                lockerSigner1.liquidateLocker(
-                    signer1Address,
-                    10000
-                )
-            ).to.be.revertedWith("Pausable: paused")
-
-            await expect(
-                lockerSigner1.mint(
-                    signer1Address,
-                    signer2Address,
-                    10000
-                )
-            ).to.be.revertedWith("Pausable: paused")
-
-            await expect(
-                lockerSigner1.burn(
-                    signer1Address,
-                    10000
-                )
-            ).to.be.revertedWith("Pausable: paused")
-
-        });
-
-        it("can't pause when already paused", async function () {
-
-            await lockers.pauseLocker()
-
-            await expect(
-                lockers.pauseLocker()
-            ).to.be.revertedWith("Pausable: paused")
 
         });
 
     });
-
-    describe("#unPauseLocker", async () => {
-
-        beforeEach(async () => {
-            snapshotId = await takeSnapshot(signer1.provider);
-        });
-
-        afterEach(async () => {
-            await revertProvider(signer1.provider, snapshotId);
-        });
-
-        it("only admin can un-pause locker", async function () {
-            let lockerSigner1 = lockers.connect(signer1)
-
-            await expect(
-                lockerSigner1.unPauseLocker()
-            ).to.be.revertedWith("Ownable: caller is not the owner")
-
-        });
-
-        it("can't un-pause when already un-paused", async function () {
-
-            await expect(
-                lockers.unPauseLocker()
-            ).to.be.revertedWith("Pausable: not paused")
-
-        });
-
-        it("contract un-paused successsfully", async function () {
-            let lockerSigner1 = lockers.connect(signer1)
-
-            await lockers.pauseLocker()
-
-            await expect(
-                lockerSigner1.liquidateLocker(
-                    signer1Address,
-                    10000
-                )
-            ).to.be.revertedWith("Pausable: paused")
-
-            await lockers.unPauseLocker()
-
-            await expect(
-                lockerSigner1.liquidateLocker(
-                    signer1Address,
-                    10000
-                )
-            ).to.be.revertedWith("Lockers: target address is not locker")
-
-        });
-
-    });
-
 })

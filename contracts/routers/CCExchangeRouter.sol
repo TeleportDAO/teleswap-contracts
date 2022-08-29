@@ -152,7 +152,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
         // Calculates transaction id
         bytes32 txId = TxHelper.calculateTxId(_version, _vin, _vout, _locktime);
-
+        
         // Checks that the request has not been processed before
         require(
             !ccExchangeRequests[txId].isUsed,
