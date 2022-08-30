@@ -20,6 +20,9 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         _;
     }
 
+    // Constants
+    uint constant MAX_PROTOCOL_FEE = 10000;
+
     // Public variables
     uint public override startingBlockNumber;
     uint public override chainId;
@@ -53,7 +56,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     ) {
         startingBlockNumber = _startingBlockNumber;
         protocolPercentageFee = _protocolPercentageFee;
-        require(10000 >= _protocolPercentageFee, "CCExchangeRouter: invalid percentage fee");
+        require(MAX_PROTOCOL_FEE >= _protocolPercentageFee, "CCExchangeRouter: invalid percentage fee");
         chainId = _chainId;
         relay = _relay;
         lockers = _lockers;
@@ -106,7 +109,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _protocolPercentageFee       Percentage amount of protocol fee
     function setProtocolPercentageFee(uint _protocolPercentageFee) external override onlyOwner {
         require(
-            10000 >= _protocolPercentageFee,
+            MAX_PROTOCOL_FEE >= _protocolPercentageFee,
             "CCExchangeRouter: fee is out of range"
         );
         protocolPercentageFee = _protocolPercentageFee;
@@ -318,7 +321,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         // Extracts value and opreturn data from request
         ccExchangeRequest memory request; // Defines it to save gas
         bytes memory arbitraryData;
-        (request.inputAmount, arbitraryData) = TxHelper.parseOutputValueAndDataHavingLockingScript(
+        (request.inputAmount, arbitraryData) = TxHelper.parseValueAndDataHavingLockingScriptBigPayload(
             _vout, 
             _lockerLockingScript
         );
@@ -351,8 +354,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
         // Calculates fee
         uint percentageFee = TxHelper.parsePercentageFee(arbitraryData);
-        require(percentageFee < 10000, "CCExchangeRouter: percentage fee is not correct");
-        request.fee = percentageFee*request.inputAmount/10000;
+        require(percentageFee <= MAX_PROTOCOL_FEE, "CCExchangeRouter: percentage fee is not correct");
+        request.fee = percentageFee*request.inputAmount/MAX_PROTOCOL_FEE;
 
         request.speed = TxHelper.parseSpeed(arbitraryData);
         require(request.speed == 0 || request.speed == 1, "CCExchangeRouter: speed is not correct");
@@ -416,7 +419,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         );
 
         // Calculates fees
-        uint protocolFee = ccExchangeRequests[_txId].inputAmount*protocolPercentageFee/10000;
+        uint protocolFee = ccExchangeRequests[_txId].inputAmount*protocolPercentageFee/MAX_PROTOCOL_FEE;
         uint teleporterFee = ccExchangeRequests[_txId].fee;
 
         // Pays Teleporter fee

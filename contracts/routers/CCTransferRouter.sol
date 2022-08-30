@@ -19,6 +19,9 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         _;
     }
 
+    // Constants
+    uint constant MAX_PROTOCOL_FEE = 10000;
+
     // Public variables
     uint public override startingBlockNumber;
     uint public override chainId;
@@ -52,7 +55,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     ) {
         startingBlockNumber = _startingBlockNumber;
         protocolPercentageFee = _protocolPercentageFee;
-        require(10000 >= _protocolPercentageFee, "CCTransferRouter: invalid percentage fee");
+        require(MAX_PROTOCOL_FEE >= _protocolPercentageFee, "CCTransferRouter: invalid percentage fee");
         chainId = _chainId;
         appId = _appId;
         relay = _relay;
@@ -66,7 +69,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _protocolPercentageFee       Percentage amount of protocol fee
     function setProtocolPercentageFee(uint _protocolPercentageFee) external override onlyOwner {
         require(
-            10000 >= _protocolPercentageFee,
+            MAX_PROTOCOL_FEE >= _protocolPercentageFee,
             "CCTransferRouter: protocol fee is out of range"
         );
         protocolPercentageFee = _protocolPercentageFee;
@@ -141,7 +144,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
 
         // Finds txId on the source chain
         bytes32 txId = TxHelper.calculateTxId(_version, _vin, _vout, _locktime);
-        
+
         require(
             !ccTransferRequests[txId].isUsed,
             "CCTransferRouter: request has been used before"
@@ -250,7 +253,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         ccTransferRequest memory request; // Defines it to save gas
         bytes memory arbitraryData;
         
-        (request.inputAmount, arbitraryData) = TxHelper.parseOutputValueAndDataHavingLockingScript(
+        (request.inputAmount, arbitraryData) = TxHelper.parseValueAndDataHavingLockingScriptSmallPayload(
             _vout, 
             _lockerLockingScript
         );
@@ -264,8 +267,8 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
 
         // Calculates fee
         uint percentageFee = TxHelper.parsePercentageFee(arbitraryData);
-        require(percentageFee < 10000, "CCTransferRouter: percentage fee is out of range");
-        request.fee = percentageFee*request.inputAmount/10000;
+        require(percentageFee <= MAX_PROTOCOL_FEE, "CCTransferRouter: percentage fee is out of range");
+        request.fee = percentageFee*request.inputAmount/MAX_PROTOCOL_FEE;
 
         // Parses recipient address and request speed
         request.recipientAddress = TxHelper.parseRecipientAddress(arbitraryData);
@@ -333,7 +336,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         );
 
         // Calculates fees
-        uint protocolFee = ccTransferRequests[_txId].inputAmount*protocolPercentageFee/10000;
+        uint protocolFee = ccTransferRequests[_txId].inputAmount*protocolPercentageFee/MAX_PROTOCOL_FEE;
         uint teleporterFee = ccTransferRequests[_txId].fee;
 
         // Pays Teleporter fee

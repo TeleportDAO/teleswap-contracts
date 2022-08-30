@@ -23,6 +23,10 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         _;
     }
 
+    // Constants
+    uint constant MAX_PROTOCOL_FEE = 10000;
+    uint constant MAX_SLASHER_REWARD = 100;
+
     // Public variables
     address public override relay;
     address public override lockers;
@@ -114,7 +118,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @dev                                Only owner can call this
     /// @param _protocolPercentageFee       The new protocol percentage fee
     function setProtocolPercentageFee(uint _protocolPercentageFee) external override onlyOwner {
-        require(10000 >= _protocolPercentageFee, "CCBurnRouter: protocol fee is out of range");
+        require(MAX_PROTOCOL_FEE >= _protocolPercentageFee, "CCBurnRouter: protocol fee is out of range");
         protocolPercentageFee = _protocolPercentageFee;
     }
 
@@ -122,7 +126,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @dev                               Only owner can call this
     /// @param _slasherPercentageReward    The new slasher percentage reward
     function setSlasherPercentageReward(uint _slasherPercentageReward) external override onlyOwner {
-        require(100 >= _slasherPercentageReward, "CCBurnRouter: slasher percentage reward is out of range");
+        require(MAX_SLASHER_REWARD >= _slasherPercentageReward, "CCBurnRouter: slasher percentage reward is out of range");
         slasherPercentageReward = _slasherPercentageReward;
     }
 
@@ -310,7 +314,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             // Slashes locker and sends the slashed amount to the user
             ILockers(lockers).slashLocker(
                 _lockerTargetAddress,
-                burnRequests[_lockerTargetAddress][_indices[i]].amount*slasherPercentageReward/100, // Slasher reward
+                burnRequests[_lockerTargetAddress][_indices[i]].amount*slasherPercentageReward/MAX_SLASHER_REWARD, // Slasher reward
                 msg.sender, // Slasher address
                 burnRequests[_lockerTargetAddress][_indices[i]].amount,
                 burnRequests[_lockerTargetAddress][_indices[i]].sender // User address
@@ -437,7 +441,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         ILockers(lockers).slashLocker(
             _lockerTargetAddress,
-            totalValue*slasherPercentageReward/100, // Slasher reward
+            totalValue*slasherPercentageReward/MAX_SLASHER_REWARD, // Slasher reward
             msg.sender, // Slasher address
             totalValue,
             lockers
@@ -448,7 +452,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             _lockerTargetAddress,
             _inputBlockNumber,
             _inputTxId,
-            totalValue + totalValue*slasherPercentageReward/100
+            totalValue + totalValue*slasherPercentageReward/MAX_SLASHER_REWARD
         );
     }
 
@@ -608,7 +612,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         address _lockerTargetAddress
     ) private returns (uint) {
         // Calculates protocol fee
-        uint protocolFee = _amount*protocolPercentageFee/10000;
+        uint protocolFee = _amount*protocolPercentageFee/MAX_PROTOCOL_FEE;
 
         require(_amount > protocolFee + bitcoinFee, "CCBurnRouter: amount is too low");
         
