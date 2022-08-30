@@ -318,7 +318,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         // Extracts value and opreturn data from request
         ccExchangeRequest memory request; // Defines it to save gas
         bytes memory arbitraryData;
-        (request.inputAmount, arbitraryData) = TxHelper.parseOutputValueAndDataHavingLockingScript(
+        (request.inputAmount, arbitraryData) = TxHelper.parseValueAndDataHavingLockingScriptBigPayload(
             _vout, 
             _lockerLockingScript
         );

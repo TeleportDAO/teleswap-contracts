@@ -49,11 +49,12 @@ library TxHelper {
 
     /// @notice                           Parses the BTC amount and the op_return of a transaction
     /// @dev                              Finds the BTC amount that has been sent to the locking script
+    ///                                   Assumes that payload size is greater than 75 bytes
     /// @param _vout                      The vout of a Bitcoin transaction
     /// @param _lockingScript             Desired locking script
     /// @return bitcoinAmount             Amount of BTC have been sent to the _lockingScript
     /// @return arbitraryData             Opreturn  data of the transaction
-    function parseOutputValueAndDataHavingLockingScript(
+    function parseValueAndDataHavingLockingScriptBigPayload(
         bytes memory _vout,
         bytes memory _lockingScript
     ) internal view returns (uint64 bitcoinAmount, bytes memory arbitraryData) {
@@ -74,6 +75,50 @@ library TxHelper {
             scriptPubkey = ViewBTC.scriptPubkey(output);
             scriptPubkeyWithLength = ViewBTC.scriptPubkeyWithLength(output);
             _arbitraryData = ViewBTC.opReturnPayloadBig(scriptPubkeyWithLength);
+
+            // Checks whether the output is an arbitarary data or not
+            if(_arbitraryData == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
+                // Output is not an arbitrary data
+                if (
+                    keccak256(abi.encodePacked(scriptPubkey.clone())) == keccak256(abi.encodePacked(_lockingScript))
+                ) {
+                    bitcoinAmount = ViewBTC.value(output);
+                }
+            } else {
+                // Returns the whole bytes array
+                arbitraryData = _arbitraryData.clone();
+            }
+        }
+    }
+
+    /// @notice                           Parses the BTC amount and the op_return of a transaction
+    /// @dev                              Finds the BTC amount that has been sent to the locking script
+    ///                                   Assumes that payload size is less than 76 bytes
+    /// @param _vout                      The vout of a Bitcoin transaction
+    /// @param _lockingScript             Desired locking script
+    /// @return bitcoinAmount             Amount of BTC have been sent to the _lockingScript
+    /// @return arbitraryData             Opreturn  data of the transaction
+    function parseValueAndDataHavingLockingScriptSmallPayload(
+        bytes memory _vout,
+        bytes memory _lockingScript
+    ) internal view returns (uint64 bitcoinAmount, bytes memory arbitraryData) {
+        // Checks that vout is not null
+        bytes29 voutView = _vout.ref(0).tryAsVout();
+        require(!voutView.isNull(), "TxHelper: vout is null");
+
+        bytes29 output;
+        bytes29 scriptPubkey;
+        bytes29 scriptPubkeyWithLength;
+        bytes29 _arbitraryData;
+
+        // Finds total number of outputs
+        uint _numberOfOutputs = uint256(ViewBTC.indexCompactInt(voutView, 0));
+
+        for (uint index = 0; index < _numberOfOutputs; index++) {
+            output = ViewBTC.indexVout(voutView, index);
+            scriptPubkey = ViewBTC.scriptPubkey(output);
+            scriptPubkeyWithLength = ViewBTC.scriptPubkeyWithLength(output);
+            _arbitraryData = ViewBTC.opReturnPayloadSmall(scriptPubkeyWithLength);
 
             // Checks whether the output is an arbitarary data or not
             if(_arbitraryData == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
