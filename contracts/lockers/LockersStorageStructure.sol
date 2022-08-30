@@ -35,7 +35,6 @@ contract LockersStorageStructure is OwnableUpgradeable, ReentrancyGuardUpgradeab
     }
 
     // Public variables
-    address public lockersLogic;
 
     uint public lockerPercentageFee;
     address public TeleportDAOToken;

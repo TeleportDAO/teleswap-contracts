@@ -91,6 +91,15 @@ interface ILockers {
         uint _btcAmount
     ) external returns (bool);
 
+    function addCollateral(
+        address _lockerTargetAddress,
+        uint _addingNativeTokenAmount
+    ) external payable returns (bool);
+
+    function removeCollateral(
+        uint _removingNativeTokenAmount
+    ) external payable returns (bool);
+
     function requestToBecomeLocker(
         bytes calldata _lockerLockingScript,
         uint _lockedTDTAmount,
@@ -108,10 +117,10 @@ interface ILockers {
     function selfRemoveLocker() external returns (bool);
 
     function slashLocker(
-        address _lockerTargetAddress, 
+        address _lockerTargetAddress,
         uint _rewardAmount,
         address _rewardRecipient,
-        uint _amount, 
+        uint _amount,
         address _recipient
     ) external returns(bool);
 

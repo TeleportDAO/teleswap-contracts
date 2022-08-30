@@ -18,6 +18,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         uint _lockerPercentageFee,
         uint _priceWithDiscountRatio
     ) public initializer {
+        // TODO: adding some requires
 
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
@@ -135,6 +136,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             True if the locker is active and accepts mint requests
     function isActive(
+    // TODO: if isLocker gets lockerLockingScript, this one must get that as well
         address _lockerTargetAddress
     ) external override view nonZeroAddress(_lockerTargetAddress) returns (bool) {
         return lockersMapping[_lockerTargetAddress].isActive;
@@ -145,6 +147,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             The net minted of the locker
     function getLockerCapacity(
+    // TODO: if isLocker gets lockerLockingScript, this one must get that as well
         address _lockerTargetAddress
     ) public override view nonZeroAddress(_lockerTargetAddress) returns (uint) {
         return (_lockerCollateralInTeleBTC(_lockerTargetAddress)*10000/collateralRatio) - lockersMapping[_lockerTargetAddress].netMinted;
@@ -196,6 +199,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
     /// @dev                        Only owner can call this
     /// @param _collateralRatio     The new collateral ratio
     function setCollateralRatio(uint _collateralRatio) external override onlyOwner {
+        // TODO: add set liquidation ratio and some checks
         collateralRatio = _collateralRatio;
     }
 
@@ -212,12 +216,12 @@ contract LockersLogic is LockersStorageStructure, ILockers {
     ) external override payable nonReentrant returns (bool) {
 
         require(
-            !lockersMapping[msg.sender].isCandidate,
+            !lockersMapping[_msgSender()].isCandidate,
             "Lockers: user is already a candidate"
         );
 
         require(
-            !lockersMapping[msg.sender].isLocker,
+            !lockersMapping[_msgSender()].isLocker,
             "Lockers: user is already a locker"
         );
 
@@ -236,7 +240,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
             "Lockers: redeem script hash is used before"
         );
 
-        require(IERC20(TeleportDAOToken).transferFrom(msg.sender, address(this), _lockedTDTAmount));
+        require(IERC20(TeleportDAOToken).transferFrom(_msgSender(), address(this), _lockedTDTAmount));
         locker memory locker_;
         locker_.lockerLockingScript = _candidateLockingScript;
         locker_.TDTLockedAmount = _lockedTDTAmount;
@@ -248,7 +252,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         totalNumberOfCandidates = totalNumberOfCandidates + 1;
 
         emit RequestAddLocker(
-            msg.sender,
+            _msgSender(),
             _candidateLockingScript,
             _lockedTDTAmount,
             _lockedNativeTokenAmount
@@ -330,7 +334,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         lockerLeavingRequests[_msgSender()] = true;
 
         emit RequestRemoveLocker(
-            msg.sender,
+            _msgSender(),
             lockersMapping[_msgSender()].lockerLockingScript,
             lockersMapping[_msgSender()].TDTLockedAmount,
             lockersMapping[_msgSender()].nativeTokenLockedAmount,
@@ -436,7 +440,7 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         address _recipient
     ) external nonReentrant whenNotPaused override returns (bool) {
         require(
-            msg.sender == ccBurnRouter,
+            _msgSender() == ccBurnRouter,
             "Lockers: Caller can't slash"
         );
 
@@ -495,21 +499,21 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         );
 
         locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
-        uint priceOfCollateral = _priceOfOneUnitOfCollateralInBTC();
+        uint priceOfCollateral = priceOfOneUnitOfCollateralInBTC();
 
         require(
-            _calculateHealthFactor(_lockerTargetAddress, priceOfCollateral) < HEALTH_FACTOR,
+            calculateHealthFactor(_lockerTargetAddress, priceOfCollateral) < HEALTH_FACTOR,
             "Lockers: the locker's collateral is healthy"
         );
 
-        uint maxBuyableCollateral = _maxBuyableCollateral(_lockerTargetAddress, priceOfCollateral);
+        uint maxBuyableOfCollateral = maxBuyableCollateral(_lockerTargetAddress, priceOfCollateral);
 
-        if (maxBuyableCollateral > theLiquidatingLocker.nativeTokenLockedAmount) {
-            maxBuyableCollateral = theLiquidatingLocker.nativeTokenLockedAmount;
+        if (maxBuyableOfCollateral > theLiquidatingLocker.nativeTokenLockedAmount) {
+            maxBuyableOfCollateral = theLiquidatingLocker.nativeTokenLockedAmount;
         }
 
         require(
-            _collateralAmount <= maxBuyableCollateral,
+            _collateralAmount <= maxBuyableOfCollateral,
             "Lockers: more than maximum buyable"
         );
 
@@ -528,11 +532,69 @@ contract LockersLogic is LockersStorageStructure, ILockers {
 
     }
 
+    /// @notice                                 Adds some amount of collateral to the locker
+    /// @dev
+    /// @param _lockedNativeTokenAmount         Bond amount of locker in native token of the target chain
+    /// @return                                 True if candidate is added successfully
+    function addCollateral(
+        address _lockerTargetAddress,
+        uint _addingNativeTokenAmount
+    ) external override payable nonReentrant returns (bool) {
+
+        require(
+            lockersMapping[_lockerTargetAddress].isLocker,
+            "Lockers: account is not a locker"
+        );
+
+
+        require(
+            msg.value == _addingNativeTokenAmount,
+            "Lockers: incompatible msg value"
+        );
+
+        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount + _addingNativeTokenAmount;
+
+        return true;
+    }
+
+    /// @notice                                 Removes some amount of collateral from the locker
+    /// @dev
+    /// @param _lockedNativeTokenAmount         Bond amount of locker in native token of the target chain
+    /// @return                                 True if candidate is added successfully
+    function removeCollateral(
+        uint _removingNativeTokenAmount
+    ) external override payable nonReentrant returns (bool) {
+
+        require(
+            lockersMapping[_msgSender()].isLocker,
+            "Lockers: account is not a locker"
+        );
+
+        locker memory theLocker = lockersMapping[_msgSender()];
+
+        uint priceOfOnUnitOfCollateral = priceOfOneUnitOfCollateralInBTC();
+
+        uint lockerCapacity = (theLocker.nativeTokenLockedAmount * priceOfOnUnitOfCollateral * 10000)/(collateralRatio * (10 ** 18)) - theLocker.netMinted;
+
+        uint maxRemovableCollateral = (lockerCapacity * (10 ** 18))/priceOfOnUnitOfCollateral;
+
+        require(
+            _removingNativeTokenAmount <= maxRemovableCollateral,
+            "Lockers: more than removable collateral"
+        );
+
+        lockersMapping[_msgSender()].nativeTokenLockedAmount = lockersMapping[_msgSender()].nativeTokenLockedAmount - _removingNativeTokenAmount;
+
+        Address.sendValue(payable(_msgSender()), _removingNativeTokenAmount);
+
+        return true;
+    }
+
     /**
      * @dev Return the price of one unit of native token (10^18) in teleBTC
      * @return uint
      */
-    function _priceOfOneUnitOfCollateralInBTC() internal view returns (uint) {
+    function priceOfOneUnitOfCollateralInBTC() public view returns (uint) {
 
         return IPriceOracle(priceOracle).equivalentOutputAmount(
             (10**18), // 1 Ether is 10^18 wei
@@ -551,10 +613,10 @@ contract LockersLogic is LockersStorageStructure, ILockers {
      * @param _priceOfOneUnitOfCollateral   The price of one unit of native token (10^18) in teleBTC
      * @return uint
      */
-    function _calculateHealthFactor(
+    function calculateHealthFactor(
         address _lockerTargetAddress,
         uint _priceOfOneUnitOfCollateral
-    ) internal view nonZeroAddress(_lockerTargetAddress) returns (uint) {
+    ) public view nonZeroAddress(_lockerTargetAddress) returns (uint) {
         locker memory theLocker = lockersMapping[_lockerTargetAddress];
 
         // return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount * 100000000)/(theLocker.netMinted * liquidationRatio * (10 ** 18));
@@ -568,10 +630,10 @@ contract LockersLogic is LockersStorageStructure, ILockers {
      * @param _priceOfOneUnitOfCollateral   The price of one unit of native token (10^18) in teleBTC
      * @return uint
      */
-    function _maxBuyableCollateral(
+    function maxBuyableCollateral(
         address _lockerTargetAddress,
         uint _priceOfOneUnitOfCollateral
-    ) internal view nonZeroAddress(_lockerTargetAddress) returns (uint) {
+    ) public view nonZeroAddress(_lockerTargetAddress) returns (uint) {
         locker memory theLocker = lockersMapping[_lockerTargetAddress];
 
         // (UPPER_HEALTH_FACTOR * theLocker.netMinted * liquidationRatio) - ((theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** 8))/(10 ** 18));
