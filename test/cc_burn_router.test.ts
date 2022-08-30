@@ -663,7 +663,7 @@ describe("CCBurnRouter", async () => {
                     [0],
                     [0]
                 )
-            ).to.revertedWith("TxHelper: vout is null")
+            ).to.revertedWith("BitcoinHelper: vout is null")
         })
 
         it("Doesn't accept burn proof since the paid amount is not exact", async function () {

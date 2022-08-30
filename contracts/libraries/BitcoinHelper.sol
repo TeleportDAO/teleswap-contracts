@@ -2,9 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "./TypedMemView.sol";
+import "./ScriptTypesEnum.sol";
 import "hardhat/console.sol";
 
-library ViewBTC {
+library BitcoinHelper {
+    using TypedMemView for bytes;
     using TypedMemView for bytes29;
 
     // The target at minimum Difficulty. Also the target of the genesis block
@@ -100,6 +102,57 @@ library ViewBTC {
         return _outpoint.index(0, 32);
     }
 
+    /// @notice                      Calculates the required transaction Id from the transaction details
+    /// @dev                         Calculates the hash of transaction details two consecutive times
+    /// @param _version              Version of the transaction
+    /// @param _vin                  Inputs of the transaction
+    /// @param _vout                 Outputs of the transaction
+    /// @param _locktime             Lock time of the transaction
+    /// @return                      Transaction Id of the required transaction
+    function calculateTxId(
+        bytes4 _version,
+        bytes memory _vin,
+        bytes memory _vout,
+        bytes4 _locktime
+    ) internal pure returns (bytes32) {
+        bytes32 inputHash1 = sha256(abi.encodePacked(_version, _vin, _vout, _locktime));
+        bytes32 inputHash2 = sha256(abi.encodePacked(inputHash1));
+        return revertBytes32(inputHash2);
+    }
+
+    /// @notice                      Reverts a Bytes32 input
+    /// @param _input                Bytes32 input that we want to revert
+    /// @return                      Reverted bytes32
+    function revertBytes32(bytes32 _input) private pure returns (bytes32) {
+        bytes memory temp;
+        bytes32 result;
+        for (uint i = 0; i < 32; i++) {
+            temp = abi.encodePacked(temp, _input[31-i]);
+        }
+        assembly {
+            result := mload(add(temp, 32))
+        }
+        return result;
+    }
+
+    /// @notice                           Parses outpoint info from an input
+    /// @dev                              Reverts if vin is null
+    /// @param _vin                       The vin of a Bitcoin transaction
+    /// @param _index                     Index of the input that we are looking at
+    /// @return _txId                     Output tx id
+    /// @return _outputIndex              Output tx index
+    function extractOutpoint(
+        bytes memory _vin, 
+        uint _index
+    ) internal pure returns (bytes32 _txId, uint _outputIndex) {
+        bytes29 vin = tryAsVin(_vin.ref(0));
+        require(!vin.isNull(), "BitcoinHelper: vin is null");
+        bytes29 input = indexVin(vin, _index);
+        bytes29 _outpoint = outpoint(input);
+        _txId = txidLE(_outpoint);
+        _outputIndex = outpointIdx(_outpoint);
+    }
+
     /// @notice             extracts the index as an integer from the outpoint
     /// @param _outpoint    the outpoint
     /// @return             the index
@@ -158,6 +211,189 @@ library ViewBTC {
         return uint64(_output.indexLEUint(0, 8));
     }
 
+    /// @notice                   Finds total outputs value
+    /// @dev                      Reverts if vout is null
+    /// @param _vout              The vout of a Bitcoin transaction
+    /// @return _totalValue       Total vout value
+    function parseOutputsTotalValue(bytes memory _vout) internal pure returns (uint64 _totalValue) {
+        bytes29 voutView = tryAsVout(_vout.ref(0));
+        require(!voutView.isNull(), "BitcoinHelper: vout is null");
+        bytes29 output;
+
+        // Finds total number of outputs
+        uint _numberOfOutputs = uint256(indexCompactInt(voutView, 0));
+
+        for (uint index = 0; index < _numberOfOutputs; index++) {
+            output = indexVout(voutView, index);
+            _totalValue = _totalValue + value(output);
+        }
+    }
+
+    /// @notice                           Parses the BTC amount that has been sent to 
+    ///                                   a specific script in a specific output
+    /// @param _vout                      The vout of a Bitcoin transaction
+    /// @param _voutIndex                 Index of the output that we are looking at
+    /// @param _script                    Desired recipient script
+    /// @param _scriptType                Type of the script (e.g. P2PK)
+    /// @return bitcoinAmount             Amount of BTC have been sent to the _script
+    function parseValueFromSpecificOutputHavingScript(
+        bytes memory _vout,
+        uint _voutIndex,
+        bytes memory _script,
+        ScriptTypes _scriptType
+    ) internal pure returns (uint64 bitcoinAmount) {
+
+        bytes29 voutView = tryAsVout(_vout.ref(0));
+        require(!voutView.isNull(), "BitcoinHelper: vout is null");
+        bytes29 output = indexVout(voutView, _voutIndex);
+        bytes29 _scriptPubkey = scriptPubkey(output);
+
+        if (_scriptType == ScriptTypes.P2PK) {
+            // note: first byte is Pushdata Bytelength. 
+            // note: public key length is 32.           
+            bitcoinAmount = keccak256(_script) == keccak256(abi.encodePacked(_scriptPubkey.index(1, 32))) ? value(output) : 0;
+        } else if (_scriptType == ScriptTypes.P2PKH) { 
+            // note: first three bytes are OP_DUP, OP_HASH160, Pushdata Bytelength. 
+            // note: public key hash length is 20.         
+            bitcoinAmount = keccak256(_script) == keccak256(abi.encodePacked(_scriptPubkey.indexAddress(3))) ? value(output) : 0;
+        } else if (_scriptType == ScriptTypes.P2SH) {
+            // note: first two bytes are OP_HASH160, Pushdata Bytelength
+            // note: script hash length is 20.                      
+            bitcoinAmount = keccak256(_script) == keccak256(abi.encodePacked(_scriptPubkey.indexAddress(2))) ? value(output) : 0;
+        } else if (_scriptType == ScriptTypes.P2WPKH) {               
+            // note: first two bytes are OP_0, Pushdata Bytelength
+            // note: segwit public key hash length is 20. 
+            bitcoinAmount = keccak256(_script) == keccak256(abi.encodePacked(_scriptPubkey.indexAddress(2))) ? value(output) : 0;
+        } else if (_scriptType == ScriptTypes.P2WSH) {
+            // note: first two bytes are OP_0, Pushdata Bytelength 
+            // note: segwit script hash length is 32.           
+            bitcoinAmount = keccak256(_script) == keccak256(abi.encodePacked(_scriptPubkey.index(2, 32))) ? value(output) : 0;
+        }
+        
+    }
+
+    /// @notice                           Parses the BTC amount of a transaction
+    /// @dev                              Finds the BTC amount that has been sent to the locking script
+    ///                                   Returns zero if no matching locking scrip is found
+    /// @param _vout                      The vout of a Bitcoin transaction
+    /// @param _lockingScript             Desired locking script
+    /// @return bitcoinAmount             Amount of BTC have been sent to the _lockingScript
+    function parseValueHavingLockingScript(
+        bytes memory _vout,
+        bytes memory _lockingScript
+    ) internal view returns (uint64 bitcoinAmount) {
+        // Checks that vout is not null
+        bytes29 voutView = tryAsVout(_vout.ref(0));
+        require(!voutView.isNull(), "BitcoinHelper: vout is null");
+
+        bytes29 output;
+        bytes29 _scriptPubkey;
+        
+        // Finds total number of outputs
+        uint _numberOfOutputs = uint256(indexCompactInt(voutView, 0));
+
+        for (uint index = 0; index < _numberOfOutputs; index++) {
+            output = indexVout(voutView, index);
+            _scriptPubkey = scriptPubkey(output);
+
+            if (
+                keccak256(abi.encodePacked(_scriptPubkey.clone())) == keccak256(abi.encodePacked(_lockingScript))
+            ) {
+                bitcoinAmount = value(output);
+                // Stops searching after finding the desired locking script
+                break;
+            }
+        }
+    }
+
+    /// @notice                           Parses the BTC amount and the op_return of a transaction
+    /// @dev                              Finds the BTC amount that has been sent to the locking script
+    ///                                   Assumes that payload size is less than 76 bytes
+    /// @param _vout                      The vout of a Bitcoin transaction
+    /// @param _lockingScript             Desired locking script
+    /// @return bitcoinAmount             Amount of BTC have been sent to the _lockingScript
+    /// @return arbitraryData             Opreturn  data of the transaction
+    function parseValueAndDataHavingLockingScriptSmallPayload(
+        bytes memory _vout,
+        bytes memory _lockingScript
+    ) internal view returns (uint64 bitcoinAmount, bytes memory arbitraryData) {
+        // Checks that vout is not null
+        bytes29 voutView = tryAsVout(_vout.ref(0));
+        require(!voutView.isNull(), "BitcoinHelper: vout is null");
+
+        bytes29 output;
+        bytes29 _scriptPubkey;
+        bytes29 _scriptPubkeyWithLength;
+        bytes29 _arbitraryData;
+
+        // Finds total number of outputs
+        uint _numberOfOutputs = uint256(indexCompactInt(voutView, 0));
+
+        for (uint index = 0; index < _numberOfOutputs; index++) {
+            output = indexVout(voutView, index);
+            _scriptPubkey = scriptPubkey(output);
+            _scriptPubkeyWithLength = scriptPubkeyWithLength(output);
+            _arbitraryData = opReturnPayloadSmall(_scriptPubkeyWithLength);
+
+            // Checks whether the output is an arbitarary data or not
+            if(_arbitraryData == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
+                // Output is not an arbitrary data
+                if (
+                    keccak256(abi.encodePacked(_scriptPubkey.clone())) == keccak256(abi.encodePacked(_lockingScript))
+                ) {
+                    bitcoinAmount = value(output);
+                }
+            } else {
+                // Returns the whole bytes array
+                arbitraryData = _arbitraryData.clone();
+            }
+        }
+    }
+
+    /// @notice                           Parses the BTC amount and the op_return of a transaction
+    /// @dev                              Finds the BTC amount that has been sent to the locking script
+    ///                                   Assumes that payload size is greater than 75 bytes
+    /// @param _vout                      The vout of a Bitcoin transaction
+    /// @param _lockingScript             Desired locking script
+    /// @return bitcoinAmount             Amount of BTC have been sent to the _lockingScript
+    /// @return arbitraryData             Opreturn  data of the transaction
+    function parseValueAndDataHavingLockingScriptBigPayload(
+        bytes memory _vout,
+        bytes memory _lockingScript
+    ) internal view returns (uint64 bitcoinAmount, bytes memory arbitraryData) {
+        // Checks that vout is not null
+        bytes29 voutView = tryAsVout(_vout.ref(0));
+        require(!voutView.isNull(), "BitcoinHelper: vout is null");
+
+        bytes29 output;
+        bytes29 _scriptPubkey;
+        bytes29 _scriptPubkeyWithLength;
+        bytes29 _arbitraryData;
+
+        // Finds total number of outputs
+        uint _numberOfOutputs = uint256(indexCompactInt(voutView, 0));
+
+        for (uint index = 0; index < _numberOfOutputs; index++) {
+            output = indexVout(voutView, index);
+            _scriptPubkey = scriptPubkey(output);
+            _scriptPubkeyWithLength = scriptPubkeyWithLength(output);
+            _arbitraryData = opReturnPayloadBig(_scriptPubkeyWithLength);
+
+            // Checks whether the output is an arbitarary data or not
+            if(_arbitraryData == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
+                // Output is not an arbitrary data
+                if (
+                    keccak256(abi.encodePacked(_scriptPubkey.clone())) == keccak256(abi.encodePacked(_lockingScript))
+                ) {
+                    bitcoinAmount = value(output);
+                }
+            } else {
+                // Returns the whole bytes array
+                arbitraryData = _arbitraryData.clone();
+            }
+        }
+    }
+
     /// @notice             extracts the scriptPubkey from an output
     /// @param _output      the output
     /// @return             the scriptPubkey
@@ -172,6 +408,29 @@ library ViewBTC {
     function scriptPubkeyWithLength(bytes29 _output) internal pure typeAssert(_output, BTCTypes.TxOut) returns (bytes29) {
         uint64 scriptLength = indexCompactInt(_output, 8);
         return _output.slice(8, compactIntLength(scriptLength) + scriptLength, uint40(BTCTypes.ScriptPubkey));
+    }
+
+    /// @notice                           Parses locking script from an output
+    /// @dev                              Reverts if vout is null
+    /// @param _vout                      The vout of a Bitcoin transaction
+    /// @param _index                     Index of the output that we are looking at
+    /// @return _lockingScript            Parsed locking script
+    function getLockingScript(
+        bytes memory _vout, 
+        uint _index
+    ) internal view returns (bytes memory _lockingScript) {
+        bytes29 vout = tryAsVout(_vout.ref(0));
+        require(!vout.isNull(), "BitcoinHelper: vout is null");
+        bytes29 output = indexVout(vout, _index);
+        bytes29 _lockingScriptBytes29 = scriptPubkey(output);
+        _lockingScript = _lockingScriptBytes29.clone();
+    }
+
+    /// @notice                   Returns number of outputs in a vout
+    /// @param _vout              The vout of a Bitcoin transaction           
+    function numberOfOutputs(bytes memory _vout) internal pure returns (uint _numberOfOutputs) {
+        bytes29 voutView = tryAsVout(_vout.ref(0));
+        _numberOfOutputs = uint256(indexCompactInt(voutView, 0));
     }
 
     /// @notice             determines the length of the first output in an array of outputs
@@ -383,7 +642,7 @@ library ViewBTC {
     /// @param _header              The raw bytes header
     /// @param _prevHeaderDigest    The previous header's digest
     /// @return                     true if the connect is valid, false otherwise
-    function checkParent(bytes29 _header, bytes32 _prevHeaderDigest) internal pure typeAssert(_header, ViewBTC.BTCTypes.Header) returns (bool) {
+    function checkParent(bytes29 _header, bytes32 _prevHeaderDigest) internal pure typeAssert(_header, BTCTypes.Header) returns (bool) {
         return parent(_header) == _prevHeaderDigest;
     }
 
@@ -399,7 +658,7 @@ library ViewBTC {
         bytes32 _merkleRoot,
         bytes29 _intermediateNodes,
         uint _index
-    ) internal view typeAssert(_intermediateNodes, ViewBTC.BTCTypes.MerkleArray) returns (bool) {
+    ) internal view typeAssert(_intermediateNodes, BTCTypes.MerkleArray) returns (bool) {
         // Shortcut the empty-block case
         if (
             _txid == _merkleRoot &&

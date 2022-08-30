@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../libraries/TypedMemView.sol";
-import "../libraries/ViewBTC.sol";
+import "../libraries/BitcoinHelper.sol";
 import "./interfaces/IBitcoinRelay.sol";
 import "../erc20/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -15,7 +15,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
 
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
-    using ViewBTC for bytes29;
+    using BitcoinHelper for bytes29;
 
     // Public variables
     uint public override initialHeight;
@@ -228,7 +228,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         bytes32 _merkleRoot = chain[_blockHeight][0].merkleRoot;
         bytes29 intermediateNodes = _intermediateNodes.ref(0).tryAsMerkleArray(); // Check for errors if any
         bytes32 txIdLE = _revertBytes32(_txid);
-        return ViewBTC.prove(txIdLE, _merkleRoot, intermediateNodes, _index);
+        return BitcoinHelper.prove(txIdLE, _merkleRoot, intermediateNodes, _index);
     }
 
     /// @notice             Adds headers to storage after validating
@@ -614,7 +614,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         /* NB: This comparison looks weird because header nBits encoding truncates targets */
         bytes29 _newStart = _headers.indexHeaderArray(0);
         uint256 _actualTarget = _newStart.target();
-        uint256 _expectedTarget = ViewBTC.retargetAlgorithm(
+        uint256 _expectedTarget = BitcoinHelper.retargetAlgorithm(
             _oldStart.target(),
             _oldStart.time(),
             _oldEnd.time()
