@@ -5,7 +5,7 @@ import "./interfaces/ICCBurnRouter.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../relay/interfaces/IBitcoinRelay.sol";
 import "../lockers/interfaces/ILockers.sol";
-import "../libraries/TxHelper.sol";
+import "../libraries/BitcoinHelper.sol";
 import '@openzeppelin/contracts/access/Ownable.sol';
 import "@openzeppelin/contracts/utils/Address.sol";
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
@@ -245,7 +245,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         );
 
         // Checks inclusion of transaction
-        bytes32 txId = TxHelper.calculateTxId(_version, _vin, _vout, _locktime);
+        bytes32 txId = BitcoinHelper.calculateTxId(_version, _vin, _vout, _locktime);
         require(
             _isConfirmed(
                 txId,
@@ -363,7 +363,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         );
 
         // Finds input tx id and checks its inclusion
-        bytes32 _inputTxId = TxHelper.calculateTxId(_versions[0], _inputVin, _inputVout, _locktimes[0]);
+        bytes32 _inputTxId = BitcoinHelper.calculateTxId(_versions[0], _inputVin, _inputVout, _locktimes[0]);
         require(
             _isConfirmed(
                 _inputTxId,
@@ -385,20 +385,20 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         );
 
         // Extracts outpoint id and index from input tx
-        (bytes32 _outpointId, uint _outpointIndex) = TxHelper.extractOutpoint(
+        (bytes32 _outpointId, uint _outpointIndex) = BitcoinHelper.extractOutpoint(
             _inputVin, 
             _indexesAndBlockNumbers[0] // Index of malicious input in input tx
         );
         
         // Checks that "outpoint tx id == output tx id"
         require(
-            _outpointId == TxHelper.calculateTxId(_versions[1], _outputVin, _outputVout, _locktimes[1]),
+            _outpointId == BitcoinHelper.calculateTxId(_versions[1], _outputVin, _outputVout, _locktimes[1]),
             "CCBurnRouter: outpoint tx doesn't match with output tx"
         );
 
         // Checks that _outpointIndex of _outpointId belongs to locker locking script
         require(
-            keccak256(TxHelper.getLockingScript(_outputVout, _outpointIndex)) == 
+            keccak256(BitcoinHelper.getLockingScript(_outputVout, _outpointIndex)) == 
             keccak256(_lockerLockingScript),
             "CCBurnRouter: output tx doesn't belong to locker"
         );
@@ -433,7 +433,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     ) private {
 
         // Finds total value of malicious transaction
-        uint totalValue = TxHelper.parseTotalValue(_inputVout);
+        uint totalValue = BitcoinHelper.parseOutputsTotalValue(_inputVout);
 
         // Gets the target address of the locker from its Bitcoin address
         address _lockerTargetAddress = ILockers(lockers)
@@ -486,7 +486,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
                 burnRequests[_lockerTargetAddress][_burnReqIndex].deadline >= _paidBlockNumber
             ) {
                 
-                parsedAmount = TxHelper.parseValueFromSpecificOutputHavingScript(
+                parsedAmount = BitcoinHelper.parseValueFromSpecificOutputHavingScript(
                     _vout,
                     _voutIndexes[i],
                     burnRequests[_lockerTargetAddress][_burnReqIndex].userScript,
@@ -521,8 +521,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         bytes memory _lockerLockingScript,
         bytes32 _txId
     ) private {
-        uint parsedAmount = TxHelper.parseOutputValueHavingLockingScript(_vout, _lockerLockingScript);
-        uint numberOfOutputs = TxHelper.numberOfOutputs(_vout);
+        uint parsedAmount = BitcoinHelper.parseValueHavingLockingScript(_vout, _lockerLockingScript);
+        uint numberOfOutputs = BitcoinHelper.numberOfOutputs(_vout);
 
         if (parsedAmount != 0 && _paidOutputCounter + 1 == numberOfOutputs) {
             // One output sends the remained value to locker
