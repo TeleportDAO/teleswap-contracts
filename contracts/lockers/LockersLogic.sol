@@ -1,11 +1,74 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./LockersStorageStructure.sol";
+import "../oracle/interfaces/IPriceOracle.sol";
+import "../connectors/interfaces/IExchangeConnector.sol";
+import "../erc20/interfaces/IERC20.sol";
+import "../erc20/interfaces/ITeleBTC.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "./interfaces/ILockers.sol";
 import "hardhat/console.sol";
 
-contract LockersLogic is LockersStorageStructure, ILockers {
+contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
+
+    // Structures
+
+    /// @notice                             Structure for registering lockers
+    /// @dev
+    /// @param lockerLockingScript           Locker redeem script
+    /// @param TDTLockedAmount              Bond amount of locker in TDT
+    /// @param nativeTokenLockedAmount      Bond amount of locker in native token of the target chain
+    /// @param netMinted                    Total minted - total burnt
+    /// @param isActive                     Shows if a locker is active (has not requested for removal and
+    ///                                     has enough collateral to accept more minting requests)
+    struct locker {
+        bytes lockerLockingScript;
+        uint TDTLockedAmount;
+        uint nativeTokenLockedAmount;
+        uint netMinted;
+        bool isLocker;
+        bool isCandidate;
+        bool isScriptHash;
+        bool isActive;
+    }
+
+    // Public variables
+
+    uint public lockerPercentageFee;
+    address public TeleportDAOToken;
+    address public teleBTC;
+    address public ccBurnRouter;
+    address public exchangeConnector;
+    uint public minRequiredTDTLockedAmount;
+    uint public minRequiredTNTLockedAmount;
+    address public NATIVE_TOKEN = address(1);
+
+    // 10000 means 100%
+    uint public collateralRatio;
+    uint public liquidationRatio;
+    uint public priceWithDiscountRatio;
+
+    uint public constant HEALTH_FACTOR = 10000;
+    uint public constant UPPER_HEALTH_FACTOR = 12000;
+
+    // ^ this is because of price volitility and making minted coins for some collateral secure
+    address public priceOracle;
+
+    mapping(address => locker) public lockersMapping; // lockerTargetAddress -> locker structure
+
+    uint public totalNumberOfCandidates;
+    uint public totalNumberOfLockers;
+
+    mapping(address => bool) public lockerLeavingRequests;
+    mapping(address => bool) public lockerLeavingAcceptance;
+
+    mapping(bytes => address) public lockerTargetAddress;
+
+    mapping(address => bool) minters;
+    mapping(address => bool) burners;
 
     function initialize(
         address _TeleportDAOToken,
@@ -281,6 +344,13 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         IERC20(TeleportDAOToken).transfer(_msgSender(), lockerRequest.TDTLockedAmount);
         Address.sendValue(payable(_msgSender()), lockerRequest.nativeTokenLockedAmount);
 
+        emit RevokeAddLockerRequest(
+            _msgSender(),
+            lockersMapping[_msgSender()].lockerLockingScript,
+            lockersMapping[_msgSender()].TDTLockedAmount,
+            lockersMapping[_msgSender()].nativeTokenLockedAmount
+        );
+
         return true;
     }
 
@@ -476,7 +546,15 @@ contract LockersLogic is LockersStorageStructure, ILockers {
             payable(_rewardRecipient).transfer(equivalentNativeToken*_rewardAmount/(_amount + _rewardAmount));
         }
 
-        emit LockerSlashed(_lockerTargetAddress, equivalentNativeToken);
+        emit LockerSlashed(
+            _lockerTargetAddress,
+            _rewardAmount,
+            _rewardRecipient,
+            _amount,
+            _recipient,
+            equivalentNativeToken,
+            block.timestamp
+        );
 
         return true;
     }
@@ -520,13 +598,20 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         uint teleBTCPriceWithDiscount = (priceOfCollateral * priceWithDiscountRatio)/10000;
         uint neededTeleBTC = (_collateralAmount * teleBTCPriceWithDiscount)/(10 ** 18);
 
-
-        IERC20(teleBTC).transferFrom(_msgSender(), address(this), neededTeleBTC);
+        IERC20(teleBTC).transferFrom(_msgSender(), _lockerTargetAddress, neededTeleBTC);
 
         lockersMapping[_lockerTargetAddress].netMinted = lockersMapping[_lockerTargetAddress].netMinted - neededTeleBTC;
         lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount= lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - _collateralAmount;
 
         Address.sendValue(payable(_msgSender()), _collateralAmount);
+
+        emit LockerLiquidated(
+            _lockerTargetAddress,
+            _msgSender(),
+            _collateralAmount,
+            neededTeleBTC,
+            block.timestamp
+        );
 
         result = true;
 
@@ -553,6 +638,13 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         );
 
         lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount + _addingNativeTokenAmount;
+
+        emit CollateralAdded(
+            _lockerTargetAddress,
+            _addingNativeTokenAmount,
+            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
+            block.timestamp
+        );
 
         return true;
     }
@@ -586,6 +678,13 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         lockersMapping[_msgSender()].nativeTokenLockedAmount = lockersMapping[_msgSender()].nativeTokenLockedAmount - _removingNativeTokenAmount;
 
         Address.sendValue(payable(_msgSender()), _removingNativeTokenAmount);
+
+        emit CollateralRemoved(
+            _msgSender(),
+            _removingNativeTokenAmount,
+            lockersMapping[_msgSender()].nativeTokenLockedAmount,
+            block.timestamp
+        );
 
         return true;
     }
@@ -678,6 +777,14 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         // Mints tokens for receiver
         ITeleBTC(teleBTC).mint(_receiver, _amount - lockerFee);
 
+        emit MintByLocker(
+            _lockerTargetAddress,
+            _receiver,
+            _amount,
+            lockerFee,
+            block.timestamp
+        );
+
         return _amount - lockerFee;
     }
 
@@ -711,6 +818,13 @@ contract LockersLogic is LockersStorageStructure, ILockers {
         // Burns teleBTC and sends rest of it to locker
         ITeleBTC(teleBTC).burn(remainedAmount);
         ITeleBTC(teleBTC).transfer(_lockerTargetAddress, lockerFee);
+
+        emit BurnByLocker(
+            _lockerTargetAddress,
+            _amount,
+            lockerFee,
+            block.timestamp
+        );
 
         return remainedAmount;
     }
