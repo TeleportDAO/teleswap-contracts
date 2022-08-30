@@ -9,6 +9,7 @@ interface IBitcoinRelay {
     /// @param parentHash          	Hash of parent block header
     /// @param merkleRoot       	Merkle root of transactions in the block
     /// @param relayer              Address of relayer who submitted the block header
+    /// @param gasPrice             Gas price of tx that relayer submitted the block header
     struct blockHeader {
         bytes32 selfHash;
         bytes32 parentHash;

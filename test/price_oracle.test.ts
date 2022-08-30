@@ -482,7 +482,7 @@ describe("PriceOracle", async () => {
 
         it("Reverts since one of the tokens doesn't exist", async function () {
             let amountIn = 1000;
-            await expect(
+            expect(
                 priceOracle.equivalentOutputAmountFromOracle(
                     amountIn, 
                     18, 
@@ -549,7 +549,7 @@ describe("PriceOracle", async () => {
 
         it("Reverts since one of the tokens is zero", async function () {
             let inputAmount = 1000;
-            await expect(
+            expect(
                 priceOracle.equivalentOutputAmountFromExchange(
                     deployerAddress,
                     inputAmount,
@@ -558,7 +558,7 @@ describe("PriceOracle", async () => {
                 )
             ).to.revertedWith("PriceOracle: zero address");
 
-            await expect(
+            expect(
                 priceOracle.equivalentOutputAmountFromExchange(
                     deployerAddress,
                     inputAmount,
@@ -572,7 +572,7 @@ describe("PriceOracle", async () => {
             let inputAmount = 1000;
             await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
             await mockFunctionsExchangeConnector(false, 0);
-            await expect(
+            expect(
                 priceOracle.equivalentOutputAmountFromExchange(
                     deployerAddress,
                     inputAmount,
@@ -782,7 +782,7 @@ describe("PriceOracle", async () => {
         })
 
         it("Reverts since given address is zero", async function () {
-            await expect(
+            expect(
                 priceOracle.setOracleNativeToken(ZERO_ADDRESS)
             ).to.revertedWith("PriceOracle: zero address");
         })

@@ -1,5 +1,3 @@
-require('dotenv').config({path:"../../.env"});
-
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Signer} from "ethers";
@@ -33,9 +31,7 @@ describe("CollateralPoolFactory", async () => {
 
         // Deploys collateralPoolFactory contract
         const collateralPoolFactoryFactory = new CollateralPoolFactory__factory(deployer);
-        collateralPoolFactory = await collateralPoolFactoryFactory.deploy(
-            ZERO_ADDRESS
-        );
+        collateralPoolFactory = await collateralPoolFactoryFactory.deploy();
 
         // Deploys erc20 contract
         const erc20Factory = new ERC20__factory(deployer);
@@ -54,10 +50,15 @@ describe("CollateralPoolFactory", async () => {
 
     describe("#createCollateralPool", async () => {
 
-        it("Creates a collateral pool", async function () {
-            // Takes a snapshot
+        beforeEach(async() => {
             snapshotId = await takeSnapshot(signer1.provider);
+        });
 
+        afterEach(async() => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("Creates a collateral pool", async function () {
             // Checks thta address is equal to zero
             expect(
                 await collateralPoolFactory.getCollateralPoolByToken(erc20.address)
@@ -91,12 +92,17 @@ describe("CollateralPoolFactory", async () => {
         })
 
         it("Reverts since collateral pool has been already created", async function () {
+            await collateralPoolFactory.createCollateralPool(
+                erc20.address,
+                100
+            );
+
             await expect(
                 collateralPoolFactory.createCollateralPool(
                     erc20.address,
                     50
                 )
-            ).to.revertedWith("CollateralPoolFactory: Collateral pool already exists");
+            ).to.revertedWith("CollateralPoolFactory: collateral pool already exists");
         })
 
         it("Reverts since non-owner account calls the function", async function () {
@@ -117,7 +123,7 @@ describe("CollateralPoolFactory", async () => {
                     ZERO_ADDRESS,
                     100
                 )
-            ).to.revertedWith("CollateralPoolFactory: Collateral token address is not valid");
+            ).to.revertedWith("CollateralPoolFactory: zero address");
         })
 
         it("Reverts since collateralization ratio is zero", async function () {
@@ -127,16 +133,22 @@ describe("CollateralPoolFactory", async () => {
                     erc20.address,
                     0
                 )
-            ).to.revertedWith("CollateralPoolFactory: Collateralization ratio cannot be zero");
+            ).to.revertedWith("CollateralPoolFactory: zero value");
         })
 
     });
 
     describe("#removeCollateralPool", async () => {
 
-        it("Removes a collateral pool", async function () {
-            // Takes a snapshot
+        beforeEach(async() => {
             snapshotId = await takeSnapshot(signer1.provider);
+        });
+
+        afterEach(async() => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("Removes a collateral pool", async function () {
 
             // Creates two collateral pools
             await collateralPoolFactory.createCollateralPool(erc20.address, 100);
@@ -170,20 +182,30 @@ describe("CollateralPoolFactory", async () => {
             // Removes collateral pool
             await expect(
                 collateralPoolFactory.removeCollateralPool(erc20.address, 2)
-            ).to.revertedWith("CollateralPoolFactory: Index is out of range");
+            ).to.revertedWith("CollateralPoolFactory: index is out of range");
         })
 
-        it("Reverts since the collateral pool doesn't exist", async function () {
-            await revertProvider(signer1.provider, snapshotId);
-            
+        it("Reverts since the index doesn't belong to collateral token", async function () {     
+            // Creates two collateral pools
+            await collateralPoolFactory.createCollateralPool(erc20.address, 100);
+            await collateralPoolFactory.createCollateralPool(_erc20.address, 200);
+
+            // Removes collateral pool
+            await expect(
+                collateralPoolFactory.removeCollateralPool(await erc20.address, 1)
+            ).to.revertedWith("CollateralPoolFactory: index is not correct");
+        })
+
+        it("Reverts since the collateral pool doesn't exist", async function () {    
+            await collateralPoolFactory.createCollateralPool(_erc20.address, 200);
+
             // Removes collateral pool
             await expect(
                 collateralPoolFactory.removeCollateralPool(erc20.address, 0)
-            ).to.revertedWith("CollateralPoolFactory: Collateral pool does not exist");
+            ).to.revertedWith("CollateralPoolFactory: collateral pool does not exist");
         })
 
         it("Reverts since non-owner account calls the function", async function () {
-            await revertProvider(signer1.provider, snapshotId);
             let collateralPoolFactorySigner1 = collateralPoolFactory.connect(signer1)
             await expect(
                 collateralPoolFactorySigner1.removeCollateralPool(erc20.address, 0)

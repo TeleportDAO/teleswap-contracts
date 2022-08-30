@@ -121,6 +121,8 @@ interface ILockers {
 
     function burn(bytes calldata _lockerLockingScript, uint256 _amount) external returns(uint);
 
+    function setLockerPercentageFee(uint _lockerPercentageFee) external;
+
     function setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) external;
 
     function setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) external;
