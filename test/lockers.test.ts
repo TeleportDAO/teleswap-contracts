@@ -1604,4 +1604,170 @@ describe("Lockers", async () => {
         });
 
     });
+
+    describe("#addCollateral", async () => {
+
+        it("can't add collateral for a non locker account", async function () {
+
+            await expect(
+                lockers.addCollateral(
+                    signer1Address,
+                    1000
+                )
+            ).to.be.revertedWith("Lockers: account is not a locker")
+        })
+
+
+        it("reverts because of insufficient msg value", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            );
+
+            await lockers.addLocker(signer1Address);
+
+            let lockerSigner2 = lockers.connect(signer2)
+
+            await expect(
+                lockerSigner2.addCollateral(
+                    signer1Address,
+                    10001,
+                    {value: 10000}
+                )
+            ).to.be.revertedWith("Lockers: incompatible msg value")
+
+        })
+
+        it("adding collateral to the locker", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            );
+
+            await lockers.addLocker(signer1Address);
+
+            let theLockerBefore = await lockers.lockersMapping(signer1Address)
+
+            await lockerSigner1.addCollateral(
+                signer1Address,
+                10000,
+                {value: 10000}
+            )
+
+            let theLockerAfter = await lockers.lockersMapping(signer1Address)
+
+            expect(
+                theLockerAfter[2].sub(theLockerBefore[2])
+            ).to.equal(10000)
+
+        })
+
+    });
+
+    describe("#removeCollateral", async () => {
+
+        it("can't remove collateral for a non locker account", async function () {
+
+            let lockerSigner1 = await lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.removeCollateral(
+                    1000
+                )
+            ).to.be.revertedWith("Lockers: account is not a locker")
+        })
+
+
+        it("reverts because it's more than capacity", async function () {
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            );
+
+            await lockers.addLocker(signer1Address);
+
+
+            await expect(
+                lockerSigner1.removeCollateral(
+                    (minRequiredNativeTokenLockedAmount.div(2)).add(1)
+                )
+            ).to.be.revertedWith("Lockers: more than removable collateral")
+
+        })
+
+        it("remove collateral successfully", async function () {
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                {value: minRequiredNativeTokenLockedAmount}
+            );
+
+            await lockers.addLocker(signer1Address);
+
+            let theLockerBalanceBefore = await teleBTC.provider.getBalance(signer1Address)
+
+            await lockerSigner1.removeCollateral(
+                minRequiredNativeTokenLockedAmount.div(2)
+            )
+
+            let theLockerBalanceAfter = await teleBTC.provider.getBalance(signer1Address)
+
+            expect(
+                theLockerBalanceAfter.sub(theLockerBalanceBefore)
+            ).to.be.closeTo(minRequiredNativeTokenLockedAmount.div(2), BigNumber.from(10).pow(15).mul(1))
+
+        })
+
+    });
 })

@@ -12,6 +12,13 @@ interface ILockers {
         uint nativeTokenLockedAmount
     );
 
+    event RevokeAddLockerRequest(
+        address indexed lockerTargetAddress,
+        bytes lockerLockingScript,
+        uint TDTLockedAmount,
+        uint nativeTokenLockedAmount
+    );
+
     event RequestRemoveLocker(
         address indexed lockerTargetAddress,
         bytes lockerLockingScript,
@@ -37,7 +44,49 @@ interface ILockers {
 
     event LockerSlashed(
         address indexed lockerTargetAddress,
-        uint slashedCollateralAmount
+        uint rewardAmount,
+        address rewardRecipient,
+        uint amount,
+        address recipient,
+        uint slashedCollateralAmount,
+        uint slashTime
+    );
+
+    event LockerLiquidated(
+        address indexed lockerTargetAddress,
+        address liquidatorAddress,
+        uint collateralAmount,
+        uint teleBTCAmount,
+        uint liquidateTime
+    );
+
+    event CollateralAdded(
+        address indexed lockerTargetAddress,
+        uint addedCollateral,
+        uint totalCollateral,
+        uint addingTime
+    );
+
+    event CollateralRemoved(
+        address indexed lockerTargetAddress,
+        uint removedCollateral,
+        uint totalCollateral,
+        uint removingTime
+    );
+
+    event MintByLocker(
+        address indexed lockerTargetAddress,
+        address receiver,
+        uint mintedAmount,
+        uint lockerFee,
+        uint mintingTime
+    );
+
+    event BurnByLocker(
+        address indexed lockerTargetAddress,
+        uint burntAmount,
+        uint lockerFee,
+        uint burningTime
     );
 
     // Read-only functions
@@ -91,6 +140,15 @@ interface ILockers {
         uint _btcAmount
     ) external returns (bool);
 
+    function addCollateral(
+        address _lockerTargetAddress,
+        uint _addingNativeTokenAmount
+    ) external payable returns (bool);
+
+    function removeCollateral(
+        uint _removingNativeTokenAmount
+    ) external payable returns (bool);
+
     function requestToBecomeLocker(
         bytes calldata _lockerLockingScript,
         uint _lockedTDTAmount,
@@ -108,10 +166,10 @@ interface ILockers {
     function selfRemoveLocker() external returns (bool);
 
     function slashLocker(
-        address _lockerTargetAddress, 
+        address _lockerTargetAddress,
         uint _rewardAmount,
         address _rewardRecipient,
-        uint _amount, 
+        uint _amount,
         address _recipient
     ) external returns(bool);
 
