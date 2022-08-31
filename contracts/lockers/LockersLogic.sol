@@ -5,6 +5,7 @@ import "../oracle/interfaces/IPriceOracle.sol";
 import "../connectors/interfaces/IExchangeConnector.sol";
 import "../erc20/interfaces/IERC20.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
+import "../routers/interfaces/ICCBurnRouter.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -33,6 +34,8 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         bool isCandidate;
         bool isScriptHash;
         bool isActive;
+        ScriptTypes lockerRescueType;
+        bytes lockerRescueScript;
     }
 
     // Constants
@@ -194,7 +197,6 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             True if the locker is active and accepts mint requests
     function isActive(
-    // TODO: if isLocker gets lockerLockingScript, this one must get that as well
         address _lockerTargetAddress
     ) external override view nonZeroAddress(_lockerTargetAddress) returns (bool) {
         return lockersMapping[_lockerTargetAddress].isActive;
@@ -205,7 +207,6 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             The net minted of the locker
     function getLockerCapacity(
-    // TODO: if isLocker gets lockerLockingScript, this one must get that as well
         address _lockerTargetAddress
     ) public override view nonZeroAddress(_lockerTargetAddress) returns (uint) {
         return (_lockerCollateralInTeleBTC(_lockerTargetAddress)*ONE_HUNDRED_PERCENT/collateralRatio) - lockersMapping[_lockerTargetAddress].netMinted;
@@ -265,8 +266,15 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @dev                        Only owner can call this
     /// @param _collateralRatio     The new collateral ratio
     function setCollateralRatio(uint _collateralRatio) external override onlyOwner {
-        // TODO: add set liquidation ratio and some checks
+        require(_collateralRatio >= liquidationRatio, "Lockers: CR must be greater than LR");
         collateralRatio = _collateralRatio;
+    }
+
+    /// @notice                     Changes liquidation ratio
+    /// @dev                        Only owner can call this
+    /// @param _liquidationRatio    The new liquidation ratio
+    function setLiquidationRatio(uint _liquidationRatio) external override onlyOwner {
+        liquidationRatio = _liquidationRatio;
     }
 
     /// @notice                                 Adds user to candidates list
@@ -278,7 +286,9 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     function requestToBecomeLocker(
         bytes calldata _candidateLockingScript,
         uint _lockedTDTAmount,
-        uint _lockedNativeTokenAmount
+        uint _lockedNativeTokenAmount,
+        ScriptTypes _lockerRescueType,
+        bytes calldata _lockerRescueScript
     ) external override payable nonReentrant returns (bool) {
 
         require(
@@ -312,6 +322,8 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         locker_.TDTLockedAmount = _lockedTDTAmount;
         locker_.nativeTokenLockedAmount = _lockedNativeTokenAmount;
         locker_.isCandidate = true;
+        locker_.lockerRescueType = _lockerRescueType;
+        locker_.lockerRescueScript = _lockerRescueScript;
 
         lockersMapping[_msgSender()] = locker_;
 

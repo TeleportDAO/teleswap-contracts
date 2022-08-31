@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "../../libraries/ScriptTypesEnum.sol";
+
 interface ILockers {
 
     // Events
@@ -137,6 +139,8 @@ interface ILockers {
 
     function setCollateralRatio(uint _collateralRatio) external;
 
+    function setLiquidationRatio(uint _liquidationRatio) external;
+
     function liquidateLocker(
         address _lockerTargetAddress,
         uint _btcAmount
@@ -154,7 +158,9 @@ interface ILockers {
     function requestToBecomeLocker(
         bytes calldata _lockerLockingScript,
         uint _lockedTDTAmount,
-        uint _lockedNativeTokenAmount
+        uint _lockedNativeTokenAmount,
+        ScriptTypes _lockerRescueType,
+        bytes calldata _lockerRescueScript
     ) external payable returns (bool);
 
     function revokeRequest() external returns (bool);

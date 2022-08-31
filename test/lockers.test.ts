@@ -40,6 +40,10 @@ describe("Lockers", async () => {
     // Bitcoin public key (32 bytes)
     let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
     let TELEPORTER1_PublicKeyHash = '0x4062c8aeed4f81c2d73ff854a2957021191e20b6';
+
+    let LOCKER_RESCUE_SCRIPT_P2PKH = "0x12ab8dc588ca9d5787dde7eb29569da63c3a238c";
+    let LOCKER_RESCUE_SCRIPT_P2PKH_TYPE = 1; // P2PKH
+
     // let TELEPORTER2 = '0x03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626';
     // let TELEPORTER2_PublicKeyHash = '0x41fb108446d66d1c049e30cc7c3044e7374e9856';
     let REQUIRED_LOCKED_AMOUNT =  1000; // amount of required TDT
@@ -693,12 +697,12 @@ describe("Lockers", async () => {
         it("only owner can call setCollateralRatio", async function () {
 
             await lockers.setCollateralRatio(
-                1234
+                21000
             )
 
             expect(
                 await lockers.collateralRatio()
-            ).to.equal(1234)
+            ).to.equal(21000)
         })
     })
 
@@ -714,6 +718,8 @@ describe("Lockers", async () => {
                     TELEPORTER1_PublicKeyHash,
                     minRequiredTDTLockedAmount.sub(1),
                     minRequiredNativeTokenLockedAmount,
+                    LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                    LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
             ).to.be.revertedWith("Lockers: low locking TDT amount")
@@ -728,6 +734,8 @@ describe("Lockers", async () => {
                     TELEPORTER1_PublicKeyHash,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
+                    LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                    LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
             ).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
@@ -742,6 +750,8 @@ describe("Lockers", async () => {
                     TELEPORTER1_PublicKeyHash,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
+                    LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                    LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount.sub(10)}
                 )
             ).to.be.revertedWith("Lockers: low locking TNT amount")
@@ -763,6 +773,8 @@ describe("Lockers", async () => {
                     TELEPORTER1_PublicKeyHash,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
+                    LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                    LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
             ).to.emit(lockers, "RequestAddLocker")
@@ -788,6 +800,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -797,6 +811,8 @@ describe("Lockers", async () => {
                     TELEPORTER1_PublicKeyHash,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
+                    LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                    LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
             ).to.be.revertedWith("Lockers: user is already a candidate")
@@ -819,6 +835,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -832,6 +850,8 @@ describe("Lockers", async () => {
                     TELEPORTER1_PublicKeyHash,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
+                    LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                    LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
             ).to.be.revertedWith("Lockers: redeem script hash is used before")
@@ -865,6 +885,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -902,6 +924,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -950,6 +974,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -993,6 +1019,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1019,6 +1047,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1052,6 +1082,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1106,6 +1138,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1131,6 +1165,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1164,6 +1200,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1234,6 +1272,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1275,6 +1315,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1324,6 +1366,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1371,6 +1415,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1416,6 +1462,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1494,6 +1542,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1528,6 +1578,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1568,6 +1620,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1633,6 +1687,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1665,6 +1721,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1719,6 +1777,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1750,6 +1810,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
