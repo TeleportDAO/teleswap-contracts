@@ -69,6 +69,7 @@ describe("Lockers", async () => {
     // Mock contracts
     let mockExchangeConnector: MockContract;
     let mockPriceOracle: MockContract;
+    let mockCCBurnRouter: MockContract;
 
     before(async () => {
         // Sets accounts
@@ -96,6 +97,14 @@ describe("Lockers", async () => {
         mockPriceOracle = await deployMockContract(
             deployer,
             priceOracleContract.abi
+        );
+
+        const ccBurnRouterContract = await deployments.getArtifact(
+            "ICCBurnRouter"
+        );
+        mockCCBurnRouter = await deployMockContract(
+            deployer,
+            ccBurnRouterContract.abi
         );
 
         // Deploys lockers contract
@@ -1604,6 +1613,9 @@ describe("Lockers", async () => {
         });
 
         it("successfully liquidate the locker", async function () {
+
+            await lockers.setCCBurnRouter(mockCCBurnRouter.address);
+            await mockCCBurnRouter.mock.ccBurn.returns(8000);
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
 

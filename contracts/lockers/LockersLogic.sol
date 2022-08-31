@@ -613,7 +613,12 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         uint teleBTCPriceWithDiscount = (priceOfCollateral * priceWithDiscountRatio)/ONE_HUNDRED_PERCENT;
         uint neededTeleBTC = (_collateralAmount * teleBTCPriceWithDiscount)/(10 ** 18);
 
-        IERC20(teleBTC).transferFrom(_msgSender(), _lockerTargetAddress, neededTeleBTC);
+        ICCBurnRouter(ccBurnRouter).ccBurn(
+            neededTeleBTC,
+            theLiquidatingLocker.lockerRescueScript,
+            theLiquidatingLocker.lockerRescueType,
+            theLiquidatingLocker.lockerLockingScript
+        );
 
         lockersMapping[_lockerTargetAddress].netMinted = lockersMapping[_lockerTargetAddress].netMinted - neededTeleBTC;
         lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount= lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - _collateralAmount;
