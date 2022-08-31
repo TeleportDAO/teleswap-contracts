@@ -36,6 +36,9 @@ describe("CCTransferRouter", async () => {
 
     let LOCKER1_LOCKING_SCRIPT = '0xa9144062c8aeed4f81c2d73ff854a2957021191e20b687';
 
+    let LOCKER_RESCUE_SCRIPT_P2PKH = "0x12ab8dc588ca9d5787dde7eb29569da63c3a238c";
+    let LOCKER_RESCUE_SCRIPT_P2PKH_TYPE = 1; // P2PKH
+
     let teleportTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000);
     let minRequiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
     let minRequiredNativeTokenLockedAmount = BigNumber.from(10).pow(18).mul(5);
@@ -215,6 +218,8 @@ describe("CCTransferRouter", async () => {
             LOCKER1_LOCKING_SCRIPT, // Public key hash of locker
             minRequiredTDTLockedAmount,
             minRequiredNativeTokenLockedAmount,
+            LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+            LOCKER_RESCUE_SCRIPT_P2PKH,
             {value: minRequiredNativeTokenLockedAmount}
         )
 

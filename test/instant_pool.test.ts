@@ -41,9 +41,6 @@ describe("Instant pool", async () => {
         teleBTC = await teleBTCFactory.deploy(
             "teleBTC",
             "TBTC",
-            // ONE_ADDRESS,
-            // ONE_ADDRESS,
-            // ONE_ADDRESS
         );
 
         // Mints teleBTC for deployer
@@ -63,6 +60,98 @@ describe("Instant pool", async () => {
         teleBTCSigner1 = await teleBTC.connect(signer1);
         instantPoolSigner1 = await instantPool.connect(signer1);
     });
+
+    describe("#setInstantRouter", async () => {
+
+
+        beforeEach("deploy a new cc exchange router", async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+        });
+
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("Non owner accounts can't set instant router", async function () {
+            await expect(
+                instantPoolSigner1.setInstantRouter(
+                    signer1Address
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("Owner can set instant router successfully", async function () {
+            await instantPool.setInstantRouter(
+                signer1Address
+            )
+
+            expect(
+                await instantPool.instantRouter()
+            ).to.equal(signer1Address)
+
+        })
+    });
+
+    describe("#setInstantPercentageFee", async () => {
+
+        beforeEach("deploy a new cc exchange router", async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+        });
+
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("Non owner accounts can't set instant router", async function () {
+            await expect(
+                instantPoolSigner1.setInstantPercentageFee(
+                    5000
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("Owner can set instant router successfully", async function () {
+            await instantPool.setInstantPercentageFee(
+                5000
+            )
+
+            expect(
+                await instantPool.instantPercentageFee()
+            ).to.equal(5000)
+
+        })
+    });
+
+    describe("#setTeleBTC", async () => {
+
+        beforeEach("deploy a new cc exchange router", async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+        });
+
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("Non owner accounts can't set instant router", async function () {
+            await expect(
+                instantPoolSigner1.setTeleBTC(
+                    ONE_ADDRESS
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("Owner can set instant router successfully", async function () {
+            await instantPool.setTeleBTC(
+                ONE_ADDRESS
+            )
+
+            expect(
+                await instantPool.teleBTC()
+            ).to.equal(ONE_ADDRESS)
+
+        })
+    });
+
 
     describe("#addLiquidity", async () => {
 

@@ -40,6 +40,10 @@ describe("Lockers", async () => {
     // Bitcoin public key (32 bytes)
     let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
     let TELEPORTER1_PublicKeyHash = '0x4062c8aeed4f81c2d73ff854a2957021191e20b6';
+
+    let LOCKER_RESCUE_SCRIPT_P2PKH = "0x12ab8dc588ca9d5787dde7eb29569da63c3a238c";
+    let LOCKER_RESCUE_SCRIPT_P2PKH_TYPE = 1; // P2PKH
+
     // let TELEPORTER2 = '0x03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626';
     // let TELEPORTER2_PublicKeyHash = '0x41fb108446d66d1c049e30cc7c3044e7374e9856';
     let REQUIRED_LOCKED_AMOUNT =  1000; // amount of required TDT
@@ -58,6 +62,7 @@ describe("Lockers", async () => {
 
     // Contracts
     let lockers: Contract;
+    let lockers2: Contract;
     let lockersAsAdmin: Contract;
     let teleportDAOToken: ERC20;
     let teleBTC: TeleBTC;
@@ -65,6 +70,7 @@ describe("Lockers", async () => {
     // Mock contracts
     let mockExchangeConnector: MockContract;
     let mockPriceOracle: MockContract;
+    let mockCCBurnRouter: MockContract;
 
     before(async () => {
         // Sets accounts
@@ -94,8 +100,30 @@ describe("Lockers", async () => {
             priceOracleContract.abi
         );
 
+        const ccBurnRouterContract = await deployments.getArtifact(
+            "ICCBurnRouter"
+        );
+        mockCCBurnRouter = await deployMockContract(
+            deployer,
+            ccBurnRouterContract.abi
+        );
+
         // Deploys lockers contract
         lockers = await deployLockers();
+        lockers2 = await deployLockers();
+
+        // Initializes lockers proxy
+        await lockers.initialize(
+            teleportDAOToken.address,
+            mockExchangeConnector.address,
+            mockPriceOracle.address,
+            minRequiredTDTLockedAmount,
+            minRequiredNativeTokenLockedAmount,
+            collateralRatio,
+            liquidationRatio,
+            LOCKER_PERCENTAGE_FEE,
+            PRICE_WITH_DISCOUNT_RATIO
+        )
 
         // Sets ccBurnRouter address
         await lockers.setCCBurnRouter(ccBurnSimulatorAddress);
@@ -180,19 +208,6 @@ describe("Lockers", async () => {
             lockersProxy.address
         );
 
-        // Initializes lockers proxy
-        await lockers.initialize(
-            teleportDAOToken.address,
-            mockExchangeConnector.address,
-            mockPriceOracle.address,
-            minRequiredTDTLockedAmount,
-            minRequiredNativeTokenLockedAmount,
-            collateralRatio,
-            liquidationRatio,
-            LOCKER_PERCENTAGE_FEE,
-            PRICE_WITH_DISCOUNT_RATIO
-        )
-
         return lockers;
     };
 
@@ -212,6 +227,71 @@ describe("Lockers", async () => {
                     PRICE_WITH_DISCOUNT_RATIO
                 )
             ).to.be.revertedWith("Initializable: contract is already initialized")
+        })
+
+        it("initialize cant be called with zero address", async function () {
+            await expect(
+                lockers2.initialize(
+                    ZERO_ADDRESS,
+                    mockExchangeConnector.address,
+                    mockPriceOracle.address,
+                    minRequiredTDTLockedAmount,
+                    minRequiredNativeTokenLockedAmount,
+                    collateralRatio,
+                    liquidationRatio,
+                    LOCKER_PERCENTAGE_FEE,
+                    PRICE_WITH_DISCOUNT_RATIO
+                )
+            ).to.be.revertedWith("Lockers: address is zero")
+        })
+
+        it("initialize cant be called with zero amount", async function () {
+            await expect(
+                lockers2.initialize(
+                    teleportDAOToken.address,
+                    mockExchangeConnector.address,
+                    mockPriceOracle.address,
+                    0,
+                    0,
+                    collateralRatio,
+                    liquidationRatio,
+                    LOCKER_PERCENTAGE_FEE,
+                    PRICE_WITH_DISCOUNT_RATIO
+                )
+            ).to.be.revertedWith("Lockers: amount is zero")
+        })
+
+
+        it("initialize cant be called LR greater than CR", async function () {
+            await expect(
+                lockers2.initialize(
+                    teleportDAOToken.address,
+                    mockExchangeConnector.address,
+                    mockPriceOracle.address,
+                    minRequiredTDTLockedAmount,
+                    minRequiredNativeTokenLockedAmount,
+                    liquidationRatio,
+                    collateralRatio,
+                    LOCKER_PERCENTAGE_FEE,
+                    PRICE_WITH_DISCOUNT_RATIO
+                )
+            ).to.be.revertedWith("Lockers: problem in CR and LR")
+        })
+
+        it("initialize cant be called with Price discount greater than 100%", async function () {
+            await expect(
+                lockers2.initialize(
+                    teleportDAOToken.address,
+                    mockExchangeConnector.address,
+                    mockPriceOracle.address,
+                    minRequiredTDTLockedAmount,
+                    minRequiredNativeTokenLockedAmount,
+                    collateralRatio,
+                    liquidationRatio,
+                    LOCKER_PERCENTAGE_FEE,
+                    PRICE_WITH_DISCOUNT_RATIO + 10000
+                )
+            ).to.be.revertedWith("Lockers: price discount ratio must be less than 100%")
         })
 
     })
@@ -693,12 +773,12 @@ describe("Lockers", async () => {
         it("only owner can call setCollateralRatio", async function () {
 
             await lockers.setCollateralRatio(
-                1234
+                21000
             )
 
             expect(
                 await lockers.collateralRatio()
-            ).to.equal(1234)
+            ).to.equal(21000)
         })
     })
 
@@ -714,6 +794,8 @@ describe("Lockers", async () => {
                     TELEPORTER1_PublicKeyHash,
                     minRequiredTDTLockedAmount.sub(1),
                     minRequiredNativeTokenLockedAmount,
+                    LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                    LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
             ).to.be.revertedWith("Lockers: low locking TDT amount")
@@ -728,6 +810,8 @@ describe("Lockers", async () => {
                     TELEPORTER1_PublicKeyHash,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
+                    LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                    LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
             ).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
@@ -742,6 +826,8 @@ describe("Lockers", async () => {
                     TELEPORTER1_PublicKeyHash,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
+                    LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                    LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount.sub(10)}
                 )
             ).to.be.revertedWith("Lockers: low locking TNT amount")
@@ -763,6 +849,8 @@ describe("Lockers", async () => {
                     TELEPORTER1_PublicKeyHash,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
+                    LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                    LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
             ).to.emit(lockers, "RequestAddLocker")
@@ -788,6 +876,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -797,6 +887,8 @@ describe("Lockers", async () => {
                     TELEPORTER1_PublicKeyHash,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
+                    LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                    LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
             ).to.be.revertedWith("Lockers: user is already a candidate")
@@ -819,6 +911,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -832,6 +926,8 @@ describe("Lockers", async () => {
                     TELEPORTER1_PublicKeyHash,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
+                    LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                    LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
             ).to.be.revertedWith("Lockers: redeem script hash is used before")
@@ -865,6 +961,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -902,6 +1000,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -950,6 +1050,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -993,6 +1095,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1019,6 +1123,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1052,6 +1158,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1106,6 +1214,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1131,6 +1241,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1164,6 +1276,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1234,6 +1348,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1275,6 +1391,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1324,6 +1442,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1371,6 +1491,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1416,6 +1538,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
@@ -1494,6 +1618,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1528,6 +1654,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1553,6 +1681,9 @@ describe("Lockers", async () => {
 
         it("successfully liquidate the locker", async function () {
 
+            await lockers.setCCBurnRouter(mockCCBurnRouter.address);
+            await mockCCBurnRouter.mock.ccBurn.returns(8000);
+
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
@@ -1568,6 +1699,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1633,6 +1766,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1665,6 +1800,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1719,6 +1856,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
@@ -1750,6 +1889,8 @@ describe("Lockers", async () => {
                 TELEPORTER1_PublicKeyHash,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             );
 

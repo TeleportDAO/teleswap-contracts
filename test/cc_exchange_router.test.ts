@@ -49,6 +49,9 @@ describe("CCExchangeRouter", async () => {
     let LOCKER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
     let LOCKER1_LOCKING_SCRIPT = '0xa9144062c8aeed4f81c2d73ff854a2957021191e20b687';
 
+    let LOCKER_RESCUE_SCRIPT_P2PKH = "0x12ab8dc588ca9d5787dde7eb29569da63c3a238c";
+    let LOCKER_RESCUE_SCRIPT_P2PKH_TYPE = 1; // P2PKH
+
     let telePortTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000);
     let minRequiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
     let minRequiredNativeTokenLockedAmount = BigNumber.from(10).pow(18).mul(5);
@@ -160,7 +163,7 @@ describe("CCExchangeRouter", async () => {
             uniswapV2Factory.address,
             weth.address // WETH
         );
-        
+
         // Deploys uniswap connector
         const exchangeConnectorFactory = new UniswapV2Connector__factory(deployer);
         exchangeConnector = await exchangeConnectorFactory.deploy(
@@ -280,6 +283,8 @@ describe("CCExchangeRouter", async () => {
             LOCKER1_LOCKING_SCRIPT,
             minRequiredTDTLockedAmount,
             minRequiredNativeTokenLockedAmount,
+            LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+            LOCKER_RESCUE_SCRIPT_P2PKH,
             {value: minRequiredNativeTokenLockedAmount}
         )
 
@@ -625,7 +630,7 @@ describe("CCExchangeRouter", async () => {
             // Replaces dummy address in vout with another exchange token address
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
             vout = vout.replace(
-                DUMMY_ADDRESS, 
+                DUMMY_ADDRESS,
                 anotherExchangeToken.address.slice(2, anotherExchangeToken.address.length)
             );
 
@@ -673,7 +678,7 @@ describe("CCExchangeRouter", async () => {
                 deployerAddress,
                 teleporterFee
             );;
-            
+
             await checksWhenExchangeSucceed(
                 anotherExchangeToken,
                 true,
@@ -708,7 +713,7 @@ describe("CCExchangeRouter", async () => {
             ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
                 CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.bitcoinAmount - teleporterFee - protocolFee - lockerFee
-                ).and.not.emit(ccExchangeRouter, 'CCExchange');
+            ).and.not.emit(ccExchangeRouter, 'CCExchange');
 
             // Checks needed conditions when exchange fails
             await checksWhenExchangeFails(
@@ -761,7 +766,7 @@ describe("CCExchangeRouter", async () => {
 
         it("Mints teleBTC since slippage is high (input amount < required output amount)", async function () {
             // note: isFixedToken = false (output is fixed)
-            
+
             // Replaces dummy address in vout with exchange token address
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
@@ -967,7 +972,7 @@ describe("CCExchangeRouter", async () => {
                 )
             ).to.revertedWith("CCExchangeRouter: chain id is not correct");
         })
-    
+
         it("Reverts if the request speed is out of range {0,1}", async function () {
             // Replaces dummy address in vout with exchange token address
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.vout;
@@ -1156,7 +1161,7 @@ describe("CCExchangeRouter", async () => {
             snapshotId = await takeSnapshot(signer1.provider);
             await addLockerToLockers();
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
@@ -1209,7 +1214,7 @@ describe("CCExchangeRouter", async () => {
         beforeEach(async () => {
             snapshotId = await takeSnapshot(signer1.provider);
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });

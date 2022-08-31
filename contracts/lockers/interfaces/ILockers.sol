@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "../../libraries/ScriptTypesEnum.sol";
+
 interface ILockers {
 
     // Events
@@ -91,6 +93,32 @@ interface ILockers {
 
     // Read-only functions
 
+    function TeleportDAOToken() external view returns(address);
+
+    function teleBTC() external view returns(address);
+
+    function ccBurnRouter() external view returns(address);
+
+    function exchangeConnector() external view returns(address);
+
+    function priceOracle() external view returns(address);
+
+    function minRequiredTDTLockedAmount() external view returns(uint);
+
+    function minRequiredTNTLockedAmount() external view returns(uint);
+
+    function lockerPercentageFee() external view returns(uint);
+
+    function collateralRatio() external view returns(uint);
+
+    function liquidationRatio() external view returns(uint);
+
+    function priceWithDiscountRatio() external view returns(uint);
+
+    function totalNumberOfCandidates() external view returns(uint);
+
+    function totalNumberOfLockers() external view returns(uint);
+
     function getLockerTargetAddress(bytes calldata _lockerLockingScript) external view returns (address);
 
     function isLocker(bytes calldata _lockerLockingScript) external view returns (bool);
@@ -102,6 +130,22 @@ interface ILockers {
     function isActive(address _lockerTargetAddress) external view returns (bool);
 
     function getLockerCapacity(address _lockerTargetAddress) external view returns (uint);
+
+    function priceOfOneUnitOfCollateralInBTC() external view returns (uint);
+
+    function calculateHealthFactor(
+        address _lockerTargetAddress,
+        uint _priceOfOneUnitOfCollateral
+    ) external view returns (uint);
+
+    function maxBuyableCollateral(
+        address _lockerTargetAddress,
+        uint _priceOfOneUnitOfCollateral
+    ) external view returns (uint);
+
+
+
+
 
     // State-changing functions
 
@@ -137,6 +181,8 @@ interface ILockers {
 
     function setCollateralRatio(uint _collateralRatio) external;
 
+    function setLiquidationRatio(uint _liquidationRatio) external;
+
     function liquidateLocker(
         address _lockerTargetAddress,
         uint _btcAmount
@@ -154,7 +200,9 @@ interface ILockers {
     function requestToBecomeLocker(
         bytes calldata _lockerLockingScript,
         uint _lockedTDTAmount,
-        uint _lockedNativeTokenAmount
+        uint _lockedNativeTokenAmount,
+        ScriptTypes _lockerRescueType,
+        bytes calldata _lockerRescueScript
     ) external payable returns (bool);
 
     function revokeRequest() external returns (bool);
