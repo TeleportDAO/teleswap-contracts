@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/ITeleBTC.sol";
-import "../libraries/SafeMath.sol";
 import "../erc20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -10,13 +9,43 @@ import "hardhat/console.sol"; // Just for test
 
 contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
 
-    using SafeMath for uint;
-    mapping(address => bool) public minters;
-    mapping(address => bool) public burners;
-
     modifier onlyMinter() {
         require(isMinter(_msgSender()), "TeleBTC: only minters can mint");
         _;
+    }
+    
+    modifier onlyBurner() {
+        require(isBurner(_msgSender()), "TeleBTC: only burners can burn");
+        _;
+    }
+
+    // Public variables
+    mapping(address => bool) public minters;
+    mapping(address => bool) public burners;
+
+    constructor(
+        string memory _name,
+        string memory _symbol
+    ) ERC20(_name, _symbol, 0) {
+
+    }
+
+    /**
+     * @dev Check if an account is minter.
+     * @return bool
+     */
+    function isMinter(address account) internal view returns (bool) {
+        require(account != address(0), "TeleBTC: account is the zero address");
+        return minters[account];
+    }
+
+    /**
+     * @dev Check if an account is burner.
+     * @return bool
+     */
+    function isBurner(address account) internal view returns (bool) {
+        require(account != address(0), "TeleBTC: account is the zero address");
+        return burners[account];
     }
 
     /**
@@ -36,20 +65,6 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Check if an account is minter.
-     * @return bool
-     */
-    function isMinter(address account) internal view returns (bool) {
-        require(account != address(0), "TeleBTC: account is the zero address");
-        return minters[account];
-    }
-
-    modifier onlyBurner() {
-        require(isBurner(_msgSender()), "TeleBTC: only burners can burn");
-        _;
-    }
-
-    /**
      * @dev Give an account access to burn.
      */
     function addBurner(address account) external override onlyOwner {
@@ -65,36 +80,28 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
         burners[account] = false;
     }
 
-    /**
-     * @dev Check if an account is burner.
-     * @return bool
-     */
-    function isBurner(address account) internal view returns (bool) {
-        require(account != address(0), "TeleBTC: account is the zero address");
-        return burners[account];
-    }
-
-    constructor(
-        string memory _name,
-        string memory _symbol
-    ) ERC20(_name, _symbol, 0) {
-
-    }
-
-    // TODO: remove it (just for test)
+    // TODO: remove it
+    ///@notice      Mints TeleBTC just for test
     function mintTestToken () external override {
         _mint(msg.sender, 10000000000); // mint 100 teleBTC
     }
 
-    function burn(uint amount) external nonReentrant onlyBurner override returns (bool) {
-        _burn(msg.sender, amount);
-        emit Burn(msg.sender, amount);
+    /// @notice                Burns TeleBTC tokens of msg.sender
+    /// @dev                   Only burners can call this
+    /// @param _amount         Amount of burnt tokens
+    function burn(uint _amount) external nonReentrant onlyBurner override returns (bool) {
+        _burn(msg.sender, _amount);
+        emit Burn(msg.sender, _amount);
         return true;
     }
 
-    function mint(address receiver, uint amount) external nonReentrant onlyMinter override returns (bool) {
-        _mint(receiver, amount);
-        emit Mint(receiver, amount);
+    /// @notice                Mints TeleBTC tokens for _receiver
+    /// @dev                   Only minters can call this
+    /// @param _receiver       Address of token's receiver
+    /// @param _amount         Amount of minted tokens
+    function mint(address _receiver, uint _amount) external nonReentrant onlyMinter override returns (bool) {
+        _mint(_receiver, _amount);
+        emit Mint(_receiver, _amount);
         return true;
     }
 }

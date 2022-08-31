@@ -1173,7 +1173,7 @@ describe("CCExchangeRouter", async () => {
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            await ccExchangeRouter.ccExchange(
+            let tx = await ccExchangeRouter.ccExchange(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
                 vout,
@@ -1183,10 +1183,6 @@ describe("CCExchangeRouter", async () => {
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
                 LOCKER1_LOCKING_SCRIPT
             );
-
-            expect(
-                await ccExchangeRouter.isRequestUsed(CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.txId)
-            ).to.equal(true);
 
             expect(
                 ccExchangeRouter.ccExchange(
@@ -1201,6 +1197,10 @@ describe("CCExchangeRouter", async () => {
                 )
             ).to.revertedWith("CCExchangeRouter: the request has been used before");
         })
+
+        expect(
+            await ccExchangeRouter.isRequestUsed(CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.txId)
+        ).to.equal(true);
 
     });
 
