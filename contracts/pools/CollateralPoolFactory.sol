@@ -9,13 +9,22 @@ import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
 contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGuard {
 
-    mapping(address => address) public override getCollateralPoolByToken; // collateral token => collateral pool
-    address[] public override allCollateralPools;
-    address public override instantRouter;
-
-    constructor(address _instantRouter) {
-        instantRouter = _instantRouter;
+    modifier nonZeroAddress(address _address) {
+        require(_address != address(0), "CollateralPoolFactory: zero address");
+        _;
     }
+
+    modifier nonZeroValue(uint _value) {
+        require(_value > 0, "CollateralPoolFactory: zero value");
+        _;
+    }
+
+    // Public variables
+    mapping(address => address) public override getCollateralPoolByToken; // collateral token => collateral pool
+    address[] public override allCollateralPools; // List of all collateral pools
+
+    /// @notice         This contract creates collateral pool for tokens
+    constructor() {}
 
     /// @return         Total number of collateral pools
     function allCollateralPoolsLength() public override view returns (uint) {
@@ -29,13 +38,6 @@ contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGua
         return getCollateralPoolByToken[_collateralToken] == address(0) ? false : true;
     }
 
-    /// @notice                 Changes instant router contract address
-    /// @dev                    Only owner can call this
-    /// @param _instantRouter   The new instant router contract address
-    function setInstantRouter(address _instantRouter) external override onlyOwner {
-        instantRouter = _instantRouter;
-    }
-
     /// @notice                          Creates a new collateral pool
     /// @dev                             Only owner can call this
     /// @param _collateralToken          Address of underlying collateral token
@@ -44,22 +46,30 @@ contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGua
     function createCollateralPool(
         address _collateralToken, 
         uint _collateralizationRatio
-    ) external nonReentrant onlyOwner override returns (address) {
-        require(_collateralToken != address(0), 'CollateralPoolFactory: Collateral token address is not valid');
-        require(_collateralizationRatio != 0, 'CollateralPoolFactory: Collateralization ratio cannot be zero');
+    ) external nonZeroAddress(_collateralToken) nonZeroValue(_collateralizationRatio) 
+        nonReentrant onlyOwner override returns (address) {
+        // Checks that collateral pool for the token doesn't exist
         require(
             getCollateralPoolByToken[_collateralToken] == address(0), 
-            'CollateralPoolFactory: Collateral pool already exists'
+            'CollateralPoolFactory: collateral pool already exists'
         );
+        
+        // Creates collateral pool
         CollateralPool pool;
         string memory name;
         string memory symbol;
         name = string(abi.encodePacked(IERC20(_collateralToken).name(), "-", "Collateral-Pool"));
         symbol = string(abi.encodePacked(IERC20(_collateralToken).symbol(), "CP"));
         pool = new CollateralPool(name, symbol, _collateralToken, _collateralizationRatio);
+
+        // Transfers ownership of collateral pool to owner of this contract
+        CollateralPool(address(pool)).transferOwnership(msg.sender);
+
+        // Stores collateral pool address
         getCollateralPoolByToken[_collateralToken] = address(pool);
         allCollateralPools.push(address(pool));
         emit CreateCollateralPool(name, _collateralToken, _collateralizationRatio, address(pool));
+
         return address(pool);
     }
 
@@ -71,22 +81,25 @@ contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGua
     function removeCollateralPool(
         address _collateralToken, 
         uint _index
-    ) external nonReentrant onlyOwner override returns (bool) {
+    ) external nonReentrant nonZeroAddress(_collateralToken) onlyOwner override returns (bool) {
+        // Checks that collateral pool exists
         address collateralPool = getCollateralPoolByToken[_collateralToken];
-        require(collateralPool != address(0), 'CollateralPoolFactory: Collateral pool does not exist');
-        require(_index < allCollateralPoolsLength(), 'CollateralPoolFactory: Index is out of range');
-        require(collateralPool == allCollateralPools[_index], 'CollateralPoolFactory: Index is not correct');
+        require(collateralPool != address(0), 'CollateralPoolFactory: collateral pool does not exist');
+
+        // Removes collateral pool address
+        require(_index < allCollateralPoolsLength(), 'CollateralPoolFactory: index is out of range');
+        require(collateralPool == allCollateralPools[_index], 'CollateralPoolFactory: index is not correct');
         getCollateralPoolByToken[_collateralToken] = address(0);
         _removeElement(_index);
         emit RemoveCollateralPool(_collateralToken, collateralPool);
+
         return true;
     }
 
     /// @notice             Removes an element of allCollateralPools
     /// @dev                Deletes and shifts the array  
     /// @param _index       Index of the element that is deleted
-    function _removeElement(uint _index) internal {
-        require(_index < allCollateralPoolsLength(), "CollateralPoolFactory: Index is out of range");
+    function _removeElement(uint _index) private {
         for (uint i = _index; i < allCollateralPoolsLength() - 1; i++) {
             allCollateralPools[i] = allCollateralPools[i+1];
         }

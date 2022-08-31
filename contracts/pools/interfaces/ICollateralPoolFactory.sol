@@ -27,8 +27,6 @@ interface ICollateralPoolFactory {
 
     // Read-only functions
 
-    function instantRouter() external view returns (address);
-
     function getCollateralPoolByToken(address _collateralToken) external view returns (address);
 
     function allCollateralPools(uint _index) external view returns (address);
@@ -38,8 +36,6 @@ interface ICollateralPoolFactory {
     function isCollateral(address _collateralToken) external view returns (bool);
 
     // State-changing functions
-
-    function setInstantRouter(address _instantRouter) external;
 
     function createCollateralPool(address _collateralToken, uint _collateralizationRatio) external returns (address);
 

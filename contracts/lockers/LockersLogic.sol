@@ -35,38 +35,33 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         bool isActive;
     }
 
-    // Public variables
+    // Constants
+    uint public constant ONE_HUNDRED_PERCENT = 10000;
+    uint public constant HEALTH_FACTOR = 10000;
+    uint public constant UPPER_HEALTH_FACTOR = 12000;
+    uint public constant MAX_LOCKER_FEE = 10000;
+    address public constant NATIVE_TOKEN = address(1);
 
-    uint public lockerPercentageFee;
+    // Public variables
     address public TeleportDAOToken;
     address public teleBTC;
     address public ccBurnRouter;
     address public exchangeConnector;
+    address public priceOracle;
+
     uint public minRequiredTDTLockedAmount;
     uint public minRequiredTNTLockedAmount;
-    address public NATIVE_TOKEN = address(1);
-
-    // 10000 means 100%
+    uint public lockerPercentageFee;
     uint public collateralRatio;
     uint public liquidationRatio;
     uint public priceWithDiscountRatio;
-
-    uint public constant HEALTH_FACTOR = 10000;
-    uint public constant UPPER_HEALTH_FACTOR = 12000;
-
-    // ^ this is because of price volitility and making minted coins for some collateral secure
-    address public priceOracle;
-
-    mapping(address => locker) public lockersMapping; // lockerTargetAddress -> locker structure
-
     uint public totalNumberOfCandidates;
     uint public totalNumberOfLockers;
 
+    mapping(address => locker) public lockersMapping; // locker's target address -> locker structure
     mapping(address => bool) public lockerLeavingRequests;
     mapping(address => bool) public lockerLeavingAcceptance;
-
-    mapping(bytes => address) public lockerTargetAddress;
-
+    mapping(bytes => address) public lockerTargetAddress; // locker's locking script -> locker's target address
     mapping(address => bool) minters;
     mapping(address => bool) burners;
 
@@ -213,7 +208,15 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     // TODO: if isLocker gets lockerLockingScript, this one must get that as well
         address _lockerTargetAddress
     ) public override view nonZeroAddress(_lockerTargetAddress) returns (uint) {
-        return (_lockerCollateralInTeleBTC(_lockerTargetAddress)*10000/collateralRatio) - lockersMapping[_lockerTargetAddress].netMinted;
+        return (_lockerCollateralInTeleBTC(_lockerTargetAddress)*ONE_HUNDRED_PERCENT/collateralRatio) - lockersMapping[_lockerTargetAddress].netMinted;
+    }
+
+    /// @notice                       Changes percentage fee of locker
+    /// @dev                          Only current owner can call this
+    /// @param _lockerPercentageFee   The new locker percentage fee
+    function setLockerPercentageFee(uint _lockerPercentageFee) external override onlyOwner {
+        require(_lockerPercentageFee <= MAX_LOCKER_FEE, "Lockers: invalid locker fee");
+        lockerPercentageFee = _lockerPercentageFee;
     }
 
     /// @notice         Changes the required bond amount to become locker
@@ -268,7 +271,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /// @notice                                 Adds user to candidates list
     /// @dev
-    /// @param _candidateLockingScript         Bitcoin address of the candidate
+    /// @param _candidateLockingScript          Bitcoin address of the candidate
     /// @param _lockedTDTAmount                 Bond amount of locker in TDT
     /// @param _lockedNativeTokenAmount         Bond amount of locker in native token of the target chain
     /// @return                                 True if candidate is added successfully
@@ -595,7 +598,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             "Lockers: more than maximum buyable"
         );
 
-        uint teleBTCPriceWithDiscount = (priceOfCollateral * priceWithDiscountRatio)/10000;
+        uint teleBTCPriceWithDiscount = (priceOfCollateral * priceWithDiscountRatio)/ONE_HUNDRED_PERCENT;
         uint neededTeleBTC = (_collateralAmount * teleBTCPriceWithDiscount)/(10 ** 18);
 
         IERC20(teleBTC).transferFrom(_msgSender(), _lockerTargetAddress, neededTeleBTC);
@@ -666,7 +669,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         uint priceOfOnUnitOfCollateral = priceOfOneUnitOfCollateralInBTC();
 
-        uint lockerCapacity = (theLocker.nativeTokenLockedAmount * priceOfOnUnitOfCollateral * 10000)/(collateralRatio * (10 ** 18)) - theLocker.netMinted;
+        uint lockerCapacity = (theLocker.nativeTokenLockedAmount * priceOfOnUnitOfCollateral * ONE_HUNDRED_PERCENT)/(collateralRatio * (10 ** 18)) - theLocker.netMinted;
 
         uint maxRemovableCollateral = (lockerCapacity * (10 ** 18))/priceOfOnUnitOfCollateral;
 
@@ -738,7 +741,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         // (UPPER_HEALTH_FACTOR * theLocker.netMinted * liquidationRatio) - ((theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** 8))/(10 ** 18));
         uint antecedent = (UPPER_HEALTH_FACTOR * theLocker.netMinted * liquidationRatio * (10 ** 18)) - (theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** 8));
 
-        uint consequent = ((UPPER_HEALTH_FACTOR * liquidationRatio * _priceOfOneUnitOfCollateral * priceWithDiscountRatio)/10000) -(_priceOfOneUnitOfCollateral * (10 ** 8));
+        uint consequent = ((UPPER_HEALTH_FACTOR * liquidationRatio * _priceOfOneUnitOfCollateral * priceWithDiscountRatio)/ONE_HUNDRED_PERCENT) -(_priceOfOneUnitOfCollateral * (10 ** 8));
 
         return antecedent/consequent;
     }
@@ -769,7 +772,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         lockersMapping[_lockerTargetAddress].netMinted + _amount;
 
         // Mints locker fee
-        uint lockerFee = _amount*lockerPercentageFee/10000;
+        uint lockerFee = _amount*lockerPercentageFee/MAX_LOCKER_FEE;
         if (lockerFee > 0) {
             ITeleBTC(teleBTC).mint(_lockerTargetAddress, lockerFee);
         }
@@ -804,7 +807,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         // Transfers teleBTC from user
         ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), _amount);
 
-        uint lockerFee = _amount*lockerPercentageFee/10000;
+        uint lockerFee = _amount*lockerPercentageFee/MAX_LOCKER_FEE;
         uint remainedAmount = _amount - lockerFee;
         uint netMinted = lockersMapping[_lockerTargetAddress].netMinted;
 
@@ -833,7 +836,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @dev Check if an account is minter.
      * @return bool
      */
-    function _isMinter(address account) internal view nonZeroAddress(account) returns (bool) {
+    function _isMinter(address account) private view nonZeroAddress(account) returns (bool) {
         return minters[account];
     }
 
@@ -841,14 +844,14 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      * @dev Check if an account is burner.
      * @return bool
      */
-    function _isBurner(address account) internal view nonZeroAddress(account) returns (bool) {
+    function _isBurner(address account) private view nonZeroAddress(account) returns (bool) {
         return burners[account];
     }
 
     /// @notice                      Removes an element of lockers list
     /// @dev                         Deletes and shifts the array
     /// @param _lockerAddress      Index of the element that will be deleted
-    function _removeLockerFromLockersMapping(address _lockerAddress) internal {
+    function _removeLockerFromLockersMapping(address _lockerAddress) private {
         require(
             lockersMapping[_lockerAddress].isLocker,
             "Lockers: locker doesn't exist"
@@ -859,7 +862,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @notice                      Removes an element of lockers list
     /// @dev                         Deletes and shifts the array
     /// @param _candidateAddress     Index of the element that will be deleted
-    function _removeCandidateFromLockersMapping(address _candidateAddress) internal {
+    function _removeCandidateFromLockersMapping(address _candidateAddress) private {
         require(
             lockersMapping[_candidateAddress].isCandidate,
             "Lockers: candidate doesn't exist"
@@ -871,7 +874,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @dev
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             The locker collateral in TeleBTC
-    function _lockerCollateralInTeleBTC(address _lockerTargetAddress) internal view returns (uint) {
+    function _lockerCollateralInTeleBTC(address _lockerTargetAddress) private view returns (uint) {
 
         return IPriceOracle(priceOracle).equivalentOutputAmount(
             lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
