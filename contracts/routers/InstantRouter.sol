@@ -274,7 +274,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             user doesn't want to lock collateral without exchanging
         */
         require(result == true, "InstantRouter: exchange was not successful");
-
+        
         emit InstantExchange(
             msg.sender,
             _receiver,

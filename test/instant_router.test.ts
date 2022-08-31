@@ -424,7 +424,7 @@ describe("Instant Router", async () => {
             let lastBlockTimestamp = await getTimestamp();
 
             expect(
-                instantRouter.instantCCExchange(
+                await instantRouter.instantCCExchange(
                     mockExchangeConnector.address,
                     signer1Address,
                     loanAmount,
