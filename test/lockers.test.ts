@@ -62,6 +62,7 @@ describe("Lockers", async () => {
 
     // Contracts
     let lockers: Contract;
+    let lockers2: Contract;
     let lockersAsAdmin: Contract;
     let teleportDAOToken: ERC20;
     let teleBTC: TeleBTC;
@@ -109,6 +110,20 @@ describe("Lockers", async () => {
 
         // Deploys lockers contract
         lockers = await deployLockers();
+        lockers2 = await deployLockers();
+
+        // Initializes lockers proxy
+        await lockers.initialize(
+            teleportDAOToken.address,
+            mockExchangeConnector.address,
+            mockPriceOracle.address,
+            minRequiredTDTLockedAmount,
+            minRequiredNativeTokenLockedAmount,
+            collateralRatio,
+            liquidationRatio,
+            LOCKER_PERCENTAGE_FEE,
+            PRICE_WITH_DISCOUNT_RATIO
+        )
 
         // Sets ccBurnRouter address
         await lockers.setCCBurnRouter(ccBurnSimulatorAddress);
@@ -193,19 +208,6 @@ describe("Lockers", async () => {
             lockersProxy.address
         );
 
-        // Initializes lockers proxy
-        await lockers.initialize(
-            teleportDAOToken.address,
-            mockExchangeConnector.address,
-            mockPriceOracle.address,
-            minRequiredTDTLockedAmount,
-            minRequiredNativeTokenLockedAmount,
-            collateralRatio,
-            liquidationRatio,
-            LOCKER_PERCENTAGE_FEE,
-            PRICE_WITH_DISCOUNT_RATIO
-        )
-
         return lockers;
     };
 
@@ -225,6 +227,71 @@ describe("Lockers", async () => {
                     PRICE_WITH_DISCOUNT_RATIO
                 )
             ).to.be.revertedWith("Initializable: contract is already initialized")
+        })
+
+        it("initialize cant be called with zero address", async function () {
+            await expect(
+                lockers2.initialize(
+                    ZERO_ADDRESS,
+                    mockExchangeConnector.address,
+                    mockPriceOracle.address,
+                    minRequiredTDTLockedAmount,
+                    minRequiredNativeTokenLockedAmount,
+                    collateralRatio,
+                    liquidationRatio,
+                    LOCKER_PERCENTAGE_FEE,
+                    PRICE_WITH_DISCOUNT_RATIO
+                )
+            ).to.be.revertedWith("Lockers: address is zero")
+        })
+
+        it("initialize cant be called with zero amount", async function () {
+            await expect(
+                lockers2.initialize(
+                    teleportDAOToken.address,
+                    mockExchangeConnector.address,
+                    mockPriceOracle.address,
+                    0,
+                    0,
+                    collateralRatio,
+                    liquidationRatio,
+                    LOCKER_PERCENTAGE_FEE,
+                    PRICE_WITH_DISCOUNT_RATIO
+                )
+            ).to.be.revertedWith("Lockers: amount is zero")
+        })
+
+
+        it("initialize cant be called LR greater than CR", async function () {
+            await expect(
+                lockers2.initialize(
+                    teleportDAOToken.address,
+                    mockExchangeConnector.address,
+                    mockPriceOracle.address,
+                    minRequiredTDTLockedAmount,
+                    minRequiredNativeTokenLockedAmount,
+                    liquidationRatio,
+                    collateralRatio,
+                    LOCKER_PERCENTAGE_FEE,
+                    PRICE_WITH_DISCOUNT_RATIO
+                )
+            ).to.be.revertedWith("Lockers: problem in CR and LR")
+        })
+
+        it("initialize cant be called with Price discount greater than 100%", async function () {
+            await expect(
+                lockers2.initialize(
+                    teleportDAOToken.address,
+                    mockExchangeConnector.address,
+                    mockPriceOracle.address,
+                    minRequiredTDTLockedAmount,
+                    minRequiredNativeTokenLockedAmount,
+                    collateralRatio,
+                    liquidationRatio,
+                    LOCKER_PERCENTAGE_FEE,
+                    PRICE_WITH_DISCOUNT_RATIO + 10000
+                )
+            ).to.be.revertedWith("Lockers: price discount ratio must be less than 100%")
         })
 
     })
