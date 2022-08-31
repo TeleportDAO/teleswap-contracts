@@ -13,7 +13,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
         require(isMinter(_msgSender()), "TeleBTC: only minters can mint");
         _;
     }
-    
+
     modifier onlyBurner() {
         require(isBurner(_msgSender()), "TeleBTC: only burners can burn");
         _;
@@ -28,6 +28,10 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
         string memory _symbol
     ) ERC20(_name, _symbol, 0) {
 
+    }
+
+    function decimals() public view virtual override(ERC20, IERC20) returns (uint8) {
+        return 8;
     }
 
     /**

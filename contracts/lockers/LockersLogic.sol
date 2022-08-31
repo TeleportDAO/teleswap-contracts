@@ -44,6 +44,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     uint public constant UPPER_HEALTH_FACTOR = 12000;
     uint public constant MAX_LOCKER_FEE = 10000;
     address public constant NATIVE_TOKEN = address(1);
+    uint public constant NATIVE_TOKEN_DECIMAL = 18;
 
     // Public variables
     address public TeleportDAOToken;
@@ -536,8 +537,8 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
             _rewardAmount + _amount,
-            8, // Decimal of teleBTC
-            18, // Decimal of TNT
+            IERC20(teleBTC).decimals(), // Decimal of teleBTC
+            NATIVE_TOKEN_DECIMAL, // Decimal of TNT
             teleBTC,
             NATIVE_TOKEN
         );
@@ -611,7 +612,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         );
 
         uint teleBTCPriceWithDiscount = (priceOfCollateral * priceWithDiscountRatio)/ONE_HUNDRED_PERCENT;
-        uint neededTeleBTC = (_collateralAmount * teleBTCPriceWithDiscount)/(10 ** 18);
+        uint neededTeleBTC = (_collateralAmount * teleBTCPriceWithDiscount)/(10 ** NATIVE_TOKEN_DECIMAL);
 
         ICCBurnRouter(ccBurnRouter).ccBurn(
             neededTeleBTC,
@@ -686,9 +687,9 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         uint priceOfOnUnitOfCollateral = priceOfOneUnitOfCollateralInBTC();
 
-        uint lockerCapacity = (theLocker.nativeTokenLockedAmount * priceOfOnUnitOfCollateral * ONE_HUNDRED_PERCENT)/(collateralRatio * (10 ** 18)) - theLocker.netMinted;
+        uint lockerCapacity = (theLocker.nativeTokenLockedAmount * priceOfOnUnitOfCollateral * ONE_HUNDRED_PERCENT)/(collateralRatio * (10 ** NATIVE_TOKEN_DECIMAL)) - theLocker.netMinted;
 
-        uint maxRemovableCollateral = (lockerCapacity * (10 ** 18))/priceOfOnUnitOfCollateral;
+        uint maxRemovableCollateral = (lockerCapacity * (10 ** NATIVE_TOKEN_DECIMAL))/priceOfOnUnitOfCollateral;
 
         require(
             _removingNativeTokenAmount <= maxRemovableCollateral,
@@ -716,10 +717,9 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     function priceOfOneUnitOfCollateralInBTC() public view returns (uint) {
 
         return IPriceOracle(priceOracle).equivalentOutputAmount(
-            (10**18), // 1 Ether is 10^18 wei
-        // TODO: get decimals from token contracts
-            18,
-            8,
+            (10**NATIVE_TOKEN_DECIMAL), // 1 Ether is 10^18 wei
+            NATIVE_TOKEN_DECIMAL,
+            IERC20(teleBTC).decimals(),
             NATIVE_TOKEN,
             teleBTC
         );
@@ -739,7 +739,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         locker memory theLocker = lockersMapping[_lockerTargetAddress];
 
         // return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount * 100000000)/(theLocker.netMinted * liquidationRatio * (10 ** 18));
-        return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount)/(theLocker.netMinted * liquidationRatio * (10 ** 10));
+        return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount )/(theLocker.netMinted * liquidationRatio * (10 ** (NATIVE_TOKEN_DECIMAL - IERC20(teleBTC).decimals())));
 
     }
 
@@ -755,10 +755,12 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     ) public view nonZeroAddress(_lockerTargetAddress) returns (uint) {
         locker memory theLocker = lockersMapping[_lockerTargetAddress];
 
-        // (UPPER_HEALTH_FACTOR * theLocker.netMinted * liquidationRatio) - ((theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** 8))/(10 ** 18));
-        uint antecedent = (UPPER_HEALTH_FACTOR * theLocker.netMinted * liquidationRatio * (10 ** 18)) - (theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** 8));
+        uint teleBTCDecimal = IERC20(teleBTC).decimals();
 
-        uint consequent = ((UPPER_HEALTH_FACTOR * liquidationRatio * _priceOfOneUnitOfCollateral * priceWithDiscountRatio)/ONE_HUNDRED_PERCENT) -(_priceOfOneUnitOfCollateral * (10 ** 8));
+        // (UPPER_HEALTH_FACTOR * theLocker.netMinted * liquidationRatio) - ((theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** 8))/(10 ** 18));
+        uint antecedent = (UPPER_HEALTH_FACTOR * theLocker.netMinted * liquidationRatio * (10 ** NATIVE_TOKEN_DECIMAL)) - (theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** teleBTCDecimal));
+
+        uint consequent = ((UPPER_HEALTH_FACTOR * liquidationRatio * _priceOfOneUnitOfCollateral * priceWithDiscountRatio)/ONE_HUNDRED_PERCENT) -(_priceOfOneUnitOfCollateral * (10 ** teleBTCDecimal));
 
         return antecedent/consequent;
     }
@@ -895,9 +897,8 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         return IPriceOracle(priceOracle).equivalentOutputAmount(
             lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
-        // TODO: get decimals from token contracts
-            18,
-            8,
+            NATIVE_TOKEN_DECIMAL,
+            IERC20(teleBTC).decimals(),
             NATIVE_TOKEN,
             teleBTC
         );
