@@ -224,19 +224,19 @@ interface ILockers {
 
     function selfRemoveLocker() external returns (bool);
 
-    function slashLockerForCCBurn(
-        address _lockerTargetAddress,
-        uint _rewardAmount,
-        address _rewardRecipient,
-        uint _amount,
-        address _recipient
-    ) external returns(bool);
+    // function slashLockerForCCBurn(
+    //     address _lockerTargetAddress,
+    //     uint _rewardAmount,
+    //     address _rewardRecipient,
+    //     uint _amount,
+    //     address _recipient
+    // ) external returns(bool);
 
-    function slashLockerForDispute(
-        address _lockerTargetAddress,
-        uint _rewardAmount,
-        address _rewardRecipient,
-        uint _amount
-    ) external returns(bool);
+    // function slashLockerForDispute(
+    //     address _lockerTargetAddress,
+    //     uint _rewardAmount,
+    //     address _rewardRecipient,
+    //     uint _amount
+    // ) external returns(bool);
 
 }
