@@ -713,64 +713,64 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     }
 
 
-    // /// @notice                           Liquidates the locker whose collateral is unhealthy
-    // /// @dev                              Anyone can liquidate a locker which its health factor
-    // ///                                   is less than 10000 (100%) by providing a sufficient amount of teleBTC
-    // /// @param _lockerTargetAddress       Locker's target chain address
-    // /// @param _slashingAmount          Amount of collateral (TNT) that someone is intend to buy with discount
-    // /// @return                           True is liquidation was successful
-    // function buySlashingAmountOfLocker(
-    //     address _lockerTargetAddress,
-    //     uint _slashingAmount
-    // ) external nonZeroAddress(_lockerTargetAddress) nonZeroValue(_slashingAmount)
-    //     nonReentrant whenNotPaused returns (bool) {
+    /// @notice                           Liquidates the locker whose collateral is unhealthy
+    /// @dev                              Anyone can liquidate a locker which its health factor
+    ///                                   is less than 10000 (100%) by providing a sufficient amount of teleBTC
+    /// @param _lockerTargetAddress       Locker's target chain address
+    /// @param _slashingAmount          Amount of collateral (TNT) that someone is intend to buy with discount
+    /// @return                           True is liquidation was successful
+    function buySlashingAmountOfLocker(
+        address _lockerTargetAddress,
+        uint _slashingAmount
+    ) external nonZeroAddress(_lockerTargetAddress) nonZeroValue(_slashingAmount)
+    nonReentrant whenNotPaused returns (bool) {
 
-    //     require(
-    //         lockersMapping[_lockerTargetAddress].isLocker,
-    //         "Lockers: target address is not locker"
-    //     );
+        require(
+            lockersMapping[_lockerTargetAddress].isLocker,
+            "Lockers: target address is not locker"
+        );
 
-    //     locker memory theSlashingLocker = lockersMapping[_lockerTargetAddress];
+        locker memory theSlashingLocker = lockersMapping[_lockerTargetAddress];
 
-    //     // Checks that the collateral has become unhealthy
-    //     require(
-    //         theSlashingLocker.slashingTeleBTCAmount > 0,
-    //         "Lockers: locker cant be slashed"
-    //     );
+        // Checks that the collateral has become unhealthy
+        require(
+            theSlashingLocker.slashingTeleBTCAmount > 0,
+            "Lockers: locker cant be slashed"
+        );
 
-    //     uint priceOfCollateral = priceOfOneUnitOfCollateralInBTC();
+        uint priceOfCollateral = priceOfOneUnitOfCollateralInBTC();
 
-    //     require(
-    //         _slashingAmount <= theSlashingLocker.reservedNativeTokenForSlash,
-    //         "Lockers: more than maximum buyable"
-    //     );
+        require(
+            _slashingAmount <= theSlashingLocker.reservedNativeTokenForSlash,
+            "Lockers: more than maximum buyable"
+        );
 
-    //     // Needed amount of TeleBTC to buy collateralAmount
-    //     uint neededTeleBTC = neededTeleBTCToBuyCollateral(_slashingAmount, priceOfCollateral);
+        // Needed amount of TeleBTC to buy collateralAmount
+        uint neededTeleBTC = neededTeleBTCToBuyCollateral(_slashingAmount, priceOfCollateral);
 
 
-    //     // Updates net minted and TNT bond of locker
-    //     lockersMapping[_lockerTargetAddress].slashingTeleBTCAmount =
-    //         lockersMapping[_lockerTargetAddress].slashingTeleBTCAmount - neededTeleBTC;
+        // Updates net minted and TNT bond of locker
+        lockersMapping[_lockerTargetAddress].slashingTeleBTCAmount =
+        lockersMapping[_lockerTargetAddress].slashingTeleBTCAmount - neededTeleBTC;
 
-    //     lockersMapping[_lockerTargetAddress].reservedNativeTokenForSlash =
-    //         lockersMapping[_lockerTargetAddress].reservedNativeTokenForSlash - _slashingAmount;
+        lockersMapping[_lockerTargetAddress].reservedNativeTokenForSlash =
+        lockersMapping[_lockerTargetAddress].reservedNativeTokenForSlash - _slashingAmount;
 
-    //     Address.sendValue(payable(_msgSender()), _slashingAmount);
+        Address.sendValue(payable(_msgSender()), _slashingAmount);
 
-    //     ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), neededTeleBTC);
-    //     ITeleBTC(teleBTC).burn(neededTeleBTC);
+        ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), neededTeleBTC);
+        ITeleBTC(teleBTC).burn(neededTeleBTC);
 
-    //     emit LockerSlashingAmountSold(
-    //         _lockerTargetAddress,
-    //         _msgSender(),
-    //         _slashingAmount,
-    //         neededTeleBTC,
-    //         block.timestamp
-    //     );
+        emit LockerSlashingAmountSold(
+            _lockerTargetAddress,
+            _msgSender(),
+            _slashingAmount,
+            neededTeleBTC,
+            block.timestamp
+        );
 
-    //     return true;
-    // }
+        return true;
+    }
 
 
     function neededTeleBTCToBuyCollateral(uint _collateralAmount, uint _priceOfCollateral) public view returns (uint){
