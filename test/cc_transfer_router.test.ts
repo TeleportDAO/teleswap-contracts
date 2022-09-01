@@ -13,6 +13,10 @@ import { CCTransferRouter__factory } from "../src/types/factories/CCTransferRout
 
 import { LockersProxy__factory } from "../src/types/factories/LockersProxy__factory";
 import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
+import { LockersLogicLibraryAddresses } from "../src/types/factories/LockersLogic__factory";
+
+import { LockersLib } from "../src/types/LockersLib";
+import { LockersLib__factory } from "../src/types/factories/LockersLib__factory";
 
 import { TeleBTC } from "../src/types/TeleBTC";
 import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
@@ -57,6 +61,7 @@ describe("CCTransferRouter", async () => {
     let ccTransferRouter: CCTransferRouter;
     let teleBTC: TeleBTC;
     let teleportDAOToken: ERC20;
+    let lockersLib: LockersLib;
     let lockers: Contract;
 
     // Mock contracts
@@ -142,14 +147,37 @@ describe("CCTransferRouter", async () => {
         await ccTransferRouter.setInstantRouter(mockInstantRouter.address)
     });
 
+    const deployLockersLib = async (
+        _signer?: Signer
+    ): Promise<LockersLib> => {
+        const LockersLibFactory = new LockersLib__factory(
+            _signer || deployer
+        );
+
+        const lockersLib = await LockersLibFactory.deploy(
+        );
+
+        return lockersLib;
+    };
+
     const deployLockers = async (
         _signer?: Signer
     ): Promise<Contract> => {
 
+        lockersLib = await deployLockersLib()
+
+        let linkLibraryAddresses: LockersLogicLibraryAddresses;
+
+        linkLibraryAddresses = {
+            "contracts/lockers/libraries/LockersLib.sol:LockersLib": lockersLib.address,
+        };
+
         // Deploys lockers logic
         const lockersLogicFactory = new LockersLogic__factory(
+            linkLibraryAddresses,
             _signer || deployer
         );
+
         const lockersLogic = await lockersLogicFactory.deploy();
 
         // Deploys lockers proxy

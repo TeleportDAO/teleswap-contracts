@@ -7,7 +7,7 @@ import "../types/DataTypes.sol";
 
 library LockersLib {
 
-    function _maxBuyableCollateralFunc(
+    function maximumBuyableCollateral(
         DataTypes.locker memory theLocker,
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
@@ -26,6 +26,69 @@ library LockersLib {
         (_priceOfOneUnitOfCollateral * (10 ** teleBTCDecimal));
 
         return antecedent/consequent;
+    }
+
+    function calculateHealthFactor(
+        DataTypes.locker memory theLocker,
+        DataTypes.lockersLibConstants memory libConstants,
+        DataTypes.lockersLibParam memory libParams,
+        uint _priceOfOneUnitOfCollateral
+    ) external view returns (uint) {
+        return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount * (10 ** (1 + IERC20(libParams.teleBTC).decimals())))/
+        (theLocker.netMinted * libParams.liquidationRatio * (10 ** (1 + libConstants.NativeTokenDecimal)));
+    }
+
+    function neededTeleBTCToBuyCollateral(
+        DataTypes.lockersLibConstants memory libConstants,
+        DataTypes.lockersLibParam memory libParams,
+        uint _collateralAmount,
+        uint _priceOfCollateral
+    ) external pure returns (uint) {
+        return (_collateralAmount * _priceOfCollateral * libParams.priceWithDiscountRatio)/
+        (libConstants.OneHundredPercent*(10 ** libConstants.NativeTokenDecimal));
+    }
+
+    function addToCollateral(
+        DataTypes.locker storage theLocker,
+        uint _addingNativeTokenAmount
+    ) external {
+
+        require(
+            theLocker.isLocker,
+            "Lockers: account is not a locker"
+        );
+
+        theLocker.nativeTokenLockedAmount =
+        theLocker.nativeTokenLockedAmount + _addingNativeTokenAmount;
+    }
+
+    function removeFromCollateral(
+        DataTypes.locker storage theLocker,
+        DataTypes.lockersLibConstants memory libConstants,
+        DataTypes.lockersLibParam memory libParams,
+        uint _priceOfOneUnitOfCollateral,
+        uint _removingNativeTokenAmount
+    ) internal {
+
+        require(
+            theLocker.isLocker,
+            "Lockers: account is not a locker"
+        );
+
+        // lockerCapacity = valueOfNativeTokenLockedAmountInBTC - netMinted
+
+        uint lockerCapacity = (theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * libConstants.OneHundredPercent)/
+        (libParams.collateralRatio * (10 ** libConstants.NativeTokenDecimal)) - theLocker.netMinted;
+
+        uint maxRemovableCollateral = (lockerCapacity * (10 ** libConstants.NativeTokenDecimal))/_priceOfOneUnitOfCollateral;
+
+        require(
+            _removingNativeTokenAmount <= maxRemovableCollateral,
+            "Lockers: more than max removable collateral"
+        );
+
+        theLocker.nativeTokenLockedAmount =
+        theLocker.nativeTokenLockedAmount - _removingNativeTokenAmount;
     }
 
 }

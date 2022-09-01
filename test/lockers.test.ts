@@ -219,6 +219,7 @@ describe("Lockers", async () => {
             linkLibraryAddresses,
             _signer || deployer
         );
+
         const lockersLogic = await lockersLogicFactory.deploy();
 
         // Deploys lockers proxy
@@ -1856,6 +1857,8 @@ describe("Lockers", async () => {
     describe("#removeCollateral", async () => {
 
         it("can't remove collateral for a non locker account", async function () {
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
 
             let lockerSigner1 = await lockers.connect(signer1)
 
