@@ -327,6 +327,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @notice                                 Slashes a locker if they issue a tx that doesn't match any burn request
     /// @dev                                    Input tx is a malicious tx which shows that locker spent BTC
     ///                                         Output tx is the tx that was spent by locker in input tx 
+    ///                                         Output tx --> money goes to locker --> Input tx --> locker steals the funds
     /// @param _lockerLockingScript             Suspicious locker's locking script
     /// @param _versions                        Versions of input and output tx
     /// @param _inputVin                        Inputs of the malicious transaction
@@ -411,7 +412,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         // Slashes locker
         _slashLockerForDispute(
-            _outputVout,
+            _inputVout,
             _lockerLockingScript,
             _inputTxId,
             _indexesAndBlockNumbers[2] // Block number
