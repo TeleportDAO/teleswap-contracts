@@ -142,15 +142,15 @@ interface ILockers {
 
     function priceOfOneUnitOfCollateralInBTC() external view returns (uint);
 
-    function calculateHealthFactor(
-        address _lockerTargetAddress,
-        uint _priceOfOneUnitOfCollateral
-    ) external view returns (uint);
+    // function calculateHealthFactor(
+    //     address _lockerTargetAddress,
+    //     uint _priceOfOneUnitOfCollateral
+    // ) external view returns (uint);
 
-    function maxBuyableCollateral(
-        address _lockerTargetAddress,
-        uint _priceOfOneUnitOfCollateral
-    ) external view returns (uint);
+    // function maxBuyableCollateral(
+    //     address _lockerTargetAddress,
+    //     uint _priceOfOneUnitOfCollateral
+    // ) external view returns (uint);
 
 
 

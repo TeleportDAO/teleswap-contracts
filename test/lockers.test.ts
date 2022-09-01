@@ -12,6 +12,10 @@ import { LockersProxy__factory } from "../src/types/factories/LockersProxy__fact
 
 import { LockersLogic } from "../src/types/LockersLogic";
 import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
+import { LockersLogicLibraryAddresses } from "../src/types/factories/LockersLogic__factory";
+
+import { LockersLib } from "../src/types/LockersLib";
+import { LockersLib__factory } from "../src/types/factories/LockersLib__factory";
 
 import { TeleBTC } from "../src/types/TeleBTC";
 import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
@@ -61,6 +65,7 @@ describe("Lockers", async () => {
     let ccBurnSimulatorAddress: Address;
 
     // Contracts
+    let lockersLib: LockersLib;
     let lockers: Contract;
     let lockers2: Contract;
     let lockersAsAdmin: Contract;
@@ -184,14 +189,37 @@ describe("Lockers", async () => {
         return wrappedToken;
     };
 
+    const deployLockersLib = async (
+        _signer?: Signer
+    ): Promise<LockersLib> => {
+        const LockersLibFactory = new LockersLib__factory(
+            _signer || deployer
+        );
+
+        const lockersLib = await LockersLibFactory.deploy(
+        );
+
+        return lockersLib;
+    };
+
     const deployLockers = async (
         _signer?: Signer
     ): Promise<Contract> => {
 
+        lockersLib = await deployLockersLib()
+
+        let linkLibraryAddresses: LockersLogicLibraryAddresses;
+
+        linkLibraryAddresses = {
+            "contracts/lockers/libraries/LockersLib.sol:LockersLib": lockersLib.address,
+        };
+
         // Deploys lockers logic
         const lockersLogicFactory = new LockersLogic__factory(
+            linkLibraryAddresses,
             _signer || deployer
         );
+
         const lockersLogic = await lockersLogicFactory.deploy();
 
         // Deploys lockers proxy
@@ -291,7 +319,7 @@ describe("Lockers", async () => {
                     LOCKER_PERCENTAGE_FEE,
                     PRICE_WITH_DISCOUNT_RATIO + 10000
                 )
-            ).to.be.revertedWith("Lockers: price discount ratio must be less than 100%")
+            ).to.be.revertedWith("Lockers: less than 100%")
         })
 
     })
@@ -572,7 +600,7 @@ describe("Lockers", async () => {
                     signer1Address,
                     10000
                 )
-            ).to.be.revertedWith("Lockers: target address is not locker")
+            ).to.be.revertedWith("Lockers: not locker")
 
         });
 
@@ -798,7 +826,7 @@ describe("Lockers", async () => {
                     LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
-            ).to.be.revertedWith("Lockers: low locking TDT amount")
+            ).to.be.revertedWith("Lockers: low TDT")
         })
 
         it("not approving TeleportDao token", async function () {
@@ -830,7 +858,7 @@ describe("Lockers", async () => {
                     LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount.sub(10)}
                 )
-            ).to.be.revertedWith("Lockers: low locking TNT amount")
+            ).to.be.revertedWith("Lockers: low TNT")
         })
 
         it("successful request to become locker", async function () {
@@ -891,7 +919,7 @@ describe("Lockers", async () => {
                     LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
-            ).to.be.revertedWith("Lockers: user is already a candidate")
+            ).to.be.revertedWith("Lockers: is candidate")
 
         })
 
@@ -930,7 +958,7 @@ describe("Lockers", async () => {
                     LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
-            ).to.be.revertedWith("Lockers: locking script is used before")
+            ).to.be.revertedWith("Lockers: used locking script")
 
         })
 
@@ -943,7 +971,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.revokeRequest()
-            ).to.be.revertedWith("Lockers: request doesn't exist or already accepted")
+            ).to.be.revertedWith("Lockers: no req")
         })
 
         it("successful revoke", async function () {
@@ -1032,7 +1060,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.requestToRemoveLocker()
-            ).to.be.revertedWith("Lockers: msg sender is not locker")
+            ).to.be.revertedWith("Lockers: not locker")
         })
 
         it("successfully request to be removed", async function () {
@@ -1077,7 +1105,7 @@ describe("Lockers", async () => {
         it("a non-existing locker can't be removed", async function () {
             await expect(
                 lockers.ownerRemoveLocker(signer1Address)
-            ).to.be.revertedWith("Lockers: no locker with this address")
+            ).to.be.revertedWith("Lockers: no locker")
         })
 
         it("can't remove a locker if it doesn't request to be removed", async function () {
@@ -1104,7 +1132,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockers.ownerRemoveLocker(signer1Address)
-            ).to.be.revertedWith("Lockers: locker didn't request to be removed")
+            ).to.be.revertedWith("Lockers: no remove req")
         })
 
 
@@ -1140,7 +1168,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockers.ownerRemoveLocker(signer1Address)
-            ).to.be.revertedWith("Lockers: net minted is not zero")
+            ).to.be.revertedWith("Lockers: 0 net minted")
         })
 
         it("the locker is removed successfully", async function () {
@@ -1196,7 +1224,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.selfRemoveLocker()
-            ).to.be.revertedWith("Lockers: no locker with this address")
+            ).to.be.revertedWith("Lockers: no locker")
         })
 
         it("can't remove a locker if it doesn't request to be removed", async function () {
@@ -1223,7 +1251,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.selfRemoveLocker()
-            ).to.be.revertedWith("Lockers: locker didn't request to be removed")
+            ).to.be.revertedWith("Lockers: no remove req")
         })
 
         it("the locker can't be removed because netMinted is not zero", async function () {
@@ -1258,7 +1286,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.selfRemoveLocker()
-            ).to.be.revertedWith("Lockers: net minted is not zero")
+            ).to.be.revertedWith("Lockers: 0 net minted")
         })
 
         it("the locker is removed successfully", async function () {
@@ -1310,7 +1338,7 @@ describe("Lockers", async () => {
                     btcAmountToSlash,
                     ccBurnSimulatorAddress
                 )
-            ).to.be.revertedWith("Lockers: caller can't slash")
+            ).to.be.revertedWith("Lockers: can't slash")
         })
 
         it("slash locker reverts when the target address is not locker", async function () {
@@ -1324,7 +1352,7 @@ describe("Lockers", async () => {
                     btcAmountToSlash,
                     ccBurnSimulatorAddress
                 )
-            ).to.be.revertedWith("Lockers: target address is not locker")
+            ).to.be.revertedWith("Lockers: not locker")
         })
 
         it("can't slash above collateral", async function () {
@@ -1367,7 +1395,7 @@ describe("Lockers", async () => {
                     10000,
                     ccBurnSimulatorAddress
                 )
-            ).to.be.revertedWith("Lockers: insufficient native token collateral")
+            ).to.be.revertedWith("Lockers: insufficient collateral")
 
         })
 
@@ -1504,7 +1532,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5001)
-            ).to.be.revertedWith("Lockers: this locker hasn't sufficient capacity")
+            ).to.be.revertedWith("Lockers: insufficient capacity")
 
         })
 
@@ -1598,7 +1626,7 @@ describe("Lockers", async () => {
                     signer1Address,
                     1000
                 )
-            ).to.be.revertedWith("Lockers: target address is not locker")
+            ).to.be.revertedWith("Lockers: not locker")
         })
 
         it("can't liquidate because it's above liquidation ratio", async function () {
@@ -1633,7 +1661,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner2.liquidateLocker(signer1Address, 5000)
-            ).to.be.revertedWith("Lockers: locker's collateral is healthy")
+            ).to.be.revertedWith("Lockers: is healthy")
 
         });
 
@@ -1675,7 +1703,7 @@ describe("Lockers", async () => {
                     signer1Address,
                     BigNumber.from(10).pow(18).mul(3)
                 )
-            ).to.be.revertedWith("Lockers: more than maximum buyable")
+            ).to.be.revertedWith("Lockers: more than max")
 
         });
 
@@ -1745,7 +1773,8 @@ describe("Lockers", async () => {
             await expect(
                 lockers.addCollateral(
                     signer1Address,
-                    1000
+                    10000,
+                    {value: 10000}
                 )
             ).to.be.revertedWith("Lockers: account is not a locker")
         })
@@ -1781,7 +1810,7 @@ describe("Lockers", async () => {
                     10001,
                     {value: 10000}
                 )
-            ).to.be.revertedWith("Lockers: incompatible msg value")
+            ).to.be.revertedWith("Lockers: msg value")
 
         })
 
@@ -1828,6 +1857,8 @@ describe("Lockers", async () => {
     describe("#removeCollateral", async () => {
 
         it("can't remove collateral for a non locker account", async function () {
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
 
             let lockerSigner1 = await lockers.connect(signer1)
 

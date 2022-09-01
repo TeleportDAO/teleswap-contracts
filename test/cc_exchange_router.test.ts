@@ -19,6 +19,10 @@ import { CCExchangeRouter__factory } from "../src/types/factories/CCExchangeRout
 
 import { LockersProxy__factory } from "../src/types/factories/LockersProxy__factory";
 import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
+import { LockersLogicLibraryAddresses } from "../src/types/factories/LockersLogic__factory";
+
+import { LockersLib } from "../src/types/LockersLib";
+import { LockersLib__factory } from "../src/types/factories/LockersLib__factory";
 
 import { TeleBTC } from "../src/types/TeleBTC";
 import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
@@ -73,6 +77,7 @@ describe("CCExchangeRouter", async () => {
     let uniswapV2Pair: UniswapV2Pair;
     let uniswapV2Factory: UniswapV2Factory;
     let ccExchangeRouter: CCExchangeRouter;
+    let lockersLib: LockersLib;
     let lockers: Contract;
     let teleBTC: TeleBTC;
     let teleportDAOToken: ERC20;
@@ -229,14 +234,37 @@ describe("CCExchangeRouter", async () => {
         return teleportDAOToken;
     };
 
+    const deployLockersLib = async (
+        _signer?: Signer
+    ): Promise<LockersLib> => {
+        const LockersLibFactory = new LockersLib__factory(
+            _signer || deployer
+        );
+
+        const lockersLib = await LockersLibFactory.deploy(
+        );
+
+        return lockersLib;
+    };
+
     const deployLockers = async (
         _signer?: Signer
     ): Promise<Contract> => {
 
+        lockersLib = await deployLockersLib()
+
+        let linkLibraryAddresses: LockersLogicLibraryAddresses;
+
+        linkLibraryAddresses = {
+            "contracts/lockers/libraries/LockersLib.sol:LockersLib": lockersLib.address,
+        };
+
         // Deploys lockers logic
         const lockersLogicFactory = new LockersLogic__factory(
+            linkLibraryAddresses,
             _signer || deployer
         );
+
         const lockersLogic = await lockersLogicFactory.deploy();
 
         // Deploys lockers proxy
