@@ -83,7 +83,7 @@ describe("CCBurnRouter", async () => {
             deployer,
             lockers.abi
         )
-        
+
         // Deploys contracts
         ccBurnRouter = await deployCCBurnRouter();
         teleBTC = await deployTeleBTC();
@@ -92,7 +92,7 @@ describe("CCBurnRouter", async () => {
         // Mints TeleBTC for user
         TeleBTCSigner1 = await teleBTC.connect(signer1);
         await TeleBTCSigner1.mintTestToken();
-        
+
         // Connects signer1 and signer2 to ccBurnRouter
         ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1);
         ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
@@ -133,8 +133,13 @@ describe("CCBurnRouter", async () => {
         return ccBurnRouter;
     };
 
-    async function setLockersSlashLockerReturn(): Promise<void> {
-        await mockLockers.mock.slashLocker
+    async function setLockersSlashLockerForCCBurnReturn(): Promise<void> {
+        await mockLockers.mock.slashLockerForCCBurn
+            .returns(true);
+    }
+
+    async function setLockersSlashLockerForDisputeReturn(): Promise<void> {
+        await mockLockers.mock.slashLockerForDispute
             .returns(true);
     }
 
@@ -169,7 +174,7 @@ describe("CCBurnRouter", async () => {
     }
 
     async function sendBurnRequest(
-        burnReqBlockNumber: number, 
+        burnReqBlockNumber: number,
         _userRequestedAmount: BigNumber,
         USER_SCRIPT: any,
         USER_SCRIPT_TYPE: any
@@ -187,7 +192,7 @@ describe("CCBurnRouter", async () => {
         let protocolFee = Math.floor(_userRequestedAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
         burntAmount = _userRequestedAmount.toNumber() - BITCOIN_FEE - protocolFee;
         await setLockersBurnReturn(burntAmount);
-        
+
         await setLockersGetLockerTargetAddress();
 
         // Burns eleBTC
@@ -237,7 +242,7 @@ describe("CCBurnRouter", async () => {
             snapshotId = await takeSnapshot(signer1.provider);
 
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
@@ -254,7 +259,7 @@ describe("CCBurnRouter", async () => {
             // Sets mock contracts outputs
             await setRelayLastSubmittedHeight(lastSubmittedHeight);
             await setLockersIsLocker(true);
-            
+
             // Finds amount of teleBTC that user should receive on Bitcoin
             let protocolFee = Math.floor(userRequestedAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
             let burntAmount = userRequestedAmount.toNumber() - BITCOIN_FEE - protocolFee;
@@ -262,7 +267,7 @@ describe("CCBurnRouter", async () => {
 
             ;
             await setLockersGetLockerTargetAddress();
-            
+
             let prevBalanceSigner1 = await teleBTC.balanceOf(signer1Address);
 
             // Burns teleBTC
@@ -353,7 +358,7 @@ describe("CCBurnRouter", async () => {
 
             // Sets mock contracts outputs
             await setLockersIsLocker(true);
-            
+
             await setLockersGetLockerTargetAddress();
 
             expect(
@@ -384,7 +389,7 @@ describe("CCBurnRouter", async () => {
 
     describe("#burnProof", async () => {
         let burnReqBlockNumber = 100;
-        
+
         let burntAmount: number;
 
         beforeEach(async () => {
@@ -392,16 +397,16 @@ describe("CCBurnRouter", async () => {
 
             // Mints TeleBTC for test
             await mintTeleBTCForTest();
-    
+
             // Sends a burn request
             burntAmount = await sendBurnRequest(
-                burnReqBlockNumber, 
+                burnReqBlockNumber,
                 userRequestedAmount,
                 USER_SCRIPT_P2PKH,
                 USER_SCRIPT_P2PKH_TYPE
             );
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
@@ -445,7 +450,7 @@ describe("CCBurnRouter", async () => {
 
             // Sends a burn request
             burntAmount = await sendBurnRequest(
-                burnReqBlockNumber, 
+                burnReqBlockNumber,
                 userRequestedAmount,
                 USER_SCRIPT_P2WPKH,
                 USER_SCRIPT_P2WPKH_TYPE
@@ -667,7 +672,7 @@ describe("CCBurnRouter", async () => {
         })
 
         it("Doesn't accept burn proof since the paid amount is not exact", async function () {
-            let wrongUserRequestAmount = BigNumber.from(100080000)  
+            let wrongUserRequestAmount = BigNumber.from(100080000)
             let burnReqBlockNumber = 100;
 
             // Send a burn request
@@ -810,7 +815,7 @@ describe("CCBurnRouter", async () => {
             // Sends a burn request
             await sendBurnRequest(100, userRequestedAmount, USER_SCRIPT_P2PKH, USER_SCRIPT_P2PKH_TYPE);
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
@@ -818,7 +823,7 @@ describe("CCBurnRouter", async () => {
         it("Disputes locker successfully", async function () {
             // Sets mock contracts
             await setRelayLastSubmittedHeight(burnReqBlockNumber + TRANSFER_DEADLINE + 1);
-            await setLockersSlashLockerReturn();
+            await setLockersSlashLockerForCCBurnReturn();
             await setLockersIsLocker(true);
 
             await expect(
@@ -832,7 +837,7 @@ describe("CCBurnRouter", async () => {
         it("Reverts since locker has been slashed before", async function () {
             // Sets mock contracts
             await setRelayLastSubmittedHeight(burnReqBlockNumber + TRANSFER_DEADLINE + 1);
-            await setLockersSlashLockerReturn();
+            await setLockersSlashLockerForCCBurnReturn();
             await setLockersIsLocker(true);
 
             await ccBurnRouterSigner2.disputeBurn(
@@ -865,7 +870,7 @@ describe("CCBurnRouter", async () => {
 
             // Sets mock contracts outputs
             await setLockersIsLocker(true);
-            await setLockersSlashLockerReturn();
+            await setLockersSlashLockerForCCBurnReturn();
 
             // Pays the burnt amount and provides proof
             await provideProof(burnReqBlockNumber + 5);
@@ -896,11 +901,11 @@ describe("CCBurnRouter", async () => {
 
     describe("#disputeLocker", async () => {
         let burnReqBlockNumber = 100;
-        
+
         beforeEach(async () => {
             snapshotId = await takeSnapshot(signer1.provider);
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
@@ -912,7 +917,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLocker(true);
             await setRelayLastSubmittedHeight(burnReqBlockNumber + TRANSFER_DEADLINE + 1);
             await setLockersGetLockerTargetAddress();
-            await setLockersSlashLockerReturn();
+            await setLockersSlashLockerForDisputeReturn();
 
             expect(
                 await ccBurnRouterSigner2.disputeLocker(
@@ -930,7 +935,7 @@ describe("CCBurnRouter", async () => {
                 LOCKER_TARGET_ADDRESS,
                 burnReqBlockNumber,
                 CC_BURN_REQUESTS.disputeLocker_input.txId,
-                CC_BURN_REQUESTS.disputeLocker_input.OutputValue + 
+                CC_BURN_REQUESTS.disputeLocker_input.OutputValue +
                 CC_BURN_REQUESTS.disputeLocker_input.OutputValue*SLASHER_PERCENTAGE_REWARD/100
             );
         })
@@ -1049,7 +1054,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLocker(true);
             await setRelayLastSubmittedHeight(burnReqBlockNumber + TRANSFER_DEADLINE + 1);
             await setLockersGetLockerTargetAddress();
-            await setLockersSlashLockerReturn();
+            await setLockersSlashLockerForCCBurnReturn();
 
             expect(
                 ccBurnRouterSigner2.disputeLocker(
@@ -1073,7 +1078,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLocker(true);
             await setRelayLastSubmittedHeight(burnReqBlockNumber + TRANSFER_DEADLINE + 1);
             await setLockersGetLockerTargetAddress();
-            await setLockersSlashLockerReturn();
+            await setLockersSlashLockerForCCBurnReturn();
 
             expect(
                 ccBurnRouterSigner2.disputeLocker(
@@ -1097,7 +1102,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLocker(true);
             await setRelayLastSubmittedHeight(burnReqBlockNumber);
             await setLockersGetLockerTargetAddress();
-            await setLockersSlashLockerReturn();
+            await setLockersSlashLockerForCCBurnReturn();
 
             // User sends a burn request and locker provides burn proof for it
             await sendBurnRequest(100, userRequestedAmount, USER_SCRIPT_P2PKH, USER_SCRIPT_P2PKH_TYPE);
@@ -1124,7 +1129,7 @@ describe("CCBurnRouter", async () => {
         beforeEach(async () => {
             snapshotId = await takeSnapshot(signer1.provider);
         });
-    
+
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });

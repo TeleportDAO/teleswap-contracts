@@ -489,7 +489,7 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("Pausable: paused")
 
             await expect(
-                lockerSigner1.slashLocker(
+                lockerSigner1.slashLockerForCCBurn(
                     signer1Address,
                     0,
                     deployerAddress,
@@ -1303,7 +1303,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
-                lockerSigner1.slashLocker(
+                lockerSigner1.slashLockerForCCBurn(
                     signer1Address,
                     0,
                     deployerAddress,
@@ -1317,7 +1317,7 @@ describe("Lockers", async () => {
             let lockerCCBurnSimulator = lockers.connect(ccBurnSimulator)
 
             await expect(
-                lockerCCBurnSimulator.slashLocker(
+                lockerCCBurnSimulator.slashLockerForCCBurn(
                     signer1Address,
                     0,
                     deployerAddress,
@@ -1360,7 +1360,7 @@ describe("Lockers", async () => {
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
 
             await expect(
-                lockerCCBurnSigner.slashLocker(
+                lockerCCBurnSigner.slashLockerForCCBurn(
                     signer1Address,
                     0,
                     deployerAddress,
@@ -1402,7 +1402,7 @@ describe("Lockers", async () => {
 
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
 
-            await lockerCCBurnSigner.slashLocker(
+            await lockerCCBurnSigner.slashLockerForCCBurn(
                 signer1Address,
                 0,
                 deployerAddress,
@@ -1461,7 +1461,7 @@ describe("Lockers", async () => {
             let theLockerMapping = await lockers.lockersMapping(signer1Address);
 
             expect(
-                theLockerMapping[3]
+                theLockerMapping[5]
             ).to.equal(1000);
 
             // Checks that enough teleBTC has been minted for user
@@ -1555,7 +1555,7 @@ describe("Lockers", async () => {
             let theLockerMapping = await lockers.lockersMapping(signer1Address);
 
             expect(
-                theLockerMapping[3]
+                theLockerMapping[5]
             ).to.equal(1000);
 
             let teleBTCSigner2 = teleBTC.connect(signer2)
@@ -1572,7 +1572,7 @@ describe("Lockers", async () => {
             theLockerMapping = await lockers.lockersMapping(signer1Address);
 
             expect(
-                theLockerMapping[3]
+                theLockerMapping[5]
             ).to.equal(1000 - amount + lockerFee);
 
 
@@ -1818,7 +1818,7 @@ describe("Lockers", async () => {
             let theLockerAfter = await lockers.lockersMapping(signer1Address)
 
             expect(
-                theLockerAfter[2].sub(theLockerBefore[2])
+                theLockerAfter[4].sub(theLockerBefore[4])
             ).to.equal(10000)
 
         })

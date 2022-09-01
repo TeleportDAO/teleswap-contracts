@@ -51,7 +51,8 @@ interface ILockers {
         uint amount,
         address recipient,
         uint slashedCollateralAmount,
-        uint slashTime
+        uint slashTime,
+        bool isForCCBurn
     );
 
     event LockerLiquidated(
@@ -60,6 +61,14 @@ interface ILockers {
         uint collateralAmount,
         uint teleBTCAmount,
         uint liquidateTime
+    );
+
+    event LockerSlashingAmountSold(
+        address indexed lockerTargetAddress,
+        address buyerAddress,
+        uint slashingAmount,
+        uint teleBTCAmount,
+        uint slashingTime
     );
 
     event CollateralAdded(
@@ -215,12 +224,19 @@ interface ILockers {
 
     function selfRemoveLocker() external returns (bool);
 
-    function slashLocker(
+    function slashLockerForCCBurn(
         address _lockerTargetAddress,
         uint _rewardAmount,
         address _rewardRecipient,
         uint _amount,
         address _recipient
+    ) external returns(bool);
+
+    function slashLockerForDispute(
+        address _lockerTargetAddress,
+        uint _rewardAmount,
+        address _rewardRecipient,
+        uint _amount
     ) external returns(bool);
 
 }

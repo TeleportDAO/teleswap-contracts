@@ -6,9 +6,9 @@ import "../erc20/interfaces/ITeleBTC.sol";
 import "../relay/interfaces/IBitcoinRelay.sol";
 import "../lockers/interfaces/ILockers.sol";
 import "../libraries/BitcoinHelper.sol";
-import '@openzeppelin/contracts/access/Ownable.sol';
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";
 
 contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
@@ -37,7 +37,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     uint public override slasherPercentageReward; // Min amount is %1
     uint public override bitcoinFee; // Fee of submitting a tx on Bitcoin
     mapping(address => burnRequest[]) public burnRequests; // Mapping from locker target address to assigned burn requests
-    mapping(bytes32 => bool) public override isUsedAsBurnProof; // Mapping that shows a txId has been submitted to pay a burn request 
+    mapping(bytes32 => bool) public override isUsedAsBurnProof; // Mapping that shows a txId has been submitted to pay a burn request
 
     /// @notice                             Handles cross-chain burn requests
     /// @param _relay                       Address of relay contract
@@ -69,7 +69,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _lockerTargetAddress		Locker's address on the target chain
     /// @param _index                   The index of the request for the locker
     function isTransferred(
-        address _lockerTargetAddress, 
+        address _lockerTargetAddress,
         uint _index
     ) external view override returns (bool) {
         return burnRequests[_lockerTargetAddress][_index].isTransferred;
@@ -138,7 +138,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     }
 
     /// @notice                             Burns teleBTC and records the burn request
-    /// @dev                                After submitting the burn request, lockers have a limited time 
+    /// @dev                                After submitting the burn request, lockers have a limited time
     ///                                     to send BTC and provide burn proof
     /// @param _amount                      Amount of teleBTC that user wants to burn
     /// @param _userScript                  User's script
@@ -161,14 +161,14 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         /*
             Gets the target address of locker
-            note: we don't check whether _lockerTargetAddress is equal to zero 
+            note: we don't check whether _lockerTargetAddress is equal to zero
             or not since _lockerLockingScript is locker
         */
         address _lockerTargetAddress = ILockers(lockers)
         .getLockerTargetAddress(_lockerLockingScript);
 
         // Transfers users's teleBTC
-        ITeleBTC(teleBTC).transferFrom(msg.sender, address(this), _amount);
+        ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), _amount);
 
         uint remainedAmount = _getFees(
             _amount,
@@ -183,13 +183,13 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             _amount,
             _burntAmount,
             _userScript,
-            _scriptType, 
+            _scriptType,
             IBitcoinRelay(relay).lastSubmittedHeight(),
             _lockerTargetAddress
         );
 
         emit CCBurn(
-            msg.sender,
+            _msgSender(),
             _userScript,
             _scriptType,
             _amount,
@@ -241,7 +241,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         require(
             _burnReqIndexes.length == _voutIndexes.length,
-            'CCBurnRouter: wrong indexes'
+            "CCBurnRouter: wrong indexes"
         );
 
         // Checks inclusion of transaction
@@ -265,7 +265,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             _voutIndexes
         );
 
-        /* 
+        /*
             Checks if there is an output that goes back to the locker
             Sets isUsedAsBurnProof of txId true if all the outputs (except one) were used to pay cc burn requests
         */
@@ -279,7 +279,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _indices                     Array of indices of the requests that their deadline has passed
     /// @return                             True if dispute is successfull
     function disputeBurn(
-        bytes calldata _lockerLockingScript, 
+        bytes calldata _lockerLockingScript,
         uint[] memory _indices
     ) external nonReentrant override returns (bool) {
         // Checks if the locking script is valid
@@ -312,10 +312,10 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             burnRequests[_lockerTargetAddress][_indices[i]].isTransferred = true;
 
             // Slashes locker and sends the slashed amount to the user
-            ILockers(lockers).slashLocker(
+            ILockers(lockers).slashLockerForCCBurn(
                 _lockerTargetAddress,
                 burnRequests[_lockerTargetAddress][_indices[i]].amount*slasherPercentageReward/MAX_SLASHER_REWARD, // Slasher reward
-                msg.sender, // Slasher address
+                _msgSender(), // Slasher address
                 burnRequests[_lockerTargetAddress][_indices[i]].amount,
                 burnRequests[_lockerTargetAddress][_indices[i]].sender // User address
             );
@@ -326,7 +326,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     /// @notice                                 Slashes a locker if they issue a tx that doesn't match any burn request
     /// @dev                                    Input tx is a malicious tx which shows that locker spent BTC
-    ///                                         Output tx is the tx that was spent by locker in input tx 
+    ///                                         Output tx is the tx that was spent by locker in input tx
     ///                                         Output tx --> money goes to locker --> Input tx --> locker steals the funds
     /// @param _lockerLockingScript             Suspicious locker's locking script
     /// @param _versions                        Versions of input and output tx
@@ -375,7 +375,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             "CCBurnRouter: input transaction is not finalized"
         );
 
-        /* 
+        /*
             Checks that input tx has not been provided as a burn proof
             note: if a locker executes a cc burn request but doesn't provide burn proof before deadline,
             we consider the transaction as a malicious tx
@@ -387,10 +387,10 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         // Extracts outpoint id and index from input tx
         (bytes32 _outpointId, uint _outpointIndex) = BitcoinHelper.extractOutpoint(
-            _inputVin, 
+            _inputVin,
             _indexesAndBlockNumbers[0] // Index of malicious input in input tx
         );
-        
+
         // Checks that "outpoint tx id == output tx id"
         require(
             _outpointId == BitcoinHelper.calculateTxId(_versions[1], _outputVin, _outputVout, _locktimes[1]),
@@ -399,7 +399,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         // Checks that _outpointIndex of _outpointId belongs to locker locking script
         require(
-            keccak256(BitcoinHelper.getLockingScript(_outputVout, _outpointIndex)) == 
+            keccak256(BitcoinHelper.getLockingScript(_outputVout, _outpointIndex)) ==
             keccak256(_lockerLockingScript),
             "CCBurnRouter: output tx doesn't belong to locker"
         );
@@ -427,7 +427,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _inputTxId                       Tx id of the malicious transaction
     /// @param _inputBlockNumber                Block number of the malicious transaction
     function _slashLockerForDispute(
-        bytes memory _inputVout, 
+        bytes memory _inputVout,
         bytes memory _lockerLockingScript,
         bytes32 _inputTxId,
         uint _inputBlockNumber
@@ -440,12 +440,11 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         address _lockerTargetAddress = ILockers(lockers)
         .getLockerTargetAddress(_lockerLockingScript);
 
-        ILockers(lockers).slashLocker(
+        ILockers(lockers).slashLockerForDispute(
             _lockerTargetAddress,
             totalValue*slasherPercentageReward/MAX_SLASHER_REWARD, // Slasher reward
-            msg.sender, // Slasher address
-            totalValue,
-            lockers
+            _msgSender(), // Slasher address
+            totalValue
         );
 
         // Emits the event
@@ -472,9 +471,9 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint[] memory _voutIndexes
     ) private returns (uint paidOutputCounter) {
         uint parsedAmount;
-        /*  
-            Below variable is for checking that every output in vout (except one) 
-            is related to a cc burn request so that we can 
+        /*
+            Below variable is for checking that every output in vout (except one)
+            is related to a cc burn request so that we can
             set "isUsedAsBurnProof = true" for the whole txId
         */
         paidOutputCounter = 0;
@@ -484,16 +483,16 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             // Checks that the request has not been paid and its deadline has not passed
             if (
                 !burnRequests[_lockerTargetAddress][_burnReqIndex].isTransferred &&
-                burnRequests[_lockerTargetAddress][_burnReqIndex].deadline >= _paidBlockNumber
+            burnRequests[_lockerTargetAddress][_burnReqIndex].deadline >= _paidBlockNumber
             ) {
-                
+
                 parsedAmount = BitcoinHelper.parseValueFromSpecificOutputHavingScript(
                     _vout,
                     _voutIndexes[i],
                     burnRequests[_lockerTargetAddress][_burnReqIndex].userScript,
                     ScriptTypes(uint(burnRequests[_lockerTargetAddress][_burnReqIndex].scriptType))
                 );
-                
+
                 // Checks that locker has sent required teleBTC amount
                 if (burnRequests[_lockerTargetAddress][_burnReqIndex].burntAmount == parsedAmount) {
                     burnRequests[_lockerTargetAddress][_burnReqIndex].isTransferred = true;
@@ -559,7 +558,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         burnRequest memory request;
         request.amount = _amount;
         request.burntAmount = _burntAmount;
-        request.sender = msg.sender;
+        request.sender = _msgSender();
         request.userScript = _userScript;
         request.scriptType = _scriptType;
         request.deadline = _lastSubmittedHeight + transferDeadline;
@@ -597,8 +596,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             feeAmount
         );
 
-        // Sends extra ETH back to msg.sender
-        Address.sendValue(payable(msg.sender), msg.value - feeAmount);
+        // Sends extra ETH back to _msgSender()
+        Address.sendValue(payable(_msgSender()), msg.value - feeAmount);
 
         return abi.decode(data, (bool));
     }
@@ -616,7 +615,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint protocolFee = _amount*protocolPercentageFee/MAX_PROTOCOL_FEE;
 
         require(_amount > protocolFee + bitcoinFee, "CCBurnRouter: amount is too low");
-        
+
         uint remainedAmount = _amount - protocolFee - bitcoinFee;
 
         // Transfers protocol fee

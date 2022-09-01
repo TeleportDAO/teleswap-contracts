@@ -19,23 +19,32 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /// @notice                             Structure for registering lockers
     /// @dev
-    /// @param lockerLockingScript           Locker redeem script
+    /// @param lockerLockingScript          Locker redeem script
+    /// @param lockerRescueType             Locker script type in case of getting BTCs back
+    /// @param lockerRescueScript           Locker script in case of getting BTCs back
     /// @param TDTLockedAmount              Bond amount of locker in TDT
     /// @param nativeTokenLockedAmount      Bond amount of locker in native token of the target chain
     /// @param netMinted                    Total minted - total burnt
+    /// @param slashingTeleBTCAmount        Total amount of teleBTC a locker must be slashed
+    /// @param reservedNativeTokenForSlash  Total native token reserved to support slashing teleBTC
+    /// @param isLocker                     Indicates that is already a locker or not
+    /// @param isCandidate                  Indicates that is a candidate or not
+    /// @param isScriptHash
     /// @param isActive                     Shows if a locker is active (has not requested for removal and
     ///                                     has enough collateral to accept more minting requests)
     struct locker {
         bytes lockerLockingScript;
+        ScriptTypes lockerRescueType;
+        bytes lockerRescueScript;
         uint TDTLockedAmount;
         uint nativeTokenLockedAmount;
         uint netMinted;
+        uint slashingTeleBTCAmount;
+        uint reservedNativeTokenForSlash;
         bool isLocker;
         bool isCandidate;
         bool isScriptHash;
         bool isActive;
-        ScriptTypes lockerRescueType;
-        bytes lockerRescueScript;
     }
 
     // Constants
@@ -43,8 +52,8 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     uint public constant HEALTH_FACTOR = 10000;
     uint public constant UPPER_HEALTH_FACTOR = 12000;
     uint public constant MAX_LOCKER_FEE = 10000;
-    address public constant NATIVE_TOKEN = address(1);
     uint public constant NATIVE_TOKEN_DECIMAL = 18;
+    address public constant NATIVE_TOKEN = address(1);
 
     // Public variables
     address public override TeleportDAOToken;
@@ -300,13 +309,13 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @notice                                 Adds user to candidates list
     /// @dev                                    Users mint TeleBTC by sending BTC to locker's locking script
     ///                                         In case of liqudation of locker's bond, the burn TeleBTC is sent to
-    ///                                         locker's rescue script 
+    ///                                         locker's rescue script
     ///                                         A user should lock enough TDT and TNT to become candidate
     /// @param _candidateLockingScript          Locking script of the candidate
     /// @param _lockedTDTAmount                 Bond amount of locker in TDT
     /// @param _lockedNativeTokenAmount         Bond amount of locker in native token of the target chain
     /// @param _lockerRescueType                Type of locker's rescue script (e.g. P2SH)
-    /// @param _lockerRescueScript              Rescue script of the locker 
+    /// @param _lockerRescueScript              Rescue script of the locker
     /// @return                                 True if candidate is added successfully
     function requestToBecomeLocker(
         bytes calldata _candidateLockingScript,
@@ -397,7 +406,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /// @notice                               Approves a candidate request to become locker
     /// @dev                                  Only owner can call this
-    ///                                       When a candidate becomes locker, isCandidate is set to false 
+    ///                                       When a candidate becomes locker, isCandidate is set to false
     /// @param _lockerTargetAddress           Locker's target chain address
     /// @return                               True if candidate is added successfully
     function addLocker(
@@ -432,7 +441,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /// @notice                Requests to remove a locker from lockers list
     /// @dev                   Deactivates the status of the locker so that no
-    ///                        one is allowed to send mint requests to this locker. 
+    ///                        one is allowed to send mint requests to this locker.
     ///                        It gives time to the locker to burn the required amount
     ///                        of teleBTC to make itself eligible to be removed.
     ///                        Sets isActive of locker to false
@@ -453,6 +462,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             lockersMapping[_msgSender()].TDTLockedAmount,
             lockersMapping[_msgSender()].nativeTokenLockedAmount,
             lockersMapping[_msgSender()].netMinted
+        // TODO: adding more fields to this event
         );
 
         return true;
@@ -492,7 +502,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _amount                    Amount of TeleBTC that is slashed from lockers
     /// @param _recipient                 Address of user who receives the slashed amount
     /// @return                           True if the locker is slashed successfully
-    function slashLocker(
+    function slashLockerForCCBurn(
         address _lockerTargetAddress,
         uint _rewardAmount,
         address _rewardRecipient,
@@ -524,7 +534,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         // Updates locker's bond (in TNT)
         lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount
-            = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - equivalentNativeToken;
+        = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - equivalentNativeToken;
 
         // Transfers slashed collateral to user
         if (_recipient != address(this)) {
@@ -538,6 +548,16 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             payable(_rewardRecipient).transfer(equivalentNativeToken*_rewardAmount/(_amount + _rewardAmount));
         }
 
+        // TODO: adding a cc burn for the locker itself
+        // Burns TeleBTC for locker rescue script
+        // note: user should give allowance for TeleBTC to cc burn router
+        // ICCBurnRouter(ccBurnRouter).ccBurn(
+        //     _amount,
+        //     lockersMapping[_lockerTargetAddress].lockerRescueScript,
+        //     lockersMapping[_lockerTargetAddress].lockerRescueType,
+        //     lockersMapping[_lockerTargetAddress].lockerLockingScript
+        // );
+
         emit LockerSlashed(
             _lockerTargetAddress,
             _rewardAmount,
@@ -545,13 +565,89 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             _amount,
             _recipient,
             equivalentNativeToken,
-            block.timestamp
+            block.timestamp,
+            true
         );
 
         return true;
     }
 
-    /// @notice                           Liquidates the locker whose collateral is unhealthy 
+
+    /// @notice                           Slashes lockers
+    /// @dev                              Only cc burn router can call this
+    ///                                   Locker is slashed in two cases:
+    ///                                   1. Not providing a burn proof before a cc burn request deadline
+    ///                                   2. Moving BTC from locker's address without a good reason
+    ///                                   In the first scenario, user who made the cc burn request will receive the slashed bond
+    ///                                   In the second scenario, the slashed bond will be held by the lockers contract
+    /// @param _lockerTargetAddress       Locker's target chain address
+    /// @param _rewardAmount              Amount of TeleBTC that slasher receives
+    /// @param _rewardAmount              Address of slasher who receives reward
+    /// @param _amount                    Amount of TeleBTC that is slashed from lockers
+    /// @return                           True if the locker is slashed successfully
+    function slashLockerForDispute(
+        address _lockerTargetAddress,
+        uint _rewardAmount,
+        address _rewardRecipient,
+        uint _amount
+    ) external override nonReentrant whenNotPaused returns (bool) {
+        require(
+            _msgSender() == ccBurnRouter,
+            "Lockers: caller can't slash"
+        );
+
+        require(
+            lockersMapping[_lockerTargetAddress].isLocker,
+            "Lockers: target address is not locker"
+        );
+
+        uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
+            _amount, // Total amount of TeleBTC that is slashed
+            IERC20(teleBTC).decimals(), // Decimal of teleBTC
+            NATIVE_TOKEN_DECIMAL, // Decimal of TNT
+            teleBTC, // Input token
+            NATIVE_TOKEN // Output token
+        );
+
+        uint rewardInNativeToken = equivalentNativeToken*_rewardAmount/_amount;
+        uint neededNativeTokenForSlash = equivalentNativeToken*liquidationRatio/ONE_HUNDRED_PERCENT;
+
+        require(
+            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount >= (rewardInNativeToken + neededNativeTokenForSlash),
+            "Lockers: insufficient native token collateral"
+        );
+
+        // Updates locker's bond (in TNT)
+        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount
+        = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - (rewardInNativeToken + neededNativeTokenForSlash);
+
+        lockersMapping[_lockerTargetAddress].netMinted
+        = lockersMapping[_lockerTargetAddress].netMinted - _amount;
+
+        lockersMapping[_lockerTargetAddress].slashingTeleBTCAmount
+        = lockersMapping[_lockerTargetAddress].slashingTeleBTCAmount + _amount;
+
+        lockersMapping[_lockerTargetAddress].reservedNativeTokenForSlash
+        = lockersMapping[_lockerTargetAddress].reservedNativeTokenForSlash + neededNativeTokenForSlash;
+
+
+        payable(_rewardRecipient).transfer(rewardInNativeToken);
+
+        emit LockerSlashed(
+            _lockerTargetAddress,
+            _rewardAmount,
+            _rewardRecipient,
+            _amount,
+            address(this),
+            equivalentNativeToken,
+            block.timestamp,
+            false
+        );
+
+        return true;
+    }
+
+    /// @notice                           Liquidates the locker whose collateral is unhealthy
     /// @dev                              Anyone can liquidate a locker which its health factor
     ///                                   is less than 10000 (100%) by providing a sufficient amount of teleBTC
     /// @param _lockerTargetAddress       Locker's target chain address
@@ -561,7 +657,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         address _lockerTargetAddress,
         uint _collateralAmount
     ) external override nonZeroAddress(_lockerTargetAddress) nonZeroValue(_collateralAmount)
-        nonReentrant whenNotPaused returns (bool) {
+    nonReentrant whenNotPaused returns (bool) {
 
         require(
             lockersMapping[_lockerTargetAddress].isLocker,
@@ -589,9 +685,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         );
 
         // Needed amount of TeleBTC to buy collateralAmount
-        uint neededTeleBTC = (_collateralAmount * priceOfCollateral * priceWithDiscountRatio)/
-            (ONE_HUNDRED_PERCENT*(10 ** NATIVE_TOKEN_DECIMAL));
-
+        uint neededTeleBTC = neededTeleBTCToBuyCollateral(_collateralAmount, priceOfCollateral);
         // Burns TeleBTC for locker rescue script
         // note: user should give allowance for TeleBTC to cc burn router
         ICCBurnRouter(ccBurnRouter).ccBurn(
@@ -618,6 +712,72 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         return true;
     }
 
+
+    // /// @notice                           Liquidates the locker whose collateral is unhealthy
+    // /// @dev                              Anyone can liquidate a locker which its health factor
+    // ///                                   is less than 10000 (100%) by providing a sufficient amount of teleBTC
+    // /// @param _lockerTargetAddress       Locker's target chain address
+    // /// @param _slashingAmount          Amount of collateral (TNT) that someone is intend to buy with discount
+    // /// @return                           True is liquidation was successful
+    // function buySlashingAmountOfLocker(
+    //     address _lockerTargetAddress,
+    //     uint _slashingAmount
+    // ) external nonZeroAddress(_lockerTargetAddress) nonZeroValue(_slashingAmount)
+    //     nonReentrant whenNotPaused returns (bool) {
+
+    //     require(
+    //         lockersMapping[_lockerTargetAddress].isLocker,
+    //         "Lockers: target address is not locker"
+    //     );
+
+    //     locker memory theSlashingLocker = lockersMapping[_lockerTargetAddress];
+
+    //     // Checks that the collateral has become unhealthy
+    //     require(
+    //         theSlashingLocker.slashingTeleBTCAmount > 0,
+    //         "Lockers: locker cant be slashed"
+    //     );
+
+    //     uint priceOfCollateral = priceOfOneUnitOfCollateralInBTC();
+
+    //     require(
+    //         _slashingAmount <= theSlashingLocker.reservedNativeTokenForSlash,
+    //         "Lockers: more than maximum buyable"
+    //     );
+
+    //     // Needed amount of TeleBTC to buy collateralAmount
+    //     uint neededTeleBTC = neededTeleBTCToBuyCollateral(_slashingAmount, priceOfCollateral);
+
+
+    //     // Updates net minted and TNT bond of locker
+    //     lockersMapping[_lockerTargetAddress].slashingTeleBTCAmount =
+    //         lockersMapping[_lockerTargetAddress].slashingTeleBTCAmount - neededTeleBTC;
+
+    //     lockersMapping[_lockerTargetAddress].reservedNativeTokenForSlash =
+    //         lockersMapping[_lockerTargetAddress].reservedNativeTokenForSlash - _slashingAmount;
+
+    //     Address.sendValue(payable(_msgSender()), _slashingAmount);
+
+    //     ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), neededTeleBTC);
+    //     ITeleBTC(teleBTC).burn(neededTeleBTC);
+
+    //     emit LockerSlashingAmountSold(
+    //         _lockerTargetAddress,
+    //         _msgSender(),
+    //         _slashingAmount,
+    //         neededTeleBTC,
+    //         block.timestamp
+    //     );
+
+    //     return true;
+    // }
+
+
+    function neededTeleBTCToBuyCollateral(uint _collateralAmount, uint _priceOfCollateral) public view returns (uint){
+        return (_collateralAmount * _priceOfCollateral * priceWithDiscountRatio)/
+        (ONE_HUNDRED_PERCENT*(10 ** NATIVE_TOKEN_DECIMAL));
+    }
+
     /// @notice                                 Increases TNT collateral of the locker
     /// @param _lockerTargetAddress             Locker's target chain address
     /// @param _addingNativeTokenAmount         Amount of added collateral
@@ -637,8 +797,8 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             "Lockers: incompatible msg value"
         );
 
-        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount = 
-            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount + _addingNativeTokenAmount;
+        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount =
+        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount + _addingNativeTokenAmount;
 
         emit CollateralAdded(
             _lockerTargetAddress,
@@ -666,8 +826,10 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         uint priceOfOnUnitOfCollateral = priceOfOneUnitOfCollateralInBTC();
 
+        // lockerCapacity = valueOfNativeTokenLockedAmountInBTC - netMinted
+
         uint lockerCapacity = (theLocker.nativeTokenLockedAmount * priceOfOnUnitOfCollateral * ONE_HUNDRED_PERCENT)/
-            (collateralRatio * (10 ** NATIVE_TOKEN_DECIMAL)) - theLocker.netMinted;
+        (collateralRatio * (10 ** NATIVE_TOKEN_DECIMAL)) - theLocker.netMinted;
 
         uint maxRemovableCollateral = (lockerCapacity * (10 ** NATIVE_TOKEN_DECIMAL))/priceOfOnUnitOfCollateral;
 
@@ -676,8 +838,8 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             "Lockers: more than max removable collateral"
         );
 
-        lockersMapping[_msgSender()].nativeTokenLockedAmount = 
-            lockersMapping[_msgSender()].nativeTokenLockedAmount - _removingNativeTokenAmount;
+        lockersMapping[_msgSender()].nativeTokenLockedAmount =
+        lockersMapping[_msgSender()].nativeTokenLockedAmount - _removingNativeTokenAmount;
 
         Address.sendValue(payable(_msgSender()), _removingNativeTokenAmount);
 
@@ -720,7 +882,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     ) public override view nonZeroAddress(_lockerTargetAddress) returns (uint) {
         locker memory theLocker = lockersMapping[_lockerTargetAddress];
         return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount * (10 ** (1 + IERC20(teleBTC).decimals())))/
-            (theLocker.netMinted * liquidationRatio * (10 ** (1 + NATIVE_TOKEN_DECIMAL)));
+        (theLocker.netMinted * liquidationRatio * (10 ** (1 + NATIVE_TOKEN_DECIMAL)));
     }
 
     /**
@@ -735,13 +897,16 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     ) public override view nonZeroAddress(_lockerTargetAddress) returns (uint) {
         locker memory theLocker = lockersMapping[_lockerTargetAddress];
 
+        // maxBuyable <= (upperHealthFactor*netMinted*liquidationRatio/10000 - nativeTokenLockedAmount*nativeTokenPrice)/(upperHealthFactor*liquidationRatio*discountedPrice - nativeTokenPrice)
+        //  => maxBuyable <= (upperHealthFactor*netMinted*liquidationRatio * 10^18  - nativeTokenLockedAmount*nativeTokenPrice * 10^8)/(upperHealthFactor*liquidationRatio*discountedPrice - nativeTokenPrice * 10^8)
+
         uint teleBTCDecimal = IERC20(teleBTC).decimals();
 
-        uint antecedent = (UPPER_HEALTH_FACTOR * theLocker.netMinted * liquidationRatio * (10 ** NATIVE_TOKEN_DECIMAL)) - 
-            (theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** teleBTCDecimal));
+        uint antecedent = (UPPER_HEALTH_FACTOR * theLocker.netMinted * liquidationRatio * (10 ** NATIVE_TOKEN_DECIMAL)) -
+        (theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** teleBTCDecimal));
 
         uint consequent = ((UPPER_HEALTH_FACTOR * liquidationRatio * _priceOfOneUnitOfCollateral * priceWithDiscountRatio)/ONE_HUNDRED_PERCENT) -
-            (_priceOfOneUnitOfCollateral * (10 ** teleBTCDecimal));
+        (_priceOfOneUnitOfCollateral * (10 ** teleBTCDecimal));
 
         return antecedent/consequent;
     }
