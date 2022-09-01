@@ -930,7 +930,7 @@ describe("Lockers", async () => {
                     LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
-            ).to.be.revertedWith("Lockers: redeem script hash is used before")
+            ).to.be.revertedWith("Lockers: locking script is used before")
 
         })
 
@@ -1032,7 +1032,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.requestToRemoveLocker()
-            ).to.be.revertedWith("Lockers: Msg sender is not locker")
+            ).to.be.revertedWith("Lockers: msg sender is not locker")
         })
 
         it("successfully request to be removed", async function () {
@@ -1064,19 +1064,19 @@ describe("Lockers", async () => {
 
     });
 
-    describe("#removeLocker", async () => {
+    describe("#ownerRemoveLocker", async () => {
 
         it("only admin can call remove locker function", async function () {
             let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
-                lockerSigner1.removeLocker(signer1Address)
+                lockerSigner1.ownerRemoveLocker(signer1Address)
             ).to.be.revertedWith("Ownable: caller is not the owner")
         })
 
         it("a non-existing locker can't be removed", async function () {
             await expect(
-                lockers.removeLocker(signer1Address)
+                lockers.ownerRemoveLocker(signer1Address)
             ).to.be.revertedWith("Lockers: no locker with this address")
         })
 
@@ -1103,7 +1103,7 @@ describe("Lockers", async () => {
             await lockers.addLocker(signer1Address)
 
             await expect(
-                lockers.removeLocker(signer1Address)
+                lockers.ownerRemoveLocker(signer1Address)
             ).to.be.revertedWith("Lockers: locker didn't request to be removed")
         })
 
@@ -1139,7 +1139,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToRemoveLocker()
 
             await expect(
-                lockers.removeLocker(signer1Address)
+                lockers.ownerRemoveLocker(signer1Address)
             ).to.be.revertedWith("Lockers: net minted is not zero")
         })
 
@@ -1168,7 +1168,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToRemoveLocker()
 
             expect(
-                await lockers.removeLocker(signer1Address)
+                await lockers.ownerRemoveLocker(signer1Address)
             ).to.emit(lockers, "LockerRemoved")
 
             expect(
@@ -1310,7 +1310,7 @@ describe("Lockers", async () => {
                     btcAmountToSlash,
                     ccBurnSimulatorAddress
                 )
-            ).to.be.revertedWith("Lockers: Caller can't slash")
+            ).to.be.revertedWith("Lockers: caller can't slash")
         })
 
         it("slash locker reverts when the target address is not locker", async function () {
@@ -1633,7 +1633,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner2.liquidateLocker(signer1Address, 5000)
-            ).to.be.revertedWith("Lockers: the locker's collateral is healthy")
+            ).to.be.revertedWith("Lockers: locker's collateral is healthy")
 
         });
 
@@ -1868,7 +1868,7 @@ describe("Lockers", async () => {
                 lockerSigner1.removeCollateral(
                     (minRequiredNativeTokenLockedAmount.div(2)).add(1)
                 )
-            ).to.be.revertedWith("Lockers: more than removable collateral")
+            ).to.be.revertedWith("Lockers: more than max removable collateral")
 
         })
 

@@ -211,7 +211,7 @@ interface ILockers {
 
     function requestToRemoveLocker() external returns (bool);
 
-    function removeLocker(address _lockerTargetAddress) external returns(bool);
+    function ownerRemoveLocker(address _lockerTargetAddress) external returns(bool);
 
     function selfRemoveLocker() external returns (bool);
 
