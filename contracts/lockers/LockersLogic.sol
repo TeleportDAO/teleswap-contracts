@@ -118,7 +118,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         require(
             _priceWithDiscountRatio <= ONE_HUNDRED_PERCENT,
-            "Lockers: price discount ratio must be less than 100%"
+            "Lockers: less than 100%"
         );
 
         TeleportDAOToken = _TeleportDAOToken;
@@ -273,6 +273,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     function setLockerPercentageFee(uint _lockerPercentageFee) external override onlyOwner {
         require(_lockerPercentageFee <= MAX_LOCKER_FEE, "Lockers: invalid locker fee");
         lockerPercentageFee = _lockerPercentageFee;
+        libParams.lockerPercentageFee = lockerPercentageFee;
     }
 
     /// @notice         Changes the required bond amount to become locker
@@ -280,6 +281,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _minRequiredTDTLockedAmount   The new required bond amount
     function setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) external override onlyOwner {
         minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
+        libParams.minRequiredTDTLockedAmount = minRequiredTDTLockedAmount;
     }
 
     /// @notice         Changes the required bond amount to become locker
@@ -287,6 +289,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _minRequiredTNTLockedAmount   The new required bond amount
     function setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) external override onlyOwner {
         minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
+        libParams.minRequiredTNTLockedAmount = minRequiredTNTLockedAmount;
     }
 
     /// @notice                 Changes the price oracle
@@ -294,6 +297,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _priceOracle     The new price oracle
     function setPriceOracle(address _priceOracle) external override nonZeroAddress(_priceOracle) onlyOwner {
         priceOracle = _priceOracle;
+        libParams.priceOracle = priceOracle;
     }
 
     /// @notice                Changes cc burn router contract
@@ -309,6 +313,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _exchangeConnector  The new exchange router contract address
     function setExchangeConnector(address _exchangeConnector) external override nonZeroAddress(_exchangeConnector) onlyOwner {
         exchangeConnector = _exchangeConnector;
+        libParams.exchangeConnector = exchangeConnector;
     }
 
     /// @notice                 Changes wrapped token contract address
@@ -325,6 +330,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     function setCollateralRatio(uint _collateralRatio) external override onlyOwner {
         require(_collateralRatio >= liquidationRatio, "Lockers: CR must be greater than LR");
         collateralRatio = _collateralRatio;
+        libParams.collateralRatio = collateralRatio;
     }
 
     /// @notice                     Changes liquidation ratio
@@ -332,6 +338,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _liquidationRatio    The new liquidation ratio
     function setLiquidationRatio(uint _liquidationRatio) external override onlyOwner {
         liquidationRatio = _liquidationRatio;
+        libParams.liquidationRatio = liquidationRatio;
     }
 
     /// @notice                                 Adds user to candidates list
@@ -355,27 +362,27 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         require(
             !lockersMapping[_msgSender()].isCandidate,
-            "Lockers: user is already a candidate"
+            "Lockers: is candidate"
         );
 
         require(
             !lockersMapping[_msgSender()].isLocker,
-            "Lockers: user is already a locker"
+            "Lockers: is locker"
         );
 
         require(
             _lockedTDTAmount >= minRequiredTDTLockedAmount,
-            "Lockers: low locking TDT amount"
+            "Lockers: low TDT"
         );
 
         require(
             _lockedNativeTokenAmount >= minRequiredTNTLockedAmount && msg.value == _lockedNativeTokenAmount,
-            "Lockers: low locking TNT amount"
+            "Lockers: low TNT"
         );
 
         require(
             lockerTargetAddress[_candidateLockingScript] == address(0),
-            "Lockers: locking script is used before"
+            "Lockers: used locking script"
         );
 
         require(IERC20(TeleportDAOToken).transferFrom(_msgSender(), address(this), _lockedTDTAmount));
@@ -408,7 +415,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         require(
             lockersMapping[_msgSender()].isCandidate,
-            "Lockers: request doesn't exist or already accepted"
+            "Lockers: no req"
         );
 
         // Loads locker's information
@@ -443,7 +450,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         require(
             lockersMapping[_lockerTargetAddress].isCandidate,
-            "Lockers: no request with this address"
+            "Lockers: no request"
         );
 
         // Updates locker's status
@@ -477,7 +484,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     function requestToRemoveLocker() external override nonReentrant returns (bool) {
         require(
             lockersMapping[_msgSender()].isLocker,
-            "Lockers: msg sender is not locker"
+            "Lockers: not locker"
         );
 
         lockersMapping[_msgSender()].isActive = false;
@@ -539,12 +546,12 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     ) external override nonReentrant whenNotPaused returns (bool) {
         require(
             _msgSender() == ccBurnRouter,
-            "Lockers: caller can't slash"
+            "Lockers: can't slash"
         );
 
         require(
             lockersMapping[_lockerTargetAddress].isLocker,
-            "Lockers: target address is not locker"
+            "Lockers: not locker"
         );
 
         uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
@@ -557,7 +564,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         require(
             lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount >= equivalentNativeToken,
-            "Lockers: insufficient native token collateral"
+            "Lockers: insufficient collateral"
         );
 
         // Updates locker's bond (in TNT)
@@ -621,12 +628,12 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     ) external override nonReentrant whenNotPaused returns (bool) {
         require(
             _msgSender() == ccBurnRouter,
-            "Lockers: caller can't slash"
+            "Lockers: can't slash"
         );
 
         require(
             lockersMapping[_lockerTargetAddress].isLocker,
-            "Lockers: target address is not locker"
+            "Lockers: not locker"
         );
 
         uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
@@ -637,13 +644,18 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             NATIVE_TOKEN // Output token
         );
 
-        _slashLockerForDispute(
+        LockersLib.slashLockerForDispute(
             lockersMapping[_lockerTargetAddress],
+            libConstants,
+            libParams,
             equivalentNativeToken,
             _rewardAmount,
-            _rewardRecipient,
             _amount
         );
+
+        uint rewardInNativeToken = equivalentNativeToken*_rewardAmount/_amount;
+
+        payable(_rewardRecipient).transfer(rewardInNativeToken);
 
         emit LockerSlashed(
             _lockerTargetAddress,
@@ -659,37 +671,6 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         return true;
     }
 
-    function _slashLockerForDispute(
-        DataTypes.locker storage theLocker,
-        uint _equivalentNativeToken,
-        uint _rewardAmount,
-        address _rewardRecipient,
-        uint _amount
-    ) internal {
-        uint rewardInNativeToken = _equivalentNativeToken*_rewardAmount/_amount;
-        uint neededNativeTokenForSlash = _equivalentNativeToken*liquidationRatio/ONE_HUNDRED_PERCENT;
-
-        require(
-            theLocker.nativeTokenLockedAmount >= (rewardInNativeToken + neededNativeTokenForSlash),
-            "Lockers: insufficient native token collateral"
-        );
-
-        // Updates locker's bond (in TNT)
-        theLocker.nativeTokenLockedAmount
-        = theLocker.nativeTokenLockedAmount - (rewardInNativeToken + neededNativeTokenForSlash);
-
-        theLocker.netMinted
-        = theLocker.netMinted - _amount;
-
-        theLocker.slashingTeleBTCAmount
-        = theLocker.slashingTeleBTCAmount + _amount;
-
-        theLocker.reservedNativeTokenForSlash
-        = theLocker.reservedNativeTokenForSlash + neededNativeTokenForSlash;
-
-
-        payable(_rewardRecipient).transfer(rewardInNativeToken);
-    }
 
     /// @notice                           Liquidates the locker whose collateral is unhealthy
     /// @dev                              Anyone can liquidate a locker which its health factor
@@ -705,7 +686,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         require(
             lockersMapping[_lockerTargetAddress].isLocker,
-            "Lockers: target address is not locker"
+            "Lockers: not locker"
         );
 
         DataTypes.locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
@@ -719,7 +700,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
                 libParams,
                 priceOfCollateral
             ) < HEALTH_FACTOR,
-            "Lockers: locker's collateral is healthy"
+            "Lockers: is healthy"
         );
 
         uint _maxBuyableCollateral = LockersLib.maximumBuyableCollateral(
@@ -735,7 +716,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         require(
             _collateralAmount <= _maxBuyableCollateral,
-            "Lockers: more than maximum buyable"
+            "Lockers: more than max"
         );
 
         // Needed amount of TeleBTC to buy collateralAmount
@@ -787,7 +768,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         require(
             lockersMapping[_lockerTargetAddress].isLocker,
-            "Lockers: target address is not locker"
+            "Lockers: not locker"
         );
 
         DataTypes.locker memory theSlashingLocker = lockersMapping[_lockerTargetAddress];
@@ -795,14 +776,14 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         // Checks that the collateral has become unhealthy
         require(
             theSlashingLocker.slashingTeleBTCAmount > 0,
-            "Lockers: locker cant be slashed"
+            "Lockers: cant slash"
         );
 
         uint priceOfCollateral = priceOfOneUnitOfCollateralInBTC();
 
         require(
             _slashingAmount <= theSlashingLocker.reservedNativeTokenForSlash,
-            "Lockers: more than maximum buyable"
+            "Lockers: more than max"
         );
 
         // Needed amount of TeleBTC to buy collateralAmount
@@ -849,7 +830,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         require(
             msg.value == _addingNativeTokenAmount,
-            "Lockers: incompatible msg value"
+            "Lockers: msg value"
         );
 
         LockersLib.addToCollateral(
@@ -975,7 +956,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         require(
             theLockerCapacity >= _amount,
-            "Lockers: this locker hasn't sufficient capacity"
+            "Lockers: insufficient capacity"
         );
 
         lockersMapping[_lockerTargetAddress].netMinted =
@@ -1023,7 +1004,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         require(
             netMinted >= remainedAmount,
-            "Lockers: locker doesn't have sufficient funds"
+            "Lockers: insufficient funds"
         );
 
         lockersMapping[_lockerTargetAddress].netMinted = netMinted - remainedAmount;
@@ -1081,17 +1062,17 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         require(
             lockersMapping[_lockerTargetAddress].isLocker,
-            "Lockers: no locker with this address"
+            "Lockers: no locker"
         );
 
         require(
             lockerLeavingRequests[_lockerTargetAddress],
-            "Lockers: locker didn't request to be removed"
+            "Lockers: no remove req"
         );
 
         require(
             lockersMapping[_lockerTargetAddress].netMinted == 0,
-            "Lockers: net minted is not zero"
+            "Lockers: 0 net minted"
         );
 
         DataTypes.locker memory _removingLokcer = lockersMapping[_lockerTargetAddress];

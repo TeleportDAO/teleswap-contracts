@@ -91,6 +91,38 @@ library LockersLib {
         theLocker.nativeTokenLockedAmount - _removingNativeTokenAmount;
     }
 
+
+    function slashLockerForDispute(
+        DataTypes.locker storage theLocker,
+        DataTypes.lockersLibConstants memory libConstants,
+        DataTypes.lockersLibParam memory libParams,
+        uint _equivalentNativeToken,
+        uint _rewardAmount,
+        uint _amount
+    ) external {
+        uint rewardInNativeToken = _equivalentNativeToken*_rewardAmount/_amount;
+        uint neededNativeTokenForSlash = _equivalentNativeToken*libParams.liquidationRatio/libConstants.OneHundredPercent;
+
+        require(
+            theLocker.nativeTokenLockedAmount >= (rewardInNativeToken + neededNativeTokenForSlash),
+            "Lockers: insufficient native token collateral"
+        );
+
+        // Updates locker's bond (in TNT)
+        theLocker.nativeTokenLockedAmount
+        = theLocker.nativeTokenLockedAmount - (rewardInNativeToken + neededNativeTokenForSlash);
+
+        theLocker.netMinted
+        = theLocker.netMinted - _amount;
+
+        theLocker.slashingTeleBTCAmount
+        = theLocker.slashingTeleBTCAmount + _amount;
+
+        theLocker.reservedNativeTokenForSlash
+        = theLocker.reservedNativeTokenForSlash + neededNativeTokenForSlash;
+
+    }
+
 }
 
 
