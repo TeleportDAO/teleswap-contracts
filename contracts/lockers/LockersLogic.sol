@@ -11,8 +11,8 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "./interfaces/ILockers.sol";
-import "./types/DataTypes.sol";
-import "./libraries/LockersLib.sol";
+import "../types/DataTypes.sol";
+import "../libraries/LockersLib.sol";
 import "hardhat/console.sol";
 
 contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
@@ -524,13 +524,11 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         return true;
     }
 
-    /// @notice                           Slashes lockers
+    /// @notice                           Slashes lockers for not executing a cc burn req
     /// @dev                              Only cc burn router can call this
-    ///                                   Locker is slashed in two cases:
-    ///                                   1. Not providing a burn proof before a cc burn request deadline
-    ///                                   2. Moving BTC from locker's address without a good reason
-    ///                                   In the first scenario, user who made the cc burn request will receive the slashed bond
-    ///                                   In the second scenario, the slashed bond will be held by the lockers contract
+    ///                                   Locker is slashed since doesn't provide burn proof
+    ///                                   before a cc burn request deadline.
+    ///                                   User who made the cc burn request will receive the slashed bond
     /// @param _lockerTargetAddress       Locker's target chain address
     /// @param _rewardAmount              Amount of TeleBTC that slasher receives
     /// @param _rewardAmount              Address of slasher who receives reward
@@ -562,36 +560,18 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             NATIVE_TOKEN // Output token
         );
 
-        require(
-            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount >= equivalentNativeToken,
-            "Lockers: insufficient collateral"
-        );
+        if (equivalentNativeToken > lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount) {
+            equivalentNativeToken = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount;
+        }
 
         // Updates locker's bond (in TNT)
         lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount
         = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - equivalentNativeToken;
 
-        // Transfers slashed collateral to user
-        if (_recipient != address(this)) {
-            // Transfers TNT to user
-            payable(_recipient).transfer(equivalentNativeToken*_amount/(_amount + _rewardAmount));
-            // Transfers TNT to slasher
-            payable(_rewardRecipient).transfer(equivalentNativeToken*_rewardAmount/(_amount + _rewardAmount));
-        } else {
-            // Slasher can't be address(this)
-            // Transfers TNT to slasher
-            payable(_rewardRecipient).transfer(equivalentNativeToken*_rewardAmount/(_amount + _rewardAmount));
-        }
-
-        // TODO: adding a cc burn for the locker itself
-        // Burns TeleBTC for locker rescue script
-        // note: user should give allowance for TeleBTC to cc burn router
-        // ICCBurnRouter(ccBurnRouter).ccBurn(
-        //     _amount,
-        //     lockersMapping[_lockerTargetAddress].lockerRescueScript,
-        //     lockersMapping[_lockerTargetAddress].lockerRescueType,
-        //     lockersMapping[_lockerTargetAddress].lockerLockingScript
-        // );
+        // Transfers TNT to user
+        payable(_recipient).transfer(equivalentNativeToken*_amount/(_amount + _rewardAmount));
+        // Transfers TNT to slasher
+        payable(_rewardRecipient).transfer(equivalentNativeToken*_rewardAmount/(_amount + _rewardAmount));
 
         emit LockerSlashed(
             _lockerTargetAddress,
@@ -608,17 +588,15 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     }
 
 
-    /// @notice                           Slashes lockers
+    /// @notice                           Slashes lockers for moving BTC without a good reason
     /// @dev                              Only cc burn router can call this
-    ///                                   Locker is slashed in two cases:
-    ///                                   1. Not providing a burn proof before a cc burn request deadline
-    ///                                   2. Moving BTC from locker's address without a good reason
-    ///                                   In the first scenario, user who made the cc burn request will receive the slashed bond
-    ///                                   In the second scenario, the slashed bond will be held by the lockers contract
+    ///                                   Locker is slashed because he/she moved BTC from 
+    ///                                   locker's Bitcoin address without any corresponding burn req
+    ///                                   The slashed bond will be sold with discount
     /// @param _lockerTargetAddress       Locker's target chain address
-    /// @param _rewardAmount              Amount of TeleBTC that slasher receives
-    /// @param _rewardAmount              Address of slasher who receives reward
-    /// @param _amount                    Amount of TeleBTC that is slashed from lockers
+    /// @param _rewardAmount              Value of slashed reward (in TeleBTC)
+    /// @param _rewardRecipient           Address of slasher who receives reward
+    /// @param _amount                    Value of slashed collateral (in TeleBTC)
     /// @return                           True if the locker is slashed successfully
     function slashLockerForDispute(
         address _lockerTargetAddress,

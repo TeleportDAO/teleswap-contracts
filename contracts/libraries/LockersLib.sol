@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../../erc20/interfaces/IERC20.sol";
-import "../../libraries/ScriptTypesEnum.sol";
+import "../erc20/interfaces/IERC20.sol";
+import "../types/ScriptTypesEnum.sol";
 import "../types/DataTypes.sol";
 
 library LockersLib {
