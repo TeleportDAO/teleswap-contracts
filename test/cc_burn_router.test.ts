@@ -133,13 +133,13 @@ describe("CCBurnRouter", async () => {
         return ccBurnRouter;
     };
 
-    async function setLockersSlashLockerForCCBurnReturn(): Promise<void> {
-        await mockLockers.mock.slashLockerForCCBurn
+    async function setLockersSlashIdleLockerReturn(): Promise<void> {
+        await mockLockers.mock.slashIdleLocker
             .returns(true);
     }
 
-    async function setLockersSlashLockerForDisputeReturn(): Promise<void> {
-        await mockLockers.mock.slashLockerForDispute
+    async function setLockersSlashTheifLockerReturn(): Promise<void> {
+        await mockLockers.mock.slashTheifLocker
             .returns(true);
     }
 
@@ -823,7 +823,7 @@ describe("CCBurnRouter", async () => {
         it("Disputes locker successfully", async function () {
             // Sets mock contracts
             await setRelayLastSubmittedHeight(burnReqBlockNumber + TRANSFER_DEADLINE + 1);
-            await setLockersSlashLockerForCCBurnReturn();
+            await setLockersSlashIdleLockerReturn();
             await setLockersIsLocker(true);
 
             await expect(
@@ -837,7 +837,7 @@ describe("CCBurnRouter", async () => {
         it("Reverts since locker has been slashed before", async function () {
             // Sets mock contracts
             await setRelayLastSubmittedHeight(burnReqBlockNumber + TRANSFER_DEADLINE + 1);
-            await setLockersSlashLockerForCCBurnReturn();
+            await setLockersSlashIdleLockerReturn();
             await setLockersIsLocker(true);
 
             await ccBurnRouterSigner2.disputeBurn(
@@ -870,7 +870,7 @@ describe("CCBurnRouter", async () => {
 
             // Sets mock contracts outputs
             await setLockersIsLocker(true);
-            await setLockersSlashLockerForCCBurnReturn();
+            await setLockersSlashIdleLockerReturn();
 
             // Pays the burnt amount and provides proof
             await provideProof(burnReqBlockNumber + 5);
@@ -917,7 +917,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLocker(true);
             await setRelayLastSubmittedHeight(burnReqBlockNumber + TRANSFER_DEADLINE + 1);
             await setLockersGetLockerTargetAddress();
-            await setLockersSlashLockerForDisputeReturn();
+            await setLockersSlashTheifLockerReturn();
 
             expect(
                 await ccBurnRouterSigner2.disputeLocker(
@@ -1054,7 +1054,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLocker(true);
             await setRelayLastSubmittedHeight(burnReqBlockNumber + TRANSFER_DEADLINE + 1);
             await setLockersGetLockerTargetAddress();
-            await setLockersSlashLockerForCCBurnReturn();
+            await setLockersSlashIdleLockerReturn();
 
             expect(
                 ccBurnRouterSigner2.disputeLocker(
@@ -1078,7 +1078,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLocker(true);
             await setRelayLastSubmittedHeight(burnReqBlockNumber + TRANSFER_DEADLINE + 1);
             await setLockersGetLockerTargetAddress();
-            await setLockersSlashLockerForCCBurnReturn();
+            await setLockersSlashIdleLockerReturn();
 
             expect(
                 ccBurnRouterSigner2.disputeLocker(
@@ -1102,7 +1102,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLocker(true);
             await setRelayLastSubmittedHeight(burnReqBlockNumber);
             await setLockersGetLockerTargetAddress();
-            await setLockersSlashLockerForCCBurnReturn();
+            await setLockersSlashIdleLockerReturn();
 
             // User sends a burn request and locker provides burn proof for it
             await sendBurnRequest(100, userRequestedAmount, USER_SCRIPT_P2PKH, USER_SCRIPT_P2PKH_TYPE);

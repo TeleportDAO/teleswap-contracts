@@ -452,7 +452,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     function requestToRemoveLocker() external override nonReentrant returns (bool) {
         require(
             lockersMapping[_msgSender()].isLocker,
-            "Lockers: not locker"
+            "Lockers: input address is not a valid locker"
         );
 
         lockersMapping[_msgSender()].isActive = false;
@@ -503,7 +503,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _amount                    Amount of TeleBTC that is slashed from lockers
     /// @param _recipient                 Address of user who receives the slashed amount
     /// @return                           True if the locker is slashed successfully
-    function slashLockerForCCBurn(
+    function slashIdleLocker(
         address _lockerTargetAddress,
         uint _rewardAmount,
         address _rewardRecipient,
@@ -512,12 +512,12 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     ) external override nonReentrant whenNotPaused returns (bool) {
         require(
             _msgSender() == ccBurnRouter,
-            "Lockers: can't slash"
+            "Lockers: message sender is not ccBurn"
         );
 
         require(
             lockersMapping[_lockerTargetAddress].isLocker,
-            "Lockers: not locker"
+            "Lockers: input address is not a valid locker"
         );
 
         uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
@@ -539,11 +539,12 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         // Transfers TNT to user
         payable(_recipient).transfer(equivalentNativeToken*_amount/(_amount + _rewardAmount));
         // Transfers TNT to slasher
-        payable(_rewardRecipient).transfer(equivalentNativeToken*_rewardAmount/(_amount + _rewardAmount));
+        uint rewardAmountInNativeToken = equivalentNativeToken*_rewardAmount/(_amount + _rewardAmount);
+        payable(_rewardRecipient).transfer(rewardAmountInNativeToken);
 
         emit LockerSlashed(
             _lockerTargetAddress,
-            _rewardAmount,
+            rewardAmountInNativeToken,
             _rewardRecipient,
             _amount,
             _recipient,
@@ -566,7 +567,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param _rewardRecipient           Address of slasher who receives reward
     /// @param _amount                    Value of slashed collateral (in TeleBTC)
     /// @return                           True if the locker is slashed successfully
-    function slashLockerForDispute(
+    function slashTheifLocker(
         address _lockerTargetAddress,
         uint _rewardAmount,
         address _rewardRecipient,
@@ -574,12 +575,12 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     ) external override nonReentrant whenNotPaused returns (bool) {
         require(
             _msgSender() == ccBurnRouter,
-            "Lockers: can't slash"
+            "Lockers: message sender is not ccBurn"
         );
 
         require(
             lockersMapping[_lockerTargetAddress].isLocker,
-            "Lockers: not locker"
+            "Lockers: input address is not a valid locker"
         );
 
         uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
@@ -590,7 +591,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             NATIVE_TOKEN // Output token
         );
 
-        LockersLib.slashLockerForDispute(
+        (uint rewardInNativeToken, uint neededNativeTokenForSlash) = LockersLib.slashTheifLocker(
             lockersMapping[_lockerTargetAddress],
             libConstants,
             libParams,
@@ -599,17 +600,15 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             _amount
         );
 
-        uint rewardInNativeToken = equivalentNativeToken*_rewardAmount/_amount;
-
         payable(_rewardRecipient).transfer(rewardInNativeToken);
 
         emit LockerSlashed(
             _lockerTargetAddress,
-            _rewardAmount,
+            rewardInNativeToken,
             _rewardRecipient,
             _amount,
             address(this),
-            equivalentNativeToken,
+            neededNativeTokenForSlash + rewardInNativeToken,
             block.timestamp,
             false
         );
@@ -632,7 +631,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         require(
             lockersMapping[_lockerTargetAddress].isLocker,
-            "Lockers: not locker"
+            "Lockers: input address is not a valid locker"
         );
 
         DataTypes.locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
@@ -662,7 +661,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         require(
             _collateralAmount <= _maxBuyableCollateral,
-            "Lockers: more than max"
+            "Lockers: not enough collateral to buy"
         );
 
         // Needed amount of TeleBTC to buy collateralAmount
@@ -716,14 +715,14 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         require(
             lockersMapping[_lockerTargetAddress].isLocker,
-            "Lockers: not locker"
+            "Lockers: input address is not a valid locker"
         );
 
-        DataTypes.locker memory theSlashingLocker = lockersMapping[_lockerTargetAddress];
+        DataTypes.locker memory theSlashedLocker = lockersMapping[_lockerTargetAddress];
 
         require(
-            _collateralAmount <= theSlashingLocker.reservedNativeTokenForSlash,
-            "Lockers: more than max"
+            _collateralAmount <= theSlashedLocker.reservedNativeTokenForSlash,
+            "Lockers: not enough slashed collateral to buy"
         );
 
         // Finds needed amount of TeleBTC to buy collateral with discount
@@ -737,7 +736,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         // Users cannot buy more than total slashed TeleBTC
         require(
-            neededTeleBTC <= theSlashingLocker.slashingTeleBTCAmount,
+            neededTeleBTC <= theSlashedLocker.slashingTeleBTCAmount,
             "Lockers: cant slash"
         );
 

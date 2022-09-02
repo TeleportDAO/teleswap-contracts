@@ -312,7 +312,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             burnRequests[_lockerTargetAddress][_indices[i]].isTransferred = true;
 
             // Slashes locker and sends the slashed amount to the user
-            ILockers(lockers).slashLockerForCCBurn(
+            ILockers(lockers).slashIdleLocker(
                 _lockerTargetAddress,
                 burnRequests[_lockerTargetAddress][_indices[i]].amount*slasherPercentageReward/MAX_SLASHER_REWARD, // Slasher reward
                 _msgSender(), // Slasher address
@@ -440,7 +440,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         address _lockerTargetAddress = ILockers(lockers)
         .getLockerTargetAddress(_lockerLockingScript);
 
-        ILockers(lockers).slashLockerForDispute(
+        ILockers(lockers).slashTheifLocker(
             _lockerTargetAddress,
             totalValue*slasherPercentageReward/MAX_SLASHER_REWARD, // Slasher reward
             _msgSender(), // Slasher address
