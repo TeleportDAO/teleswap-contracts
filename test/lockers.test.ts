@@ -211,7 +211,7 @@ describe("Lockers", async () => {
         let linkLibraryAddresses: LockersLogicLibraryAddresses;
 
         linkLibraryAddresses = {
-            "contracts/lockers/libraries/LockersLib.sol:LockersLib": lockersLib.address,
+            "contracts/libraries/LockersLib.sol:LockersLib": lockersLib.address,
         };
 
         // Deploys lockers logic
@@ -517,7 +517,7 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("Pausable: paused")
 
             await expect(
-                lockerSigner1.slashLockerForCCBurn(
+                lockerSigner1.slashIdleLocker(
                     signer1Address,
                     0,
                     deployerAddress,
@@ -600,7 +600,7 @@ describe("Lockers", async () => {
                     signer1Address,
                     10000
                 )
-            ).to.be.revertedWith("Lockers: not locker")
+            ).to.be.revertedWith("Lockers: input address is not a valid locker")
 
         });
 
@@ -809,7 +809,6 @@ describe("Lockers", async () => {
             ).to.equal(21000)
         })
     })
-
 
     describe("#requestToBecomeLocker", async () => {
 
@@ -1060,7 +1059,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.requestToRemoveLocker()
-            ).to.be.revertedWith("Lockers: not locker")
+            ).to.be.revertedWith("Lockers: input address is not a valid locker")
         })
 
         it("successfully request to be removed", async function () {
@@ -1325,34 +1324,34 @@ describe("Lockers", async () => {
     });
 
 
-    describe("#slashLockerForCCBurn", async () => {
+    describe("#slashIdleLocker", async () => {
 
         it("only cc burn can call slash locker function", async function () {
             let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
-                lockerSigner1.slashLockerForCCBurn(
+                lockerSigner1.slashIdleLocker(
                     signer1Address,
                     0,
                     deployerAddress,
                     btcAmountToSlash,
                     ccBurnSimulatorAddress
                 )
-            ).to.be.revertedWith("Lockers: can't slash")
+            ).to.be.revertedWith("Lockers: message sender is not ccBurn")
         })
 
         it("slash locker reverts when the target address is not locker", async function () {
             let lockerCCBurnSimulator = lockers.connect(ccBurnSimulator)
 
             await expect(
-                lockerCCBurnSimulator.slashLockerForCCBurn(
+                lockerCCBurnSimulator.slashIdleLocker(
                     signer1Address,
                     0,
                     deployerAddress,
                     btcAmountToSlash,
                     ccBurnSimulatorAddress
                 )
-            ).to.be.revertedWith("Lockers: not locker")
+            ).to.be.revertedWith("Lockers: input address is not a valid locker")
         })
 
         it("can't slash more than collateral", async function () {
@@ -1387,7 +1386,7 @@ describe("Lockers", async () => {
 
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
 
-            lockerCCBurnSigner.slashLockerForCCBurn(
+            lockerCCBurnSigner.slashIdleLocker(
                 signer1Address,
                 0,
                 deployerAddress,
@@ -1428,7 +1427,7 @@ describe("Lockers", async () => {
 
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
 
-            await lockerCCBurnSigner.slashLockerForCCBurn(
+            await lockerCCBurnSigner.slashIdleLocker(
                 signer1Address,
                 0,
                 deployerAddress,
@@ -1440,32 +1439,32 @@ describe("Lockers", async () => {
 
     });
 
-    describe("#slashLockerForDispute", async () => {
+    describe("#slashTheifLocker", async () => {
 
         it("only cc burn can call slash locker function", async function () {
             let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
-                lockerSigner1.slashLockerForDispute(
+                lockerSigner1.slashTheifLocker(
                     signer1Address,
                     0,
                     deployerAddress,
                     btcAmountToSlash
                 )
-            ).to.be.revertedWith("Lockers: can't slash")
+            ).to.be.revertedWith("Lockers: message sender is not ccBurn")
         })
 
         it("slash locker reverts when the target address is not locker", async function () {
             let lockerCCBurnSimulator = lockers.connect(ccBurnSimulator)
 
             await expect(
-                lockerCCBurnSimulator.slashLockerForDispute(
+                lockerCCBurnSimulator.slashTheifLocker(
                     signer1Address,
                     0,
                     deployerAddress,
                     btcAmountToSlash
                 )
-            ).to.be.revertedWith("Lockers: not locker")
+            ).to.be.revertedWith("Lockers: input address is not a valid locker")
         })
 
         it("cc burn can slash a locker", async function () {
@@ -1500,12 +1499,76 @@ describe("Lockers", async () => {
             // ccBurn calls to slash the locker
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
 
-            await lockerCCBurnSigner.slashLockerForDispute(
+            await lockerCCBurnSigner.slashTheifLocker(
                 signer1Address,
                 0,
                 deployerAddress,
                 TeleBTCAmount
             );
+
+        })
+    });
+
+    describe("#buySlashedCollateralOfLocker", async () => {
+
+        it("reverts when the target address is not locker", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.buySlashedCollateralOfLocker(
+                    signer1Address,
+                    10
+                )
+            ).to.be.revertedWith("Lockers: input address is not a valid locker")
+        })
+
+        it("buying slashed collateral", async function () {
+
+            let TNTAmount = 10000;
+            let TeleBTCAmount = 1000;
+            // Initialize mock contract (how much TNT locker should be penalized)
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(TNTAmount)
+
+            // Signer 1 becomes a locker
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+            let lockerSigner1 = lockers.connect(signer1)
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+            expect(
+                await lockers.addLocker(signer1Address)
+            ).to.emit(lockers, "LockerAdded")
+
+            // Locker mints some TeleBTC and gets BTC on Bitcoin
+            await lockers.addMinter(signer1Address);
+            await lockerSigner1.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, TeleBTCAmount);
+
+            // ccBurn calls to slash the locker
+            let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
+
+            await lockerCCBurnSigner.slashTheifLocker(
+                signer1Address,
+                0,
+                deployerAddress,
+                TeleBTCAmount
+            );
+
+            // Someone buys slashed collateral with discount
+            let lockerSigner2 = lockers.connect(signer2)
+            await expect(
+                lockerSigner2.buySlashedCollateralOfLocker(
+                    signer1Address,
+                    TNTAmount * liquidationRatio + 1
+                )
+            ).to.be.revertedWith("Lockers: not enough slashed collateral to buy")
 
         })
     });
@@ -1694,7 +1757,7 @@ describe("Lockers", async () => {
                     signer1Address,
                     1000
                 )
-            ).to.be.revertedWith("Lockers: not locker")
+            ).to.be.revertedWith("Lockers: input address is not a valid locker")
         })
 
         it("can't liquidate because it's above liquidation ratio", async function () {
@@ -1771,7 +1834,7 @@ describe("Lockers", async () => {
                     signer1Address,
                     BigNumber.from(10).pow(18).mul(3)
                 )
-            ).to.be.revertedWith("Lockers: more than max")
+            ).to.be.revertedWith("Lockers: not enough collateral to buy")
 
         });
 

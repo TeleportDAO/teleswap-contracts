@@ -93,14 +93,14 @@ library LockersLib {
     }
 
 
-    function slashLockerForDispute(
+    function slashTheifLocker(
         DataTypes.locker storage theLocker,
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
         uint _equivalentNativeToken,
         uint _rewardAmount,
         uint _amount
-    ) external {
+    ) external returns (uint, uint) {
         uint rewardInNativeToken = _equivalentNativeToken*_rewardAmount/_amount;
         uint neededNativeTokenForSlash = _equivalentNativeToken*libParams.liquidationRatio/libConstants.OneHundredPercent;
 
@@ -124,6 +124,7 @@ library LockersLib {
         theLocker.reservedNativeTokenForSlash
             = theLocker.reservedNativeTokenForSlash + neededNativeTokenForSlash;
 
+        return (rewardInNativeToken, neededNativeTokenForSlash);
     }
 
 }

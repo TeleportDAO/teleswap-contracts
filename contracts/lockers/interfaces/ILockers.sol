@@ -210,7 +210,7 @@ interface ILockers {
 
     function selfRemoveLocker() external returns (bool);
 
-    function slashLockerForCCBurn(
+    function slashIdleLocker(
         address _lockerTargetAddress,
         uint _rewardAmount,
         address _rewardRecipient,
@@ -218,7 +218,7 @@ interface ILockers {
         address _recipient
     ) external returns(bool);
 
-    function slashLockerForDispute(
+    function slashTheifLocker(
         address _lockerTargetAddress,
         uint _rewardAmount,
         address _rewardRecipient,
