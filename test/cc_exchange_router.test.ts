@@ -256,7 +256,7 @@ describe("CCExchangeRouter", async () => {
         let linkLibraryAddresses: LockersLogicLibraryAddresses;
 
         linkLibraryAddresses = {
-            "contracts/lockers/libraries/LockersLib.sol:LockersLib": lockersLib.address,
+            "contracts/libraries/LockersLib.sol:LockersLib": lockersLib.address,
         };
 
         // Deploys lockers logic

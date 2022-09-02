@@ -1427,13 +1427,15 @@ describe("Lockers", async () => {
 
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
 
-            await lockerCCBurnSigner.slashIdleLocker(
-                signer1Address,
-                0,
-                deployerAddress,
-                10000,
-                ccBurnSimulatorAddress
-            );
+            expect(
+                await lockerCCBurnSigner.slashIdleLocker(
+                    signer1Address,
+                    0,
+                    deployerAddress,
+                    10000,
+                    ccBurnSimulatorAddress
+                )
+            ).to.emit(lockers, "LockerSlashed")
 
         })
 
@@ -1499,12 +1501,14 @@ describe("Lockers", async () => {
             // ccBurn calls to slash the locker
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
 
-            await lockerCCBurnSigner.slashTheifLocker(
-                signer1Address,
-                0,
-                deployerAddress,
-                TeleBTCAmount
-            );
+            expect(
+                await lockerCCBurnSigner.slashTheifLocker(
+                    signer1Address,
+                    0,
+                    deployerAddress,
+                    TeleBTCAmount
+                )
+            ).to.emit(lockers, "LockerSlashed")
 
         })
     });
@@ -1522,7 +1526,7 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("Lockers: input address is not a valid locker")
         })
 
-        it("buying slashed collateral", async function () {
+        it("not enough slashed amount to buy", async function () {
 
             let TNTAmount = 10000;
             let TeleBTCAmount = 1000;
@@ -1569,6 +1573,124 @@ describe("Lockers", async () => {
                     TNTAmount * liquidationRatio + 1
                 )
             ).to.be.revertedWith("Lockers: not enough slashed collateral to buy")
+
+        })
+
+        it("can't slash because needed BTC is more than existing", async function () {
+
+            let TNTAmount = 10000;
+            let TeleBTCAmount = 1000;
+            // Initialize mock contract (how much TNT locker should be penalized)
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(TNTAmount)
+
+            // Signer 1 becomes a locker
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+            let lockerSigner1 = lockers.connect(signer1)
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+            expect(
+                await lockers.addLocker(signer1Address)
+            ).to.emit(lockers, "LockerAdded")
+
+            // Locker mints some TeleBTC and gets BTC on Bitcoin
+            await lockers.addMinter(signer1Address);
+            await lockerSigner1.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, TeleBTCAmount);
+
+            // ccBurn calls to slash the locker
+            let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(minRequiredNativeTokenLockedAmount.div(5))
+
+            await lockerCCBurnSigner.slashTheifLocker(
+                signer1Address,
+                0,
+                deployerAddress,
+                TeleBTCAmount
+            );
+
+            // Someone buys slashed collateral with discount
+            let lockerSigner2 = lockers.connect(signer2)
+            await expect(
+                lockerSigner2.buySlashedCollateralOfLocker(
+                    signer1Address,
+                    BigNumber.from(10).pow(18).mul(1)
+                )
+            ).to.be.revertedWith("Lockers: cant slash")
+
+        })
+
+        it("can buy slashing amount", async function () {
+
+            let TNTAmount = 10000;
+            let TeleBTCAmount = 1000;
+            // Initialize mock contract (how much TNT locker should be penalized)
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(TNTAmount)
+
+            // Signer 1 becomes a locker
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+            let lockerSigner1 = lockers.connect(signer1)
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+            expect(
+                await lockers.addLocker(signer1Address)
+            ).to.emit(lockers, "LockerAdded")
+
+            // Locker mints some TeleBTC and gets BTC on Bitcoin
+            await lockers.addMinter(signer1Address);
+            await lockerSigner1.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, TeleBTCAmount);
+
+            // ccBurn calls to slash the locker
+            let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(minRequiredNativeTokenLockedAmount.div(5))
+
+            await lockerCCBurnSigner.slashTheifLocker(
+                signer1Address,
+                0,
+                deployerAddress,
+                TeleBTCAmount
+            );
+
+            let theLocker = await lockers.lockersMapping(signer1Address)
+
+            expect(
+                theLocker[6]
+            ).to.equal(TeleBTCAmount)
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(TeleBTCAmount)
+
+            let teleBTCSigner2 = await teleBTC.connect(signer2);
+
+            await teleBTCSigner2.mintTestToken()
+
+            await teleBTCSigner2.approve(lockers.address, TeleBTCAmount*95/100)
+
+            // Someone buys slashed collateral with discount
+            let lockerSigner2 = lockers.connect(signer2)
+            expect(
+                await lockerSigner2.buySlashedCollateralOfLocker(
+                    signer1Address,
+                    BigNumber.from(10).pow(18).mul(1)
+                )
+            ).to.emit(lockers, "LockerSlashedCollateralSold")
 
         })
     });
@@ -1984,6 +2106,19 @@ describe("Lockers", async () => {
         })
 
     });
+
+    describe("#priceOfOneUnitOfCollateralInBTC", async () => {
+        it("return what price oracle returned", async function () {
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
+
+            let lockerSigner1 = await lockers.connect(signer1)
+
+            expect(
+                await lockerSigner1.priceOfOneUnitOfCollateralInBTC()
+            ).to.equal(10000)
+        })
+    })
 
     describe("#removeCollateral", async () => {
 
