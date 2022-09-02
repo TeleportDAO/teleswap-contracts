@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../../erc20/interfaces/IERC20.sol";
-import "../../libraries/ScriptTypesEnum.sol";
+import "../erc20/interfaces/IERC20.sol";
+import "../types/ScriptTypesEnum.sol";
 import "../types/DataTypes.sol";
 
 library LockersLib {
@@ -34,8 +34,9 @@ library LockersLib {
         DataTypes.lockersLibParam memory libParams,
         uint _priceOfOneUnitOfCollateral
     ) external view returns (uint) {
-        return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount * (10 ** (1 + IERC20(libParams.teleBTC).decimals())))/
-        (theLocker.netMinted * libParams.liquidationRatio * (10 ** (1 + libConstants.NativeTokenDecimal)));
+        return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount * 
+            (10 ** (1 + IERC20(libParams.teleBTC).decimals())))/
+                (theLocker.netMinted * libParams.liquidationRatio * (10 ** (1 + libConstants.NativeTokenDecimal)));
     }
 
     function neededTeleBTCToBuyCollateral(
@@ -45,7 +46,7 @@ library LockersLib {
         uint _priceOfCollateral
     ) external pure returns (uint) {
         return (_collateralAmount * _priceOfCollateral * libParams.priceWithDiscountRatio)/
-        (libConstants.OneHundredPercent*(10 ** libConstants.NativeTokenDecimal));
+            (libConstants.OneHundredPercent*(10 ** libConstants.NativeTokenDecimal));
     }
 
     function addToCollateral(
@@ -75,10 +76,10 @@ library LockersLib {
             "Lockers: account is not a locker"
         );
 
-        // lockerCapacity = valueOfNativeTokenLockedAmountInBTC - netMinted
-
-        uint lockerCapacity = (theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * libConstants.OneHundredPercent)/
-        (libParams.collateralRatio * (10 ** libConstants.NativeTokenDecimal)) - theLocker.netMinted;
+        // Capacity of locker = (locker's collateral value in TeleBTC) * (collateral ratio) - (minted TeleBTC) 
+        uint lockerCapacity = (theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * 
+            libConstants.OneHundredPercent)/
+                (libParams.collateralRatio * (10 ** libConstants.NativeTokenDecimal)) - theLocker.netMinted;
 
         uint maxRemovableCollateral = (lockerCapacity * (10 ** libConstants.NativeTokenDecimal))/_priceOfOneUnitOfCollateral;
 
@@ -103,23 +104,25 @@ library LockersLib {
         uint rewardInNativeToken = _equivalentNativeToken*_rewardAmount/_amount;
         uint neededNativeTokenForSlash = _equivalentNativeToken*libParams.liquidationRatio/libConstants.OneHundredPercent;
 
-        require(
-            theLocker.nativeTokenLockedAmount >= (rewardInNativeToken + neededNativeTokenForSlash),
-            "Lockers: insufficient native token collateral"
-        );
+        if ((rewardInNativeToken + neededNativeTokenForSlash) > theLocker.nativeTokenLockedAmount) {
+            // Divides total locker's collateral proportional to reward amount and slash amount
+            rewardInNativeToken = rewardInNativeToken*theLocker.nativeTokenLockedAmount/
+                (rewardInNativeToken + neededNativeTokenForSlash);
+            neededNativeTokenForSlash = theLocker.nativeTokenLockedAmount - rewardInNativeToken;
+        }
 
         // Updates locker's bond (in TNT)
         theLocker.nativeTokenLockedAmount
-        = theLocker.nativeTokenLockedAmount - (rewardInNativeToken + neededNativeTokenForSlash);
+            = theLocker.nativeTokenLockedAmount - (rewardInNativeToken + neededNativeTokenForSlash);
 
         theLocker.netMinted
-        = theLocker.netMinted - _amount;
+            = theLocker.netMinted - _amount;
 
         theLocker.slashingTeleBTCAmount
-        = theLocker.slashingTeleBTCAmount + _amount;
+            = theLocker.slashingTeleBTCAmount + _amount;
 
         theLocker.reservedNativeTokenForSlash
-        = theLocker.reservedNativeTokenForSlash + neededNativeTokenForSlash;
+            = theLocker.reservedNativeTokenForSlash + neededNativeTokenForSlash;
 
     }
 

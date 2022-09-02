@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./TypedMemView.sol";
-import "./ScriptTypesEnum.sol";
+import "../types/ScriptTypesEnum.sol";
 import "hardhat/console.sol";
 
 library BitcoinHelper {
