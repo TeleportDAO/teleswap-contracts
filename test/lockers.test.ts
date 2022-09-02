@@ -1325,7 +1325,7 @@ describe("Lockers", async () => {
     });
 
 
-    describe("#slashLocker", async () => {
+    describe("#slashLockerForCCBurn", async () => {
 
         it("only cc burn can call slash locker function", async function () {
             let lockerSigner1 = lockers.connect(signer1)
@@ -1355,7 +1355,7 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("Lockers: not locker")
         })
 
-        it("can't slash above collateral", async function () {
+        it("can't slash more than collateral", async function () {
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(
                 BigNumber.from(10).pow(18).mul(6)
@@ -1387,15 +1387,13 @@ describe("Lockers", async () => {
 
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
 
-            await expect(
-                lockerCCBurnSigner.slashLockerForCCBurn(
-                    signer1Address,
-                    0,
-                    deployerAddress,
-                    10000,
-                    ccBurnSimulatorAddress
-                )
-            ).to.be.revertedWith("Lockers: insufficient collateral")
+            lockerCCBurnSigner.slashLockerForCCBurn(
+                signer1Address,
+                0,
+                deployerAddress,
+                10000,
+                ccBurnSimulatorAddress
+            )
 
         })
 
@@ -1440,6 +1438,76 @@ describe("Lockers", async () => {
 
         })
 
+    });
+
+    describe("#slashLockerForDispute", async () => {
+
+        it("only cc burn can call slash locker function", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.slashLockerForDispute(
+                    signer1Address,
+                    0,
+                    deployerAddress,
+                    btcAmountToSlash
+                )
+            ).to.be.revertedWith("Lockers: can't slash")
+        })
+
+        it("slash locker reverts when the target address is not locker", async function () {
+            let lockerCCBurnSimulator = lockers.connect(ccBurnSimulator)
+
+            await expect(
+                lockerCCBurnSimulator.slashLockerForDispute(
+                    signer1Address,
+                    0,
+                    deployerAddress,
+                    btcAmountToSlash
+                )
+            ).to.be.revertedWith("Lockers: not locker")
+        })
+
+        it("cc burn can slash a locker", async function () {
+
+            let TNTAmount = 10000;
+            let TeleBTCAmount = 1000;
+            // Initialize mock contract (how much TNT locker should be penalized)
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(TNTAmount)
+
+            // Signer 1 becomes a locker
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+            let lockerSigner1 = lockers.connect(signer1)
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+            expect(
+                await lockers.addLocker(signer1Address)
+            ).to.emit(lockers, "LockerAdded")
+
+            // Locker mints some TeleBTC and gets BTC on Bitcoin
+            await lockers.addMinter(signer1Address);
+            await lockerSigner1.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, TeleBTCAmount);
+
+            // ccBurn calls to slash the locker
+            let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
+
+            await lockerCCBurnSigner.slashLockerForDispute(
+                signer1Address,
+                0,
+                deployerAddress,
+                TeleBTCAmount
+            );
+
+        })
     });
 
     describe("#mint", async () => {
