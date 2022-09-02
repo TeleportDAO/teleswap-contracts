@@ -63,7 +63,7 @@ interface ILockers {
         uint liquidateTime
     );
 
-    event LockerSlashingAmountSold(
+    event LockerSlashedCollateralSold(
         address indexed lockerTargetAddress,
         address buyerAddress,
         uint slashingAmount,
@@ -141,20 +141,6 @@ interface ILockers {
     function getLockerCapacity(address _lockerTargetAddress) external view returns (uint);
 
     function priceOfOneUnitOfCollateralInBTC() external view returns (uint);
-
-    // function calculateHealthFactor(
-    //     address _lockerTargetAddress,
-    //     uint _priceOfOneUnitOfCollateral
-    // ) external view returns (uint);
-
-    // function maxBuyableCollateral(
-    //     address _lockerTargetAddress,
-    //     uint _priceOfOneUnitOfCollateral
-    // ) external view returns (uint);
-
-
-
-
 
     // State-changing functions
 
@@ -238,5 +224,10 @@ interface ILockers {
         address _rewardRecipient,
         uint _amount
     ) external returns(bool);
+
+    function buySlashedCollateralOfLocker(
+        address _lockerTargetAddress,
+        uint _collateralAmount
+    ) external returns (bool);
 
 }
