@@ -11,7 +11,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const paybackDeadline = 12;
 
     const teleBTC = await deployments.get("TeleBTC")
-    const bitcoinRelay = await deployments.get("BitcoinRelay")
+    const bitcoinRelayTestnet = await deployments.get("BitcoinRelayTestnet")
     const priceOracle = await deployments.get("PriceOracle")
     const collateralPoolFactory = await deployments.get("CollateralPoolFactory")
     const defaultExchangeConnector = await deployments.get("UniswapV2Connector")
@@ -23,7 +23,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         skipIfAlreadyDeployed: true,
         args: [
             teleBTC.address,
-            bitcoinRelay.address,
+            bitcoinRelayTestnet.address,
             priceOracle.address,
             collateralPoolFactory.address,
             slasherPercentageReward,
@@ -34,4 +34,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ["InstantRouter", "BitcoinMainnet"];
+func.tags = ["InstantRouter", "BitcoinTestnet"];

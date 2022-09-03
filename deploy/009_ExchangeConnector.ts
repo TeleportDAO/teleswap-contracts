@@ -16,11 +16,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         skipIfAlreadyDeployed: true,
         args: [
             connectorName,
-            uniswapV2Router02.address,
-            weth.address
+            uniswapV2Router02.address
         ],
     });
 };
 
 export default func;
-func.tags = ["UniswapV2Connector"];
+func.tags = ["UniswapV2Connector", "BitcoinMainnet"];

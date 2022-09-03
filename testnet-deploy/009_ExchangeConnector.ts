@@ -1,27 +1,25 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
-import { BigNumber, BigNumberish } from "ethers";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts} = hre;
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const tokenName = "Polkadot"
-    const tokenSymbol = "DOT"
-    const initialSupply = BigNumber.from(10).pow(18).mul(1000)
+    const connectorName = "TheConnector"
+    const weth = await deployments.get("WETH")
+    const uniswapV2Router02 = await deployments.get("UniswapV2Router02")
 
-    await deploy("ERC20AsDot", {
+    await deploy("UniswapV2Connector", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            tokenName,
-            tokenSymbol,
-            initialSupply
+            connectorName,
+            uniswapV2Router02.address
         ],
     });
 };
 
 export default func;
-func.tags = ["ERC20AsDot", "BitcoinMainnet"];
+func.tags = ["UniswapV2Connector", "BitcoinTestnet"];

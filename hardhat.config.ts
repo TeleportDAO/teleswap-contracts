@@ -129,7 +129,7 @@ const config: HardhatUserConfig = {
 	},	
   	paths: {
 		artifacts: "artifacts",
-		deploy: "deploy",
+		deploy: ["deploy", "testnet-deploy"],
 		deployments: "deployments",
   	},
   	typechain: {

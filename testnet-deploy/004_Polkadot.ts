@@ -24,4 +24,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ["ERC20AsDot", "BitcoinMainnet"];
+func.tags = ["ERC20AsDot", "BitcoinTestnet"];

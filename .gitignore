@@ -23,7 +23,7 @@ src/types
 build
 .env
 .venv
-/export
+# /export
 vendor
 
 yarn-error.log

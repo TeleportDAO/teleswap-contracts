@@ -18,7 +18,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const transferDeadLine = 10
 
-    const bitcoinRelay = await deployments.get("BitcoinRelay")
+    const bitcoinRelayTestnet = await deployments.get("BitcoinRelayTestnet")
     const lockersProxy = await deployments.get("LockersProxy")
 
 
@@ -28,7 +28,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            bitcoinRelay.address,
+            bitcoinRelayTestnet.address,
             lockersProxy.address,
             treasuryAddress,
             transferDeadLine,
@@ -40,4 +40,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ["CCBurnRouter", "BitcoinMainnet"];
+func.tags = ["CCBurnRouter", "BitcoinTestnet"];

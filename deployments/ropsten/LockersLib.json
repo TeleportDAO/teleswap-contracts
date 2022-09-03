@@ -1,0 +1,534 @@
+{
+  "address": "0xa7Fc801B6a6595D2980d8A19AF297992972590aD",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes",
+              "name": "lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "enum ScriptTypes",
+              "name": "lockerRescueType",
+              "type": "ScriptTypes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "lockerRescueScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256",
+              "name": "TDTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "nativeTokenLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "netMinted",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "slashingTeleBTCAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "reservedNativeTokenForSlash",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isLocker",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "isCandidate",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "isScriptHash",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "isActive",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct DataTypes.locker",
+          "name": "theLocker",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "OneHundredPercent",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "HealthFactor",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "UpperHealthFactor",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "MaxLockerFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "NativeTokenDecimal",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "NativeToken",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct DataTypes.lockersLibConstants",
+          "name": "libConstants",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "teleportDAOToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "teleBTC",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "ccBurnRouter",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "exchangeConnector",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "priceOracle",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minRequiredTDTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minRequiredTNTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lockerPercentageFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "collateralRatio",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "liquidationRatio",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "priceWithDiscountRatio",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct DataTypes.lockersLibParam",
+          "name": "libParams",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_priceOfOneUnitOfCollateral",
+          "type": "uint256"
+        }
+      ],
+      "name": "calculateHealthFactor",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes",
+              "name": "lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "enum ScriptTypes",
+              "name": "lockerRescueType",
+              "type": "ScriptTypes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "lockerRescueScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256",
+              "name": "TDTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "nativeTokenLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "netMinted",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "slashingTeleBTCAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "reservedNativeTokenForSlash",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isLocker",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "isCandidate",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "isScriptHash",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "isActive",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct DataTypes.locker",
+          "name": "theLocker",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "OneHundredPercent",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "HealthFactor",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "UpperHealthFactor",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "MaxLockerFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "NativeTokenDecimal",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "NativeToken",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct DataTypes.lockersLibConstants",
+          "name": "libConstants",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "teleportDAOToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "teleBTC",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "ccBurnRouter",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "exchangeConnector",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "priceOracle",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minRequiredTDTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minRequiredTNTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lockerPercentageFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "collateralRatio",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "liquidationRatio",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "priceWithDiscountRatio",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct DataTypes.lockersLibParam",
+          "name": "libParams",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_priceOfOneUnitOfCollateral",
+          "type": "uint256"
+        }
+      ],
+      "name": "maximumBuyableCollateral",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "OneHundredPercent",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "HealthFactor",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "UpperHealthFactor",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "MaxLockerFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "NativeTokenDecimal",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "NativeToken",
+              "type": "address"
+            }
+          ],
+          "internalType": "struct DataTypes.lockersLibConstants",
+          "name": "libConstants",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "teleportDAOToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "teleBTC",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "ccBurnRouter",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "exchangeConnector",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "priceOracle",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minRequiredTDTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minRequiredTNTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lockerPercentageFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "collateralRatio",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "liquidationRatio",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "priceWithDiscountRatio",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct DataTypes.lockersLibParam",
+          "name": "libParams",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_collateralAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_priceOfCollateral",
+          "type": "uint256"
+        }
+      ],
+      "name": "neededTeleBTCToBuyCollateral",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xe9031bc2a1ae88fe340d582a936df2b46fad6be514230247c1047dce80fdc6a0",
+  "receipt": {
+    "to": null,
+    "from": "0x1DE72A1935Df9b4E02315BDa3C3cDbDF2A640583",
+    "contractAddress": "0xa7Fc801B6a6595D2980d8A19AF297992972590aD",
+    "transactionIndex": 0,
+    "gasUsed": "676334",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0xfbd81a68798c5c794d600a8029dd30f09cc570a4e3eb5070f30776581cb56fca",
+    "transactionHash": "0xe9031bc2a1ae88fe340d582a936df2b46fad6be514230247c1047dce80fdc6a0",
+    "logs": [],
+    "blockNumber": 12918327,
+    "cumulativeGasUsed": "676334",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "c167bd5be69275251cc1930b00674c6f",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.2+commit.661d1103\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"components\":[{\"internalType\":\"bytes\",\"name\":\"lockerLockingScript\",\"type\":\"bytes\"},{\"internalType\":\"enum ScriptTypes\",\"name\":\"lockerRescueType\",\"type\":\"ScriptTypes\"},{\"internalType\":\"bytes\",\"name\":\"lockerRescueScript\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"TDTLockedAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"nativeTokenLockedAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"netMinted\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"slashingTeleBTCAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"reservedNativeTokenForSlash\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"isLocker\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"isCandidate\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"isScriptHash\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"isActive\",\"type\":\"bool\"}],\"internalType\":\"struct DataTypes.locker\",\"name\":\"theLocker\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"OneHundredPercent\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"HealthFactor\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"UpperHealthFactor\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"MaxLockerFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"NativeTokenDecimal\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"NativeToken\",\"type\":\"address\"}],\"internalType\":\"struct DataTypes.lockersLibConstants\",\"name\":\"libConstants\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"teleportDAOToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"teleBTC\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"ccBurnRouter\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"exchangeConnector\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"priceOracle\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"minRequiredTDTLockedAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minRequiredTNTLockedAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockerPercentageFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"collateralRatio\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationRatio\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"priceWithDiscountRatio\",\"type\":\"uint256\"}],\"internalType\":\"struct DataTypes.lockersLibParam\",\"name\":\"libParams\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"_priceOfOneUnitOfCollateral\",\"type\":\"uint256\"}],\"name\":\"calculateHealthFactor\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes\",\"name\":\"lockerLockingScript\",\"type\":\"bytes\"},{\"internalType\":\"enum ScriptTypes\",\"name\":\"lockerRescueType\",\"type\":\"ScriptTypes\"},{\"internalType\":\"bytes\",\"name\":\"lockerRescueScript\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"TDTLockedAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"nativeTokenLockedAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"netMinted\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"slashingTeleBTCAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"reservedNativeTokenForSlash\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"isLocker\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"isCandidate\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"isScriptHash\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"isActive\",\"type\":\"bool\"}],\"internalType\":\"struct DataTypes.locker\",\"name\":\"theLocker\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"OneHundredPercent\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"HealthFactor\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"UpperHealthFactor\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"MaxLockerFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"NativeTokenDecimal\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"NativeToken\",\"type\":\"address\"}],\"internalType\":\"struct DataTypes.lockersLibConstants\",\"name\":\"libConstants\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"teleportDAOToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"teleBTC\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"ccBurnRouter\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"exchangeConnector\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"priceOracle\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"minRequiredTDTLockedAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minRequiredTNTLockedAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockerPercentageFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"collateralRatio\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationRatio\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"priceWithDiscountRatio\",\"type\":\"uint256\"}],\"internalType\":\"struct DataTypes.lockersLibParam\",\"name\":\"libParams\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"_priceOfOneUnitOfCollateral\",\"type\":\"uint256\"}],\"name\":\"maximumBuyableCollateral\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"OneHundredPercent\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"HealthFactor\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"UpperHealthFactor\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"MaxLockerFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"NativeTokenDecimal\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"NativeToken\",\"type\":\"address\"}],\"internalType\":\"struct DataTypes.lockersLibConstants\",\"name\":\"libConstants\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"teleportDAOToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"teleBTC\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"ccBurnRouter\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"exchangeConnector\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"priceOracle\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"minRequiredTDTLockedAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minRequiredTNTLockedAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockerPercentageFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"collateralRatio\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidationRatio\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"priceWithDiscountRatio\",\"type\":\"uint256\"}],\"internalType\":\"struct DataTypes.lockersLibParam\",\"name\":\"libParams\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"_collateralAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_priceOfCollateral\",\"type\":\"uint256\"}],\"name\":\"neededTeleBTCToBuyCollateral\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/libraries/LockersLib.sol\":\"LockersLib\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/erc20/interfaces/IERC20.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.0;\\n\\ninterface IERC20 {\\n    // events\\n    event Approval(address indexed owner, address indexed spender, uint value);\\n    event Transfer(address indexed from, address indexed to, uint value);\\n\\n    // read-only functions\\n    function name() external view returns (string memory);\\n    function symbol() external view returns (string memory);\\n    function decimals() external view returns (uint8);\\n    function totalSupply() external view returns (uint);\\n    function balanceOf(address owner) external view returns (uint);\\n    function allowance(address owner, address spender) external view returns (uint);\\n\\n    // state-changing functions\\n    function approve(address spender, uint value) external returns (bool);\\n    function transfer(address to, uint value) external returns (bool);\\n    function transferFrom(address from, address to, uint value) external returns (bool);\\n}\\n\",\"keccak256\":\"0x9210fa056ea67b530890ea968948270e0d22a15bd428a2edd4915ef25c4eb918\",\"license\":\"MIT\"},\"contracts/libraries/LockersLib.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.0;\\n\\nimport \\\"../erc20/interfaces/IERC20.sol\\\";\\nimport \\\"../types/ScriptTypesEnum.sol\\\";\\nimport \\\"../types/DataTypes.sol\\\";\\n\\nlibrary LockersLib {\\n\\n    function maximumBuyableCollateral(\\n        DataTypes.locker memory theLocker,\\n        DataTypes.lockersLibConstants memory libConstants,\\n        DataTypes.lockersLibParam memory libParams,\\n        uint _priceOfOneUnitOfCollateral\\n    ) external view returns (uint) {\\n\\n        // maxBuyable <= (upperHealthFactor*netMinted*liquidationRatio/10000 - nativeTokenLockedAmount*nativeTokenPrice)/(upperHealthFactor*liquidationRatio*discountedPrice - nativeTokenPrice)\\n        //  => maxBuyable <= (upperHealthFactor*netMinted*liquidationRatio * 10^18  - nativeTokenLockedAmount*nativeTokenPrice * 10^8)/(upperHealthFactor*liquidationRatio*discountedPrice - nativeTokenPrice * 10^8)\\n\\n        uint teleBTCDecimal = IERC20(libParams.teleBTC).decimals();\\n\\n        uint antecedent = (libConstants.UpperHealthFactor * theLocker.netMinted * libParams.liquidationRatio * (10 ** libConstants.NativeTokenDecimal)) -\\n        (theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** teleBTCDecimal));\\n\\n        uint consequent = ((libConstants.UpperHealthFactor * libParams.liquidationRatio * _priceOfOneUnitOfCollateral * libParams.priceWithDiscountRatio)/libConstants.OneHundredPercent) -\\n        (_priceOfOneUnitOfCollateral * (10 ** teleBTCDecimal));\\n\\n        return antecedent/consequent;\\n    }\\n\\n    function calculateHealthFactor(\\n        DataTypes.locker memory theLocker,\\n        DataTypes.lockersLibConstants memory libConstants,\\n        DataTypes.lockersLibParam memory libParams,\\n        uint _priceOfOneUnitOfCollateral\\n    ) external view returns (uint) {\\n        return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount * \\n            (10 ** (1 + IERC20(libParams.teleBTC).decimals())))/\\n                (theLocker.netMinted * libParams.liquidationRatio * (10 ** (1 + libConstants.NativeTokenDecimal)));\\n    }\\n\\n    function neededTeleBTCToBuyCollateral(\\n        DataTypes.lockersLibConstants memory libConstants,\\n        DataTypes.lockersLibParam memory libParams,\\n        uint _collateralAmount,\\n        uint _priceOfCollateral\\n    ) external pure returns (uint) {\\n        return (_collateralAmount * _priceOfCollateral * libParams.priceWithDiscountRatio)/\\n            (libConstants.OneHundredPercent*(10 ** libConstants.NativeTokenDecimal));\\n    }\\n\\n    function addToCollateral(\\n        DataTypes.locker storage theLocker,\\n        uint _addingNativeTokenAmount\\n    ) external {\\n\\n        require(\\n            theLocker.isLocker,\\n            \\\"Lockers: account is not a locker\\\"\\n        );\\n\\n        theLocker.nativeTokenLockedAmount =\\n        theLocker.nativeTokenLockedAmount + _addingNativeTokenAmount;\\n    }\\n\\n    function removeFromCollateral(\\n        DataTypes.locker storage theLocker,\\n        DataTypes.lockersLibConstants memory libConstants,\\n        DataTypes.lockersLibParam memory libParams,\\n        uint _priceOfOneUnitOfCollateral,\\n        uint _removingNativeTokenAmount\\n    ) internal {\\n\\n        require(\\n            theLocker.isLocker,\\n            \\\"Lockers: account is not a locker\\\"\\n        );\\n\\n        // Capacity of locker = (locker's collateral value in TeleBTC) * (collateral ratio) - (minted TeleBTC) \\n        uint lockerCapacity = (theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * \\n            libConstants.OneHundredPercent)/\\n                (libParams.collateralRatio * (10 ** libConstants.NativeTokenDecimal)) - theLocker.netMinted;\\n\\n        uint maxRemovableCollateral = (lockerCapacity * (10 ** libConstants.NativeTokenDecimal))/_priceOfOneUnitOfCollateral;\\n\\n        require(\\n            _removingNativeTokenAmount <= maxRemovableCollateral,\\n            \\\"Lockers: more than max removable collateral\\\"\\n        );\\n\\n        theLocker.nativeTokenLockedAmount =\\n        theLocker.nativeTokenLockedAmount - _removingNativeTokenAmount;\\n    }\\n\\n\\n    function slashTheifLocker(\\n        DataTypes.locker storage theLocker,\\n        DataTypes.lockersLibConstants memory libConstants,\\n        DataTypes.lockersLibParam memory libParams,\\n        uint _equivalentNativeToken,\\n        uint _rewardAmount,\\n        uint _amount\\n    ) external returns (uint, uint) {\\n        uint rewardInNativeToken = _equivalentNativeToken*_rewardAmount/_amount;\\n        uint neededNativeTokenForSlash = _equivalentNativeToken*libParams.liquidationRatio/libConstants.OneHundredPercent;\\n\\n        if ((rewardInNativeToken + neededNativeTokenForSlash) > theLocker.nativeTokenLockedAmount) {\\n            // Divides total locker's collateral proportional to reward amount and slash amount\\n            rewardInNativeToken = rewardInNativeToken*theLocker.nativeTokenLockedAmount/\\n                (rewardInNativeToken + neededNativeTokenForSlash);\\n            neededNativeTokenForSlash = theLocker.nativeTokenLockedAmount - rewardInNativeToken;\\n        }\\n\\n        // Updates locker's bond (in TNT)\\n        theLocker.nativeTokenLockedAmount\\n            = theLocker.nativeTokenLockedAmount - (rewardInNativeToken + neededNativeTokenForSlash);\\n\\n        theLocker.netMinted\\n            = theLocker.netMinted - _amount;\\n\\n        theLocker.slashingTeleBTCAmount\\n            = theLocker.slashingTeleBTCAmount + _amount;\\n\\n        theLocker.reservedNativeTokenForSlash\\n            = theLocker.reservedNativeTokenForSlash + neededNativeTokenForSlash;\\n\\n        return (rewardInNativeToken, neededNativeTokenForSlash);\\n    }\\n\\n}\\n\\n\\n\\n\\n\",\"keccak256\":\"0x4965ed9d86717af4cca08fc2b3e525a15c65d92716ce25ac1354b3b7d624aa7b\",\"license\":\"MIT\"},\"contracts/types/DataTypes.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.0;\\n\\nimport \\\"./ScriptTypesEnum.sol\\\";\\n\\nlibrary DataTypes {\\n\\n    /// @notice                             Structure for registering lockers\\n    /// @dev\\n    /// @param lockerLockingScript          Locker redeem script\\n    /// @param lockerRescueType             Locker script type in case of getting BTCs back\\n    /// @param lockerRescueScript           Locker script in case of getting BTCs back\\n    /// @param TDTLockedAmount              Bond amount of locker in TDT\\n    /// @param nativeTokenLockedAmount      Bond amount of locker in native token of the target chain\\n    /// @param netMinted                    Total minted - total burnt\\n    /// @param slashingTeleBTCAmount        Total amount of teleBTC a locker must be slashed\\n    /// @param reservedNativeTokenForSlash  Total native token reserved to support slashing teleBTC\\n    /// @param isLocker                     Indicates that is already a locker or not\\n    /// @param isCandidate                  Indicates that is a candidate or not\\n    /// @param isScriptHash\\n    /// @param isActive                     Shows if a locker is active (has not requested for removal and\\n    ///                                     has enough collateral to accept more minting requests)\\n    struct locker {\\n        bytes lockerLockingScript;\\n        ScriptTypes lockerRescueType;\\n        bytes lockerRescueScript;\\n        uint TDTLockedAmount;\\n        uint nativeTokenLockedAmount;\\n        uint netMinted;\\n        uint slashingTeleBTCAmount;\\n        uint reservedNativeTokenForSlash;\\n        bool isLocker;\\n        bool isCandidate;\\n        bool isScriptHash;\\n        bool isActive;\\n    }\\n\\n    struct lockersLibConstants {\\n        uint OneHundredPercent;\\n        uint HealthFactor;\\n        uint UpperHealthFactor;\\n        uint MaxLockerFee;\\n        uint NativeTokenDecimal;\\n        address NativeToken;\\n    }\\n\\n    struct lockersLibParam {\\n        address teleportDAOToken;\\n        address teleBTC;\\n        address ccBurnRouter;\\n        address exchangeConnector;\\n        address priceOracle;\\n\\n        uint minRequiredTDTLockedAmount;\\n        uint minRequiredTNTLockedAmount;\\n        uint lockerPercentageFee;\\n        uint collateralRatio;\\n        uint liquidationRatio;\\n        uint priceWithDiscountRatio;\\n    }\\n}\",\"keccak256\":\"0xe2ad0369a53edd8edcc21f4ae2339cbe49dd10049876e4949efd9ad3afd975f3\",\"license\":\"MIT\"},\"contracts/types/ScriptTypesEnum.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.0;\\n\\n    enum ScriptTypes {\\n        P2PK, // 32 bytes\\n        P2PKH, // 20 bytes        \\n        P2SH, // 20 bytes          \\n        P2WPKH, // 20 bytes          \\n        P2WSH // 32 bytes               \\n    }\",\"keccak256\":\"0xaf156812745457f17c2fcec64687bf4ebfef5587725731becfe26849e5a2f1ed\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x610b4461003a600b82828239805160001a60731461002d57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600436106100615760003560e01c8063015d95e51461006657806329bb9f99146100885780634d695207146100ae578063abb4649b146100c1578063d0613623146100f6575b600080fd5b81801561007257600080fd5b50610086610081366004610868565b610109565b005b61009b6100963660046106b7565b61017d565b6040519081526020015b60405180910390f35b61009b6100bc3660046106b7565b610271565b8180156100cd57600080fd5b506100e16100dc36600461080b565b6103d4565b604080519283526020830191909152016100a5565b61009b610104366004610889565b6104cc565b600882015460ff166101615760405162461bcd60e51b815260206004820181905260248201527f4c6f636b6572733a206163636f756e74206973206e6f742061206c6f636b6572604482015260640160405180910390fd5b8082600401546101719190610928565b82600401819055505050565b6000836080015160016101909190610928565b61019b90600a6109cb565b8361012001518660a001516101b09190610aac565b6101ba9190610aac565b83602001516001600160a01b031663313ce5676040518163ffffffff1660e01b815260040160206040518083038186803b1580156101f757600080fd5b505afa15801561020b573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061022f91906108cf565b61023a906001610940565b61024590600a6109da565b60808701516102549085610aac565b61025e9190610aac565b6102689190610965565b95945050505050565b60008083602001516001600160a01b031663313ce5676040518163ffffffff1660e01b815260040160206040518083038186803b1580156102b157600080fd5b505afa1580156102c5573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906102e991906108cf565b60ff16905060006102fb82600a6109cb565b84886080015161030b9190610aac565b6103159190610aac565b608087015161032590600a6109cb565b8661012001518960a00151896040015161033f9190610aac565b6103499190610aac565b6103539190610aac565b61035d9190610acb565b9050600061036c83600a6109cb565b6103769086610aac565b875161014088015161012089015160408b0151899161039491610aac565b61039e9190610aac565b6103a89190610aac565b6103b29190610965565b6103bc9190610acb565b90506103c88183610965565b98975050505050505050565b60008080836103e38688610aac565b6103ed9190610965565b88516101208901519192506000916104059089610aac565b61040f9190610965565b60048b01549091506104218284610928565b111561045f576104318183610928565b60048b01546104409084610aac565b61044a9190610965565b9150818a6004015461045c9190610acb565b90505b6104698183610928565b8a600401546104789190610acb565b60048b015560058a015461048d908690610acb565b60058b015560068a01546104a2908690610928565b60068b015560078a01546104b7908290610928565b60078b01559092509050965096945050505050565b60008460800151600a6104df91906109cb565b85516104eb9190610aac565b6101408501516102548486610aac565b80356001600160a01b038116811461051257600080fd5b919050565b8035801515811461051257600080fd5b600082601f830112610537578081fd5b813567ffffffffffffffff81111561055157610551610af8565b610564601f8201601f19166020016108f7565b818152846020838601011115610578578283fd5b816020850160208301379081016020019190915292915050565b80356005811061051257600080fd5b600060c082840312156105b2578081fd5b6105bc60c06108f7565b905081358152602082013560208201526040820135604082015260608201356060820152608082013560808201526105f660a083016104fb565b60a082015292915050565b6000610160808385031215610614578182fd5b61061d816108f7565b915050610629826104fb565b8152610637602083016104fb565b6020820152610648604083016104fb565b6040820152610659606083016104fb565b606082015261066a608083016104fb565b608082015260a082013560a082015260c082013560c082015260e082013560e082015261010080830135818301525061012080830135818301525061014080830135818301525092915050565b60008060008061026085870312156106cd578384fd5b843567ffffffffffffffff808211156106e4578586fd5b818701915061018080838a0312156106fa578687fd5b610703816108f7565b9050823582811115610713578788fd5b61071f8a828601610527565b82525061072e60208401610592565b6020820152604083013582811115610744578788fd5b6107508a828601610527565b604083015250606083013560608201526080830135608082015260a083013560a082015260c083013560c082015260e083013560e08201526101009150610798828401610517565b8282015261012091506107ac828401610517565b8282015261014091506107c0828401610517565b8282015261016091506107d4828401610517565b828201528096505050506107eb86602087016105a1565b92506107fa8660e08701610601565b939692955092936102400135925050565b6000806000806000806102a08789031215610824578182fd5b8635955061083588602089016105a1565b94506108448860e08901610601565b93506102408701359250610260870135915061028087013590509295509295509295565b6000806040838503121561087a578182fd5b50508035926020909101359150565b600080600080610260858703121561089f578384fd5b6108a986866105a1565b93506108b88660c08701610601565b939693955050505061022082013591610240013590565b6000602082840312156108e0578081fd5b815160ff811681146108f0578182fd5b9392505050565b604051601f8201601f1916810167ffffffffffffffff8111828210171561092057610920610af8565b604052919050565b6000821982111561093b5761093b610ae2565b500190565b600060ff821660ff84168060ff0382111561095d5761095d610ae2565b019392505050565b60008261098057634e487b7160e01b81526012600452602481fd5b500490565b80825b600180861161099757506109c2565b8187048211156109a9576109a9610ae2565b808616156109b657918102915b9490941c938002610988565b94509492505050565b60006108f060001984846109e8565b60006108f060001960ff8516845b6000826109f7575060016108f0565b81610a04575060006108f0565b8160018114610a1a5760028114610a2457610a51565b60019150506108f0565b60ff841115610a3557610a35610ae2565b6001841b915084821115610a4b57610a4b610ae2565b506108f0565b5060208310610133831016604e8410600b8410161715610a84575081810a83811115610a7f57610a7f610ae2565b6108f0565b610a918484846001610985565b808604821115610aa357610aa3610ae2565b02949350505050565b6000816000190483118215151615610ac657610ac6610ae2565b500290565b600082821015610add57610add610ae2565b500390565b634e487b7160e01b600052601160045260246000fd5b634e487b7160e01b600052604160045260246000fdfea26469706673582212206dd19ab2c2737bbbd958ea6b31b3506ca986a90a51508ca15a0e75af46f556e564736f6c63430008020033",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600436106100615760003560e01c8063015d95e51461006657806329bb9f99146100885780634d695207146100ae578063abb4649b146100c1578063d0613623146100f6575b600080fd5b81801561007257600080fd5b50610086610081366004610868565b610109565b005b61009b6100963660046106b7565b61017d565b6040519081526020015b60405180910390f35b61009b6100bc3660046106b7565b610271565b8180156100cd57600080fd5b506100e16100dc36600461080b565b6103d4565b604080519283526020830191909152016100a5565b61009b610104366004610889565b6104cc565b600882015460ff166101615760405162461bcd60e51b815260206004820181905260248201527f4c6f636b6572733a206163636f756e74206973206e6f742061206c6f636b6572604482015260640160405180910390fd5b8082600401546101719190610928565b82600401819055505050565b6000836080015160016101909190610928565b61019b90600a6109cb565b8361012001518660a001516101b09190610aac565b6101ba9190610aac565b83602001516001600160a01b031663313ce5676040518163ffffffff1660e01b815260040160206040518083038186803b1580156101f757600080fd5b505afa15801561020b573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061022f91906108cf565b61023a906001610940565b61024590600a6109da565b60808701516102549085610aac565b61025e9190610aac565b6102689190610965565b95945050505050565b60008083602001516001600160a01b031663313ce5676040518163ffffffff1660e01b815260040160206040518083038186803b1580156102b157600080fd5b505afa1580156102c5573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906102e991906108cf565b60ff16905060006102fb82600a6109cb565b84886080015161030b9190610aac565b6103159190610aac565b608087015161032590600a6109cb565b8661012001518960a00151896040015161033f9190610aac565b6103499190610aac565b6103539190610aac565b61035d9190610acb565b9050600061036c83600a6109cb565b6103769086610aac565b875161014088015161012089015160408b0151899161039491610aac565b61039e9190610aac565b6103a89190610aac565b6103b29190610965565b6103bc9190610acb565b90506103c88183610965565b98975050505050505050565b60008080836103e38688610aac565b6103ed9190610965565b88516101208901519192506000916104059089610aac565b61040f9190610965565b60048b01549091506104218284610928565b111561045f576104318183610928565b60048b01546104409084610aac565b61044a9190610965565b9150818a6004015461045c9190610acb565b90505b6104698183610928565b8a600401546104789190610acb565b60048b015560058a015461048d908690610acb565b60058b015560068a01546104a2908690610928565b60068b015560078a01546104b7908290610928565b60078b01559092509050965096945050505050565b60008460800151600a6104df91906109cb565b85516104eb9190610aac565b6101408501516102548486610aac565b80356001600160a01b038116811461051257600080fd5b919050565b8035801515811461051257600080fd5b600082601f830112610537578081fd5b813567ffffffffffffffff81111561055157610551610af8565b610564601f8201601f19166020016108f7565b818152846020838601011115610578578283fd5b816020850160208301379081016020019190915292915050565b80356005811061051257600080fd5b600060c082840312156105b2578081fd5b6105bc60c06108f7565b905081358152602082013560208201526040820135604082015260608201356060820152608082013560808201526105f660a083016104fb565b60a082015292915050565b6000610160808385031215610614578182fd5b61061d816108f7565b915050610629826104fb565b8152610637602083016104fb565b6020820152610648604083016104fb565b6040820152610659606083016104fb565b606082015261066a608083016104fb565b608082015260a082013560a082015260c082013560c082015260e082013560e082015261010080830135818301525061012080830135818301525061014080830135818301525092915050565b60008060008061026085870312156106cd578384fd5b843567ffffffffffffffff808211156106e4578586fd5b818701915061018080838a0312156106fa578687fd5b610703816108f7565b9050823582811115610713578788fd5b61071f8a828601610527565b82525061072e60208401610592565b6020820152604083013582811115610744578788fd5b6107508a828601610527565b604083015250606083013560608201526080830135608082015260a083013560a082015260c083013560c082015260e083013560e08201526101009150610798828401610517565b8282015261012091506107ac828401610517565b8282015261014091506107c0828401610517565b8282015261016091506107d4828401610517565b828201528096505050506107eb86602087016105a1565b92506107fa8660e08701610601565b939692955092936102400135925050565b6000806000806000806102a08789031215610824578182fd5b8635955061083588602089016105a1565b94506108448860e08901610601565b93506102408701359250610260870135915061028087013590509295509295509295565b6000806040838503121561087a578182fd5b50508035926020909101359150565b600080600080610260858703121561089f578384fd5b6108a986866105a1565b93506108b88660c08701610601565b939693955050505061022082013591610240013590565b6000602082840312156108e0578081fd5b815160ff811681146108f0578182fd5b9392505050565b604051601f8201601f1916810167ffffffffffffffff8111828210171561092057610920610af8565b604052919050565b6000821982111561093b5761093b610ae2565b500190565b600060ff821660ff84168060ff0382111561095d5761095d610ae2565b019392505050565b60008261098057634e487b7160e01b81526012600452602481fd5b500490565b80825b600180861161099757506109c2565b8187048211156109a9576109a9610ae2565b808616156109b657918102915b9490941c938002610988565b94509492505050565b60006108f060001984846109e8565b60006108f060001960ff8516845b6000826109f7575060016108f0565b81610a04575060006108f0565b8160018114610a1a5760028114610a2457610a51565b60019150506108f0565b60ff841115610a3557610a35610ae2565b6001841b915084821115610a4b57610a4b610ae2565b506108f0565b5060208310610133831016604e8410600b8410161715610a84575081810a83811115610a7f57610a7f610ae2565b6108f0565b610a918484846001610985565b808604821115610aa357610aa3610ae2565b02949350505050565b6000816000190483118215151615610ac657610ac6610ae2565b500290565b600082821015610add57610add610ae2565b500390565b634e487b7160e01b600052601160045260246000fd5b634e487b7160e01b600052604160045260246000fdfea26469706673582212206dd19ab2c2737bbbd958ea6b31b3506ca986a90a51508ca15a0e75af46f556e564736f6c63430008020033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}

@@ -41,7 +41,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     var blockHeight = "BLOCK_HEIGHT=" + height + "\n";
     fs.appendFileSync(tempFilePath, blockHeight);
 
-    await deploy("BitcoinRelay", {
+    await deploy("BitcoinRelayTestnet", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
@@ -55,4 +55,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ["BitcoinRelay", "BitcoinMainnet"];
+func.tags = ["BitcoinRelayTestnet", "BitcoinTestnet"];

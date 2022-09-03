@@ -17,7 +17,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = config.get("chain_id")
     const appId = config.get("cc_transfer.app_id")
     const treasuryAddress = config.get("cc_transfer.treasury")
-
     const bitcoinRelay = await deployments.get("BitcoinRelay")
     const lockersProxy = await deployments.get("LockersProxy")
     const teleBTC = await deployments.get("TeleBTC")
@@ -40,4 +39,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ["CCTransferRouter"];
+func.tags = ["CCTransferRouter", "BitcoinMainnet"];

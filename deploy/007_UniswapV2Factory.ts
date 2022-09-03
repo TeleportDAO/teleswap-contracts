@@ -20,4 +20,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ["UniswapV2Factory"];
+func.tags = ["UniswapV2Factory", "BitcoinMainnet"];

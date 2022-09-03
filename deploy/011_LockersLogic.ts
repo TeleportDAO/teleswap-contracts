@@ -6,13 +6,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
+    const lockersLib = await deploy("LockersLib", {
+        from: deployer,
+        log: true,
+        skipIfAlreadyDeployed: true,
+    })
 
     await deploy("LockersLogic", {
         from: deployer,
         log: true,
-        skipIfAlreadyDeployed: true
+        skipIfAlreadyDeployed: true,
+        libraries: {
+            "LockersLib": lockersLib.address
+        },
     });
 };
 
 export default func;
-func.tags = ["LockersLogic"];
+func.tags = ["LockersLogic", "BitcoinMainnet"];
