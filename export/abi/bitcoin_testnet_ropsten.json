@@ -751,6 +751,755 @@
         }
       ]
     },
+    "BitcoinRelayTestnet": {
+      "address": "0xb2bad1EB5FB6c71613247f98E0Ea61eF0777D36d",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_genesisHeader",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_height",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "_periodStart",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "_TeleportDAOToken",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "height",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes32",
+              "name": "selfHash",
+              "type": "bytes32"
+            },
+            {
+              "indexed": true,
+              "internalType": "bytes32",
+              "name": "parentHash",
+              "type": "bytes32"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "relayer",
+              "type": "address"
+            }
+          ],
+          "name": "BlockAdded",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "height",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes32",
+              "name": "selfHash",
+              "type": "bytes32"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes32",
+              "name": "parentHash",
+              "type": "bytes32"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "relayer",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "rewardAmountTNT",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "rewardAmountTDT",
+              "type": "uint256"
+            }
+          ],
+          "name": "BlockFinalized",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "Paused",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "Unpaused",
+          "type": "event"
+        },
+        {
+          "inputs": [],
+          "name": "TeleportDAOToken",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_anchor",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_headers",
+              "type": "bytes"
+            }
+          ],
+          "name": "addHeaders",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_oldPeriodStartHeader",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_oldPeriodEndHeader",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_headers",
+              "type": "bytes"
+            }
+          ],
+          "name": "addHeadersWithRetarget",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "availableTDT",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "availableTNT",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "baseQueries",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes32",
+              "name": "_txid",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_blockHeight",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_intermediateNodes",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_index",
+              "type": "uint256"
+            }
+          ],
+          "name": "checkTxProof",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "currentEpochQueries",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "epochLength",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "finalizationParameter",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes32",
+              "name": "_hash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_offset",
+              "type": "uint256"
+            }
+          ],
+          "name": "findAncestor",
+          "outputs": [
+            {
+              "internalType": "bytes32",
+              "name": "",
+              "type": "bytes32"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes32",
+              "name": "_hash",
+              "type": "bytes32"
+            }
+          ],
+          "name": "findHeight",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_height",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_index",
+              "type": "uint256"
+            }
+          ],
+          "name": "getBlockHeaderFee",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_height",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_index",
+              "type": "uint256"
+            }
+          ],
+          "name": "getBlockHeaderHash",
+          "outputs": [
+            {
+              "internalType": "bytes32",
+              "name": "",
+              "type": "bytes32"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_height",
+              "type": "uint256"
+            }
+          ],
+          "name": "getNumberOfSubmittedHeaders",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "initialHeight",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes32",
+              "name": "_ancestor",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "_descendant",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_limit",
+              "type": "uint256"
+            }
+          ],
+          "name": "isAncestor",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "lastEpochQueries",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "lastSubmittedHeight",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_anchor",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_headers",
+              "type": "bytes"
+            }
+          ],
+          "name": "ownerAddHeaders",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_oldPeriodStartHeader",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_oldPeriodEndHeader",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_headers",
+              "type": "bytes"
+            }
+          ],
+          "name": "ownerAddHeadersWithRetarget",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "pauseRelay",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "paused",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "relayGenesisHash",
+          "outputs": [
+            {
+              "internalType": "bytes32",
+              "name": "",
+              "type": "bytes32"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "relayerPercentageFee",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "renounceOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "rewardAmountInTDT",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_baseQueries",
+              "type": "uint256"
+            }
+          ],
+          "name": "setBaseQueries",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_epochLength",
+              "type": "uint256"
+            }
+          ],
+          "name": "setEpochLength",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_finalizationParameter",
+              "type": "uint256"
+            }
+          ],
+          "name": "setFinalizationParameter",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_relayerPercentageFee",
+              "type": "uint256"
+            }
+          ],
+          "name": "setRelayerPercentageFee",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_rewardAmountInTDT",
+              "type": "uint256"
+            }
+          ],
+          "name": "setRewardAmountInTDT",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_submissionGasUsed",
+              "type": "uint256"
+            }
+          ],
+          "name": "setSubmissionGasUsed",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "submissionGasUsed",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "transferOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "unpauseRelay",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ]
+    },
     "CCBurnRouter": {
       "address": "0x00697A59D8E9c98D8c77eDC5aDb9BE62994B10F2",
       "abi": [
@@ -5005,6 +5754,504 @@
         }
       ]
     },
+    "LockersLib": {
+      "address": "0xa7Fc801B6a6595D2980d8A19AF297992972590aD",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "components": [
+                {
+                  "internalType": "bytes",
+                  "name": "lockerLockingScript",
+                  "type": "bytes"
+                },
+                {
+                  "internalType": "enum ScriptTypes",
+                  "name": "lockerRescueType",
+                  "type": "ScriptTypes"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "lockerRescueScript",
+                  "type": "bytes"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "TDTLockedAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "nativeTokenLockedAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "netMinted",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "slashingTeleBTCAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "reservedNativeTokenForSlash",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isLocker",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isCandidate",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isScriptHash",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isActive",
+                  "type": "bool"
+                }
+              ],
+              "internalType": "struct DataTypes.locker",
+              "name": "theLocker",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "OneHundredPercent",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "HealthFactor",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "UpperHealthFactor",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "MaxLockerFee",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "NativeTokenDecimal",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "NativeToken",
+                  "type": "address"
+                }
+              ],
+              "internalType": "struct DataTypes.lockersLibConstants",
+              "name": "libConstants",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "teleportDAOToken",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "teleBTC",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "ccBurnRouter",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "exchangeConnector",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "priceOracle",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "minRequiredTDTLockedAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "minRequiredTNTLockedAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lockerPercentageFee",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "collateralRatio",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "liquidationRatio",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "priceWithDiscountRatio",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct DataTypes.lockersLibParam",
+              "name": "libParams",
+              "type": "tuple"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_priceOfOneUnitOfCollateral",
+              "type": "uint256"
+            }
+          ],
+          "name": "calculateHealthFactor",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "components": [
+                {
+                  "internalType": "bytes",
+                  "name": "lockerLockingScript",
+                  "type": "bytes"
+                },
+                {
+                  "internalType": "enum ScriptTypes",
+                  "name": "lockerRescueType",
+                  "type": "ScriptTypes"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "lockerRescueScript",
+                  "type": "bytes"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "TDTLockedAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "nativeTokenLockedAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "netMinted",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "slashingTeleBTCAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "reservedNativeTokenForSlash",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isLocker",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isCandidate",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isScriptHash",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isActive",
+                  "type": "bool"
+                }
+              ],
+              "internalType": "struct DataTypes.locker",
+              "name": "theLocker",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "OneHundredPercent",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "HealthFactor",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "UpperHealthFactor",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "MaxLockerFee",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "NativeTokenDecimal",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "NativeToken",
+                  "type": "address"
+                }
+              ],
+              "internalType": "struct DataTypes.lockersLibConstants",
+              "name": "libConstants",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "teleportDAOToken",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "teleBTC",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "ccBurnRouter",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "exchangeConnector",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "priceOracle",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "minRequiredTDTLockedAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "minRequiredTNTLockedAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lockerPercentageFee",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "collateralRatio",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "liquidationRatio",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "priceWithDiscountRatio",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct DataTypes.lockersLibParam",
+              "name": "libParams",
+              "type": "tuple"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_priceOfOneUnitOfCollateral",
+              "type": "uint256"
+            }
+          ],
+          "name": "maximumBuyableCollateral",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "OneHundredPercent",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "HealthFactor",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "UpperHealthFactor",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "MaxLockerFee",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "NativeTokenDecimal",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "NativeToken",
+                  "type": "address"
+                }
+              ],
+              "internalType": "struct DataTypes.lockersLibConstants",
+              "name": "libConstants",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "teleportDAOToken",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "teleBTC",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "ccBurnRouter",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "exchangeConnector",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "priceOracle",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "minRequiredTDTLockedAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "minRequiredTNTLockedAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lockerPercentageFee",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "collateralRatio",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "liquidationRatio",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "priceWithDiscountRatio",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct DataTypes.lockersLibParam",
+              "name": "libParams",
+              "type": "tuple"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_collateralAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_priceOfCollateral",
+              "type": "uint256"
+            }
+          ],
+          "name": "neededTeleBTCToBuyCollateral",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "pure",
+          "type": "function"
+        }
+      ]
+    },
     "LockersLogic": {
       "address": "0x22e7A6c96eB9233408C701f6be9e9228FBAe1afA",
       "abi": [
@@ -9054,64 +10301,38 @@
         }
       ]
     },
-    "BitcoinRelayTestnet": {
-      "address": "0xb2bad1EB5FB6c71613247f98E0Ea61eF0777D36d",
+    "LockersLogicTestnet": {
+      "address": "0x877edbd0fAf2D71Ed0E03F789bA65C4219bbd68f",
       "abi": [
-        {
-          "inputs": [
-            {
-              "internalType": "bytes",
-              "name": "_genesisHeader",
-              "type": "bytes"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_height",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "_periodStart",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "address",
-              "name": "_TeleportDAOToken",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "constructor"
-        },
         {
           "anonymous": false,
           "inputs": [
             {
               "indexed": true,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
               "internalType": "uint256",
-              "name": "height",
+              "name": "burntAmount",
               "type": "uint256"
             },
             {
               "indexed": false,
-              "internalType": "bytes32",
-              "name": "selfHash",
-              "type": "bytes32"
+              "internalType": "uint256",
+              "name": "lockerFee",
+              "type": "uint256"
             },
             {
-              "indexed": true,
-              "internalType": "bytes32",
-              "name": "parentHash",
-              "type": "bytes32"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "relayer",
-              "type": "address"
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "burningTime",
+              "type": "uint256"
             }
           ],
-          "name": "BlockAdded",
+          "name": "BurnByLocker",
           "type": "event"
         },
         {
@@ -9119,42 +10340,308 @@
           "inputs": [
             {
               "indexed": true,
-              "internalType": "uint256",
-              "name": "height",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "bytes32",
-              "name": "selfHash",
-              "type": "bytes32"
-            },
-            {
-              "indexed": false,
-              "internalType": "bytes32",
-              "name": "parentHash",
-              "type": "bytes32"
-            },
-            {
-              "indexed": true,
               "internalType": "address",
-              "name": "relayer",
+              "name": "lockerTargetAddress",
               "type": "address"
             },
             {
               "indexed": false,
               "internalType": "uint256",
-              "name": "rewardAmountTNT",
+              "name": "addedCollateral",
               "type": "uint256"
             },
             {
               "indexed": false,
               "internalType": "uint256",
-              "name": "rewardAmountTDT",
+              "name": "totalCollateral",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "addingTime",
               "type": "uint256"
             }
           ],
-          "name": "BlockFinalized",
+          "name": "CollateralAdded",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "removedCollateral",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "totalCollateral",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "removingTime",
+              "type": "uint256"
+            }
+          ],
+          "name": "CollateralRemoved",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint8",
+              "name": "version",
+              "type": "uint8"
+            }
+          ],
+          "name": "Initialized",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes",
+              "name": "lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "TDTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "nativeTokenLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "addingTime",
+              "type": "uint256"
+            }
+          ],
+          "name": "LockerAdded",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "liquidatorAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "collateralAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "teleBTCAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "liquidateTime",
+              "type": "uint256"
+            }
+          ],
+          "name": "LockerLiquidated",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes",
+              "name": "lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "TDTUnlockedAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "nativeTokenUnlockedAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "LockerRemoved",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "rewardAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "rewardRecipient",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "recipient",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "slashedCollateralAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "slashTime",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "bool",
+              "name": "isForCCBurn",
+              "type": "bool"
+            }
+          ],
+          "name": "LockerSlashed",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "buyerAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "slashingAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "teleBTCAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "slashingTime",
+              "type": "uint256"
+            }
+          ],
+          "name": "LockerSlashedCollateralSold",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "receiver",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "mintedAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "lockerFee",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "mintingTime",
+              "type": "uint256"
+            }
+          ],
+          "name": "MintByLocker",
           "type": "event"
         },
         {
@@ -9193,6 +10680,105 @@
           "anonymous": false,
           "inputs": [
             {
+              "indexed": true,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes",
+              "name": "lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "TDTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "nativeTokenLockedAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "RequestAddLocker",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes",
+              "name": "lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "TDTUnlockedAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "nativeTokenUnlockedAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "netMinted",
+              "type": "uint256"
+            }
+          ],
+          "name": "RequestRemoveLocker",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes",
+              "name": "lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "TDTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "nativeTokenLockedAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "RevokeAddLockerRequest",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
               "indexed": false,
               "internalType": "address",
               "name": "account",
@@ -9201,6 +10787,71 @@
           ],
           "name": "Unpaused",
           "type": "event"
+        },
+        {
+          "inputs": [],
+          "name": "HEALTH_FACTOR",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "MAX_LOCKER_FEE",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "NATIVE_TOKEN",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "NATIVE_TOKEN_DECIMAL",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "ONE_HUNDRED_PERCENT",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
         },
         {
           "inputs": [],
@@ -9216,121 +10867,45 @@
           "type": "function"
         },
         {
-          "inputs": [
-            {
-              "internalType": "bytes",
-              "name": "_anchor",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_headers",
-              "type": "bytes"
-            }
-          ],
-          "name": "addHeaders",
+          "inputs": [],
+          "name": "UPPER_HEALTH_FACTOR",
           "outputs": [
             {
-              "internalType": "bool",
+              "internalType": "uint256",
               "name": "",
-              "type": "bool"
+              "type": "uint256"
             }
           ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_account",
+              "type": "address"
+            }
+          ],
+          "name": "addBurner",
+          "outputs": [],
           "stateMutability": "nonpayable",
           "type": "function"
         },
         {
           "inputs": [
             {
-              "internalType": "bytes",
-              "name": "_oldPeriodStartHeader",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_oldPeriodEndHeader",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_headers",
-              "type": "bytes"
-            }
-          ],
-          "name": "addHeadersWithRetarget",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "availableTDT",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "availableTNT",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "baseQueries",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes32",
-              "name": "_txid",
-              "type": "bytes32"
+              "internalType": "address",
+              "name": "_lockerTargetAddress",
+              "type": "address"
             },
             {
               "internalType": "uint256",
-              "name": "_blockHeight",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_intermediateNodes",
-              "type": "bytes"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_index",
+              "name": "_addingNativeTokenAmount",
               "type": "uint256"
             }
           ],
-          "name": "checkTxProof",
+          "name": "addCollateral",
           "outputs": [
             {
               "internalType": "bool",
@@ -9342,77 +10917,51 @@
           "type": "function"
         },
         {
-          "inputs": [],
-          "name": "currentEpochQueries",
-          "outputs": [
+          "inputs": [
             {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
+              "internalType": "address",
+              "name": "_lockerTargetAddress",
+              "type": "address"
             }
           ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "epochLength",
+          "name": "addLocker",
           "outputs": [
             {
-              "internalType": "uint256",
+              "internalType": "bool",
               "name": "",
-              "type": "uint256"
+              "type": "bool"
             }
           ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "finalizationParameter",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
+          "stateMutability": "nonpayable",
           "type": "function"
         },
         {
           "inputs": [
             {
-              "internalType": "bytes32",
-              "name": "_hash",
-              "type": "bytes32"
+              "internalType": "address",
+              "name": "_account",
+              "type": "address"
+            }
+          ],
+          "name": "addMinter",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
             },
             {
               "internalType": "uint256",
-              "name": "_offset",
+              "name": "_amount",
               "type": "uint256"
             }
           ],
-          "name": "findAncestor",
-          "outputs": [
-            {
-              "internalType": "bytes32",
-              "name": "",
-              "type": "bytes32"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes32",
-              "name": "_hash",
-              "type": "bytes32"
-            }
-          ],
-          "name": "findHeight",
+          "name": "burn",
           "outputs": [
             {
               "internalType": "uint256",
@@ -9420,66 +10969,49 @@
               "type": "uint256"
             }
           ],
-          "stateMutability": "view",
+          "stateMutability": "nonpayable",
           "type": "function"
         },
         {
           "inputs": [
             {
-              "internalType": "uint256",
-              "name": "_height",
-              "type": "uint256"
+              "internalType": "address",
+              "name": "_lockerTargetAddress",
+              "type": "address"
             },
             {
               "internalType": "uint256",
-              "name": "_index",
+              "name": "_collateralAmount",
               "type": "uint256"
             }
           ],
-          "name": "getBlockHeaderFee",
+          "name": "buySlashedCollateralOfLocker",
           "outputs": [
             {
-              "internalType": "uint256",
+              "internalType": "bool",
               "name": "",
-              "type": "uint256"
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "ccBurnRouter",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
             }
           ],
           "stateMutability": "view",
           "type": "function"
         },
         {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_height",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_index",
-              "type": "uint256"
-            }
-          ],
-          "name": "getBlockHeaderHash",
-          "outputs": [
-            {
-              "internalType": "bytes32",
-              "name": "",
-              "type": "bytes32"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_height",
-              "type": "uint256"
-            }
-          ],
-          "name": "getNumberOfSubmittedHeaders",
+          "inputs": [],
+          "name": "collateralRatio",
           "outputs": [
             {
               "internalType": "uint256",
@@ -9492,7 +11024,26 @@
         },
         {
           "inputs": [],
-          "name": "initialHeight",
+          "name": "exchangeConnector",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_lockerTargetAddress",
+              "type": "address"
+            }
+          ],
+          "name": "getLockerCapacity",
           "outputs": [
             {
               "internalType": "uint256",
@@ -9506,22 +11057,135 @@
         {
           "inputs": [
             {
-              "internalType": "bytes32",
-              "name": "_ancestor",
-              "type": "bytes32"
-            },
+              "internalType": "address",
+              "name": "_lockerTargetAddress",
+              "type": "address"
+            }
+          ],
+          "name": "getLockerLockingScript",
+          "outputs": [
             {
-              "internalType": "bytes32",
-              "name": "_descendant",
-              "type": "bytes32"
-            },
+              "internalType": "bytes",
+              "name": "",
+              "type": "bytes"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
+            }
+          ],
+          "name": "getLockerTargetAddress",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "getNumberOfLockers",
+          "outputs": [
             {
               "internalType": "uint256",
-              "name": "_limit",
+              "name": "",
               "type": "uint256"
             }
           ],
-          "name": "isAncestor",
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_TeleportDAOToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_exchangeConnector",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_priceOracle",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_minRequiredTDTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_minRequiredTNTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_collateralRatio",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_liquidationRatio",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_lockerPercentageFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_priceWithDiscountRatio",
+              "type": "uint256"
+            }
+          ],
+          "name": "initialize",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_lockerTargetAddress",
+              "type": "address"
+            }
+          ],
+          "name": "isActive",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
+            }
+          ],
+          "name": "isLocker",
           "outputs": [
             {
               "internalType": "bool",
@@ -9534,7 +11198,289 @@
         },
         {
           "inputs": [],
-          "name": "lastEpochQueries",
+          "name": "libConstants",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "OneHundredPercent",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "HealthFactor",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "UpperHealthFactor",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "MaxLockerFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "NativeTokenDecimal",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "NativeToken",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "libParams",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "teleportDAOToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "teleBTC",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "ccBurnRouter",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "exchangeConnector",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "priceOracle",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minRequiredTDTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "minRequiredTNTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lockerPercentageFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "collateralRatio",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "liquidationRatio",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "priceWithDiscountRatio",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_collateralAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "liquidateLocker",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "liquidationRatio",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "lockerLeavingAcceptance",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "lockerLeavingRequests",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "lockerPercentageFee",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "",
+              "type": "bytes"
+            }
+          ],
+          "name": "lockerTargetAddress",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "lockersMapping",
+          "outputs": [
+            {
+              "internalType": "bytes",
+              "name": "lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "enum ScriptTypes",
+              "name": "lockerRescueType",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes",
+              "name": "lockerRescueScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256",
+              "name": "TDTLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "nativeTokenLockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "netMinted",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "slashingTeleBTCAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "reservedNativeTokenForSlash",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isLocker",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "isCandidate",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "isScriptHash",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "isActive",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "minRequiredTDTLockedAmount",
           "outputs": [
             {
               "internalType": "uint256",
@@ -9547,7 +11493,7 @@
         },
         {
           "inputs": [],
-          "name": "lastSubmittedHeight",
+          "name": "minRequiredTNTLockedAmount",
           "outputs": [
             {
               "internalType": "uint256",
@@ -9556,6 +11502,35 @@
             }
           ],
           "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "address",
+              "name": "_receiver",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "mint",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
           "type": "function"
         },
         {
@@ -9574,46 +11549,12 @@
         {
           "inputs": [
             {
-              "internalType": "bytes",
-              "name": "_anchor",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_headers",
-              "type": "bytes"
+              "internalType": "address",
+              "name": "_lockerTargetAddress",
+              "type": "address"
             }
           ],
-          "name": "ownerAddHeaders",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes",
-              "name": "_oldPeriodStartHeader",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_oldPeriodEndHeader",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_headers",
-              "type": "bytes"
-            }
-          ],
-          "name": "ownerAddHeadersWithRetarget",
+          "name": "ownerRemoveLocker",
           "outputs": [
             {
               "internalType": "bool",
@@ -9626,7 +11567,7 @@
         },
         {
           "inputs": [],
-          "name": "pauseRelay",
+          "name": "pauseLocker",
           "outputs": [],
           "stateMutability": "nonpayable",
           "type": "function"
@@ -9646,20 +11587,7 @@
         },
         {
           "inputs": [],
-          "name": "relayGenesisHash",
-          "outputs": [
-            {
-              "internalType": "bytes32",
-              "name": "",
-              "type": "bytes32"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "relayerPercentageFee",
+          "name": "priceOfOneUnitOfCollateralInBTC",
           "outputs": [
             {
               "internalType": "uint256",
@@ -9668,6 +11596,77 @@
             }
           ],
           "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "priceOracle",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "priceWithDiscountRatio",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_account",
+              "type": "address"
+            }
+          ],
+          "name": "removeBurner",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_removingNativeTokenAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "removeCollateral",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_account",
+              "type": "address"
+            }
+          ],
+          "name": "removeMinter",
+          "outputs": [],
+          "stateMutability": "nonpayable",
           "type": "function"
         },
         {
@@ -9678,8 +11677,289 @@
           "type": "function"
         },
         {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_candidateLockingScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_lockedTDTAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_lockedNativeTokenAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "enum ScriptTypes",
+              "name": "_lockerRescueType",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_lockerRescueScript",
+              "type": "bytes"
+            }
+          ],
+          "name": "requestToBecomeLocker",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
           "inputs": [],
-          "name": "rewardAmountInTDT",
+          "name": "requestToRemoveLocker",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "revokeRequest",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "selfRemoveLocker",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_ccBurnRouter",
+              "type": "address"
+            }
+          ],
+          "name": "setCCBurnRouter",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_collateralRatio",
+              "type": "uint256"
+            }
+          ],
+          "name": "setCollateralRatio",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_exchangeConnector",
+              "type": "address"
+            }
+          ],
+          "name": "setExchangeConnector",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_liquidationRatio",
+              "type": "uint256"
+            }
+          ],
+          "name": "setLiquidationRatio",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_lockerPercentageFee",
+              "type": "uint256"
+            }
+          ],
+          "name": "setLockerPercentageFee",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_minRequiredTDTLockedAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "setMinRequiredTDTLockedAmount",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_minRequiredTNTLockedAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "setMinRequiredTNTLockedAmount",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_priceOracle",
+              "type": "address"
+            }
+          ],
+          "name": "setPriceOracle",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_teleBTC",
+              "type": "address"
+            }
+          ],
+          "name": "setTeleBTC",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_rewardAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "_rewardRecipient",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_amount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "_recipient",
+              "type": "address"
+            }
+          ],
+          "name": "slashIdleLocker",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_rewardAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "_rewardRecipient",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "slashTheifLocker",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "teleBTC",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "totalNumberOfCandidates",
           "outputs": [
             {
               "internalType": "uint256",
@@ -9691,86 +11971,8 @@
           "type": "function"
         },
         {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_baseQueries",
-              "type": "uint256"
-            }
-          ],
-          "name": "setBaseQueries",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_epochLength",
-              "type": "uint256"
-            }
-          ],
-          "name": "setEpochLength",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_finalizationParameter",
-              "type": "uint256"
-            }
-          ],
-          "name": "setFinalizationParameter",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_relayerPercentageFee",
-              "type": "uint256"
-            }
-          ],
-          "name": "setRelayerPercentageFee",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_rewardAmountInTDT",
-              "type": "uint256"
-            }
-          ],
-          "name": "setRewardAmountInTDT",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_submissionGasUsed",
-              "type": "uint256"
-            }
-          ],
-          "name": "setSubmissionGasUsed",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
           "inputs": [],
-          "name": "submissionGasUsed",
+          "name": "totalNumberOfLockers",
           "outputs": [
             {
               "internalType": "uint256",
@@ -9796,507 +11998,9 @@
         },
         {
           "inputs": [],
-          "name": "unpauseRelay",
+          "name": "unPauseLocker",
           "outputs": [],
           "stateMutability": "nonpayable",
-          "type": "function"
-        }
-      ]
-    },
-    "LockersLib": {
-      "address": "0xa7Fc801B6a6595D2980d8A19AF297992972590aD",
-      "abi": [
-        {
-          "inputs": [
-            {
-              "components": [
-                {
-                  "internalType": "bytes",
-                  "name": "lockerLockingScript",
-                  "type": "bytes"
-                },
-                {
-                  "internalType": "enum ScriptTypes",
-                  "name": "lockerRescueType",
-                  "type": "ScriptTypes"
-                },
-                {
-                  "internalType": "bytes",
-                  "name": "lockerRescueScript",
-                  "type": "bytes"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "TDTLockedAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "nativeTokenLockedAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "netMinted",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "slashingTeleBTCAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "reservedNativeTokenForSlash",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isLocker",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isCandidate",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isScriptHash",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isActive",
-                  "type": "bool"
-                }
-              ],
-              "internalType": "struct DataTypes.locker",
-              "name": "theLocker",
-              "type": "tuple"
-            },
-            {
-              "components": [
-                {
-                  "internalType": "uint256",
-                  "name": "OneHundredPercent",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "HealthFactor",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "UpperHealthFactor",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "MaxLockerFee",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "NativeTokenDecimal",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "address",
-                  "name": "NativeToken",
-                  "type": "address"
-                }
-              ],
-              "internalType": "struct DataTypes.lockersLibConstants",
-              "name": "libConstants",
-              "type": "tuple"
-            },
-            {
-              "components": [
-                {
-                  "internalType": "address",
-                  "name": "teleportDAOToken",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "teleBTC",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "ccBurnRouter",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "exchangeConnector",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "priceOracle",
-                  "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "minRequiredTDTLockedAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "minRequiredTNTLockedAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "lockerPercentageFee",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "collateralRatio",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "liquidationRatio",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "priceWithDiscountRatio",
-                  "type": "uint256"
-                }
-              ],
-              "internalType": "struct DataTypes.lockersLibParam",
-              "name": "libParams",
-              "type": "tuple"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_priceOfOneUnitOfCollateral",
-              "type": "uint256"
-            }
-          ],
-          "name": "calculateHealthFactor",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "components": [
-                {
-                  "internalType": "bytes",
-                  "name": "lockerLockingScript",
-                  "type": "bytes"
-                },
-                {
-                  "internalType": "enum ScriptTypes",
-                  "name": "lockerRescueType",
-                  "type": "ScriptTypes"
-                },
-                {
-                  "internalType": "bytes",
-                  "name": "lockerRescueScript",
-                  "type": "bytes"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "TDTLockedAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "nativeTokenLockedAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "netMinted",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "slashingTeleBTCAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "reservedNativeTokenForSlash",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isLocker",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isCandidate",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isScriptHash",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isActive",
-                  "type": "bool"
-                }
-              ],
-              "internalType": "struct DataTypes.locker",
-              "name": "theLocker",
-              "type": "tuple"
-            },
-            {
-              "components": [
-                {
-                  "internalType": "uint256",
-                  "name": "OneHundredPercent",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "HealthFactor",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "UpperHealthFactor",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "MaxLockerFee",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "NativeTokenDecimal",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "address",
-                  "name": "NativeToken",
-                  "type": "address"
-                }
-              ],
-              "internalType": "struct DataTypes.lockersLibConstants",
-              "name": "libConstants",
-              "type": "tuple"
-            },
-            {
-              "components": [
-                {
-                  "internalType": "address",
-                  "name": "teleportDAOToken",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "teleBTC",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "ccBurnRouter",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "exchangeConnector",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "priceOracle",
-                  "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "minRequiredTDTLockedAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "minRequiredTNTLockedAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "lockerPercentageFee",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "collateralRatio",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "liquidationRatio",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "priceWithDiscountRatio",
-                  "type": "uint256"
-                }
-              ],
-              "internalType": "struct DataTypes.lockersLibParam",
-              "name": "libParams",
-              "type": "tuple"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_priceOfOneUnitOfCollateral",
-              "type": "uint256"
-            }
-          ],
-          "name": "maximumBuyableCollateral",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "components": [
-                {
-                  "internalType": "uint256",
-                  "name": "OneHundredPercent",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "HealthFactor",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "UpperHealthFactor",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "MaxLockerFee",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "NativeTokenDecimal",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "address",
-                  "name": "NativeToken",
-                  "type": "address"
-                }
-              ],
-              "internalType": "struct DataTypes.lockersLibConstants",
-              "name": "libConstants",
-              "type": "tuple"
-            },
-            {
-              "components": [
-                {
-                  "internalType": "address",
-                  "name": "teleportDAOToken",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "teleBTC",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "ccBurnRouter",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "exchangeConnector",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "priceOracle",
-                  "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "minRequiredTDTLockedAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "minRequiredTNTLockedAmount",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "lockerPercentageFee",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "collateralRatio",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "liquidationRatio",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "priceWithDiscountRatio",
-                  "type": "uint256"
-                }
-              ],
-              "internalType": "struct DataTypes.lockersLibParam",
-              "name": "libParams",
-              "type": "tuple"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_collateralAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_priceOfCollateral",
-              "type": "uint256"
-            }
-          ],
-          "name": "neededTeleBTCToBuyCollateral",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "pure",
           "type": "function"
         }
       ]

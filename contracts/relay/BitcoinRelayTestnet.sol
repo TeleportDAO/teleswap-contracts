@@ -403,11 +403,15 @@ contract BitcoinRelayTestnet is IBitcoinRelay, Ownable, ReentrancyGuard, Pausabl
         uint256 _anchorHeight = _findHeight(_previousHash); // revert if the block is unknown
         uint256 _target = _headers.indexHeaderArray(0).target();
 
-        // When calling addHeaders, no retargetting should happen
-        require(
-            _internal || _anchor.target() == _target,
-            "BitcoinRelay: unexpected retarget on external call"
-        );
+        /*
+            note: below lines are commented since the Bitcoin testnet doesn't
+            adjust block difficulty  at 2016 multipliers
+        /*    
+        // // When calling addHeaders, no retargetting should happen
+        // require(
+        //     _internal || _anchor.target() == _target,
+        //     "BitcoinRelay: unexpected retarget on external call"
+        // );
         // check the height on top of the anchor is not finalized
         require(
                 _anchorHeight + 1 + finalizationParameter > lastSubmittedHeight, 
@@ -434,11 +438,15 @@ contract BitcoinRelayTestnet is IBitcoinRelay, Ownable, ReentrancyGuard, Pausabl
             require(previousBlock[_currentHash] == bytes32(0),
             "BitcoinRelay: the block header exists on the relay");
 
-            // Blocks that are multiplies of 2016 should be submitted using addHeadersWithRetarget
-            require(
-                _internal || _height % 2016 != 0,
-                "BitcoinRelay: headers should be submitted by calling addHeadersWithRetarget"
-            );
+            /*
+                note: below lines are commented since the Bitcoin testnet doesn't
+                adjust block difficulty  at 2016 multipliers
+            */
+            // // Blocks that are multiplies of 2016 should be submitted using addHeadersWithRetarget
+            // require(
+            //     _internal || _height % 2016 != 0,
+            //     "BitcoinRelay: headers should be submitted by calling addHeadersWithRetarget"
+            // );
 
             require(_header.target() == _target, "BitcoinRelay: target changed unexpectedly");
             require(_header.checkParent(_previousHash), "BitcoinRelay: headers do not form a consistent chain");

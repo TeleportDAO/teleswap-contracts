@@ -12,7 +12,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         skipIfAlreadyDeployed: true,
     })
 
-    await deploy("LockersLogic", {
+    await deploy("LockersLogicTestnet", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,

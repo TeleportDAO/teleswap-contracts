@@ -7,14 +7,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const lockersLogic = await deployments.get("LockersLogic")
+    const lockersLogicTestnet = await deployments.get("LockersLogicTestnet")
 
     await deploy("LockersProxy", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            lockersLogic.address,
+            lockersLogicTestnet.address,
             deployer,
             "0x"
         ],
