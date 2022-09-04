@@ -70,7 +70,7 @@
 		"deploy:local": "hardhat deploy --network hardhat --tags BitcoinMainnet --export export/abi/local.json",
 		"deploy:bitcoin_testnet_local": "hardhat deploy --network hardhat --tags BitcoinTestnet --export export/abi/bitcoin_testnet_local.json",
 		"deploy:ropsten": "hardhat deploy --network ropsten --tags BitcoinMainnet --export export/abi/ropsten.json",
-		"deploy:bitcoin_testnet_ropsten": "hardhat deploy --network ropsten --tags BitcoinTestnet --export export/abi/bitcoin_testnet_ropsten.json",
+		"deploy:bitcoin_testnet_ropsten": "hardhat deploy --network ropsten --tags BitcoinTestnet --export export/abi/bitcoin_testnet_ropsten.json --deploy-scripts deploy-testnet",
 		"deploy:bsc_testnet": "hardhat deploy --network bsc_testnet --tags BitcoinMainnet --export export/abi/bsc_testnet.json",
 		"test": "hardhat test"
 	}
