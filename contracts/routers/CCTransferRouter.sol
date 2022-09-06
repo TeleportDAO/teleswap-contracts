@@ -65,6 +65,8 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         treasury = _treasury;
     }
 
+    receive() external payable {}
+
     /// @notice                             Setter for protocol percentage fee
     /// @dev                                Only owner can call this
     /// @param _protocolPercentageFee       Percentage amount of protocol fee
