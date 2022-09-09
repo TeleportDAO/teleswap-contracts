@@ -65,6 +65,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         treasury = _treasury;
     }
 
+    receive() external payable {}
+
     /// @notice         Changes relay contract address
     /// @dev            Only owner can call this
     /// @param _relay   The new relay contract address
