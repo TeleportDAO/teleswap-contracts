@@ -2,755 +2,6 @@
   "name": "ropsten",
   "chainId": "3",
   "contracts": {
-    "BitcoinRelayTestnet": {
-      "address": "0x56926ce8d5713C6A3bCFeBF5171caE24234611Fa",
-      "abi": [
-        {
-          "inputs": [
-            {
-              "internalType": "bytes",
-              "name": "_genesisHeader",
-              "type": "bytes"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_height",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "_periodStart",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "address",
-              "name": "_TeleportDAOToken",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "constructor"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "uint256",
-              "name": "height",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "bytes32",
-              "name": "selfHash",
-              "type": "bytes32"
-            },
-            {
-              "indexed": true,
-              "internalType": "bytes32",
-              "name": "parentHash",
-              "type": "bytes32"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "relayer",
-              "type": "address"
-            }
-          ],
-          "name": "BlockAdded",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "uint256",
-              "name": "height",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "bytes32",
-              "name": "selfHash",
-              "type": "bytes32"
-            },
-            {
-              "indexed": false,
-              "internalType": "bytes32",
-              "name": "parentHash",
-              "type": "bytes32"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "relayer",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "rewardAmountTNT",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "rewardAmountTDT",
-              "type": "uint256"
-            }
-          ],
-          "name": "BlockFinalized",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "previousOwner",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "OwnershipTransferred",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "account",
-              "type": "address"
-            }
-          ],
-          "name": "Paused",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "account",
-              "type": "address"
-            }
-          ],
-          "name": "Unpaused",
-          "type": "event"
-        },
-        {
-          "inputs": [],
-          "name": "TeleportDAOToken",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes",
-              "name": "_anchor",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_headers",
-              "type": "bytes"
-            }
-          ],
-          "name": "addHeaders",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes",
-              "name": "_oldPeriodStartHeader",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_oldPeriodEndHeader",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_headers",
-              "type": "bytes"
-            }
-          ],
-          "name": "addHeadersWithRetarget",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "availableTDT",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "availableTNT",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "baseQueries",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes32",
-              "name": "_txid",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_blockHeight",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_intermediateNodes",
-              "type": "bytes"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_index",
-              "type": "uint256"
-            }
-          ],
-          "name": "checkTxProof",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "payable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "currentEpochQueries",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "epochLength",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "finalizationParameter",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes32",
-              "name": "_hash",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_offset",
-              "type": "uint256"
-            }
-          ],
-          "name": "findAncestor",
-          "outputs": [
-            {
-              "internalType": "bytes32",
-              "name": "",
-              "type": "bytes32"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes32",
-              "name": "_hash",
-              "type": "bytes32"
-            }
-          ],
-          "name": "findHeight",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_height",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_index",
-              "type": "uint256"
-            }
-          ],
-          "name": "getBlockHeaderFee",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_height",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_index",
-              "type": "uint256"
-            }
-          ],
-          "name": "getBlockHeaderHash",
-          "outputs": [
-            {
-              "internalType": "bytes32",
-              "name": "",
-              "type": "bytes32"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_height",
-              "type": "uint256"
-            }
-          ],
-          "name": "getNumberOfSubmittedHeaders",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "initialHeight",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes32",
-              "name": "_ancestor",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "_descendant",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_limit",
-              "type": "uint256"
-            }
-          ],
-          "name": "isAncestor",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "lastEpochQueries",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "lastSubmittedHeight",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "owner",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes",
-              "name": "_anchor",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_headers",
-              "type": "bytes"
-            }
-          ],
-          "name": "ownerAddHeaders",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes",
-              "name": "_oldPeriodStartHeader",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_oldPeriodEndHeader",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_headers",
-              "type": "bytes"
-            }
-          ],
-          "name": "ownerAddHeadersWithRetarget",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "pauseRelay",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "paused",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "relayGenesisHash",
-          "outputs": [
-            {
-              "internalType": "bytes32",
-              "name": "",
-              "type": "bytes32"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "relayerPercentageFee",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "renounceOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "rewardAmountInTDT",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_baseQueries",
-              "type": "uint256"
-            }
-          ],
-          "name": "setBaseQueries",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_epochLength",
-              "type": "uint256"
-            }
-          ],
-          "name": "setEpochLength",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_finalizationParameter",
-              "type": "uint256"
-            }
-          ],
-          "name": "setFinalizationParameter",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_relayerPercentageFee",
-              "type": "uint256"
-            }
-          ],
-          "name": "setRelayerPercentageFee",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_rewardAmountInTDT",
-              "type": "uint256"
-            }
-          ],
-          "name": "setRewardAmountInTDT",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_submissionGasUsed",
-              "type": "uint256"
-            }
-          ],
-          "name": "setSubmissionGasUsed",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "submissionGasUsed",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "transferOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "unpauseRelay",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        }
-      ]
-    },
     "CCBurnRouter": {
       "address": "0x7b92cC57C8b9Aba22ff9A30FFE55C63302c178b7",
       "abi": [
@@ -1938,6 +1189,463 @@
           ],
           "stateMutability": "view",
           "type": "function"
+        }
+      ]
+    },
+    "CCTransferRouter": {
+      "address": "0xA6B269f89d70D2d00BC04FC3dAec8e0962c0a487",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_startingBlockNumber",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_protocolPercentageFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_chainId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_appId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "_relay",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_lockers",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_teleBTC",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_treasury",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "inputAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "receivedAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "speed",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "teleporter",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "teleporterFee",
+              "type": "uint256"
+            }
+          ],
+          "name": "CCTransfer",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        {
+          "inputs": [],
+          "name": "appId",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes4",
+              "name": "_version",
+              "type": "bytes4"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_vin",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_vout",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes4",
+              "name": "_locktime",
+              "type": "bytes4"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_blockNumber",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_intermediateNodes",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_index",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
+            }
+          ],
+          "name": "ccTransfer",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes32",
+              "name": "",
+              "type": "bytes32"
+            }
+          ],
+          "name": "ccTransferRequests",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "inputAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "recipientAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "fee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "speed",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isUsed",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "chainId",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "instantRouter",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes32",
+              "name": "_txId",
+              "type": "bytes32"
+            }
+          ],
+          "name": "isRequestUsed",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "lockers",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "protocolPercentageFee",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "relay",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "renounceOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_instantRouter",
+              "type": "address"
+            }
+          ],
+          "name": "setInstantRouter",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_lockers",
+              "type": "address"
+            }
+          ],
+          "name": "setLockers",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_protocolPercentageFee",
+              "type": "uint256"
+            }
+          ],
+          "name": "setProtocolPercentageFee",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_relay",
+              "type": "address"
+            }
+          ],
+          "name": "setRelay",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_teleBTC",
+              "type": "address"
+            }
+          ],
+          "name": "setTeleBTC",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_treasury",
+              "type": "address"
+            }
+          ],
+          "name": "setTreasury",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "startingBlockNumber",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "teleBTC",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "transferOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "treasury",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "stateMutability": "payable",
+          "type": "receive"
         }
       ]
     },
@@ -9624,49 +9332,29 @@
         }
       ]
     },
-    "CCTransferRouter": {
-      "address": "0xA6B269f89d70D2d00BC04FC3dAec8e0962c0a487",
+    "BitcoinRelayTestnet": {
+      "address": "0x300FA2f3D2E1A6478a06F9A16D2aF499b5C6b7A9",
       "abi": [
         {
           "inputs": [
             {
-              "internalType": "uint256",
-              "name": "_startingBlockNumber",
-              "type": "uint256"
+              "internalType": "bytes",
+              "name": "_genesisHeader",
+              "type": "bytes"
             },
             {
               "internalType": "uint256",
-              "name": "_protocolPercentageFee",
+              "name": "_height",
               "type": "uint256"
             },
             {
-              "internalType": "uint256",
-              "name": "_chainId",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_appId",
-              "type": "uint256"
+              "internalType": "bytes32",
+              "name": "_periodStart",
+              "type": "bytes32"
             },
             {
               "internalType": "address",
-              "name": "_relay",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_lockers",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_teleBTC",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_treasury",
+              "name": "_TeleportDAOToken",
               "type": "address"
             }
           ],
@@ -9678,42 +9366,73 @@
           "inputs": [
             {
               "indexed": true,
-              "internalType": "address",
-              "name": "user",
-              "type": "address"
-            },
-            {
-              "indexed": false,
               "internalType": "uint256",
-              "name": "inputAmount",
+              "name": "height",
               "type": "uint256"
             },
             {
               "indexed": false,
-              "internalType": "uint256",
-              "name": "receivedAmount",
-              "type": "uint256"
+              "internalType": "bytes32",
+              "name": "selfHash",
+              "type": "bytes32"
             },
             {
               "indexed": true,
+              "internalType": "bytes32",
+              "name": "parentHash",
+              "type": "bytes32"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "relayer",
+              "type": "address"
+            }
+          ],
+          "name": "BlockAdded",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
               "internalType": "uint256",
-              "name": "speed",
+              "name": "height",
               "type": "uint256"
             },
             {
               "indexed": false,
+              "internalType": "bytes32",
+              "name": "selfHash",
+              "type": "bytes32"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes32",
+              "name": "parentHash",
+              "type": "bytes32"
+            },
+            {
+              "indexed": true,
               "internalType": "address",
-              "name": "teleporter",
+              "name": "relayer",
               "type": "address"
             },
             {
               "indexed": false,
               "internalType": "uint256",
-              "name": "teleporterFee",
+              "name": "rewardAmountTNT",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "rewardAmountTDT",
               "type": "uint256"
             }
           ],
-          "name": "CCTransfer",
+          "name": "BlockFinalized",
           "type": "event"
         },
         {
@@ -9736,8 +9455,126 @@
           "type": "event"
         },
         {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "Paused",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "Unpaused",
+          "type": "event"
+        },
+        {
           "inputs": [],
-          "name": "appId",
+          "name": "TeleportDAOToken",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_anchor",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_headers",
+              "type": "bytes"
+            }
+          ],
+          "name": "addHeaders",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_oldPeriodStartHeader",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_oldPeriodEndHeader",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_headers",
+              "type": "bytes"
+            }
+          ],
+          "name": "addHeadersWithRetarget",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "availableTDT",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "availableTNT",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "baseQueries",
           "outputs": [
             {
               "internalType": "uint256",
@@ -9751,28 +9588,13 @@
         {
           "inputs": [
             {
-              "internalType": "bytes4",
-              "name": "_version",
-              "type": "bytes4"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_vin",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_vout",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes4",
-              "name": "_locktime",
-              "type": "bytes4"
+              "internalType": "bytes32",
+              "name": "_txid",
+              "type": "bytes32"
             },
             {
               "internalType": "uint256",
-              "name": "_blockNumber",
+              "name": "_blockHeight",
               "type": "uint256"
             },
             {
@@ -9784,14 +9606,9 @@
               "internalType": "uint256",
               "name": "_index",
               "type": "uint256"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_lockerLockingScript",
-              "type": "bytes"
             }
           ],
-          "name": "ccTransfer",
+          "name": "checkTxProof",
           "outputs": [
             {
               "internalType": "bool",
@@ -9803,47 +9620,8 @@
           "type": "function"
         },
         {
-          "inputs": [
-            {
-              "internalType": "bytes32",
-              "name": "",
-              "type": "bytes32"
-            }
-          ],
-          "name": "ccTransferRequests",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "inputAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "address",
-              "name": "recipientAddress",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "fee",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "speed",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "isUsed",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
           "inputs": [],
-          "name": "chainId",
+          "name": "currentEpochQueries",
           "outputs": [
             {
               "internalType": "uint256",
@@ -9856,12 +9634,25 @@
         },
         {
           "inputs": [],
-          "name": "instantRouter",
+          "name": "epochLength",
           "outputs": [
             {
-              "internalType": "address",
+              "internalType": "uint256",
               "name": "",
-              "type": "address"
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "finalizationParameter",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
             }
           ],
           "stateMutability": "view",
@@ -9871,11 +9662,144 @@
           "inputs": [
             {
               "internalType": "bytes32",
-              "name": "_txId",
+              "name": "_hash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_offset",
+              "type": "uint256"
+            }
+          ],
+          "name": "findAncestor",
+          "outputs": [
+            {
+              "internalType": "bytes32",
+              "name": "",
               "type": "bytes32"
             }
           ],
-          "name": "isRequestUsed",
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes32",
+              "name": "_hash",
+              "type": "bytes32"
+            }
+          ],
+          "name": "findHeight",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_height",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_index",
+              "type": "uint256"
+            }
+          ],
+          "name": "getBlockHeaderFee",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_height",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_index",
+              "type": "uint256"
+            }
+          ],
+          "name": "getBlockHeaderHash",
+          "outputs": [
+            {
+              "internalType": "bytes32",
+              "name": "",
+              "type": "bytes32"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_height",
+              "type": "uint256"
+            }
+          ],
+          "name": "getNumberOfSubmittedHeaders",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "initialHeight",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes32",
+              "name": "_ancestor",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "_descendant",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_limit",
+              "type": "uint256"
+            }
+          ],
+          "name": "isAncestor",
           "outputs": [
             {
               "internalType": "bool",
@@ -9888,12 +9812,25 @@
         },
         {
           "inputs": [],
-          "name": "lockers",
+          "name": "lastEpochQueries",
           "outputs": [
             {
-              "internalType": "address",
+              "internalType": "uint256",
               "name": "",
-              "type": "address"
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "lastSubmittedHeight",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
             }
           ],
           "stateMutability": "view",
@@ -9913,13 +9850,73 @@
           "type": "function"
         },
         {
-          "inputs": [],
-          "name": "protocolPercentageFee",
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_anchor",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_headers",
+              "type": "bytes"
+            }
+          ],
+          "name": "ownerAddHeaders",
           "outputs": [
             {
-              "internalType": "uint256",
+              "internalType": "bool",
               "name": "",
-              "type": "uint256"
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_oldPeriodStartHeader",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_oldPeriodEndHeader",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_headers",
+              "type": "bytes"
+            }
+          ],
+          "name": "ownerAddHeadersWithRetarget",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "pauseRelay",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "paused",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
             }
           ],
           "stateMutability": "view",
@@ -9927,12 +9924,25 @@
         },
         {
           "inputs": [],
-          "name": "relay",
+          "name": "relayGenesisHash",
           "outputs": [
             {
-              "internalType": "address",
+              "internalType": "bytes32",
               "name": "",
-              "type": "address"
+              "type": "bytes32"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "relayerPercentageFee",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
             }
           ],
           "stateMutability": "view",
@@ -9946,86 +9956,8 @@
           "type": "function"
         },
         {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_instantRouter",
-              "type": "address"
-            }
-          ],
-          "name": "setInstantRouter",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_lockers",
-              "type": "address"
-            }
-          ],
-          "name": "setLockers",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_protocolPercentageFee",
-              "type": "uint256"
-            }
-          ],
-          "name": "setProtocolPercentageFee",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_relay",
-              "type": "address"
-            }
-          ],
-          "name": "setRelay",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_teleBTC",
-              "type": "address"
-            }
-          ],
-          "name": "setTeleBTC",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_treasury",
-              "type": "address"
-            }
-          ],
-          "name": "setTreasury",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
           "inputs": [],
-          "name": "startingBlockNumber",
+          "name": "rewardAmountInTDT",
           "outputs": [
             {
               "internalType": "uint256",
@@ -10037,13 +9969,91 @@
           "type": "function"
         },
         {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_baseQueries",
+              "type": "uint256"
+            }
+          ],
+          "name": "setBaseQueries",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_epochLength",
+              "type": "uint256"
+            }
+          ],
+          "name": "setEpochLength",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_finalizationParameter",
+              "type": "uint256"
+            }
+          ],
+          "name": "setFinalizationParameter",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_relayerPercentageFee",
+              "type": "uint256"
+            }
+          ],
+          "name": "setRelayerPercentageFee",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_rewardAmountInTDT",
+              "type": "uint256"
+            }
+          ],
+          "name": "setRewardAmountInTDT",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_submissionGasUsed",
+              "type": "uint256"
+            }
+          ],
+          "name": "setSubmissionGasUsed",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
           "inputs": [],
-          "name": "teleBTC",
+          "name": "submissionGasUsed",
           "outputs": [
             {
-              "internalType": "address",
+              "internalType": "uint256",
               "name": "",
-              "type": "address"
+              "type": "uint256"
             }
           ],
           "stateMutability": "view",
@@ -10064,20 +10074,10 @@
         },
         {
           "inputs": [],
-          "name": "treasury",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
+          "name": "unpauseRelay",
+          "outputs": [],
+          "stateMutability": "nonpayable",
           "type": "function"
-        },
-        {
-          "stateMutability": "payable",
-          "type": "receive"
         }
       ]
     }
