@@ -1,10 +1,12 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
+import verify from "../helper-functions"
+import {developmentChains} from "../helper-hardhat-config"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts} = hre;
-    const {deploy} = deployments;
+    const {deployments, getNamedAccounts, network} = hre;
+    const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
     const acceptableDelay = 1000;
@@ -13,27 +15,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const uniswapV2Router02 = await deployments.get("UniswapV2Router02")
     const uniswapV2Connector = await deployments.get("UniswapV2Connector")
 
+    const theArgs = [
+        acceptableDelay,
+        tdtToken.address
+    ]
+
     const priceOracle = await deploy("PriceOracle", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
-        args: [
-            acceptableDelay,
-            tdtToken.address
-        ],
+        args: theArgs,
     });
 
-    const PriceOracleFactory = await ethers.getContractFactory("PriceOracle");
-    const priceOracleInstance = await PriceOracleFactory.attach(
-        priceOracle.address
-    );
-
-    const addExchangeTx = await priceOracleInstance.addExchangeConnector(
-        uniswapV2Router02.address,
-        uniswapV2Connector.address
-    )
-
-    await addExchangeTx.wait(1)
+    log(`PriceOracle at ${priceOracle.address}`)
+    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+        await verify(
+            priceOracle.address,
+            theArgs
+        )
+    }
 };
 
 export default func;

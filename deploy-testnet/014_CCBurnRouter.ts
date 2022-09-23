@@ -1,12 +1,14 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import config from 'config'
+import verify from "../helper-functions"
+import {developmentChains} from "../helper-hardhat-config"
 
 require('dotenv').config({path:"../config/temp.env"});
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts} = hre;
-    const {deploy} = deployments;
+    const {deployments, getNamedAccounts, network} = hre;
+    const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
     let theBlockHeight = process.env.BLOCK_HEIGHT;
@@ -21,22 +23,30 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const bitcoinRelayTestnet = await deployments.get("BitcoinRelayTestnet")
     const lockersProxy = await deployments.get("LockersProxy")
 
+    const theArgs = [
+        bitcoinRelayTestnet.address,
+        lockersProxy.address,
+        treasuryAddress,
+        transferDeadLine,
+        protocolPercentageFee,
+        slasherPercentageReward,
+        bitcoinFee
+    ]
 
-
-    await deploy("CCBurnRouter", {
+    const ccBurnRouter = await deploy("CCBurnRouter", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
-        args: [
-            bitcoinRelayTestnet.address,
-            lockersProxy.address,
-            treasuryAddress,
-            transferDeadLine,
-            protocolPercentageFee,
-            slasherPercentageReward,
-            bitcoinFee
-        ],
+        args: theArgs,
     });
+
+    log(`CCBurnRouter at ${ccBurnRouter.address}`)
+    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+        await verify(
+            ccBurnRouter.address,
+            theArgs
+        )
+    }
 };
 
 export default func;

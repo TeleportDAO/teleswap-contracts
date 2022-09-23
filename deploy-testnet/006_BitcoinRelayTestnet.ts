@@ -2,7 +2,8 @@ import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 var path = require('path');
 var fs = require('fs');
-import verify from "../helper-functions";
+import verify from "../helper-functions"
+import {developmentChains} from "../helper-hardhat-config"
 
 // TODO: use another file instead of .env
 var tempFilePath = path.join(__dirname, '..', '.env');
@@ -42,17 +43,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     var blockHeight = "BLOCK_HEIGHT=" + height + "\n";
     fs.appendFileSync(tempFilePath, blockHeight);
 
+    const theArgs = [
+        '0x' + genesisHeader,
+        height,
+        '0x' + periodStart,
+        tdtToken.address
+    ]
+
     const relayer = await deploy("BitcoinRelayTestnet", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
-        args: [
-            '0x' + genesisHeader,
-            height,
-            '0x' + periodStart,
-            tdtToken.address
-        ],
+        args: theArgs,
     });
+
+    log(`BitcoinRelayTestnet at ${relayer.address}`)
+    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+        await verify(
+            relayer.address,
+            theArgs
+        )
+    }
 };
 
 export default func;

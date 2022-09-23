@@ -2,12 +2,14 @@ import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import config from 'config'
 import { BigNumber } from 'ethers';
+import verify from "../helper-functions"
+import {developmentChains} from "../helper-hardhat-config"
 
 require('dotenv').config({path:"../config/temp.env"});
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts} = hre;
-    const {deploy} = deployments;
+    const {deployments, getNamedAccounts, network} = hre;
+    const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
     let theBlockHeight = process.env.BLOCK_HEIGHT;
@@ -23,21 +25,31 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const lockersProxy = await deployments.get("LockersProxy")
     const teleBTC = await deployments.get("TeleBTC")
 
+    const theArgs = [
+        blockHeightBigNumber,
+        protocolPercentageFee,
+        chainID,
+        lockersProxy.address,
+        bitcoinRelayTestnet.address,
+        teleBTC.address,
+        treasuryAddress
+    ]
 
-    await deploy("CCExchangeRouter", {
+
+    const ccExchange = await deploy("CCExchangeRouter", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
-        args: [
-            blockHeightBigNumber,
-            protocolPercentageFee,
-            chainID,
-            lockersProxy.address,
-            bitcoinRelayTestnet.address,
-            teleBTC.address,
-            treasuryAddress
-        ],
+        args: theArgs,
     });
+
+    log(`CCExchangeRouter at ${ccExchange.address}`)
+    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+        await verify(
+            ccExchange.address,
+            theArgs
+        )
+    }
 };
 
 export default func;
