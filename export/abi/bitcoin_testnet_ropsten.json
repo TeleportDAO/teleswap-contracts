@@ -3,7 +3,7 @@
   "chainId": "3",
   "contracts": {
     "BitcoinRelayTestnet": {
-      "address": "0x300FA2f3D2E1A6478a06F9A16D2aF499b5C6b7A9",
+      "address": "0x770f7B066e5eb859815Ab46Ae2Ce7c39E65a0F7f",
       "abi": [
         {
           "inputs": [
@@ -752,7 +752,7 @@
       ]
     },
     "CCBurnRouter": {
-      "address": "0x06C96231E287BaCd3a4ac090389315628d6B7684",
+      "address": "0x8dc9ADC41465a768e1755EC14bE6024393946741",
       "abi": [
         {
           "inputs": [
@@ -1463,7 +1463,7 @@
       ]
     },
     "CCExchangeRouter": {
-      "address": "0xc8Cf3c7EA2Da08e9F4760Deb20265A879A1d730f",
+      "address": "0x4EA34A99120d0E7673Df50BB01ef74A1d8a8984F",
       "abi": [
         {
           "inputs": [
@@ -1950,7 +1950,7 @@
       ]
     },
     "CCTransferRouter": {
-      "address": "0x390EF788d3334d0ACbD4E219325cB83406ee922a",
+      "address": "0x2ab8ECbD5dFbc90bE8fc68B7C92327E7A741e629",
       "abi": [
         {
           "inputs": [
@@ -2407,7 +2407,7 @@
       ]
     },
     "CollateralPoolFactory": {
-      "address": "0x7fcC6941cC75647808f76833ADD08865A14Ca29d",
+      "address": "0x865c6D960280fCBe8c9E07FF2798f659efBf3359",
       "abi": [
         {
           "inputs": [],
@@ -2637,7 +2637,7 @@
       ]
     },
     "ERC20": {
-      "address": "0x22392F05fcB1148D3785ee23b281EbFF906f4a66",
+      "address": "0x15A7D6C56387166a3814C6c4d044C59ca571681e",
       "abi": [
         {
           "inputs": [
@@ -2933,7 +2933,7 @@
       ]
     },
     "ERC20AsDot": {
-      "address": "0x9a11A6aA062158669b348696D83c4E48C28A0Cb3",
+      "address": "0x076AC5FB3B9eACD948C1bEC7bA9518dffd3d2146",
       "abi": [
         {
           "inputs": [
@@ -3229,7 +3229,7 @@
       ]
     },
     "ERC20AsLink": {
-      "address": "0xF4658464f0C7b7c2b033C6e7868EAff838D0de36",
+      "address": "0x9DC5c7A12cAcEc9bC316da2397311A9Ee02E0bEc",
       "abi": [
         {
           "inputs": [
@@ -3525,7 +3525,7 @@
       ]
     },
     "InstantPool": {
-      "address": "0xd3DBe74d058BaDF5B7dC062D37161Bc36c273479",
+      "address": "0x199ceDc215d0E0D7Ebc07213D1b2fc3356315625",
       "abi": [
         {
           "inputs": [
@@ -4185,7 +4185,7 @@
       ]
     },
     "InstantRouter": {
-      "address": "0x2cc51F7B8f2EBC6869E38Ce660257973283a1c4f",
+      "address": "0xe2e3e702712fB8C936f58e559C68b04844C88cFD",
       "abi": [
         {
           "inputs": [
@@ -4990,7 +4990,7 @@
       ]
     },
     "LockersLib": {
-      "address": "0x4f681df615576705AE8f02EED9b4B8013B1e5cbe",
+      "address": "0x8A9fB38F2555AdDe58c5A3a9bA32d83c347d938A",
       "abi": [
         {
           "inputs": [
@@ -5488,7 +5488,7 @@
       ]
     },
     "LockersLogicTestnet": {
-      "address": "0x19fb48e51E73cF8Ab0224b061E1c6CEa078cDa30",
+      "address": "0x36bEA80773E1b7fc8D88852a47Ab89a1150e0f93",
       "abi": [
         {
           "anonymous": false,
@@ -7192,7 +7192,7 @@
       ]
     },
     "LockersProxy": {
-      "address": "0xC7fEF2e86FF849b96b7A7bfCFE279449a9cdb244",
+      "address": "0xCD3022709e7f3CD0DdEF17E41392367fEd14f1a4",
       "abi": [
         {
           "inputs": [
@@ -7340,8 +7340,444 @@
         }
       ]
     },
+    "PriceOracle": {
+      "address": "0xe5F48D74BeB7bbc1beE1d4DeFd5fc2569275AaAD",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_acceptableDelay",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "_oracleNativeToken",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "exchangeRouter",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "exchangeConnector",
+              "type": "address"
+            }
+          ],
+          "name": "ExchangeConnectorAdded",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "exchangeRouter",
+              "type": "address"
+            }
+          ],
+          "name": "ExchangeConnectorRemoved",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "_firstToken",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "_secondToken",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "_priceProxyAddress",
+              "type": "address"
+            }
+          ],
+          "name": "SetPriceProxy",
+          "type": "event"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "ChainlinkPriceProxy",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "NATIVE_TOKEN",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "acceptableDelay",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_exchangeRouter",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_exchangeConnector",
+              "type": "address"
+            }
+          ],
+          "name": "addExchangeConnector",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_inputAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_inputDecimals",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_outputDecimals",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "_inputToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_outputToken",
+              "type": "address"
+            }
+          ],
+          "name": "equivalentOutputAmount",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_exchangeRouter",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_inputAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "_inputToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_outputToken",
+              "type": "address"
+            }
+          ],
+          "name": "equivalentOutputAmountFromExchange",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_inputAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_inputDecimals",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_outputDecimals",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "_inputToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_outputToken",
+              "type": "address"
+            }
+          ],
+          "name": "equivalentOutputAmountFromOracle",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "_outputAmount",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "exchangeConnector",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "name": "exchangeRoutersList",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "getExchangeRoutersListLength",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "oracleNativeToken",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_exchangeRouterIndex",
+              "type": "uint256"
+            }
+          ],
+          "name": "removeExchangeConnector",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "renounceOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_acceptableDelay",
+              "type": "uint256"
+            }
+          ],
+          "name": "setAcceptableDelay",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_oracleNativeToken",
+              "type": "address"
+            }
+          ],
+          "name": "setOracleNativeToken",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_firstToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_secondToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_priceProxyAddress",
+              "type": "address"
+            }
+          ],
+          "name": "setPriceProxy",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "transferOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ]
+    },
     "TeleBTC": {
-      "address": "0xb3058132DC59052E6cAce6eF70Eb7bC1cfc8da8e",
+      "address": "0x9c1206fe7af7C20eB17697F87a2Ed872EB28B129",
       "abi": [
         {
           "inputs": [
@@ -7862,7 +8298,7 @@
       ]
     },
     "UniswapV2Connector": {
-      "address": "0x82cF17b5F837F14d4218B1b3a6df97b73Bcddb23",
+      "address": "0xb9AF312D28d030c7A587A8886056186f47E61E4d",
       "abi": [
         {
           "inputs": [
@@ -8175,7 +8611,7 @@
       ]
     },
     "UniswapV2Factory": {
-      "address": "0x898293375394e2Cf7EFA09CEC9F96c6bEeE64d13",
+      "address": "0x2c80F116A9ae7a259e1C415D9Cb4c4311Ee5fBAb",
       "abi": [
         {
           "inputs": [
@@ -8371,7 +8807,7 @@
       ]
     },
     "UniswapV2Router02": {
-      "address": "0xc28A3Cd2a321156B44C1945f9e18e13a5FaaD08C",
+      "address": "0x0329F9dBC49A6deC90BBe1D2F81903bcAc2447D5",
       "abi": [
         {
           "inputs": [
@@ -9347,7 +9783,7 @@
       ]
     },
     "WETH": {
-      "address": "0xBE756Aa35c13BB866F9338eC277947FF9d0cc31D",
+      "address": "0xf4E6497fe8AD74753B55a8E86394Fa075008B732",
       "abi": [
         {
           "inputs": [
@@ -9651,442 +10087,6 @@
             }
           ],
           "name": "withdraw",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        }
-      ]
-    },
-    "PriceOracle": {
-      "address": "0x9435400D86892c867a4177e6Ce5498f648aA5f99",
-      "abi": [
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_acceptableDelay",
-              "type": "uint256"
-            },
-            {
-              "internalType": "address",
-              "name": "_oracleNativeToken",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "constructor"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "exchangeRouter",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "exchangeConnector",
-              "type": "address"
-            }
-          ],
-          "name": "ExchangeConnectorAdded",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "exchangeRouter",
-              "type": "address"
-            }
-          ],
-          "name": "ExchangeConnectorRemoved",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "previousOwner",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "OwnershipTransferred",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "_firstToken",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "_secondToken",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "_priceProxyAddress",
-              "type": "address"
-            }
-          ],
-          "name": "SetPriceProxy",
-          "type": "event"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "name": "ChainlinkPriceProxy",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "NATIVE_TOKEN",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "acceptableDelay",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_exchangeRouter",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_exchangeConnector",
-              "type": "address"
-            }
-          ],
-          "name": "addExchangeConnector",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_inputAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_inputDecimals",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_outputDecimals",
-              "type": "uint256"
-            },
-            {
-              "internalType": "address",
-              "name": "_inputToken",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_outputToken",
-              "type": "address"
-            }
-          ],
-          "name": "equivalentOutputAmount",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_exchangeRouter",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_inputAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "address",
-              "name": "_inputToken",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_outputToken",
-              "type": "address"
-            }
-          ],
-          "name": "equivalentOutputAmountFromExchange",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_inputAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_inputDecimals",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_outputDecimals",
-              "type": "uint256"
-            },
-            {
-              "internalType": "address",
-              "name": "_inputToken",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_outputToken",
-              "type": "address"
-            }
-          ],
-          "name": "equivalentOutputAmountFromOracle",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "_outputAmount",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "name": "exchangeConnector",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "name": "exchangeRoutersList",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "getExchangeRoutersListLength",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "oracleNativeToken",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "owner",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_exchangeRouterIndex",
-              "type": "uint256"
-            }
-          ],
-          "name": "removeExchangeConnector",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "renounceOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_acceptableDelay",
-              "type": "uint256"
-            }
-          ],
-          "name": "setAcceptableDelay",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_oracleNativeToken",
-              "type": "address"
-            }
-          ],
-          "name": "setOracleNativeToken",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_firstToken",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_secondToken",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_priceProxyAddress",
-              "type": "address"
-            }
-          ],
-          "name": "setPriceProxy",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "transferOwnership",
           "outputs": [],
           "stateMutability": "nonpayable",
           "type": "function"

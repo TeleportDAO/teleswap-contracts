@@ -8,6 +8,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
+    log("Set instant pool in instant router...")
+
     const instantRouter = await deployments.get("InstantRouter")
     const instantPool = await deployments.get("InstantPool")
 
@@ -22,7 +24,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     await setInstantPoolTx.wait(1)
 
+    log("...Set instant pool in instant router")
+
 };
 
 export default func;
-func.tags = ["PriceOracle", "BitcoinTestnet"];
+// func.tags = ["PriceOracle", "BitcoinTestnet"];

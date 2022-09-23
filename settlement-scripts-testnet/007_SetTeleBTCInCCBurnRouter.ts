@@ -8,6 +8,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
+    log("Set teleBTC in cc burn...")
+
     const teleBTC = await deployments.get("TeleBTC")
     const ccBurnRouter = await deployments.get("CCBurnRouter")
 
@@ -22,7 +24,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     await setTeleBTCTx.wait(1)
 
+    log("...Set teleBTC in cc burn")
+
 };
 
 export default func;
-func.tags = ["PriceOracle", "BitcoinTestnet"];
+// func.tags = ["PriceOracle", "BitcoinTestnet"];

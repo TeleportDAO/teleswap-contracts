@@ -8,6 +8,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
+    log("Set Exchange Router in connector...")
+
     const uniswapRouter = await deployments.get("UniswapV2Router02")
     const uniswapConnector = await deployments.get("UniswapV2Connector")
 
@@ -21,7 +23,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
     await setExchangeRouterTx.wait(1)
 
+    log("...Set Exchange Router in connector")
+
 };
 
 export default func;
-func.tags = ["PriceOracle", "BitcoinTestnet"];
+// func.tags = ["PriceOracle", "BitcoinTestnet"];

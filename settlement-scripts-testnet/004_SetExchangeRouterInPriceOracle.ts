@@ -8,6 +8,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
+    log("Set Exchange Router in price oracle...")
+
     const uniswapV2Router02 = await deployments.get("UniswapV2Router02")
     const uniswapV2Connector = await deployments.get("UniswapV2Connector")
     const priceOracle = await deployments.get("PriceOracle")
@@ -18,7 +20,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         priceOracle.address
     );
 
-    const exchangeConnectorAddress = await priceOracleInstance(
+    const exchangeConnectorAddress = await priceOracleInstance.exchangeConnector(
         uniswapV2Router02.address
     )
 
@@ -30,7 +32,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         await addExchangeTx.wait(1)
     }
+
+    log("...Set Exchange Router in price oracle")
 };
 
 export default func;
-func.tags = ["PriceOracle", "BitcoinTestnet"];
+// func.tags = ["PriceOracle", "BitcoinTestnet"];

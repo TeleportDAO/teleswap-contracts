@@ -7,6 +7,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
+    log("TeleBTC settlement...")
+
     const teleBTC = await deployments.get("TeleBTC")
     const lockersProxy = await deployments.get("LockersProxy")
 
@@ -16,7 +18,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         teleBTC.address
     );
 
-    const isLockerMinter = await teleBTCInstance.isMinter(
+    const isLockerMinter = await teleBTCInstance.minters(
         lockersProxy.address
     )
 
@@ -28,7 +30,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await addLockerAsMinter.wait(1)
     }
 
-    const isLockerBurner = await teleBTCInstance.isBurner(
+    const isLockerBurner = await teleBTCInstance.burners(
         lockersProxy.address
     )
 
@@ -39,6 +41,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         await addLockerAsBurner.wait(1)
     }
+
+    log("...TeleBTC settlement")
 };
 
 export default func;

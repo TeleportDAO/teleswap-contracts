@@ -8,21 +8,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const ccExchangeRouter = await deployments.get("CCExchangeRouter")
+    log("Set instant router in cc transfer...")
+
+    const ccTransferRouter = await deployments.get("CCTransferRouter")
     const instantRouter = await deployments.get("InstantRouter")
 
-    const ccExchangeRouterFactory = await ethers.getContractFactory("CCExchangeRouter");
-    const ccExchangeRouterInstance = await ccExchangeRouterFactory.attach(
-        ccExchangeRouter.address
+    const ccTransferRouterFactory = await ethers.getContractFactory("CCTransferRouter");
+    const ccTransferRouterInstance = await ccTransferRouterFactory.attach(
+        ccTransferRouter.address
     );
 
-    const setInstantRouterTx = await ccExchangeRouterInstance.setInstantRouter(
+    const setInstantRouterTx = await ccTransferRouterInstance.setInstantRouter(
         instantRouter.address
     )
 
     await setInstantRouterTx.wait(1)
 
+    log("...Set instant router in cc transfer")
+
 };
 
 export default func;
-func.tags = ["PriceOracle", "BitcoinTestnet"];
+// func.tags = ["PriceOracle", "BitcoinTestnet"];

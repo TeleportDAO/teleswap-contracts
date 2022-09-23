@@ -8,8 +8,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
+    log("Set teleBTC in Locker...")
+
     const one = BigNumber.from(10).pow(18).mul(1)
 
+    const lockersLib = await deployments.get("LockersLib")
     const lockersProxy = await deployments.get("LockersProxy")
 
     const teleDAOToken = await deployments.get("ERC20")
@@ -23,7 +26,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const lockerPercentageFee = 50;
     const priceWithDiscountRatio = 9500;
 
-    const lockersLogicFactory = await ethers.getContractFactory("LockersLogicTestnet");
+    const lockersLogicFactory = await ethers.getContractFactory(
+            "LockersLogicTestnet",
+            {
+            "LockersLib": lockersLib.address
+            }
+        );
     const lockersInstance = await lockersLogicFactory.attach(
         lockersProxy.address
     );
@@ -33,6 +41,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
 
     await setTeleBTCTx.wait(1)
+
+    log("...Set teleBTC in Locker")
 
     // const teleDAOTokenAddress = await lockersInstance.TeleportDAOToken()
 
@@ -55,4 +65,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ["PriceOracle", "BitcoinTestnet"];
+// func.tags = ["PriceOracle", "BitcoinTestnet"];
