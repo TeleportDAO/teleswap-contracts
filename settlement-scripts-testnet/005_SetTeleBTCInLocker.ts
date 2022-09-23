@@ -27,20 +27,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const priceWithDiscountRatio = 9500;
 
     const lockersLogicFactory = await ethers.getContractFactory(
-            "LockersLogicTestnet",
-            {
-            "LockersLib": lockersLib.address
+        "LockersLogicTestnet",
+        {
+            libraries: {
+                LockersLib: lockersLib.address
             }
-        );
+        }
+    );
     const lockersInstance = await lockersLogicFactory.attach(
         lockersProxy.address
     );
 
-    const setTeleBTCTx = await lockersInstance.setTeleBTC(
-        teleBTC.address
-    )
+    // const setTeleBTCTx = await lockersInstance.setTeleBTC(
+    //     teleBTC.address
+    // )
 
-    await setTeleBTCTx.wait(1)
+    // await setTeleBTCTx.wait(1)
 
     log("...Set teleBTC in Locker")
 

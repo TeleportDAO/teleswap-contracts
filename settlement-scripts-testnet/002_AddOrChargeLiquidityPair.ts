@@ -43,40 +43,39 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
 
 
-    if (theLiquidityPair == "0x0000000000000000000000000000000000000000") {
-        const timeNow = Date.now()
-        const unixTimeNow = (timeNow - (timeNow % 1000))/1000 + 1000
+    // if (theLiquidityPair == "0x0000000000000000000000000000000000000000") {
+    //     const timeNow = Date.now()
+    //     const unixTimeNow = (timeNow - (timeNow % 1000))/1000 + 1000
 
 
-        const mintTeleBTCTx = await teleBTCInstance.mintTestToken()
-        await mintTeleBTCTx.wait(1)
+    //     const mintTeleBTCTx = await teleBTCInstance.mintTestToken()
+    //     await mintTeleBTCTx.wait(1)
 
-        const approveTeleBTCTx = await teleBTCInstance.approve(
-            uniswapRouter.address,
-            one
-        )
-        await approveTeleBTCTx.wait(1)
+    //     const approveTeleBTCTx = await teleBTCInstance.approve(
+    //         uniswapRouter.address,
+    //         one
+    //     )
+    //     await approveTeleBTCTx.wait(1)
 
-        const approveLinkTokenTx = await linkTokenInstance.approve(
-            uniswapRouter.address,
-            one.mul(500)
-        )
-        await approveLinkTokenTx.wait(1)
+    //     const approveLinkTokenTx = await linkTokenInstance.approve(
+    //         uniswapRouter.address,
+    //         one.mul(500)
+    //     )
+    //     await approveLinkTokenTx.wait(1)
 
+    //     const addLiquidityPairTx = await uniswapRouterInstance.addLiquidity(
+    //         teleBTC.address,
+    //         linkToken.address,
+    //         one,
+    //         one.mul(500),
+    //         one.div(5),
+    //         one.mul(100),
+    //         deployer,
+    //         unixTimeNow
+    //     )
 
-        // const addLiquidityPairTx = await uniswapRouterInstance.addLiquidity(
-        //     teleBTC.address,
-        //     linkToken.address,
-        //     one,
-        //     one.mul(500),
-        //     one.div(5),
-        //     one.mul(100),
-        //     deployer,
-        //     unixTimeNow
-        // )
-        //
-        // await addLiquidityPairTx.wait(1)
-    }
+    //     await addLiquidityPairTx.wait(1)
+    // }
 
     log("...Add or charge liquidity pool")
 
