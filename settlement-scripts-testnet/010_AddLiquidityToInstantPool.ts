@@ -34,7 +34,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
     await approveTeleBTCTx.wait(1)
 
-    const addLiquiditylTx = await instantRouterInstance.addLiquidity(
+    const addLiquiditylTx = await instantPoolInstance.addLiquidity(
         deployer,
         one.mul(50)
     )

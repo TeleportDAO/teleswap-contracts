@@ -38,11 +38,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         lockersProxy.address
     );
 
-    // const setTeleBTCTx = await lockersInstance.setTeleBTC(
-    //     teleBTC.address
-    // )
+    const setTeleBTCTx = await lockersInstance.setTeleBTC(
+        teleBTC.address
+    )
 
-    // await setTeleBTCTx.wait(1)
+    await setTeleBTCTx.wait(1)
 
     log("...Set teleBTC in Locker")
 
