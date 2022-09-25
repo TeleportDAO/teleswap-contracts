@@ -8,10 +8,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    log("Set instant router in cc exchange...")
+    log("Set instant router and connector in cc exchange...")
 
     const ccExchangeRouter = await deployments.get("CCExchangeRouter")
     const instantRouter = await deployments.get("InstantRouter")
+    const exchangeConnector = await deployments.get("UniswapV2Connector")
 
     const ccExchangeRouterFactory = await ethers.getContractFactory("CCExchangeRouter");
     const ccExchangeRouterInstance = await ccExchangeRouterFactory.attach(
@@ -21,10 +22,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const setInstantRouterTx = await ccExchangeRouterInstance.setInstantRouter(
         instantRouter.address
     )
-
     await setInstantRouterTx.wait(1)
 
-    log("...Set instant router in cc exchange")
+
+    const setConnectorAndAppIdTx = await ccExchangeRouterInstance.setExchangeConnector(
+        20,
+        exchangeConnector.address
+    )
+    await setConnectorAndAppIdTx.wait(1)
+
+    log("...Set instant router and connector in cc exchange")
 
 };
 
