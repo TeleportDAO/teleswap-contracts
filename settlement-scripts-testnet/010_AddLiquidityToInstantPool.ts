@@ -8,7 +8,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const one = BigNumber.from(10).pow(18).mul(1)
+    const one8Dec = BigNumber.from(10).pow(8).mul(1)
 
     log("Add liquidity to instant pool...")
 
@@ -30,13 +30,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const approveTeleBTCTx = await teleBTCInstance.approve(
         instantPool.address,
-        one.mul(50)
+        one8Dec.mul(50)
     )
     await approveTeleBTCTx.wait(1)
 
     const addLiquiditylTx = await instantPoolInstance.addLiquidity(
         deployer,
-        one.mul(50)
+        one8Dec.mul(50)
     )
 
     await addLiquiditylTx.wait(1)

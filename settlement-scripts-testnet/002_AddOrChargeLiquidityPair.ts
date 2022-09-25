@@ -10,7 +10,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     log("Add or charge liquidity pool...")
 
-    const one = BigNumber.from(10).pow(18).mul(1)
+    const one8Dec = BigNumber.from(10).pow(8).mul(1)
+    const one18Dec = BigNumber.from(10).pow(18).mul(1)
 
     const teleBTC = await deployments.get("TeleBTC")
     const linkToken = await deployments.get("ERC20AsLink")
@@ -43,39 +44,39 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
 
 
-    // if (theLiquidityPair == "0x0000000000000000000000000000000000000000") {
-    //     const timeNow = Date.now()
-    //     const unixTimeNow = (timeNow - (timeNow % 1000))/1000 + 1000
+    if (theLiquidityPair == "0x0000000000000000000000000000000000000000") {
+        const timeNow = Date.now()
+        const unixTimeNow = (timeNow - (timeNow % 1000))/1000 + 1000
 
 
-    //     const mintTeleBTCTx = await teleBTCInstance.mintTestToken()
-    //     await mintTeleBTCTx.wait(1)
+        const mintTeleBTCTx = await teleBTCInstance.mintTestToken()
+        await mintTeleBTCTx.wait(1)
 
-    //     const approveTeleBTCTx = await teleBTCInstance.approve(
-    //         uniswapRouter.address,
-    //         one
-    //     )
-    //     await approveTeleBTCTx.wait(1)
+        const approveTeleBTCTx = await teleBTCInstance.approve(
+            uniswapRouter.address,
+            one8Dec
+        )
+        await approveTeleBTCTx.wait(1)
 
-    //     const approveLinkTokenTx = await linkTokenInstance.approve(
-    //         uniswapRouter.address,
-    //         one.mul(500)
-    //     )
-    //     await approveLinkTokenTx.wait(1)
+        const approveLinkTokenTx = await linkTokenInstance.approve(
+            uniswapRouter.address,
+            one18Dec.mul(500)
+        )
+        await approveLinkTokenTx.wait(1)
 
-    //     const addLiquidityPairTx = await uniswapRouterInstance.addLiquidity(
-    //         teleBTC.address,
-    //         linkToken.address,
-    //         one,
-    //         one.mul(500),
-    //         one.div(5),
-    //         one.mul(100),
-    //         deployer,
-    //         unixTimeNow
-    //     )
+        const addLiquidityPairTx = await uniswapRouterInstance.addLiquidity(
+            teleBTC.address,
+            linkToken.address,
+            one8Dec,
+            one18Dec.mul(500),
+            one8Dec.div(2),
+            one18Dec.mul(250),
+            deployer,
+            unixTimeNow
+        )
 
-    //     await addLiquidityPairTx.wait(1)
-    // }
+        await addLiquidityPairTx.wait(1)
+    }
 
     log("...Add or charge liquidity pool")
 
