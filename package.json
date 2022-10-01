@@ -72,6 +72,8 @@
 		"deploy:ropsten": "hardhat deploy --network ropsten --tags BitcoinMainnet --export export/abi/ropsten.json",
 		"deploy:bitcoin_testnet_ropsten": "hardhat deploy --network ropsten --tags BitcoinTestnet --export export/abi/bitcoin_testnet_ropsten.json --deploy-scripts deploy-testnet",
 		"settlement:bitcoin_testnet_ropsten": "hardhat deploy --network ropsten --export export/abi/bitcoin_testnet_ropsten.json --deploy-scripts settlement-scripts-testnet",
+		"deploy:bitcoin_testnet_mumbai": "hardhat deploy --network mumbai --tags BitcoinTestnet --export export/abi/bitcoin_testnet_mumbai.json --deploy-scripts deploy-testnet",
+		"settlement:bitcoin_testnet_mumbai": "hardhat deploy --network mumbai --export export/abi/bitcoin_testnet_mumbai.json --deploy-scripts settlement-scripts-testnet",
 		"deploy:bsc_testnet": "hardhat deploy --network bsc_testnet --tags BitcoinMainnet --export export/abi/bsc_testnet.json",
 		"test": "hardhat test"
 	}
