@@ -38,31 +38,33 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         lockersProxy.address
     );
 
-    // const setTeleBTCTx = await lockersInstance.setTeleBTC(
-    //     teleBTC.address
-    // )
 
-    // await setTeleBTCTx.wait(1)
 
     log("...Set teleBTC in Locker")
 
-    // const teleDAOTokenAddress = await lockersInstance.TeleportDAOToken()
+    const teleDAOTokenAddress = await lockersInstance.TeleportDAOToken()
 
-    // if (teleDAOTokenAddress == "0x0000000000000000000000000000000000000000") {
-    //     const initializeTx = await lockersInstance.initialize(
-    //         teleDAOToken.address,
-    //         exchangeConnector.address,
-    //         priceOracle.address,
-    //         minTDTLockedAmount,
-    //         minNativeLockedAmount,
-    //         collateralRatio,
-    //         liquidationRatio,
-    //         lockerPercentageFee,
-    //         priceWithDiscountRatio
-    //     )
+    if (teleDAOTokenAddress == "0x0000000000000000000000000000000000000000") {
+        const initializeTx = await lockersInstance.initialize(
+            teleDAOToken.address,
+            exchangeConnector.address,
+            priceOracle.address,
+            minTDTLockedAmount,
+            minNativeLockedAmount,
+            collateralRatio,
+            liquidationRatio,
+            lockerPercentageFee,
+            priceWithDiscountRatio
+        )
 
-    //     await initializeTx.wait(1)
-    // }
+        await initializeTx.wait(1)
+    }
+
+    const setTeleBTCTx = await lockersInstance.setTeleBTC(
+        teleBTC.address
+    )
+
+    await setTeleBTCTx.wait(1)
 
 };
 
