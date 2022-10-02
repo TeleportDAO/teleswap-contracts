@@ -130,7 +130,7 @@ contract LockersLogicTestnet is ILockers, OwnableUpgradeable, ReentrancyGuardUpg
     }
 
     modifier onlyMinter() {
-        require(_isMinter(_msgSender()), "Lockers: only minters can mint");
+        require(isMinter(_msgSender()), "Lockers: only minters can mint");
         _;
     }
 
@@ -138,7 +138,7 @@ contract LockersLogicTestnet is ILockers, OwnableUpgradeable, ReentrancyGuardUpg
      * @dev Give an account access to mint.
      */
     function addMinter(address _account) external override nonZeroAddress(_account) onlyOwner {
-        require(!_isMinter(_account), "Lockers: account already has role");
+        require(!isMinter(_account), "Lockers: account already has role");
         minters[_account] = true;
     }
 
@@ -146,12 +146,12 @@ contract LockersLogicTestnet is ILockers, OwnableUpgradeable, ReentrancyGuardUpg
      * @dev Remove an account's access to mint.
      */
     function removeMinter(address _account) external override nonZeroAddress(_account) onlyOwner {
-        require(_isMinter(_account), "Lockers: account does not have role");
+        require(isMinter(_account), "Lockers: account does not have role");
         minters[_account] = false;
     }
 
     modifier onlyBurner() {
-        require(_isBurner(_msgSender()), "Lockers: only burners can burn");
+        require(isBurner(_msgSender()), "Lockers: only burners can burn");
         _;
     }
 
@@ -159,7 +159,7 @@ contract LockersLogicTestnet is ILockers, OwnableUpgradeable, ReentrancyGuardUpg
      * @dev Give an account access to burn.
      */
     function addBurner(address _account) external override nonZeroAddress(_account) onlyOwner {
-        require(!_isBurner(_account), "Lockers: account already has role");
+        require(!isBurner(_account), "Lockers: account already has role");
         burners[_account] = true;
     }
 
@@ -167,7 +167,7 @@ contract LockersLogicTestnet is ILockers, OwnableUpgradeable, ReentrancyGuardUpg
      * @dev Remove an account's access to burn.
      */
     function removeBurner(address _account) external override nonZeroAddress(_account) onlyOwner {
-        require(_isBurner(_account), "Lockers: account does not have role");
+        require(isBurner(_account), "Lockers: account does not have role");
         burners[_account] = false;
     }
 
@@ -559,7 +559,7 @@ contract LockersLogicTestnet is ILockers, OwnableUpgradeable, ReentrancyGuardUpg
 
     /// @notice                           Slashes lockers for moving BTC without a good reason
     /// @dev                              Only cc burn router can call this
-    ///                                   Locker is slashed because he/she moved BTC from 
+    ///                                   Locker is slashed because he/she moved BTC from
     ///                                   locker's Bitcoin address without any corresponding burn req
     ///                                   The slashed bond will be sold with discount
     /// @param _lockerTargetAddress       Locker's target chain address
@@ -703,7 +703,7 @@ contract LockersLogicTestnet is ILockers, OwnableUpgradeable, ReentrancyGuardUpg
     /// @dev                              Users buy the slashed collateral using TeleBTC with discount
     ///                                   The paid TeleBTC will be burnt to keep the system safe
     ///                                   If all the needed TeleBTC is collected and burnt,
-    ///                                   the rest of slashed collateral is sent back to locker 
+    ///                                   the rest of slashed collateral is sent back to locker
     /// @param _lockerTargetAddress       Locker's target chain address
     /// @param _collateralAmount          Amount of collateral (TNT) that someone is intend to buy with discount
     /// @return                           True is buying was successful
@@ -711,7 +711,7 @@ contract LockersLogicTestnet is ILockers, OwnableUpgradeable, ReentrancyGuardUpg
         address _lockerTargetAddress,
         uint _collateralAmount
     ) external nonZeroAddress(_lockerTargetAddress) nonZeroValue(_collateralAmount)
-        nonReentrant whenNotPaused override returns (bool) {
+    nonReentrant whenNotPaused override returns (bool) {
 
         require(
             lockersMapping[_lockerTargetAddress].isLocker,
@@ -740,17 +740,17 @@ contract LockersLogicTestnet is ILockers, OwnableUpgradeable, ReentrancyGuardUpg
             "Lockers: cant slash"
         );
 
-        // Updates locker's slashing info 
+        // Updates locker's slashing info
         lockersMapping[_lockerTargetAddress].slashingTeleBTCAmount =
-            lockersMapping[_lockerTargetAddress].slashingTeleBTCAmount - neededTeleBTC;
+        lockersMapping[_lockerTargetAddress].slashingTeleBTCAmount - neededTeleBTC;
 
         lockersMapping[_lockerTargetAddress].reservedNativeTokenForSlash =
-            lockersMapping[_lockerTargetAddress].reservedNativeTokenForSlash - _collateralAmount;
+        lockersMapping[_lockerTargetAddress].reservedNativeTokenForSlash - _collateralAmount;
 
         // Burns user's TeleBTC
         ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), neededTeleBTC);
         ITeleBTC(teleBTC).burn(neededTeleBTC);
-        
+
         // Sends bought collateral to user
         Address.sendValue(payable(_msgSender()), _collateralAmount);
 
@@ -932,7 +932,7 @@ contract LockersLogicTestnet is ILockers, OwnableUpgradeable, ReentrancyGuardUpg
      * @dev Check if an account is minter.
      * @return bool
      */
-    function _isMinter(address account) private view nonZeroAddress(account) returns (bool) {
+    function isMinter(address account) public override view nonZeroAddress(account) returns (bool) {
         return minters[account];
     }
 
@@ -940,7 +940,7 @@ contract LockersLogicTestnet is ILockers, OwnableUpgradeable, ReentrancyGuardUpg
      * @dev Check if an account is burner.
      * @return bool
      */
-    function _isBurner(address account) private view nonZeroAddress(account) returns (bool) {
+    function isBurner(address account) public override view nonZeroAddress(account) returns (bool) {
         return burners[account];
     }
 

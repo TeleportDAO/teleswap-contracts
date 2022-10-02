@@ -33,7 +33,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     address public override lockers;
     address public override teleBTC;
     address public override treasury;
-    mapping(uint => address) public override exchangeConnector; // mapping from app id to exchange connector address 
+    mapping(uint => address) public override exchangeConnector; // mapping from app id to exchange connector address
 
     // Private variables
     mapping(bytes32 => ccExchangeRequest) private ccExchangeRequests;
@@ -93,7 +93,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
     /// @param _appId               AppId of exchange connector
     /// @param _exchangeConnector   Address of exchange connector
     function setExchangeConnector(
-        uint _appId, 
+        uint _appId,
         address _exchangeConnector
     ) external override onlyOwner {
         exchangeConnector[_appId] = _exchangeConnector;
@@ -127,7 +127,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
     /// @notice                             Check if the cc exchange request has been executed before
     /// @dev                                It prevents re-submitting an executed request
-    /// @param _txId                        The transaction ID of request on source chain 
+    /// @param _txId                        The transaction ID of request on source chain
     /// @return                             True if the cc exchange request has been already executed
     function isRequestUsed(bytes32 _txId) external view override returns (bool) {
         return ccExchangeRequests[_txId].isUsed ? true : false;
@@ -194,7 +194,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
     /// @notice                          Executes a normal cross-chain exchange request
     /// @dev                             Mints teleBTC for user if exchanging is not successful
-    /// @param _lockerLockingScript      Locker's locking script    
+    /// @param _lockerLockingScript      Locker's locking script
     /// @param _txId                     Id of the transaction containing the user request
     function _normalCCExchange(bytes memory _lockerLockingScript, bytes32 _txId) private {
         // Gets remained amount after reducing fees
@@ -212,7 +212,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             _exchangeConnector,
             remainedInputAmount
         );
-        
+
         if (IExchangeConnector(_exchangeConnector).isPathValid(ccExchangeRequests[_txId].path)) {
             // Exchanges minted teleBTC for output token
             (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
@@ -250,7 +250,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
                 amounts[0], // input amount
                 amounts[amounts.length-1], // output amount
                 ccExchangeRequests[_txId].speed,
-                msg.sender, // Teleporter address
+                _msgSender(), // Teleporter address
                 ccExchangeRequests[_txId].fee
             );
 
@@ -278,7 +278,13 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
             emit FailedCCExchange(
                 ccExchangeRequests[_txId].recipientAddress,
-                remainedInputAmount
+                ccExchangeRequests[_txId].path[0], // input token
+                ccExchangeRequests[_txId].path[1], // output token
+                remainedInputAmount, // input amount
+                0, //  output amount
+                ccExchangeRequests[_txId].speed,
+                _msgSender(), // Teleporter address
+                ccExchangeRequests[_txId].fee
             );
         }
     }
@@ -325,7 +331,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         ccExchangeRequest memory request; // Defines it to save gas
         bytes memory arbitraryData;
         (request.inputAmount, arbitraryData) = BitcoinHelper.parseValueAndDataHavingLockingScriptBigPayload(
-            _vout, 
+            _vout,
             _lockerLockingScript
         );
 
@@ -335,7 +341,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         // Checks that the request belongs to this chain
         require(chainId == RequestHelper.parseChainId(arbitraryData), "CCExchangeRouter: chain id is not correct");
         request.appId = RequestHelper.parseAppId(arbitraryData);
-        
+
         address exchangeToken = RequestHelper.parseExchangeToken(arbitraryData);
         request.outputAmount = RequestHelper.parseExchangeOutputAmount(arbitraryData);
 

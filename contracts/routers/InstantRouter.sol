@@ -417,6 +417,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             *slasherPercentageReward/MAX_SLASHER_PERCENTAGE_REWARD;
             IERC20(collateralToken).transfer(_msgSender(), slasherReward);
 
+            IERC20(teleBTC).approve(collateralPool, totalCollateralToken - requiredCollateralToken - slasherReward);
+
             // Deposits rest of the tokens to collateral pool on behalf of the user
             ICollateralPool(collateralPool).addCollateral(
                 _user,
@@ -445,6 +447,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
                 block.timestamp + 1,
                 true // Input amount is fixed
             );
+
+            // TODO: What should we do?
 
             emit SlashUser(
                 _user,

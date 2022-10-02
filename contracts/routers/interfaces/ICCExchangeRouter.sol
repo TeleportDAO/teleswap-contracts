@@ -54,10 +54,22 @@ interface ICCExchangeRouter {
     /// @dev                        In this case, instead of excahnging tokens,
     ///                             we mint teleBTC and send it to the user
     /// @param recipientAddress     Exchange recipient address
-    /// @param remainedInputAmount  Amount of teleBTC that transferred to the user
+    /// @param inputToken           Input token (teleBTC)
+    /// @param outputToken          Output token
+    /// @param remainedInputAmount          Amount of locked tokens on the source chain
+    /// @param outputAmount         Amount of exchange token that user received
+    /// @param speed                Speed of the request (normal or instant)
+    /// @param teleporter          Address of teleporter who submitted the request
+    /// @param teleporterFee        Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
     event FailedCCExchange(
         address recipientAddress,
-        uint remainedInputAmount
+        address inputToken,
+        address indexed outputToken,
+        uint remainedInputAmount,
+        uint outputAmount,
+        uint indexed speed,
+        address teleporter,
+        uint teleporterFee
     );
 
     /// @notice                      Emits when appId for an exchange connector is set
@@ -69,11 +81,11 @@ interface ICCExchangeRouter {
     );
 
     // Read-only functions
-    
+
     function startingBlockNumber() external view returns (uint);
 
     function protocolPercentageFee() external view returns (uint);
-    
+
     function chainId() external view returns (uint);
 
     function relay() external view returns (address);
@@ -102,19 +114,19 @@ interface ICCExchangeRouter {
 
     function setExchangeConnector(uint _appId, address _exchangeConnector) external;
 
-	function setTreasury(address _treasury) external;
+    function setTreasury(address _treasury) external;
 
-	function setProtocolPercentageFee(uint _protocolPercentageFee) external;
+    function setProtocolPercentageFee(uint _protocolPercentageFee) external;
 
     function ccExchange(
-        // Bitcoin tx
+    // Bitcoin tx
         bytes4 _version,
         bytes memory _vin,
         bytes calldata _vout,
         bytes4 _locktime,
-        // Bitcoin block number
+    // Bitcoin block number
         uint256 _blockNumber,
-        // Merkle proof
+    // Merkle proof
         bytes calldata _intermediateNodes,
         uint _index,
         bytes calldata _lockerLockingScript

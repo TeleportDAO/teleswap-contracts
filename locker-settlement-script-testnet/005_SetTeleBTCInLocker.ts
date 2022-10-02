@@ -15,6 +15,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const lockersLib = await deployments.get("LockersLib")
     const lockersProxy = await deployments.get("LockersProxy")
 
+    const ccTransferRouter = await deployments.get("CCTransferRouter")
+    const ccExchangeRouter = await deployments.get("CCExchangeRouter")
+    const ccBurnRouter = await deployments.get("CCBurnRouter")
+
     const teleDAOToken = await deployments.get("ERC20")
     const teleBTC = await deployments.get("TeleBTC")
     const exchangeConnector = await deployments.get("UniswapV2Connector")
@@ -39,9 +43,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     );
 
 
-
-    log("...Set teleBTC in Locker")
-
     const teleDAOTokenAddress = await lockersInstance.TeleportDAOToken()
 
     if (teleDAOTokenAddress == "0x0000000000000000000000000000000000000000") {
@@ -65,6 +66,47 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
 
     await setTeleBTCTx.wait(1)
+
+
+
+    const isCCTransferMinter = await lockersInstance.isMinter(
+        ccTransferRouter.address
+    )
+
+    if (!isCCTransferMinter) {
+        const addCCTransferAsMinter = await lockersInstance.addMinter(
+            ccTransferRouter.address
+        )
+
+        await addCCTransferAsMinter.wait(1)
+    }
+
+    const isCCExchangeMinter = await lockersInstance.isMinter(
+        ccExchangeRouter.address
+    )
+
+    if (!isCCExchangeMinter) {
+        const addCCExchangeAsMinter = await lockersInstance.addMinter(
+            ccExchangeRouter.address
+        )
+
+        await addCCExchangeAsMinter.wait(1)
+    }
+
+
+    const isCCBurnerBurner = await lockersInstance.isBurner(
+        ccBurnRouter.address
+    )
+
+    if (!isCCBurnerBurner) {
+        const addCCBurnerAsBurner = await lockersInstance.addBurner(
+            ccBurnRouter.address
+        )
+
+        await addCCBurnerAsBurner.wait(1)
+    }
+
+    log("...Set teleBTC in Locker")
 
 };
 
