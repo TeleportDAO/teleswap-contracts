@@ -182,6 +182,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         );
 
         if (ccExchangeRequests[txId].speed == 0) {
+
             // Normal cc exchange request
             _normalCCExchange(_lockerLockingScript, txId);
         } else {
@@ -207,21 +208,24 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         address _exchangeConnector = exchangeConnector[ccExchangeRequests[_txId].appId];
         require(_exchangeConnector != address(0), "CCExchangeRouter: app id doesn't exist");
 
+
         // Gives allowance to exchange connector to transfer from cc exchange router
         ITeleBTC(teleBTC).approve(
             _exchangeConnector,
             remainedInputAmount
         );
 
-        if (IExchangeConnector(_exchangeConnector).isPathValid(ccExchangeRequests[_txId].path)) {
+        ccExchangeRequest memory theCCExchangeReq = ccExchangeRequests[_txId];
+
+        if (IExchangeConnector(_exchangeConnector).isPathValid(theCCExchangeReq.path)) {
             // Exchanges minted teleBTC for output token
             (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
                 remainedInputAmount,
-                ccExchangeRequests[_txId].outputAmount,
-                ccExchangeRequests[_txId].path,
-                ccExchangeRequests[_txId].recipientAddress,
-                ccExchangeRequests[_txId].deadline,
-                ccExchangeRequests[_txId].isFixedToken
+                theCCExchangeReq.outputAmount,
+                theCCExchangeReq.path,
+                theCCExchangeReq.recipientAddress,
+                theCCExchangeReq.deadline,
+                theCCExchangeReq.isFixedToken
             );
         } else {
             // Exchanges minted teleBTC for output token via wrappedNativeToken
@@ -233,29 +237,32 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
             (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
                 remainedInputAmount,
-                ccExchangeRequests[_txId].outputAmount,
+                theCCExchangeReq.outputAmount,
                 _path,
-                ccExchangeRequests[_txId].recipientAddress,
-                ccExchangeRequests[_txId].deadline,
-                ccExchangeRequests[_txId].isFixedToken
+                theCCExchangeReq.recipientAddress,
+                theCCExchangeReq.deadline,
+                theCCExchangeReq.isFixedToken
             );
         }
 
         if (result) {
             // Emits CCExchange if exchange was successful
             emit CCExchange(
-                ccExchangeRequests[_txId].recipientAddress,
-                ccExchangeRequests[_txId].path[0], // input token
-                ccExchangeRequests[_txId].path[1], // output token
-                amounts[0], // input amount
-                amounts[amounts.length-1], // output amount
-                ccExchangeRequests[_txId].speed,
+                _lockerLockingScript,
+                0,
+                ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
+                theCCExchangeReq.recipientAddress,
+                [theCCExchangeReq.path[0], theCCExchangeReq.path[1]], // input token // output token
+                [amounts[0], amounts[amounts.length-1]], // input amount // output amount
+                theCCExchangeReq.speed,
                 _msgSender(), // Teleporter address
-                ccExchangeRequests[_txId].fee
+                theCCExchangeReq.fee,
+                _txId,
+                theCCExchangeReq.appId
             );
 
             // Transfers rest of teleBTC to recipientAddress (if input amount is not fixed)
-            if (ccExchangeRequests[_txId].isFixedToken == false) {
+            if (theCCExchangeReq.isFixedToken == false) {
                 ITeleBTC(teleBTC).transfer(
                     ccExchangeRequests[_txId].recipientAddress,
                     remainedInputAmount - amounts[0]
@@ -277,17 +284,84 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             );
 
             emit FailedCCExchange(
-                ccExchangeRequests[_txId].recipientAddress,
-                ccExchangeRequests[_txId].path[0], // input token
-                ccExchangeRequests[_txId].path[1], // output token
-                remainedInputAmount, // input amount
-                0, //  output amount
-                ccExchangeRequests[_txId].speed,
+                _lockerLockingScript,
+                0,
+                ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
+                theCCExchangeReq.recipientAddress,
+                [theCCExchangeReq.path[0], theCCExchangeReq.path[1]], // input token // output token
+                [remainedInputAmount, 0],// input amount //  output amount
+                theCCExchangeReq.speed,
                 _msgSender(), // Teleporter address
-                ccExchangeRequests[_txId].fee
+                theCCExchangeReq.fee,
+                _txId,
+                theCCExchangeReq.appId
             );
         }
     }
+
+    // function hahahaha(
+    //     bytes memory _lockerLockingScript,
+    //     bytes32 _txId,
+    //     uint remainedInputAmount,
+    //     bool result,
+    //     uint[] memory amounts,
+    //     address _exchangeConnector
+    //  ) private {
+    //     if (result) {
+    //         // Emits CCExchange if exchange was successful
+    //         emit CCExchange(
+    //             _lockerLockingScript,
+    //             // 0,
+    //             // ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
+    //             ccExchangeRequests[_txId].recipientAddress,
+    //             ccExchangeRequests[_txId].path[0], // input token
+    //             ccExchangeRequests[_txId].path[1], // output token
+    //             amounts[0], // input amount
+    //             amounts[amounts.length-1], // output amount
+    //             ccExchangeRequests[_txId].speed,
+    //             _msgSender(), // Teleporter address
+    //             ccExchangeRequests[_txId].fee,
+    //             _txId
+    //         );
+
+    //         // Transfers rest of teleBTC to recipientAddress (if input amount is not fixed)
+    //         if (ccExchangeRequests[_txId].isFixedToken == false) {
+    //             ITeleBTC(teleBTC).transfer(
+    //                 ccExchangeRequests[_txId].recipientAddress,
+    //                 remainedInputAmount - amounts[0]
+    //             );
+    //         }
+    //     } else {
+    //         // Handles situation when exchange was not successful
+
+    //         // Revokes allowance
+    //         ITeleBTC(teleBTC).approve(
+    //             _exchangeConnector,
+    //             0
+    //         );
+
+    //         // Sends teleBTC to recipient if exchange wasn't successful
+    //         ITeleBTC(teleBTC).transfer(
+    //             ccExchangeRequests[_txId].recipientAddress,
+    //             remainedInputAmount
+    //         );
+
+    //         emit FailedCCExchange(
+    //             _lockerLockingScript,
+    //             // 0,
+    //             // ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
+    //             ccExchangeRequests[_txId].recipientAddress,
+    //             ccExchangeRequests[_txId].path[0], // input token
+    //             ccExchangeRequests[_txId].path[1], // output token
+    //             remainedInputAmount, // input amount
+    //             0, //  output amount
+    //             ccExchangeRequests[_txId].speed,
+    //             _msgSender(), // Teleporter address
+    //             ccExchangeRequests[_txId].fee,
+    //             _txId
+    //         );
+    //     }
+    // }
 
     /// @notice                        Executes an instant cross-chain exchange request
     /// @dev                           Mints teleBTC for instant router to pay back loan
