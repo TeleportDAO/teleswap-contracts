@@ -58,6 +58,8 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     function addMinter(address account) external override onlyOwner {
         require(!isMinter(account), "TeleBTC: account already has role");
         minters[account] = true;
+
+        emit NewMinterAdded(account);
     }
 
     /**
@@ -66,6 +68,8 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     function removeMinter(address account) external override onlyOwner {
         require(isMinter(account), "TeleBTC: account does not have role");
         minters[account] = false;
+
+        emit MinterRemoved(account);
     }
 
     /**
@@ -74,6 +78,8 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     function addBurner(address account) external override onlyOwner {
         require(!isBurner(account), "TeleBTC: account already has role");
         burners[account] = true;
+
+        emit NewBurnerAdded(account);
     }
 
     /**
@@ -82,6 +88,8 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     function removeBurner(address account) external override onlyOwner {
         require(isBurner(account), "TeleBTC: account does not have role");
         burners[account] = false;
+
+        emit BurnerRemoved(account);
     }
 
     // TODO: remove it

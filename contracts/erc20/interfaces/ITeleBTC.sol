@@ -9,7 +9,15 @@ interface ITeleBTC is IERC20 {
 
     event Mint(address indexed to, uint value);
 
-    event Burn(address indexed to, uint value);
+    event Burn(address indexed from, uint value);
+
+    event NewMinterAdded(address indexed newMinter);
+
+    event MinterRemoved(address indexed minter);
+
+    event NewBurnerAdded(address indexed newBurner);
+
+    event BurnerRemoved(address indexed burner);
 
     // state-changing functions
 
