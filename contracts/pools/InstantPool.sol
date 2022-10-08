@@ -26,6 +26,8 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
         teleBTC = _teleBTC;
         instantRouter = _instantRouter;
         instantPercentageFee = _instantPercentageFee;
+
+        emit CreatedInstantPool(_teleBTC);
     }
 
     /// @notice                               Gives available teleBTC amount

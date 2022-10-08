@@ -29,7 +29,8 @@ interface IBitcoinRelay {
         uint indexed height,
         bytes32 selfHash,
         bytes32 indexed parentHash,
-        address indexed relayer
+        address indexed relayer,
+        uint gasPrice
     );
 
     /// @notice                     Emits when a block header gets finalized
@@ -42,10 +43,11 @@ interface IBitcoinRelay {
     event BlockFinalized(
         uint indexed height,
         bytes32 selfHash,
-        bytes32 parentHash,
+        bytes32 indexed parentHash,
         address indexed relayer,
         uint rewardAmountTNT,
-        uint rewardAmountTDT
+        uint rewardAmountTDT,
+        uint gasPrice
     );
 
     // Read-only functions

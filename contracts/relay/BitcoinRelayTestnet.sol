@@ -219,7 +219,7 @@ contract BitcoinRelayTestnet is IBitcoinRelay, Ownable, ReentrancyGuard, Pausabl
         );
         // Get the relay fee from the user
         require(
-            _getFee(chain[_blockHeight][0].gasPrice), 
+            _getFee(chain[_blockHeight][0].gasPrice),
             "BitcoinRelay: getting fee was not successful"
         );
         // Count the query for next epoch fee calculation
@@ -301,7 +301,7 @@ contract BitcoinRelayTestnet is IBitcoinRelay, Ownable, ReentrancyGuard, Pausabl
         return _addHeadersWithRetarget(_oldStart, _oldEnd, _headersView);
     }
 
-    /// @notice                 Checks the size of addHeaders inputs 
+    /// @notice                 Checks the size of addHeaders inputs
     /// @param  _headersView    Input to the addHeaders functions
     /// @param  _anchorView     Input to the addHeaders functions
     function _checkInputSizeAddHeaders(bytes29 _headersView, bytes29 _anchorView) internal pure {
@@ -309,7 +309,7 @@ contract BitcoinRelayTestnet is IBitcoinRelay, Ownable, ReentrancyGuard, Pausabl
         require(_anchorView.notNull(), "BitcoinRelay: anchor must be 80 bytes");
     }
 
-    /// @notice                     Checks the size of addHeadersWithRetarget inputs 
+    /// @notice                     Checks the size of addHeadersWithRetarget inputs
     /// @param  _oldStart           Input to the addHeadersWithRetarget functions
     /// @param  _oldEnd             Input to the addHeadersWithRetarget functions
     /// @param  _headersView        Input to the addHeadersWithRetarget functions
@@ -406,7 +406,7 @@ contract BitcoinRelayTestnet is IBitcoinRelay, Ownable, ReentrancyGuard, Pausabl
         /*
             note: below lines are commented since the Bitcoin testnet doesn't
             adjust block difficulty  at 2016 multipliers
-        /*    
+        /*
         // // When calling addHeaders, no retargetting should happen
         // require(
         //     _internal || _anchor.target() == _target,
@@ -414,7 +414,7 @@ contract BitcoinRelayTestnet is IBitcoinRelay, Ownable, ReentrancyGuard, Pausabl
         // );
         // check the height on top of the anchor is not finalized
         require(
-                _anchorHeight + 1 + finalizationParameter > lastSubmittedHeight, 
+                _anchorHeight + 1 + finalizationParameter > lastSubmittedHeight,
                 "BitcoinRelay: block headers are too old"
         );
 
@@ -436,7 +436,7 @@ contract BitcoinRelayTestnet is IBitcoinRelay, Ownable, ReentrancyGuard, Pausabl
 
             // The below check prevents adding a replicated block header
             require(previousBlock[_currentHash] == bytes32(0),
-            "BitcoinRelay: the block header exists on the relay");
+                "BitcoinRelay: the block header exists on the relay");
 
             /*
                 note: below lines are commented since the Bitcoin testnet doesn't
@@ -450,7 +450,7 @@ contract BitcoinRelayTestnet is IBitcoinRelay, Ownable, ReentrancyGuard, Pausabl
 
             require(_header.target() == _target, "BitcoinRelay: target changed unexpectedly");
             require(_header.checkParent(_previousHash), "BitcoinRelay: headers do not form a consistent chain");
-            
+
             require(
                 TypedMemView.reverseUint256(uint256(_currentHash)) <= _target,
                 "BitcoinRelay: header work is insufficient"
@@ -459,7 +459,7 @@ contract BitcoinRelayTestnet is IBitcoinRelay, Ownable, ReentrancyGuard, Pausabl
             previousBlock[_currentHash] = _previousHash;
             blockHeight[_currentHash] = _height;
             _addToChain(_header, _height);
-            emit BlockAdded(_height, _currentHash, _previousHash, msg.sender);
+            emit BlockAdded(_height, _currentHash, _previousHash, msg.sender, tx.gasprice);
             _previousHash = _currentHash;
         }
         return true;
@@ -532,8 +532,8 @@ contract BitcoinRelayTestnet is IBitcoinRelay, Ownable, ReentrancyGuard, Pausabl
     }
 
     /// @notice                     Finalizes a block header and removes all the other headers in the same height
-    /// @dev                        Note that when a chain gets pruned, it only deletes other blocks in the same 
-    ///                             height as the finalized blocks. Other blocks on top of the non finalized blocks 
+    /// @dev                        Note that when a chain gets pruned, it only deletes other blocks in the same
+    ///                             height as the finalized blocks. Other blocks on top of the non finalized blocks
     ///                             of that height will exist until their height gets finalized.
     function _pruneChain() internal {
         // Make sure that we have at least finalizationParameter blocks on relay
@@ -564,7 +564,8 @@ contract BitcoinRelayTestnet is IBitcoinRelay, Ownable, ReentrancyGuard, Pausabl
                 chain[currentHeight][0].parentHash,
                 chain[currentHeight][0].relayer,
                 rewardAmountTNT,
-                rewardAmountTDT
+                rewardAmountTDT,
+                chain[currentHeight][0].gasPrice
             );
         }
     }
@@ -611,7 +612,7 @@ contract BitcoinRelayTestnet is IBitcoinRelay, Ownable, ReentrancyGuard, Pausabl
         /*
             note: below lines are commented since the Bitcoin testnet doesn't
             adjust block difficulty  at 2016 multipliers
-        /*        
+        /*
         // // retargets should happen at 2016 block intervals
         // require(
         //     _endHeight % 2016 == 2015,

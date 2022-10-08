@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0; 
+pragma solidity ^0.8.0;
 
 import '../../erc20/interfaces/IERC20.sol';
 
@@ -7,11 +7,13 @@ interface IInstantPool is IERC20 {
 
 	// Events
 
-	/// @notice                             emits when some liquidity gets added to the pool               
+	event CreatedInstantPool(address indexed instnatToken);
+
+	/// @notice                             emits when some liquidity gets added to the pool
 	/// @param user                         User who added the liquidity
 	/// @param teleBTCAmount                Amount of teleBTC added to the pool
 	/// @param instantPoolTokenAmount       User's share from the pool
-	event AddLiquidity(address indexed user, uint teleBTCAmount, uint instantPoolTokenAmount); 
+	event AddLiquidity(address indexed user, uint teleBTCAmount, uint instantPoolTokenAmount);
 
 	/// @notice                             Emits when some liquidity gets removed from the pool
 	/// @param user                         User who removed the liquidity

@@ -19,18 +19,18 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
         require(_value > 0, "CollateralPool: zero value");
         _;
     }
-    
+
     // Public variables
     address public override collateralToken;
     uint public override collateralizationRatio; // Multiplied by 100
-    
+
     /// @notice                          This contract is a vault for collateral token
     /// @dev                             Users deposit collateral to use TeleportDAO instant feature
     ///                                  Collateral pool factory creates collateral pool contract
     /// @param _name                     Name of collateral pool
     /// @param _symbol                   Symbol of collateral pool
     /// @param _collateralToken          Address of underlying collateral token
-    /// @param _collateralizationRatio   Over-collateralization ratio of collateral token (e.g. 120 means 1.2) 
+    /// @param _collateralizationRatio   Over-collateralization ratio of collateral token (e.g. 120 means 1.2)
     constructor(
         string memory _name,
         string memory _symbol,
@@ -53,9 +53,11 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
         uint _collateralizationRatio
     ) external override nonZeroValue(_collateralizationRatio) onlyOwner {
         collateralizationRatio = _collateralizationRatio;
+
+        emit SetCollateralizationRatio(_collateralizationRatio);
     }
 
-    /// @notice                             Converts collateral pool token to collateral token 
+    /// @notice                             Converts collateral pool token to collateral token
     /// @param _collateralPoolTokenAmount   Amount of collateral pool token
     /// @return                             Amount of collateral token
     function equivalentCollateralToken(uint _collateralPoolTokenAmount) external view override returns (uint) {
@@ -64,7 +66,7 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
         return _collateralPoolTokenAmount*totalAddedCollateral()/totalSupply();
     }
 
-    /// @notice                         Converts collateral token to collateral pool token 
+    /// @notice                         Converts collateral token to collateral pool token
     /// @param _collateralTokenAmount   Amount of collateral token
     /// @return                         Amount of collateral pool token
     function equivalentCollateralPoolToken(uint _collateralTokenAmount) external view override returns (uint) {
@@ -73,13 +75,13 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
         return _collateralTokenAmount*totalSupply()/totalAddedCollateral();
     }
 
-    /// @notice                 Adds collateral to collateral pool 
+    /// @notice                 Adds collateral to collateral pool
     /// @dev                    Mints collateral pool token for user
     /// @param _user            Address of user whose collateral balance is increased
     /// @param _amount          Amount of added collateral
     /// @return                 True if collateral is added successfully
     function addCollateral(
-        address _user, 
+        address _user,
         uint _amount
     ) external nonZeroAddress(_user) nonZeroValue(_amount) nonReentrant override returns (bool) {
         // Calculates collateral pool token amount
@@ -109,7 +111,7 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
     ) external nonZeroValue(_collateralPoolTokenAmount) nonReentrant override returns (bool) {
         // Checks basic requirements
         require(
-            balanceOf(msg.sender) >= _collateralPoolTokenAmount, 
+            balanceOf(msg.sender) >= _collateralPoolTokenAmount,
             "CollateralPool: balance is not enough"
         );
 
