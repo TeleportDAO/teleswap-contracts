@@ -40,13 +40,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: theArgs,
     });
 
-    // log(`CCBurnRouter at ${ccBurnRouter.address}`)
-    // if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-    //     await verify(
-    //         ccBurnRouter.address,
-    //         theArgs
-    //     )
-    // }
+    log(`CCBurnRouter at ${ccBurnRouter.address}`)
+    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+        await verify(
+            ccBurnRouter.address,
+            theArgs
+        )
+    }
 };
 
 export default func;

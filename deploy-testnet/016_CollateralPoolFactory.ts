@@ -14,13 +14,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         skipIfAlreadyDeployed: true,
     });
 
-    // log(`CollateralPoolFactory at ${collateralPoolFactory.address}`)
-    // if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-    //     await verify(
-    //         collateralPoolFactory.address,
-    //         []
-    //     )
-    // }
+    log(`CollateralPoolFactory at ${collateralPoolFactory.address}`)
+    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+        await verify(
+            collateralPoolFactory.address,
+            []
+        )
+    }
 };
 
 export default func;

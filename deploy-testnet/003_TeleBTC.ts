@@ -24,13 +24,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     });
 
 
-    // log(`TeleBTC at ${teleBTC.address}`)
-    // if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-    //     await verify(
-    //         teleBTC.address,
-    //         theArgs
-    //     )
-    // }
+    log(`TeleBTC at ${teleBTC.address}`)
+    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+        await verify(
+            teleBTC.address,
+            theArgs
+        )
+    }
 };
 
 export default func;
