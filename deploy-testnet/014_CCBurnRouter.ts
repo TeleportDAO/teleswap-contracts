@@ -42,7 +42,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     log(`CCBurnRouter at ${ccBurnRouter.address}`)
     if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-        verify(
+        await verify(
             ccBurnRouter.address,
             theArgs
         )

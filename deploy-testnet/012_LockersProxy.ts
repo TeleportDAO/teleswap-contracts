@@ -25,12 +25,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     });
 
     log(`LockersProxy at ${lockerProxy.address}`)
-    // if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-    //     await verify(
-    //         lockerProxy.address,
-    //         theArgs
-    //     )
-    // }
+    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+        await verify(
+            lockerProxy.address,
+            theArgs
+        )
+    }
 };
 
 export default func;

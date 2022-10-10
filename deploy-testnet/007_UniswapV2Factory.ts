@@ -22,13 +22,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: theArgs,
     });
 
-    // log(`UniswapV2Factory at ${uniswapFactory.address}`)
-    // if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-    //     await verify(
-    //         uniswapFactory.address,
-    //         theArgs
-    //     )
-    // }
+    log(`UniswapV2Factory at ${uniswapFactory.address}`)
+    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+        await verify(
+            uniswapFactory.address,
+            theArgs
+        )
+    }
 
 };
 
