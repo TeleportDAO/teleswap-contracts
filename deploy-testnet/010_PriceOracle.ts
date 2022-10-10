@@ -27,13 +27,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: theArgs,
     });
 
-    log(`PriceOracle at ${priceOracle.address}`)
-    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-        await verify(
-            priceOracle.address,
-            theArgs
-        )
-    }
+    // log(`PriceOracle at ${priceOracle.address}`)
+    // if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+    //     await verify(
+    //         priceOracle.address,
+    //         theArgs
+    //     )
+    // }
 };
 
 export default func;

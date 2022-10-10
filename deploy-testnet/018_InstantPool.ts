@@ -32,13 +32,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: theArgs,
     });
 
-    log(`InstantPool at ${instantPool.address}`)
-    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-        await verify(
-            instantPool.address,
-            theArgs
-        )
-    }
+    // log(`InstantPool at ${instantPool.address}`)
+    // if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+    //     await verify(
+    //         instantPool.address,
+    //         theArgs
+    //     )
+    // }
 };
 
 export default func;

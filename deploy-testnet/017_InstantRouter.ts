@@ -35,13 +35,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: theArgs,
     });
 
-    log(`InstantRouter at ${instantRouter.address}`)
-    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-        await verify(
-            collateralPoolFactory.address,
-            theArgs
-        )
-    }
+    // log(`InstantRouter at ${instantRouter.address}`)
+    // if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+    //     await verify(
+    //         collateralPoolFactory.address,
+    //         theArgs
+    //     )
+    // }
 };
 
 export default func;

@@ -3,7 +3,7 @@
   "chainId": "80001",
   "contracts": {
     "BitcoinRelayTestnet": {
-      "address": "0x5519fA2b1A4069556BC11470cdEA61Ba4920f7e8",
+      "address": "0x417a66DE74cCe5352F7A1717d94B3c52DAe52F77",
       "abi": [
         {
           "inputs": [
@@ -57,6 +57,12 @@
               "internalType": "address",
               "name": "relayer",
               "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "gasPrice",
+              "type": "uint256"
             }
           ],
           "name": "BlockAdded",
@@ -78,7 +84,7 @@
               "type": "bytes32"
             },
             {
-              "indexed": false,
+              "indexed": true,
               "internalType": "bytes32",
               "name": "parentHash",
               "type": "bytes32"
@@ -99,6 +105,12 @@
               "indexed": false,
               "internalType": "uint256",
               "name": "rewardAmountTDT",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "gasPrice",
               "type": "uint256"
             }
           ],
@@ -752,7 +764,7 @@
       ]
     },
     "CCBurnRouter": {
-      "address": "0xe296F851f6644637f3Da91132f6b817742B143f8",
+      "address": "0xD3Ee844df330A0a5c8BcE5A4FD86E66540ad10ec",
       "abi": [
         {
           "inputs": [
@@ -1524,7 +1536,7 @@
       ]
     },
     "CCExchangeRouter": {
-      "address": "0x73dEc4eB96c06383D289f6026aE20fC99Ed3Dfed",
+      "address": "0xA926930fd9cf76fDF544DF591Db9F210b5232E06",
       "abi": [
         {
           "inputs": [
@@ -2083,7 +2095,7 @@
       ]
     },
     "CCTransferRouter": {
-      "address": "0x993fa6603367f00a49644Dbe5FE95DE151953dab",
+      "address": "0x8e43DA491001D316f1b6f415957D972D5F7445c7",
       "abi": [
         {
           "inputs": [
@@ -2576,7 +2588,7 @@
       ]
     },
     "CollateralPoolFactory": {
-      "address": "0x8cbBaD7ab9f5b008737aBA4889620F4122Ff3742",
+      "address": "0x862a8b2d9e6F975Bc92C2B4540a9AD28A760E2b2",
       "abi": [
         {
           "inputs": [],
@@ -2806,7 +2818,7 @@
       ]
     },
     "ERC20": {
-      "address": "0x9eAD740a3bbE6D7403e3D99D24DCC43e3795D1f2",
+      "address": "0xd8cf05e806099301dfB8505301770558e49053FF",
       "abi": [
         {
           "inputs": [
@@ -3102,7 +3114,7 @@
       ]
     },
     "ERC20AsDot": {
-      "address": "0x3Be90FA78aF90B8d2904780041d412F1A6D6ab7D",
+      "address": "0x0dd32eb9Ae3d5D84AB040A333A1B6C5e6A16BfA3",
       "abi": [
         {
           "inputs": [
@@ -3398,7 +3410,7 @@
       ]
     },
     "ERC20AsLink": {
-      "address": "0x36D142aC66Eef960Ca0F3353a88A80F4dEea6dc9",
+      "address": "0x2AdC54B0c30e670e249B6cA7CBDC6F1eDBe4f1a7",
       "abi": [
         {
           "inputs": [
@@ -3694,7 +3706,7 @@
       ]
     },
     "InstantPool": {
-      "address": "0x9fCdCF65D1B575a6A3e43Cd342712Af6657EE003",
+      "address": "0x75bDfE06C89Ab5437f031395e8a9458cCc858f5A",
       "abi": [
         {
           "inputs": [
@@ -4367,7 +4379,7 @@
       ]
     },
     "InstantRouter": {
-      "address": "0xfa05e39e3961527f3AcA2a1c1b4FfdE25DEF1A16",
+      "address": "0xCdDF4c5af1748A4f962Cfa96B541f60cE9D1Cad4",
       "abi": [
         {
           "inputs": [
@@ -5172,7 +5184,7 @@
       ]
     },
     "LockersLib": {
-      "address": "0xAC615Ea4036CD4808547a80C31Af94D29fC1E990",
+      "address": "0xC4b21bCaf011811f96282c9eDCD15A4bfc7C2Ce7",
       "abi": [
         {
           "inputs": [
@@ -5670,7 +5682,7 @@
       ]
     },
     "LockersLogicTestnet": {
-      "address": "0x5A7724eF4d630e2432aEBB3FBE6aB9fc34E4B2DB",
+      "address": "0x76858Ecc54eB0Cf408b17815bA6FF1Ac512646ca",
       "abi": [
         {
           "anonymous": false,
@@ -7412,7 +7424,7 @@
       ]
     },
     "LockersProxy": {
-      "address": "0xc0aEC12Ed73144cB4697B0eA2341cEa5a345028c",
+      "address": "0x09e4e794A4E06427BaED82F181ED9BC5f59E4c0A",
       "abi": [
         {
           "inputs": [
@@ -7561,7 +7573,7 @@
       ]
     },
     "PriceOracle": {
-      "address": "0x371cb671DEACd1e4a42F74f928F876Edf148D520",
+      "address": "0x76D0155ca88dDF4053Cf8793230eBA5401B67A01",
       "abi": [
         {
           "inputs": [
@@ -7997,7 +8009,7 @@
       ]
     },
     "TeleBTC": {
-      "address": "0x8aa01aCD5f1490Bfe264b0F5A9F050548d8815f9",
+      "address": "0x06C1B1CFBDA08547EaeDdc808d8Fe92b6fb87B33",
       "abi": [
         {
           "inputs": [
@@ -8570,7 +8582,7 @@
       ]
     },
     "UniswapV2Connector": {
-      "address": "0x30EeC2d779afE4410aC08234290E79C6733cd7d6",
+      "address": "0x6B683B4a5b9dd44978fC7e0B4A25671EA3AD6FEE",
       "abi": [
         {
           "inputs": [
@@ -8883,7 +8895,7 @@
       ]
     },
     "UniswapV2Factory": {
-      "address": "0x5d0F69B0E51a1e340981B97e28662B11c4dBBE43",
+      "address": "0xd91C41E5c59A54171E025aAd0A8Ed4d5eEfb4998",
       "abi": [
         {
           "inputs": [
@@ -9079,7 +9091,7 @@
       ]
     },
     "UniswapV2Router02": {
-      "address": "0x0d6d3A2e1E174091494FE6D06610fC3710BC7Bed",
+      "address": "0x6218B71CD23c00a99fEDE0afE5d2ADa149fC77B1",
       "abi": [
         {
           "inputs": [
@@ -10055,7 +10067,7 @@
       ]
     },
     "WETH": {
-      "address": "0x783b0da09C82f768b291E56352e94fABd8CC5f69",
+      "address": "0xBc13A7e0cc443C72dCF1F9295eCcbBC82364E532",
       "abi": [
         {
           "inputs": [

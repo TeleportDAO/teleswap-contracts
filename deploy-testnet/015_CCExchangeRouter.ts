@@ -43,13 +43,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: theArgs,
     });
 
-    log(`CCExchangeRouter at ${ccExchange.address}`)
-    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-        await verify(
-            ccExchange.address,
-            theArgs
-        )
-    }
+    // log(`CCExchangeRouter at ${ccExchange.address}`)
+    // if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+    //     await verify(
+    //         ccExchange.address,
+    //         theArgs
+    //     )
+    // }
 };
 
 export default func;
