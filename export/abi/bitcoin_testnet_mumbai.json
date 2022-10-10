@@ -751,1242 +751,8 @@
         }
       ]
     },
-    "CCBurnRouter": {
-      "address": "0xa700555B0ecD8682610868C98bdaa70684882B1C",
-      "abi": [
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_relay",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_lockers",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_treasury",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_transferDeadline",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_protocolPercentageFee",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_slasherPercentageReward",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_bitcoinFee",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "constructor"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "userTargetAddress",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "bytes",
-              "name": "userScript",
-              "type": "bytes"
-            },
-            {
-              "indexed": false,
-              "internalType": "enum ScriptTypes",
-              "name": "scriptType",
-              "type": "uint8"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "amount",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "burntAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "lockerTargetAddress",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "index",
-              "type": "uint256"
-            },
-            {
-              "indexed": true,
-              "internalType": "uint256",
-              "name": "deadline",
-              "type": "uint256"
-            }
-          ],
-          "name": "CCBurn",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "_lockerTargetAddress",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "_blockNumber",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "bytes32",
-              "name": "txId",
-              "type": "bytes32"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "amount",
-              "type": "uint256"
-            }
-          ],
-          "name": "LockerDispute",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "previousOwner",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "OwnershipTransferred",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "userTargetAddress",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "bytes",
-              "name": "userScript",
-              "type": "bytes"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "burntAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "lockerTargetAddress",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "index",
-              "type": "uint256"
-            }
-          ],
-          "name": "PaidCCBurn",
-          "type": "event"
-        },
-        {
-          "inputs": [],
-          "name": "bitcoinFee",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes4",
-              "name": "_version",
-              "type": "bytes4"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_vin",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_vout",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes4",
-              "name": "_locktime",
-              "type": "bytes4"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_blockNumber",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_intermediateNodes",
-              "type": "bytes"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_index",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_lockerLockingScript",
-              "type": "bytes"
-            },
-            {
-              "internalType": "uint256[]",
-              "name": "_burnReqIndexes",
-              "type": "uint256[]"
-            },
-            {
-              "internalType": "uint256[]",
-              "name": "_voutIndexes",
-              "type": "uint256[]"
-            }
-          ],
-          "name": "burnProof",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "payable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "name": "burnRequests",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "amount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "burntAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "address",
-              "name": "sender",
-              "type": "address"
-            },
-            {
-              "internalType": "bytes",
-              "name": "userScript",
-              "type": "bytes"
-            },
-            {
-              "internalType": "uint256",
-              "name": "deadline",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "isTransferred",
-              "type": "bool"
-            },
-            {
-              "internalType": "enum ScriptTypes",
-              "name": "scriptType",
-              "type": "uint8"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_amount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_userScript",
-              "type": "bytes"
-            },
-            {
-              "internalType": "enum ScriptTypes",
-              "name": "_scriptType",
-              "type": "uint8"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_lockerLockingScript",
-              "type": "bytes"
-            }
-          ],
-          "name": "ccBurn",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "_burntAmount",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes",
-              "name": "_lockerLockingScript",
-              "type": "bytes"
-            },
-            {
-              "internalType": "uint256[]",
-              "name": "_indices",
-              "type": "uint256[]"
-            }
-          ],
-          "name": "disputeBurn",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes",
-              "name": "_lockerLockingScript",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes4[]",
-              "name": "_versions",
-              "type": "bytes4[]"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_inputVin",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_inputVout",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_outputVin",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_outputVout",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes4[]",
-              "name": "_locktimes",
-              "type": "bytes4[]"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_inputIntermediateNodes",
-              "type": "bytes"
-            },
-            {
-              "internalType": "uint256[]",
-              "name": "_indexesAndBlockNumbers",
-              "type": "uint256[]"
-            }
-          ],
-          "name": "disputeLocker",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "payable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_lockerTargetAddress",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_index",
-              "type": "uint256"
-            }
-          ],
-          "name": "isTransferred",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes32",
-              "name": "",
-              "type": "bytes32"
-            }
-          ],
-          "name": "isUsedAsBurnProof",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "lockers",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "owner",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "protocolPercentageFee",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "relay",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "renounceOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_bitcoinFee",
-              "type": "uint256"
-            }
-          ],
-          "name": "setBitcoinFee",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_lockers",
-              "type": "address"
-            }
-          ],
-          "name": "setLockers",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_protocolPercentageFee",
-              "type": "uint256"
-            }
-          ],
-          "name": "setProtocolPercentageFee",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_relay",
-              "type": "address"
-            }
-          ],
-          "name": "setRelay",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_slasherPercentageReward",
-              "type": "uint256"
-            }
-          ],
-          "name": "setSlasherPercentageReward",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_teleBTC",
-              "type": "address"
-            }
-          ],
-          "name": "setTeleBTC",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_transferDeadline",
-              "type": "uint256"
-            }
-          ],
-          "name": "setTransferDeadline",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_treasury",
-              "type": "address"
-            }
-          ],
-          "name": "setTreasury",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "slasherPercentageReward",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "teleBTC",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "transferDeadline",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "transferOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "treasury",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "stateMutability": "payable",
-          "type": "receive"
-        }
-      ]
-    },
-    "CCExchangeRouter": {
-      "address": "0x32B76F9dBdB988c6C7e2e5CAc34A47F656939123",
-      "abi": [
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_startingBlockNumber",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_protocolPercentageFee",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_chainId",
-              "type": "uint256"
-            },
-            {
-              "internalType": "address",
-              "name": "_lockers",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_relay",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_teleBTC",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_treasury",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "constructor"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "user",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "inputToken",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "outputToken",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "inputAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "outputAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": true,
-              "internalType": "uint256",
-              "name": "speed",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "teleporter",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "teleporterFee",
-              "type": "uint256"
-            }
-          ],
-          "name": "CCExchange",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "recipientAddress",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "inputToken",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "outputToken",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "remainedInputAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "outputAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": true,
-              "internalType": "uint256",
-              "name": "speed",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "teleporter",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "teleporterFee",
-              "type": "uint256"
-            }
-          ],
-          "name": "FailedCCExchange",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "previousOwner",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "OwnershipTransferred",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "appId",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "exchangeConnector",
-              "type": "address"
-            }
-          ],
-          "name": "SetExchangeConnector",
-          "type": "event"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes4",
-              "name": "_version",
-              "type": "bytes4"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_vin",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_vout",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes4",
-              "name": "_locktime",
-              "type": "bytes4"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_blockNumber",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_intermediateNodes",
-              "type": "bytes"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_index",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_lockerLockingScript",
-              "type": "bytes"
-            }
-          ],
-          "name": "ccExchange",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "payable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "chainId",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "name": "exchangeConnector",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "instantRouter",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes32",
-              "name": "_txId",
-              "type": "bytes32"
-            }
-          ],
-          "name": "isRequestUsed",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "lockers",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "owner",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "protocolPercentageFee",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "relay",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "renounceOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_appId",
-              "type": "uint256"
-            },
-            {
-              "internalType": "address",
-              "name": "_exchangeConnector",
-              "type": "address"
-            }
-          ],
-          "name": "setExchangeConnector",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_instantRouter",
-              "type": "address"
-            }
-          ],
-          "name": "setInstantRouter",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_lockers",
-              "type": "address"
-            }
-          ],
-          "name": "setLockers",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_protocolPercentageFee",
-              "type": "uint256"
-            }
-          ],
-          "name": "setProtocolPercentageFee",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_relay",
-              "type": "address"
-            }
-          ],
-          "name": "setRelay",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_teleBTC",
-              "type": "address"
-            }
-          ],
-          "name": "setTeleBTC",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_treasury",
-              "type": "address"
-            }
-          ],
-          "name": "setTreasury",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "startingBlockNumber",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "teleBTC",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "transferOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "treasury",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "stateMutability": "payable",
-          "type": "receive"
-        }
-      ]
-    },
     "CCTransferRouter": {
-      "address": "0x107f2877dcc8A8f6631F0ae2f993759CbEe325dc",
+      "address": "0x993fa6603367f00a49644Dbe5FE95DE151953dab",
       "abi": [
         {
           "inputs": [
@@ -2037,6 +803,24 @@
         {
           "anonymous": false,
           "inputs": [
+            {
+              "indexed": true,
+              "internalType": "bytes",
+              "name": "lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "lockerScriptType",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
             {
               "indexed": true,
               "internalType": "address",
@@ -2072,6 +856,24 @@
               "internalType": "uint256",
               "name": "teleporterFee",
               "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "relayFee",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "protocolFee",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes32",
+              "name": "bitcoinTxId",
+              "type": "bytes32"
             }
           ],
           "name": "CCTransfer",
@@ -2442,238 +1244,8 @@
         }
       ]
     },
-    "CollateralPoolFactory": {
-      "address": "0x7fa9549a5e68B5205C1aB77aeC136b612E4EbA4a",
-      "abi": [
-        {
-          "inputs": [],
-          "stateMutability": "nonpayable",
-          "type": "constructor"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "string",
-              "name": "name",
-              "type": "string"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "collateralToken",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "collateralizationRatio",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "collateralPool",
-              "type": "address"
-            }
-          ],
-          "name": "CreateCollateralPool",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "previousOwner",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "OwnershipTransferred",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "collateralToken",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "collateralPool",
-              "type": "address"
-            }
-          ],
-          "name": "RemoveCollateralPool",
-          "type": "event"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "name": "allCollateralPools",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "allCollateralPoolsLength",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_collateralToken",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_collateralizationRatio",
-              "type": "uint256"
-            }
-          ],
-          "name": "createCollateralPool",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "name": "getCollateralPoolByToken",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_collateralToken",
-              "type": "address"
-            }
-          ],
-          "name": "isCollateral",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "owner",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_collateralToken",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_index",
-              "type": "uint256"
-            }
-          ],
-          "name": "removeCollateralPool",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "renounceOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "transferOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        }
-      ]
-    },
     "ERC20": {
-      "address": "0x09f3A630D49A50AC9Bd36BBe8887FBd3594FF1D5",
+      "address": "0x9eAD740a3bbE6D7403e3D99D24DCC43e3795D1f2",
       "abi": [
         {
           "inputs": [
@@ -2969,7 +1541,7 @@
       ]
     },
     "ERC20AsDot": {
-      "address": "0xA218304884433D13107DFBa41281114dFB388e5a",
+      "address": "0x3Be90FA78aF90B8d2904780041d412F1A6D6ab7D",
       "abi": [
         {
           "inputs": [
@@ -3265,7 +1837,7 @@
       ]
     },
     "ERC20AsLink": {
-      "address": "0xD076F7Ed0c8F72f15B46c35a9d95C910Bb9635cf",
+      "address": "0x36D142aC66Eef960Ca0F3353a88A80F4dEea6dc9",
       "abi": [
         {
           "inputs": [
@@ -3560,1473 +2132,8 @@
         }
       ]
     },
-    "InstantPool": {
-      "address": "0x8a17B517DD580C09F5E84c94d8249f35Ee54c595",
-      "abi": [
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_teleBTC",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_instantRouter",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_instantPercentageFee",
-              "type": "uint256"
-            },
-            {
-              "internalType": "string",
-              "name": "_name",
-              "type": "string"
-            },
-            {
-              "internalType": "string",
-              "name": "_symbol",
-              "type": "string"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "constructor"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "user",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "teleBTCAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "instantPoolTokenAmount",
-              "type": "uint256"
-            }
-          ],
-          "name": "AddLiquidity",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "owner",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "spender",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "value",
-              "type": "uint256"
-            }
-          ],
-          "name": "Approval",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "user",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "requestedAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "instantFee",
-              "type": "uint256"
-            }
-          ],
-          "name": "InstantLoan",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "previousOwner",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "OwnershipTransferred",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "user",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "teleBTCAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "instantPoolTokenAmount",
-              "type": "uint256"
-            }
-          ],
-          "name": "RemoveLiquidity",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "from",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "to",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "value",
-              "type": "uint256"
-            }
-          ],
-          "name": "Transfer",
-          "type": "event"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_user",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_amount",
-              "type": "uint256"
-            }
-          ],
-          "name": "addLiquidity",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_amount",
-              "type": "uint256"
-            }
-          ],
-          "name": "addLiquidityWithoutMint",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "owner",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "spender",
-              "type": "address"
-            }
-          ],
-          "name": "allowance",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "spender",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "amount",
-              "type": "uint256"
-            }
-          ],
-          "name": "approve",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "availableTeleBTC",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "account",
-              "type": "address"
-            }
-          ],
-          "name": "balanceOf",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "decimals",
-          "outputs": [
-            {
-              "internalType": "uint8",
-              "name": "",
-              "type": "uint8"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "spender",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "subtractedValue",
-              "type": "uint256"
-            }
-          ],
-          "name": "decreaseAllowance",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_loanAmount",
-              "type": "uint256"
-            }
-          ],
-          "name": "getFee",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_user",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_amount",
-              "type": "uint256"
-            }
-          ],
-          "name": "getLoan",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "spender",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "addedValue",
-              "type": "uint256"
-            }
-          ],
-          "name": "increaseAllowance",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "instantPercentageFee",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "instantRouter",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "name",
-          "outputs": [
-            {
-              "internalType": "string",
-              "name": "",
-              "type": "string"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "owner",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_user",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_instantPoolTokenAmount",
-              "type": "uint256"
-            }
-          ],
-          "name": "removeLiquidity",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "renounceOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_instantPercentageFee",
-              "type": "uint256"
-            }
-          ],
-          "name": "setInstantPercentageFee",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_instantRouter",
-              "type": "address"
-            }
-          ],
-          "name": "setInstantRouter",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_teleBTC",
-              "type": "address"
-            }
-          ],
-          "name": "setTeleBTC",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "symbol",
-          "outputs": [
-            {
-              "internalType": "string",
-              "name": "",
-              "type": "string"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "teleBTC",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "totalAddedTeleBTC",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "totalSupply",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "totalUnpaidLoan",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "recipient",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "amount",
-              "type": "uint256"
-            }
-          ],
-          "name": "transfer",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "sender",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "recipient",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "amount",
-              "type": "uint256"
-            }
-          ],
-          "name": "transferFrom",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "transferOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        }
-      ]
-    },
-    "InstantRouter": {
-      "address": "0x0AF52b81192a98a989daAa751Fa4A5E6F12422EC",
-      "abi": [
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_teleBTC",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_relay",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_priceOracle",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_collateralPoolFactory",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_slasherPercentageReward",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_paybackDeadline",
-              "type": "uint256"
-            },
-            {
-              "internalType": "address",
-              "name": "_defaultExchangeConnector",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "constructor"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "user",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "receiver",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "loanAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "instantFee",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "amountOut",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "address[]",
-              "name": "path",
-              "type": "address[]"
-            },
-            {
-              "indexed": false,
-              "internalType": "bool",
-              "name": "isFixed",
-              "type": "bool"
-            },
-            {
-              "indexed": true,
-              "internalType": "uint256",
-              "name": "deadline",
-              "type": "uint256"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "collateralToken",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "lockedCollateralPoolToken",
-              "type": "uint256"
-            }
-          ],
-          "name": "InstantExchange",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "user",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "receiver",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "loanAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "instantFee",
-              "type": "uint256"
-            },
-            {
-              "indexed": true,
-              "internalType": "uint256",
-              "name": "deadline",
-              "type": "uint256"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "collateralToken",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "lockedCollateralPoolToken",
-              "type": "uint256"
-            }
-          ],
-          "name": "InstantTransfer",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "previousOwner",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "OwnershipTransferred",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "account",
-              "type": "address"
-            }
-          ],
-          "name": "Paused",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "user",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "paybackAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "collateralToken",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "lockedCollateralPoolToken",
-              "type": "uint256"
-            }
-          ],
-          "name": "PaybackLoan",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "user",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "collateralToken",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "slashedAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "paybackAmount",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "slasher",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "slasherReward",
-              "type": "uint256"
-            }
-          ],
-          "name": "SlashUser",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "account",
-              "type": "address"
-            }
-          ],
-          "name": "Unpaused",
-          "type": "event"
-        },
-        {
-          "inputs": [],
-          "name": "collateralPoolFactory",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "defaultExchangeConnector",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_user",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_index",
-              "type": "uint256"
-            }
-          ],
-          "name": "getLockedCollateralPoolTokenAmount",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_user",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_index",
-              "type": "uint256"
-            }
-          ],
-          "name": "getUserRequestDeadline",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_user",
-              "type": "address"
-            }
-          ],
-          "name": "getUserRequestsLength",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_exchangeConnector",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_receiver",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_loanAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_amountOut",
-              "type": "uint256"
-            },
-            {
-              "internalType": "address[]",
-              "name": "_path",
-              "type": "address[]"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_deadline",
-              "type": "uint256"
-            },
-            {
-              "internalType": "address",
-              "name": "_collateralToken",
-              "type": "address"
-            },
-            {
-              "internalType": "bool",
-              "name": "_isFixedToken",
-              "type": "bool"
-            }
-          ],
-          "name": "instantCCExchange",
-          "outputs": [
-            {
-              "internalType": "uint256[]",
-              "name": "_amounts",
-              "type": "uint256[]"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_receiver",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_loanAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_deadline",
-              "type": "uint256"
-            },
-            {
-              "internalType": "address",
-              "name": "_collateralToken",
-              "type": "address"
-            }
-          ],
-          "name": "instantCCTransfer",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "name": "instantRequests",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "user",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "collateralPool",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "collateralToken",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "paybackAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "lockedCollateralPoolTokenAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "deadline",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "owner",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "pause",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "paused",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_user",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_teleBTCAmount",
-              "type": "uint256"
-            }
-          ],
-          "name": "payBackLoan",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "paybackDeadline",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "priceOracle",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "relay",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "renounceOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_collateralPoolFactory",
-              "type": "address"
-            }
-          ],
-          "name": "setCollateralPoolFactory",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_defaultExchangeConnector",
-              "type": "address"
-            }
-          ],
-          "name": "setDefaultExchangeConnector",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_paybackDeadline",
-              "type": "uint256"
-            }
-          ],
-          "name": "setPaybackDeadline",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_priceOracle",
-              "type": "address"
-            }
-          ],
-          "name": "setPriceOracle",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_relay",
-              "type": "address"
-            }
-          ],
-          "name": "setRelay",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_slasherPercentageReward",
-              "type": "uint256"
-            }
-          ],
-          "name": "setSlasherPercentageReward",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_teleBTC",
-              "type": "address"
-            }
-          ],
-          "name": "setTeleBTC",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_teleBTCInstantPool",
-              "type": "address"
-            }
-          ],
-          "name": "setTeleBTCInstantPool",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_user",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_requestIndex",
-              "type": "uint256"
-            }
-          ],
-          "name": "slashUser",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "slasherPercentageReward",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "teleBTC",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "teleBTCInstantPool",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "transferOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "unpause",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "stateMutability": "payable",
-          "type": "receive"
-        }
-      ]
-    },
     "LockersLib": {
-      "address": "0xBAe9798eEdD39C8fc47d5B0C8AA9CE0e19DC4aae",
+      "address": "0xAC615Ea4036CD4808547a80C31Af94D29fC1E990",
       "abi": [
         {
           "inputs": [
@@ -5524,7 +2631,7 @@
       ]
     },
     "LockersLogicTestnet": {
-      "address": "0x2Ee570Fecb2EBB5CE9B33755a171498b5377cfB1",
+      "address": "0x5A7724eF4d630e2432aEBB3FBE6aB9fc34E4B2DB",
       "abi": [
         {
           "anonymous": false,
@@ -7266,7 +4373,7 @@
       ]
     },
     "LockersProxy": {
-      "address": "0xdC36D4A1d0284c0C44367547595D53F82Be9D4F4",
+      "address": "0xc0aEC12Ed73144cB4697B0eA2341cEa5a345028c",
       "abi": [
         {
           "inputs": [
@@ -7415,7 +4522,7 @@
       ]
     },
     "PriceOracle": {
-      "address": "0x6bC883CE454932d56789B5F7C706061aA1dAE4e3",
+      "address": "0x371cb671DEACd1e4a42F74f928F876Edf148D520",
       "abi": [
         {
           "inputs": [
@@ -7851,7 +4958,7 @@
       ]
     },
     "TeleBTC": {
-      "address": "0x1eEF6a4D71a8925A305CFc1482872ba7B2C5D170",
+      "address": "0x8aa01aCD5f1490Bfe264b0F5A9F050548d8815f9",
       "abi": [
         {
           "inputs": [
@@ -7900,7 +5007,7 @@
             {
               "indexed": true,
               "internalType": "address",
-              "name": "to",
+              "name": "from",
               "type": "address"
             },
             {
@@ -7911,6 +5018,19 @@
             }
           ],
           "name": "Burn",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "burner",
+              "type": "address"
+            }
+          ],
+          "name": "BurnerRemoved",
           "type": "event"
         },
         {
@@ -7930,6 +5050,45 @@
             }
           ],
           "name": "Mint",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "minter",
+              "type": "address"
+            }
+          ],
+          "name": "MinterRemoved",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newBurner",
+              "type": "address"
+            }
+          ],
+          "name": "NewBurnerAdded",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newMinter",
+              "type": "address"
+            }
+          ],
+          "name": "NewMinterAdded",
           "type": "event"
         },
         {
@@ -8372,7 +5531,7 @@
       ]
     },
     "UniswapV2Connector": {
-      "address": "0xF3c802f346D866f06566DAae2D1A3c358167a87c",
+      "address": "0x30EeC2d779afE4410aC08234290E79C6733cd7d6",
       "abi": [
         {
           "inputs": [
@@ -8685,7 +5844,7 @@
       ]
     },
     "UniswapV2Factory": {
-      "address": "0x07680aAD22378af726CbBDE9A201df2ac3909EAF",
+      "address": "0x5d0F69B0E51a1e340981B97e28662B11c4dBBE43",
       "abi": [
         {
           "inputs": [
@@ -8881,7 +6040,7 @@
       ]
     },
     "UniswapV2Router02": {
-      "address": "0x90c173bea3b44A79BE2b8DD0E49A30ba23AfC792",
+      "address": "0x0d6d3A2e1E174091494FE6D06610fC3710BC7Bed",
       "abi": [
         {
           "inputs": [
@@ -9857,7 +7016,7 @@
       ]
     },
     "WETH": {
-      "address": "0x4aBe7b530acec75CEF2b2a481248eD755c9D1D14",
+      "address": "0x783b0da09C82f768b291E56352e94fABd8CC5f69",
       "abi": [
         {
           "inputs": [
@@ -10161,6 +7320,3045 @@
             }
           ],
           "name": "withdraw",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ]
+    },
+    "CCBurnRouter": {
+      "address": "0xe296F851f6644637f3Da91132f6b817742B143f8",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_relay",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_lockers",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_treasury",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_transferDeadline",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_protocolPercentageFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_slasherPercentageReward",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_bitcoinFee",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "userTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "_lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes",
+              "name": "lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "requestIdOfLocker",
+              "type": "uint256"
+            }
+          ],
+          "name": "BurnDispute",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "userTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes",
+              "name": "userScript",
+              "type": "bytes"
+            },
+            {
+              "indexed": false,
+              "internalType": "enum ScriptTypes",
+              "name": "scriptType",
+              "type": "uint8"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "burntAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes",
+              "name": "lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "requestIdOfLocker",
+              "type": "uint256"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "deadline",
+              "type": "uint256"
+            }
+          ],
+          "name": "CCBurn",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "_lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes",
+              "name": "lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_blockNumber",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes32",
+              "name": "txId",
+              "type": "bytes32"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "LockerDispute",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "requestIdOfLocker",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes32",
+              "name": "bitcoinTxId",
+              "type": "bytes32"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "bitcoinTxOutputIndex",
+              "type": "uint256"
+            }
+          ],
+          "name": "PaidCCBurn",
+          "type": "event"
+        },
+        {
+          "inputs": [],
+          "name": "bitcoinFee",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes4",
+              "name": "_version",
+              "type": "bytes4"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_vin",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_vout",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes4",
+              "name": "_locktime",
+              "type": "bytes4"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_blockNumber",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_intermediateNodes",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_index",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "_burnReqIndexes",
+              "type": "uint256[]"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "_voutIndexes",
+              "type": "uint256[]"
+            }
+          ],
+          "name": "burnProof",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "burnRequestCounter",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "name": "burnRequests",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "burntAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "sender",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes",
+              "name": "userScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256",
+              "name": "deadline",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isTransferred",
+              "type": "bool"
+            },
+            {
+              "internalType": "enum ScriptTypes",
+              "name": "scriptType",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint256",
+              "name": "requestIdOfLocker",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_amount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_userScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "enum ScriptTypes",
+              "name": "_scriptType",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
+            }
+          ],
+          "name": "ccBurn",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "_burntAmount",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "_indices",
+              "type": "uint256[]"
+            }
+          ],
+          "name": "disputeBurn",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes4[]",
+              "name": "_versions",
+              "type": "bytes4[]"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_inputVin",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_inputVout",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_outputVin",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_outputVout",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes4[]",
+              "name": "_locktimes",
+              "type": "bytes4[]"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_inputIntermediateNodes",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "_indexesAndBlockNumbers",
+              "type": "uint256[]"
+            }
+          ],
+          "name": "disputeLocker",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_index",
+              "type": "uint256"
+            }
+          ],
+          "name": "isTransferred",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes32",
+              "name": "",
+              "type": "bytes32"
+            }
+          ],
+          "name": "isUsedAsBurnProof",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "lockers",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "protocolPercentageFee",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "relay",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "renounceOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_bitcoinFee",
+              "type": "uint256"
+            }
+          ],
+          "name": "setBitcoinFee",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_lockers",
+              "type": "address"
+            }
+          ],
+          "name": "setLockers",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_protocolPercentageFee",
+              "type": "uint256"
+            }
+          ],
+          "name": "setProtocolPercentageFee",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_relay",
+              "type": "address"
+            }
+          ],
+          "name": "setRelay",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_slasherPercentageReward",
+              "type": "uint256"
+            }
+          ],
+          "name": "setSlasherPercentageReward",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_teleBTC",
+              "type": "address"
+            }
+          ],
+          "name": "setTeleBTC",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_transferDeadline",
+              "type": "uint256"
+            }
+          ],
+          "name": "setTransferDeadline",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_treasury",
+              "type": "address"
+            }
+          ],
+          "name": "setTreasury",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "slasherPercentageReward",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "teleBTC",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "transferDeadline",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "transferOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "treasury",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "stateMutability": "payable",
+          "type": "receive"
+        }
+      ]
+    },
+    "CCExchangeRouter": {
+      "address": "0x73dEc4eB96c06383D289f6026aE20fC99Ed3Dfed",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_startingBlockNumber",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_protocolPercentageFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_chainId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "_lockers",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_relay",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_teleBTC",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_treasury",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "bytes",
+              "name": "lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "lockerScriptType",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "address[2]",
+              "name": "inputAndOutputToken",
+              "type": "address[2]"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256[2]",
+              "name": "inputAndOutputAmount",
+              "type": "uint256[2]"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "speed",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "teleporter",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "teleporterFee",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes32",
+              "name": "bitcoinTxId",
+              "type": "bytes32"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "appId",
+              "type": "uint256"
+            }
+          ],
+          "name": "CCExchange",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "bytes",
+              "name": "lockerLockingScript",
+              "type": "bytes"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "lockerScriptType",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "lockerTargetAddress",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "recipientAddress",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "address[2]",
+              "name": "inputAndOutputToken",
+              "type": "address[2]"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256[2]",
+              "name": "inputAndOutputAmount",
+              "type": "uint256[2]"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "speed",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "teleporter",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "teleporterFee",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "bytes32",
+              "name": "bitcoinTxId",
+              "type": "bytes32"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "appId",
+              "type": "uint256"
+            }
+          ],
+          "name": "FailedCCExchange",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "appId",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "exchangeConnector",
+              "type": "address"
+            }
+          ],
+          "name": "SetExchangeConnector",
+          "type": "event"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes4",
+              "name": "_version",
+              "type": "bytes4"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_vin",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_vout",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes4",
+              "name": "_locktime",
+              "type": "bytes4"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_blockNumber",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_intermediateNodes",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_index",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "_lockerLockingScript",
+              "type": "bytes"
+            }
+          ],
+          "name": "ccExchange",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "chainId",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "name": "exchangeConnector",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "instantRouter",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes32",
+              "name": "_txId",
+              "type": "bytes32"
+            }
+          ],
+          "name": "isRequestUsed",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "lockers",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "protocolPercentageFee",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "relay",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "renounceOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_appId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "_exchangeConnector",
+              "type": "address"
+            }
+          ],
+          "name": "setExchangeConnector",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_instantRouter",
+              "type": "address"
+            }
+          ],
+          "name": "setInstantRouter",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_lockers",
+              "type": "address"
+            }
+          ],
+          "name": "setLockers",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_protocolPercentageFee",
+              "type": "uint256"
+            }
+          ],
+          "name": "setProtocolPercentageFee",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_relay",
+              "type": "address"
+            }
+          ],
+          "name": "setRelay",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_teleBTC",
+              "type": "address"
+            }
+          ],
+          "name": "setTeleBTC",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_treasury",
+              "type": "address"
+            }
+          ],
+          "name": "setTreasury",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "startingBlockNumber",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "teleBTC",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "transferOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "treasury",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "stateMutability": "payable",
+          "type": "receive"
+        }
+      ]
+    },
+    "CollateralPoolFactory": {
+      "address": "0x8cbBaD7ab9f5b008737aBA4889620F4122Ff3742",
+      "abi": [
+        {
+          "inputs": [],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "collateralToken",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "collateralizationRatio",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "collateralPool",
+              "type": "address"
+            }
+          ],
+          "name": "CreateCollateralPool",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "collateralToken",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "collateralPool",
+              "type": "address"
+            }
+          ],
+          "name": "RemoveCollateralPool",
+          "type": "event"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "name": "allCollateralPools",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "allCollateralPoolsLength",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_collateralToken",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_collateralizationRatio",
+              "type": "uint256"
+            }
+          ],
+          "name": "createCollateralPool",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "getCollateralPoolByToken",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_collateralToken",
+              "type": "address"
+            }
+          ],
+          "name": "isCollateral",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_collateralToken",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_index",
+              "type": "uint256"
+            }
+          ],
+          "name": "removeCollateralPool",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "renounceOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "transferOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ]
+    },
+    "InstantRouter": {
+      "address": "0xfa05e39e3961527f3AcA2a1c1b4FfdE25DEF1A16",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_teleBTC",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_relay",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_priceOracle",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_collateralPoolFactory",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_slasherPercentageReward",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_paybackDeadline",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "_defaultExchangeConnector",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "receiver",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "loanAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "instantFee",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "amountOut",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "address[]",
+              "name": "path",
+              "type": "address[]"
+            },
+            {
+              "indexed": false,
+              "internalType": "bool",
+              "name": "isFixed",
+              "type": "bool"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "deadline",
+              "type": "uint256"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "collateralToken",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "lockedCollateralPoolToken",
+              "type": "uint256"
+            }
+          ],
+          "name": "InstantExchange",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "receiver",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "loanAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "instantFee",
+              "type": "uint256"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "deadline",
+              "type": "uint256"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "collateralToken",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "lockedCollateralPoolToken",
+              "type": "uint256"
+            }
+          ],
+          "name": "InstantTransfer",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "Paused",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "paybackAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "collateralToken",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "lockedCollateralPoolToken",
+              "type": "uint256"
+            }
+          ],
+          "name": "PaybackLoan",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "collateralToken",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "slashedAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "paybackAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "slasher",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "slasherReward",
+              "type": "uint256"
+            }
+          ],
+          "name": "SlashUser",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "Unpaused",
+          "type": "event"
+        },
+        {
+          "inputs": [],
+          "name": "collateralPoolFactory",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "defaultExchangeConnector",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_user",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_index",
+              "type": "uint256"
+            }
+          ],
+          "name": "getLockedCollateralPoolTokenAmount",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_user",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_index",
+              "type": "uint256"
+            }
+          ],
+          "name": "getUserRequestDeadline",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_user",
+              "type": "address"
+            }
+          ],
+          "name": "getUserRequestsLength",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_exchangeConnector",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_receiver",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_loanAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_amountOut",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address[]",
+              "name": "_path",
+              "type": "address[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_deadline",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "_collateralToken",
+              "type": "address"
+            },
+            {
+              "internalType": "bool",
+              "name": "_isFixedToken",
+              "type": "bool"
+            }
+          ],
+          "name": "instantCCExchange",
+          "outputs": [
+            {
+              "internalType": "uint256[]",
+              "name": "_amounts",
+              "type": "uint256[]"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_receiver",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_loanAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_deadline",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "_collateralToken",
+              "type": "address"
+            }
+          ],
+          "name": "instantCCTransfer",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "name": "instantRequests",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "collateralPool",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "collateralToken",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "paybackAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lockedCollateralPoolTokenAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "deadline",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "pause",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "paused",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_user",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_teleBTCAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "payBackLoan",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "paybackDeadline",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "priceOracle",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "relay",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "renounceOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_collateralPoolFactory",
+              "type": "address"
+            }
+          ],
+          "name": "setCollateralPoolFactory",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_defaultExchangeConnector",
+              "type": "address"
+            }
+          ],
+          "name": "setDefaultExchangeConnector",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_paybackDeadline",
+              "type": "uint256"
+            }
+          ],
+          "name": "setPaybackDeadline",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_priceOracle",
+              "type": "address"
+            }
+          ],
+          "name": "setPriceOracle",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_relay",
+              "type": "address"
+            }
+          ],
+          "name": "setRelay",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_slasherPercentageReward",
+              "type": "uint256"
+            }
+          ],
+          "name": "setSlasherPercentageReward",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_teleBTC",
+              "type": "address"
+            }
+          ],
+          "name": "setTeleBTC",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_teleBTCInstantPool",
+              "type": "address"
+            }
+          ],
+          "name": "setTeleBTCInstantPool",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_user",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_requestIndex",
+              "type": "uint256"
+            }
+          ],
+          "name": "slashUser",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "slasherPercentageReward",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "teleBTC",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "teleBTCInstantPool",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "transferOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "unpause",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "stateMutability": "payable",
+          "type": "receive"
+        }
+      ]
+    },
+    "InstantPool": {
+      "address": "0x9fCdCF65D1B575a6A3e43Cd342712Af6657EE003",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_teleBTC",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_instantRouter",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_instantPercentageFee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "_name",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "_symbol",
+              "type": "string"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "teleBTCAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "instantPoolTokenAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "AddLiquidity",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "spender",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "value",
+              "type": "uint256"
+            }
+          ],
+          "name": "Approval",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "instnatToken",
+              "type": "address"
+            }
+          ],
+          "name": "CreatedInstantPool",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "requestedAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "instantFee",
+              "type": "uint256"
+            }
+          ],
+          "name": "InstantLoan",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "teleBTCAmount",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "instantPoolTokenAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "RemoveLiquidity",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "value",
+              "type": "uint256"
+            }
+          ],
+          "name": "Transfer",
+          "type": "event"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_user",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "addLiquidity",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "addLiquidityWithoutMint",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "spender",
+              "type": "address"
+            }
+          ],
+          "name": "allowance",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "spender",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "approve",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "availableTeleBTC",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "balanceOf",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "decimals",
+          "outputs": [
+            {
+              "internalType": "uint8",
+              "name": "",
+              "type": "uint8"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "spender",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "subtractedValue",
+              "type": "uint256"
+            }
+          ],
+          "name": "decreaseAllowance",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_loanAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "getFee",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_user",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "getLoan",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "spender",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "addedValue",
+              "type": "uint256"
+            }
+          ],
+          "name": "increaseAllowance",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "instantPercentageFee",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "instantRouter",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "name",
+          "outputs": [
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_user",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_instantPoolTokenAmount",
+              "type": "uint256"
+            }
+          ],
+          "name": "removeLiquidity",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "renounceOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_instantPercentageFee",
+              "type": "uint256"
+            }
+          ],
+          "name": "setInstantPercentageFee",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_instantRouter",
+              "type": "address"
+            }
+          ],
+          "name": "setInstantRouter",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_teleBTC",
+              "type": "address"
+            }
+          ],
+          "name": "setTeleBTC",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "symbol",
+          "outputs": [
+            {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "teleBTC",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "totalAddedTeleBTC",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "totalSupply",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "totalUnpaidLoan",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "recipient",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "transfer",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "sender",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "recipient",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "transferFrom",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "transferOwnership",
           "outputs": [],
           "stateMutability": "nonpayable",
           "type": "function"

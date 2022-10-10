@@ -16,7 +16,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     log(`CollateralPoolFactory at ${collateralPoolFactory.address}`)
     if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-        await verify(
+        verify(
             collateralPoolFactory.address,
             []
         )

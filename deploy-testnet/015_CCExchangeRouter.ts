@@ -45,7 +45,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     log(`CCExchangeRouter at ${ccExchange.address}`)
     if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-        await verify(
+        verify(
             ccExchange.address,
             theArgs
         )

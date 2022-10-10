@@ -24,13 +24,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: theArgs,
     });
 
-    log(`UniswapV2Connector at ${uniswapConnector.address}`)
-    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-        await verify(
-            uniswapConnector.address,
-            theArgs
-        )
-    }
+    // log(`UniswapV2Connector at ${uniswapConnector.address}`)
+    // if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+    //     await verify(
+    //         uniswapConnector.address,
+    //         theArgs
+    //     )
+    // }
 };
 
 export default func;

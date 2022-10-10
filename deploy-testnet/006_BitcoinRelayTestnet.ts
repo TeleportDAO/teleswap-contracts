@@ -57,13 +57,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: theArgs,
     });
 
-    log(`BitcoinRelayTestnet at ${relayer.address}`)
-    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-        await verify(
-            relayer.address,
-            theArgs
-        )
-    }
+    // log(`BitcoinRelayTestnet at ${relayer.address}`)
+    // if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+    //     await verify(
+    //         relayer.address,
+    //         theArgs
+    //     )
+    // }
 };
 
 export default func;
