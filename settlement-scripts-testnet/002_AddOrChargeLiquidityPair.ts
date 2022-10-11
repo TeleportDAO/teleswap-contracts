@@ -13,10 +13,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const one8Dec = BigNumber.from(10).pow(8).mul(1)
     const one18Dec = BigNumber.from(10).pow(18).mul(1)
 
+    const wETH = await deployments.get("WETH")
     const teleBTC = await deployments.get("TeleBTC")
     const linkToken = await deployments.get("ERC20AsLink")
     const uniswapFactory = await deployments.get("UniswapV2Factory")
     const uniswapRouter = await deployments.get("UniswapV2Router02")
+
+    const wETHFactory = await ethers.getContractFactory("WETH");
+    const wETHInstance = await wETHFactory.attach(
+        wETH.address
+    );
 
     const teleBTCFactory = await ethers.getContractFactory("TeleBTC");
     const teleBTCInstance = await teleBTCFactory.attach(
@@ -77,6 +83,46 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         await addLiquidityPairTx.wait(1)
     }
+
+
+    const theLiquidityPair2 = await uniswapFactoryInstance.getPair(
+        teleBTC.address,
+        wETH.address
+    )
+
+
+    if (theLiquidityPair2 == "0x0000000000000000000000000000000000000000") {
+        const timeNow = Date.now()
+        const unixTimeNow = (timeNow - (timeNow % 1000))/1000 + 1000
+
+
+        const mintTeleBTCTx = await teleBTCInstance.mintTestToken()
+        await mintTeleBTCTx.wait(1)
+
+        const approveTeleBTCTx = await teleBTCInstance.approve(
+            uniswapRouter.address,
+            one8Dec
+        )
+        await approveTeleBTCTx.wait(1)
+
+
+        const addLiquidityPairTx = await uniswapRouterInstance.addLiquidityETH(
+            teleBTC.address,
+            // linkToken.address,
+            one8Dec,
+            // one18Dec.mul(500),
+            one8Dec.div(2),
+            one18Dec.div(200),
+            deployer,
+            unixTimeNow,
+            {
+                value: one18Dec.div(100)
+            }
+        )
+
+        await addLiquidityPairTx.wait(1)
+    }
+
 
     log("...Add or charge liquidity pool")
 

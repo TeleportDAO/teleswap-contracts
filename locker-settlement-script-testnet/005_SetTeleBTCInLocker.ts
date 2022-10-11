@@ -106,6 +106,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await addCCBurnerAsBurner.wait(1)
     }
 
+
+    const ccBurnerRouterFromContract = await lockersInstance.ccBurnRouter()
+
+    if (ccBurnerRouterFromContract != ccBurnRouter.address) {
+        const addCCBurnRouter = await lockersInstance.setCCBurnRouter(
+            ccBurnRouter.address
+        )
+
+        await addCCBurnRouter.wait(1)
+    }
+
     log("...Set teleBTC in Locker")
 
 };
