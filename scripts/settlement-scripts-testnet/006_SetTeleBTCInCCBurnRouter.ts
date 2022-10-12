@@ -2,13 +2,15 @@ import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
 import { BigNumber, BigNumberish } from "ethers";
+const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts, network} = hre;
     const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    log("Set teleBTC in cc burn...")
+    logger.color('blue').log("-------------------------------------------------")
+    logger.color('blue').bold().log("Set teleBTC in CC burn...")
 
     const teleBTC = await deployments.get("TeleBTC")
     const ccBurnRouter = await deployments.get("CCBurnRouter")
@@ -23,8 +25,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
 
     await setTeleBTCTx.wait(1)
-
-    log("...Set teleBTC in cc burn")
+    console.log("set telebtc in CC burn: ", setTeleBTCTx.hash)
 
 };
 

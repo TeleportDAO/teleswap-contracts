@@ -2,13 +2,15 @@ import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
 import { BigNumber, BigNumberish } from "ethers";
+const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts, network} = hre;
-    const {deploy, log} = deployments;
+    const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    log("Add or charge liquidity pool...")
+    logger.color('blue').log("-------------------------------------------------")
+    logger.color('blue').bold().log("Add and charge liquidity pool if not exists...")
 
     const one8Dec = BigNumber.from(10).pow(8).mul(1)
     const one18Dec = BigNumber.from(10).pow(18).mul(1)
@@ -82,6 +84,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
 
         await addLiquidityPairTx.wait(1)
+        console.log("add or charge telebtc-link liquidity pair: ", addLiquidityPairTx.hash)
     }
 
 
@@ -121,10 +124,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
 
         await addLiquidityPairTx.wait(1)
+        console.log("add or charge telebtc-eth liquidity pair: ", addLiquidityPairTx.hash)
     }
 
-
-    log("...Add or charge liquidity pool")
 
 };
 

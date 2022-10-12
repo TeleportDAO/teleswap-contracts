@@ -2,6 +2,7 @@ import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
 import { BigNumber, BigNumberish } from "ethers";
+const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts, network} = hre;
@@ -10,7 +11,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const one8Dec = BigNumber.from(10).pow(8).mul(1)
 
-    log("Add liquidity to instant pool...")
+    logger.color('blue').log("-------------------------------------------------")
+    logger.color('blue').bold().log("Add liquidity to instant pool...")
 
     const teleBTC = await deployments.get("TeleBTC")
     const instantPool = await deployments.get("InstantPool")
@@ -27,12 +29,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const mintTeleBTCTx = await teleBTCInstance.mintTestToken()
     await mintTeleBTCTx.wait(1)
+    console.log("mint telebtc: ", mintTeleBTCTx.hash)
 
     const approveTeleBTCTx = await teleBTCInstance.approve(
         instantPool.address,
         one8Dec.mul(50)
     )
     await approveTeleBTCTx.wait(1)
+    console.log("approve instant pool to has access to telebtc: ", approveTeleBTCTx.hash)
 
     const addLiquiditylTx = await instantPoolInstance.addLiquidity(
         deployer,
@@ -40,8 +44,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
 
     await addLiquiditylTx.wait(1)
+    console.log("add liquidity to instant pool: ", addLiquiditylTx.hash)
 
-    log("...Add liquidity to instant pool")
+    logger.color('blue').log("-------------------------------------------------")
 
 };
 

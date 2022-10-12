@@ -1,13 +1,15 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
+const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts, network} = hre;
-    const {deploy, log} = deployments;
+    const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    log("TeleBTC settlement...")
+    logger.color('blue').log("-------------------------------------------------")
+    logger.color('blue').bold().log("TeleBTC settlement...")
 
     const teleBTC = await deployments.get("TeleBTC")
     const lockersProxy = await deployments.get("LockersProxy")
@@ -28,6 +30,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
 
         await addLockerAsMinter.wait(1)
+        console.log("add locker as minter: ", addLockerAsMinter.hash)
     }
 
     const isLockerBurner = await teleBTCInstance.burners(
@@ -40,9 +43,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
 
         await addLockerAsBurner.wait(1)
+        console.log("add locker as burner: ", addLockerAsBurner.hash)
     }
 
-    log("...TeleBTC settlement")
 };
 
 export default func;

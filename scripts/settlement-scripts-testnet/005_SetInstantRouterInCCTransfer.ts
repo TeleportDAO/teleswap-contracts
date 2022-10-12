@@ -2,13 +2,15 @@ import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
 import { BigNumber, BigNumberish } from "ethers";
+const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts, network} = hre;
     const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    log("Set instant router in cc transfer...")
+    logger.color('blue').log("-------------------------------------------------")
+    logger.color('blue').bold().log("Set instant router in CC transfer...")
 
     const ccTransferRouter = await deployments.get("CCTransferRouter")
     const instantRouter = await deployments.get("InstantRouter")
@@ -23,8 +25,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
 
     await setInstantRouterTx.wait(1)
+    console.log("set instant router in CC transfer: ", setInstantRouterTx.hash)
 
-    log("...Set instant router in cc transfer")
 
 };
 

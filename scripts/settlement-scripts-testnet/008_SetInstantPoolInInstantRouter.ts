@@ -2,13 +2,15 @@ import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
 import { BigNumber, BigNumberish } from "ethers";
+const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts, network} = hre;
     const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    log("Set instant pool in instant router...")
+    logger.color('blue').log("-------------------------------------------------")
+    logger.color('blue').bold().log("Set instant pool in instant router...")
 
     const instantRouter = await deployments.get("InstantRouter")
     const instantPool = await deployments.get("InstantPool")
@@ -23,8 +25,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
 
     await setInstantPoolTx.wait(1)
-
-    log("...Set instant pool in instant router")
+    console.log("set instant pool in instant router: ", setInstantPoolTx.hash)
 
 };
 
