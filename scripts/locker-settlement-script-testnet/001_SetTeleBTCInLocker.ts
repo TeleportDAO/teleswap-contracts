@@ -2,13 +2,15 @@ import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
 import { BigNumber, BigNumberish } from "ethers";
+const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts, network} = hre;
     const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    log("Set teleBTC in Locker...")
+    logger.color('blue').log("-------------------------------------------------")
+    logger.color('blue').bold().log("Set teleBTC in Locker...")
 
     const one = BigNumber.from(10).pow(18).mul(1)
 
@@ -59,6 +61,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
 
         await initializeTx.wait(1)
+        console.log("initialize locker: ", initializeTx.hash)
     }
 
     const setTeleBTCTx = await lockersInstance.setTeleBTC(
@@ -66,7 +69,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
 
     await setTeleBTCTx.wait(1)
-
+    console.log("set telebtc in locker: ", setTeleBTCTx.hash)
 
 
     const isCCTransferMinter = await lockersInstance.isMinter(
@@ -79,6 +82,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
 
         await addCCTransferAsMinter.wait(1)
+        console.log("add CC transfer router as minter: ", addCCTransferAsMinter.hash)
     }
 
     const isCCExchangeMinter = await lockersInstance.isMinter(
@@ -91,6 +95,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
 
         await addCCExchangeAsMinter.wait(1)
+        console.log("add CC exchange router as minter: ", addCCExchangeAsMinter.hash)
     }
 
 
@@ -104,6 +109,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
 
         await addCCBurnerAsBurner.wait(1)
+        console.log("add CC burn router router as burner: ", addCCBurnerAsBurner.hash)
     }
 
 
@@ -115,9 +121,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
 
         await addCCBurnRouter.wait(1)
+        console.log("add CC burn router in locker: ", addCCBurnRouter.hash)
     }
-
-    log("...Set teleBTC in Locker")
+    
+    logger.color('blue').log("-------------------------------------------------")
 
 };
 
