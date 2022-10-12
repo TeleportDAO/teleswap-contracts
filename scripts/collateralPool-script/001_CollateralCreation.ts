@@ -1,13 +1,15 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
+const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts, network} = hre;
     const {deploy, log} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    log("CreateCollateralPoolWithFactory...")
+    logger.color('blue').log("-------------------------------------------------")
+    logger.color('blue').bold().log("Create collateral pool with factory and add liquidity to it...")
 
     const collateralPoolFactoryContract = await deployments.get("CollateralPoolFactory")
     const collateralPoolFactoryFactory = await ethers.getContractFactory("CollateralPoolFactory")
@@ -34,7 +36,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
     
         await createCollateralPoolTx.wait(1)
-
+        console.log("create collateral pool: ", createCollateralPoolTx.hash)
+        
         // let theEvent: any
 
         // createCollateralPoolTxResult.events.forEach(
@@ -58,8 +61,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const balanceOfDeployer = await erc20asLinkInstance.balanceOf(deployer) 
 
     const approveForCollateralPoolTx = await erc20asLinkInstance.approve(collateralPoolAddress, balanceOfDeployer.div(2))
-
     await approveForCollateralPoolTx.wait(1)
+    console.log("approve collateral pool to has access to link token: ", approveForCollateralPoolTx.hash)
 
     const collateralPoolContract = await ethers.getContractFactory(
         "CollateralPool"
@@ -75,8 +78,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
 
     await addLiquidityTx.wait(1)
+    console.log("add collateral to collateral pool: ", addLiquidityTx.hash)
 
-    log("CreateCollateralPoolWithFactory...")
+    logger.color('blue').log("-------------------------------------------------")
 };
 
 export default func;

@@ -78,6 +78,7 @@
 		"settlement:bitcoin_testnet_mumbai": "hardhat deploy --network mumbai --export export/abi/bitcoin_testnet_mumbai.json --deploy-scripts scripts/settlement-scripts-testnet",
 		"lockers_settlement:bitcoin_testnet_mumbai": "hardhat deploy --network mumbai --export export/abi/bitcoin_testnet_mumbai.json --deploy-scripts scripts/locker-settlement-script-testnet",
 		"global_variables_settlement:bitcoin_testnet_mumbai": "yarn hardhat deploy --network mumbai --export export/abi/bitcoin_testnet_mumbai.json --deploy-scripts scripts/set-global-variables",
+		"collateral_pool_scripts:bitcoin_testnet_mumbai": "yarn hardhat deploy --network mumbai --export export/abi/bitcoin_testnet_mumbai.json --deploy-scripts scripts/collateralPool-script",
 		"deploy:bsc_testnet": "hardhat deploy --network bsc_testnet --tags BitcoinMainnet --export export/abi/bsc_testnet.json",
 		"test": "hardhat test"
 	}
