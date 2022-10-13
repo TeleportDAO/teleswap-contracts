@@ -11,63 +11,51 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     let tx
     
     logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set relay globally...")
+    logger.color('blue').bold().log("Set instant router globally...")
     
-    const relay = await deployments.get("BitcoinRelayTestnet")
+    const instantRouter = await deployments.get("InstantRouter")
 
-    // set relay in cc transfer router
+    // set instant router in cc transfer router
     const ccTransferRouter = await deployments.get("CCTransferRouter")
     const ccTransferRouterFactory = await ethers.getContractFactory("CCTransferRouter")
     const ccTransferRouterInstance = await ccTransferRouterFactory.attach(
         ccTransferRouter.address
     )
 
-    tx = await ccTransferRouterInstance.setRelay(
-        relay.address
+    tx = await ccTransferRouterInstance.setInstantRouter(
+        instantRouter.address
     )
     tx.wait(1)
-    console.log("set relay in CCtransfer router: ", tx.hash)
+    console.log("set instant router in CCtransfer router: ", tx.hash)
 
 
-    // set relay in cc burn router
-    const ccBurnRouter = await deployments.get("CCBurnRouter")
-    const ccBurnRouterFactory = await ethers.getContractFactory("CCBurnRouter")
-    const ccBurnRouterInstance = await ccBurnRouterFactory.attach(
-        ccBurnRouter.address
+    //  set instant router in cc instant pool
+    const instantPool = await deployments.get("InstantPool")
+    const instantPoolFactory = await ethers.getContractFactory("InstantPool")
+    const instantPoolInstance = await instantPoolFactory.attach(
+        instantPool.address
     )
 
-    tx = await ccBurnRouterInstance.setRelay(
-        relay.address
+    tx = await instantPoolInstance.setInstantRouter(
+        instantRouter.address
     )
     tx.wait(1)
-    console.log("set relay in CCburn router: ", tx.hash)
+    console.log("set instant router in instant pool: ", tx.hash)
 
-    // set relay in cc exchange router
+    // set instant router in cc exchange router
     const ccExchangeRouter = await deployments.get("CCExchangeRouter")
     const ccExchangeRouterFactory = await ethers.getContractFactory("CCExchangeRouter")
     const ccExchangeRouterInstance = await ccExchangeRouterFactory.attach(
     ccExchangeRouter.address
     )
 
-    tx = await ccExchangeRouterInstance.setRelay(
-        relay.address
-    )
-    tx.wait(1)
-    console.log("set relay in CCexchange router: ", tx.hash)
-
-    // set relay in instant router
-    const instantRouter = await deployments.get("InstantRouter")
-    const instantRouterFactory = await ethers.getContractFactory("InstantRouter")
-    const instantRouterInstance = await instantRouterFactory.attach(
+    tx = await ccExchangeRouterInstance.setInstantRouter(
         instantRouter.address
     )
-
-    tx = await instantRouterInstance.setRelay(
-        relay.address
-    )
     tx.wait(1)
-    console.log("set relay in instant router: ", tx.hash)
+    console.log("set instant router in CCexchange router: ", tx.hash)
 
+    logger.color('blue').log("-------------------------------------------------")
 
 };
 
