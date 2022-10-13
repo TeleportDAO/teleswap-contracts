@@ -7,9 +7,9 @@ interface ICollateralPool is IERC20 {
 
 	// Events
 
-	event AddCollateral(address indexed user, uint amount, uint collateralPoolTokenAmount);
+	event AddCollateral(address indexed doer, address indexed user, uint amount, uint collateralPoolTokenAmount);
 
-	event RemoveCollateral(address indexed user, uint amount, uint collateralPoolTokenAmount);
+	event RemoveCollateral(address indexed doer, address indexed user, uint amount, uint collateralPoolTokenAmount);
 
 	event SetCollateralizationRatio(uint collateralizationRatio);
 

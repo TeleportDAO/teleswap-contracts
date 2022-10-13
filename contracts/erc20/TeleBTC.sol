@@ -102,8 +102,8 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     /// @dev                   Only burners can call this
     /// @param _amount         Amount of burnt tokens
     function burn(uint _amount) external nonReentrant onlyBurner override returns (bool) {
-        _burn(msg.sender, _amount);
-        emit Burn(msg.sender, _amount);
+        _burn(_msgSender(), _amount);
+        emit Burn(_msgSender(), _msgSender(), _amount);
         return true;
     }
 
@@ -113,7 +113,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     /// @param _amount         Amount of minted tokens
     function mint(address _receiver, uint _amount) external nonReentrant onlyMinter override returns (bool) {
         _mint(_receiver, _amount);
-        emit Mint(_receiver, _amount);
+        emit Mint(_msgSender(), _receiver, _amount);
         return true;
     }
 }
