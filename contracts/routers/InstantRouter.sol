@@ -26,6 +26,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
     // Public variables
     mapping(address => instantRequest[]) public instantRequests; // Mapping from user address to user's unpaid instant requests
+    mapping(address => uint256) public instantRequestCounter; 
     uint public override slasherPercentageReward;
     uint public override paybackDeadline;
     address public override teleBTC;
@@ -214,7 +215,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             instantFee,
             instantRequests[_msgSender()][instantRequests[_msgSender()].length - 1].deadline,
             _collateralToken,
-            instantRequests[_msgSender()][instantRequests[_msgSender()].length - 1].lockedCollateralPoolTokenAmount
+            instantRequests[_msgSender()][instantRequests[_msgSender()].length - 1].lockedCollateralPoolTokenAmount,
+            instantRequests[_msgSender()][instantRequests[_msgSender()].length - 1].requestCounterOfUser
         );
 
         return true;
@@ -287,7 +289,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             _isFixedToken,
             instantRequests[_msgSender()][instantRequests[_msgSender()].length - 1].deadline, // payback deadline
             _collateralToken,
-            instantRequests[_msgSender()][instantRequests[_msgSender()].length - 1].lockedCollateralPoolTokenAmount
+            instantRequests[_msgSender()][instantRequests[_msgSender()].length - 1].lockedCollateralPoolTokenAmount,
+            instantRequests[_msgSender()][instantRequests[_msgSender()].length - 1].requestCounterOfUser
         );
     }
 
@@ -328,7 +331,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
                     _user,
                     instantRequests[_user][i-1].paybackAmount,
                     instantRequests[_user][i-1].collateralToken,
-                    instantRequests[_user][i-1].lockedCollateralPoolTokenAmount
+                    instantRequests[_user][i-1].lockedCollateralPoolTokenAmount,
+                    instantRequests[_user][i-1].requestCounterOfUser
                 );
 
                 // Deletes the request after paying it
@@ -371,41 +375,42 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         );
 
         // Gets loan information
-        uint lockedCollateralPoolTokenAmount = instantRequests[_user][_requestIndex].lockedCollateralPoolTokenAmount;
-        address collateralToken = instantRequests[_user][_requestIndex].collateralToken;
-        address collateralPool = instantRequests[_user][_requestIndex].collateralPool;
-        uint paybackAmount = instantRequests[_user][_requestIndex].paybackAmount;
+        instantRequest memory theRequest = instantRequests[_user][_requestIndex];
+        // uint lockedCollateralPoolTokenAmount = instantRequests[_user][_requestIndex].lockedCollateralPoolTokenAmount;
+        // address collateralToken = instantRequests[_user][_requestIndex].collateralToken;
+        // address collateralPool = instantRequests[_user][_requestIndex].collateralPool;
+        // uint paybackAmount = instantRequests[_user][_requestIndex].paybackAmount;
 
         // Finds needed collateral token to pay back loan
         (bool result, uint requiredCollateralToken) = IExchangeConnector(defaultExchangeConnector).getInputAmount(
-            paybackAmount, // Output amount
-            collateralToken, // Input token
+            theRequest.paybackAmount, // Output amount
+            theRequest.collateralToken, // Input token
             teleBTC // Output token
         );
 
         require(result == true, "InstantRouter: liquidity pool doesn't exist");
 
-        uint totalCollateralToken = ICollateralPool(collateralPool).equivalentCollateralToken(
-            lockedCollateralPoolTokenAmount
+        uint totalCollateralToken = ICollateralPool(theRequest.collateralPool).equivalentCollateralToken(
+            theRequest.lockedCollateralPoolTokenAmount
         );
 
         // Path of exchanging
         address[] memory path = new address[](2);
-        path[0] = collateralToken;
+        path[0] = theRequest.collateralToken;
         path[1] = teleBTC;
 
         // Gets collateral token from collateral pool
-        ICollateralPool(collateralPool).removeCollateral(lockedCollateralPoolTokenAmount);
+        ICollateralPool(theRequest.collateralPool).removeCollateral(theRequest.lockedCollateralPoolTokenAmount);
 
         // Checks that locked collateral is enough to pay back loan
         if (totalCollateralToken >= requiredCollateralToken) {
             // Approves exchange connector to use collateral token
-            IERC20(collateralToken).approve(defaultExchangeConnector, requiredCollateralToken);
+            IERC20(theRequest.collateralToken).approve(defaultExchangeConnector, requiredCollateralToken);
 
             // Exchanges collateral token for teleBTC
             IExchangeConnector(defaultExchangeConnector).swap(
                 requiredCollateralToken,
-                paybackAmount, // Output amount
+                theRequest.paybackAmount, // Output amount
                 path,
                 teleBTCInstantPool,
                 block.timestamp + 1,
@@ -415,28 +420,29 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             // Sends reward to slasher
             uint slasherReward = (totalCollateralToken - requiredCollateralToken)
             *slasherPercentageReward/MAX_SLASHER_PERCENTAGE_REWARD;
-            IERC20(collateralToken).transfer(_msgSender(), slasherReward);
+            IERC20(theRequest.collateralToken).transfer(_msgSender(), slasherReward);
 
-            IERC20(teleBTC).approve(collateralPool, totalCollateralToken - requiredCollateralToken - slasherReward);
+            IERC20(teleBTC).approve(theRequest.collateralPool, totalCollateralToken - requiredCollateralToken - slasherReward);
 
             // Deposits rest of the tokens to collateral pool on behalf of the user
-            ICollateralPool(collateralPool).addCollateral(
+            ICollateralPool(theRequest.collateralPool).addCollateral(
                 _user,
                 totalCollateralToken - requiredCollateralToken - slasherReward
             );
 
             emit SlashUser(
                 _user,
-                collateralToken,
+                theRequest.collateralToken,
                 requiredCollateralToken,
-                paybackAmount,
+                theRequest.paybackAmount,
                 _msgSender(),
-                slasherReward
+                slasherReward,
+                theRequest.requestCounterOfUser
             );
         } else { // Handles situations where locked collateral is not enough to pay back the loan
 
             // Approves exchange connector to use collateral token
-            IERC20(collateralToken).approve(defaultExchangeConnector, totalCollateralToken);
+            IERC20(theRequest.collateralToken).approve(defaultExchangeConnector, totalCollateralToken);
 
             // Buys teleBTC as much as possible and sends it to instant pool
             IExchangeConnector(defaultExchangeConnector).swap(
@@ -452,11 +458,12 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
             emit SlashUser(
                 _user,
-                collateralToken,
+                theRequest.collateralToken,
                 totalCollateralToken,
-                paybackAmount,
+                theRequest.paybackAmount,
                 _msgSender(),
-                0 // Slasher reward is zero
+                0, // Slasher reward is zero
+                theRequest.requestCounterOfUser
             );
         }
 
@@ -530,6 +537,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         request.collateralPool = collateralPool;
         request.collateralToken = _collateralToken;
         request.deadline = IBitcoinRelay(relay).lastSubmittedHeight() + paybackDeadline;
+        request.requestCounterOfUser = instantRequestCounter[_user];
+        instantRequestCounter[_user] = instantRequestCounter[_user] + 1;
         instantRequests[_user].push(request);
 
     }
