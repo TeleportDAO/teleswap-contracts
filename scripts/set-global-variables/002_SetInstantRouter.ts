@@ -55,7 +55,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     tx.wait(1)
     console.log("set instant router in CCexchange router: ", tx.hash)
 
-    logger.color('blue').log("-------------------------------------------------")
 
 };
 
