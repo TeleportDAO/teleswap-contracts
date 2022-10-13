@@ -18,6 +18,7 @@ interface IInstantRouter {
         uint paybackAmount;
         uint lockedCollateralPoolTokenAmount;
         uint deadline;
+        uint requestCounterOfUser;
     }
 
     // Events
@@ -37,7 +38,8 @@ interface IInstantRouter {
         uint instantFee, 
         uint indexed deadline, 
         address indexed collateralToken,
-        uint lockedCollateralPoolToken
+        uint lockedCollateralPoolToken,
+        uint requestCounterOfUser
     );
 
     /// @notice                             Emits when a user gets loan for exchange
@@ -61,7 +63,8 @@ interface IInstantRouter {
         bool isFixed,
         uint indexed deadline, 
         address indexed collateralToken,
-        uint lockedCollateralPoolToken
+        uint lockedCollateralPoolToken,
+        uint requestCounterOfUser
     );
 
     /// @notice                            Emits when a loan gets paid back
@@ -73,7 +76,8 @@ interface IInstantRouter {
 		address indexed user, 
 		uint paybackAmount, 
 		address indexed collateralToken, 
-		uint lockedCollateralPoolToken
+		uint lockedCollateralPoolToken,
+        uint requestCounterOfUser
 	);
 
     /// @notice                         Emits when a user gets slashed
@@ -89,7 +93,8 @@ interface IInstantRouter {
 		uint slashedAmount, 
 		uint paybackAmount,
         address slasher,
-        uint slasherReward
+        uint slasherReward,
+        uint requestCounterOfUser
 	);
 
     // Read-only functions
