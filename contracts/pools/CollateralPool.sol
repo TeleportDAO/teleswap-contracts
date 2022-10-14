@@ -93,11 +93,11 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
         }
 
         // Transfers collateral tokens from message sender to contract
-        IERC20(collateralToken).transferFrom(msg.sender, address(this), _amount);
+        IERC20(collateralToken).transferFrom(_msgSender(), address(this), _amount);
 
         // Mints collateral pool token for _user
         _mint(_user, collateralPoolTokenAmount);
-        emit AddCollateral(_user, _amount, collateralPoolTokenAmount);
+        emit AddCollateral(_msgSender(), _user, _amount, collateralPoolTokenAmount);
 
         return true;
     }
@@ -111,7 +111,7 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
     ) external nonZeroValue(_collateralPoolTokenAmount) nonReentrant override returns (bool) {
         // Checks basic requirements
         require(
-            balanceOf(msg.sender) >= _collateralPoolTokenAmount,
+            balanceOf(_msgSender()) >= _collateralPoolTokenAmount,
             "CollateralPool: balance is not enough"
         );
 
@@ -119,11 +119,11 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
         uint collateralTokenAmount = _collateralPoolTokenAmount*totalAddedCollateral()/totalSupply();
 
         // Burns collateral pool token of user
-        _burn(msg.sender, _collateralPoolTokenAmount);
+        _burn(_msgSender(), _collateralPoolTokenAmount);
 
         // Sends collateral token to user
-        IERC20(collateralToken).transfer(msg.sender, collateralTokenAmount);
-        emit RemoveCollateral(msg.sender, collateralTokenAmount, _collateralPoolTokenAmount);
+        IERC20(collateralToken).transfer(_msgSender(), collateralTokenAmount);
+        emit RemoveCollateral(_msgSender(), _msgSender(), collateralTokenAmount, _collateralPoolTokenAmount);
 
         return true;
     }
