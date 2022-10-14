@@ -53,6 +53,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
 
     if (theLiquidityPair == "0x0000000000000000000000000000000000000000") {
+
+        console.log("We are here ")
+
         const timeNow = Date.now()
         const unixTimeNow = (timeNow - (timeNow % 1000))/1000 + 1000
 
@@ -95,6 +98,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
 
     if (theLiquidityPair2 == "0x0000000000000000000000000000000000000000") {
+
+        console.log("We are there ")
+
         const timeNow = Date.now()
         const unixTimeNow = (timeNow - (timeNow % 1000))/1000 + 1000
 
