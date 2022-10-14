@@ -82,25 +82,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     console.log("set telebtc in instant pool: ", tx.hash)
 
     // set telebtc in locker
-    const lockers = await deployments.get("LockersProxy")
-    const lockersLib = await deployments.get("LockersLib")
-    const lockersFactory = await ethers.getContractFactory(
-        "LockersLogicTestnet",
-        {
-            libraries: {
-                LockersLib: lockersLib.address
-            }
-        }
-    );
-    const lockersInstance = await lockersFactory.attach(
-        lockers.address
-    )
+    // const lockers = await deployments.get("LockersProxy")
+    // const lockersLib = await deployments.get("LockersLib")
+    // const lockersFactory = await ethers.getContractFactory(
+    //     "LockersLogicTestnet",
+    //     {
+    //         libraries: {
+    //             LockersLib: lockersLib.address
+    //         }
+    //     }
+    // );
+    // const lockersInstance = await lockersFactory.attach(
+    //     lockers.address
+    // )
 
-    tx = await lockersInstance.setTeleBTC(
-        telebtc.address
-    )
-    tx.wait(1)
-    console.log("set telebtc in lockers: ", tx.hash)
+    // tx = await lockersInstance.setTeleBTC(
+    //     telebtc.address
+    // )
+    // tx.wait(1)
+    // console.log("set telebtc in lockers: ", tx.hash)
 
 
     logger.color('blue').log("-------------------------------------------------")
