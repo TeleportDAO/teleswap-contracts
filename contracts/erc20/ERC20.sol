@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 import "./interfaces/IERC20.sol";
 //import "./Context.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
-import '../libraries/SafeMath.sol';
 import "hardhat/console.sol";
 
 /**
@@ -33,7 +32,6 @@ import "hardhat/console.sol";
  * allowances. See {IERC20-approve}.
  */
 contract ERC20 is Context, IERC20 {
-    using SafeMath for uint;
     mapping (address => uint256) private _balances;
 
     mapping (address => mapping (address => uint256)) private _allowances;
