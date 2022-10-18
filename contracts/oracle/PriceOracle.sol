@@ -5,9 +5,13 @@ import './interfaces/IPriceOracle.sol';
 import '../connectors/interfaces/IExchangeConnector.sol';
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import '@openzeppelin/contracts/access/Ownable.sol';
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "hardhat/console.sol"; // Just for test
 
+
 contract PriceOracle is IPriceOracle, Ownable {
+
+    using SafeCast for uint;
 
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "PriceOracle: zero address");
@@ -61,7 +65,7 @@ contract PriceOracle is IPriceOracle, Ownable {
         );
 
         // Checks timestamp of the oracle result
-        if (result == true && _abs(int(timestamp) - int(block.timestamp)) < acceptableDelay) {
+        if (result == true && _abs(timestamp.toInt256() - block.timestamp.toInt256()) < acceptableDelay) {
             return outputAmount;
         } else {
             uint _totalAmount;
