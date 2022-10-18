@@ -2,12 +2,10 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IWETH.sol";
-import "../libraries/SafeMath.sol";
 import "./ERC20.sol";
 import "hardhat/console.sol";
 
 contract WETH is ERC20 {
-    // using SafeMath for uint;
 
     constructor(string memory _name, string memory _symbol)
     ERC20(_name, _symbol, 0) {}
