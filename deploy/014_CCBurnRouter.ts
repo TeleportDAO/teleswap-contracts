@@ -20,6 +20,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const bitcoinRelay = await deployments.get("BitcoinRelay")
     const lockersProxy = await deployments.get("LockersProxy")
+    const teleBTC = await deployments.get("TeleBTC")
 
 
 
@@ -31,6 +32,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             bitcoinRelay.address,
             lockersProxy.address,
             treasuryAddress,
+            teleBTC,
             transferDeadLine,
             protocolPercentageFee,
             slasherPercentageReward,

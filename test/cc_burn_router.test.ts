@@ -85,9 +85,8 @@ describe("CCBurnRouter", async () => {
         )
 
         // Deploys contracts
-        ccBurnRouter = await deployCCBurnRouter();
         teleBTC = await deployTeleBTC();
-        await ccBurnRouter.setTeleBTC(teleBTC.address);
+        ccBurnRouter = await deployCCBurnRouter();
 
         // Mints TeleBTC for user
         TeleBTCSigner1 = await teleBTC.connect(signer1);
@@ -124,6 +123,7 @@ describe("CCBurnRouter", async () => {
             mockBitcoinRelay.address,
             mockLockers.address,
             TREASURY,
+            teleBTC.address,
             TRANSFER_DEADLINE,
             PROTOCOL_PERCENTAGE_FEE,
             SLASHER_PERCENTAGE_REWARD,

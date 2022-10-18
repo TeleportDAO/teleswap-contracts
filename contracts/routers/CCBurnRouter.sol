@@ -43,6 +43,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _relay                       Address of relay contract
     /// @param _lockers                     Address of lockers contract
     /// @param _treasury                    Address of the treasury of the protocol
+    /// @param _teleBTC                     Address of teleBTC contract
     /// @param _transferDeadline            Dealine of sending BTC to user (aster submitting a burn request)
     /// @param _protocolPercentageFee       Percentage of tokens that user pays to protocol for burning
     /// @param _slasherPercentageReward     Percentage of tokens that slasher receives after slashing a locker
@@ -51,6 +52,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         address _relay,
         address _lockers,
         address _treasury,
+        address _teleBTC,
         uint _transferDeadline,
         uint _protocolPercentageFee,
         uint _slasherPercentageReward,
@@ -59,6 +61,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         relay = _relay;
         lockers = _lockers;
         treasury = _treasury;
+        teleBTC = _teleBTC;
         transferDeadline = _transferDeadline;
         protocolPercentageFee = _protocolPercentageFee;
         slasherPercentageReward = _slasherPercentageReward;
