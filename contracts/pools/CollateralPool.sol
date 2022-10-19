@@ -6,9 +6,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import 'hardhat/console.sol'; // Just for test
 
 contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
 
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "CollateralPool: zero address");
@@ -91,7 +93,7 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
         }
 
         // Transfers collateral tokens from message sender to contract
-        IERC20(collateralToken).transferFrom(msg.sender, address(this), _amount);
+        IERC20(collateralToken).safeTransferFrom(msg.sender, address(this), _amount);
 
         // Mints collateral pool token for _user
         _mint(_user, collateralPoolTokenAmount);
@@ -120,7 +122,7 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
         _burn(msg.sender, _collateralPoolTokenAmount);
 
         // Sends collateral token to user
-        IERC20(collateralToken).transfer(msg.sender, collateralTokenAmount);
+        IERC20(collateralToken).safeTransfer(msg.sender, collateralTokenAmount);
         emit RemoveCollateral(msg.sender, collateralTokenAmount, _collateralPoolTokenAmount);
 
         return true;
