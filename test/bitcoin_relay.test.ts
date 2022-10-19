@@ -76,7 +76,7 @@ describe("Bitcoin Relay", async () => {
         bitcoinRelay = await deployBitcoinRelay();
 
         const TDTcontract = await deployments.getArtifact(
-            "contracts/erc20/interfaces/IERC20.sol:IERC20"
+            "contracts/erc20/interfaces/ITeleBTC.sol:ITeleBTC"
         );
         mockTDT = await deployMockContract(
             deployer,
