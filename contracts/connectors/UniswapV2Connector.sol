@@ -33,6 +33,8 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         wrappedNativeToken = IUniswapV2Router02(exchangeRouter).WETH();
     }
 
+    function renounceOwnership() public virtual override onlyOwner {}
+
     /// @notice                             Setter for exchange router
     /// @dev                                Gets address of liquidity pool factory from new exchange router
     /// @param _exchangeRouter              Address of the new exchange router contract

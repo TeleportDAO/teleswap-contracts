@@ -78,6 +78,8 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         submissionGasUsed = 300000; // in wei
     }
 
+    function renounceOwnership() public virtual override onlyOwner {}
+
     /// @notice        Pause the relay
     /// @dev           Only functions with whenPaused modifier can be called
     function pauseRelay() external override onlyOwner {

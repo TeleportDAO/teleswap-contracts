@@ -33,6 +33,8 @@ contract PriceOracle is IPriceOracle, Ownable {
         oracleNativeToken = _oracleNativeToken;
     }
 
+    function renounceOwnership() public virtual override onlyOwner {}
+
     /// @notice                 Getter for the length of exchange router list
     function getExchangeRoutersListLength() public view override returns (uint) {
         return exchangeRoutersList.length;

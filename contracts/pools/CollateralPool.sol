@@ -41,6 +41,8 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
         collateralizationRatio = _collateralizationRatio;
     }
 
+    function renounceOwnership() public virtual override onlyOwner {}
+
     /// @return                 Amount of total added collateral
     function totalAddedCollateral() public view override returns (uint) {
         return IERC20(collateralToken).balanceOf(address(this));

@@ -28,6 +28,8 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
         instantPercentageFee = _instantPercentageFee;
     }
 
+    function renounceOwnership() public virtual override onlyOwner {}
+
     /// @notice                               Gives available teleBTC amount
     /// @return                               Available amount of teleBTC that can be borrowed
     function availableTeleBTC() override public view returns (uint) {
