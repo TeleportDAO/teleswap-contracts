@@ -545,7 +545,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         // Transfers TNT to user
         payable(_recipient).transfer(equivalentNativeToken*_amount/(_amount + _rewardAmount));
         // Transfers TNT to slasher
-        uint rewardAmountInNativeToken = equivalentNativeToken*_rewardAmount/(_amount + _rewardAmount);
+        uint rewardAmountInNativeToken = equivalentNativeToken - (equivalentNativeToken*_amount/(_amount + _rewardAmount));
         payable(_rewardRecipient).transfer(rewardAmountInNativeToken);
 
         emit LockerSlashed(
