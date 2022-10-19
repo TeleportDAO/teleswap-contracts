@@ -201,6 +201,7 @@ describe("CCTransferRouter", async () => {
             teleportDAOToken.address,
             ONE_ADDRESS,
             mockPriceOracle.address,
+            // ONE_ADDRESS,
             minRequiredTDTLockedAmount,
             0,
             collateralRatio,

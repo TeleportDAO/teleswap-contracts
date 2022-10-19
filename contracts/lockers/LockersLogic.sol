@@ -56,6 +56,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         address _TeleportDAOToken,
         address _exchangeConnector,
         address _priceOracle,
+        // address _ccBurnRouter,
         uint _minRequiredTDTLockedAmount,
         uint _minRequiredTNTLockedAmount,
         uint _collateralRatio,
@@ -69,7 +70,8 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         PausableUpgradeable.__Pausable_init();
 
         require(
-            _TeleportDAOToken != address(0) && _exchangeConnector != address(0) && _priceOracle != address(0),
+            // _TeleportDAOToken != address(0) && _exchangeConnector != address(0) && _priceOracle != address(0) && _ccBurnRouter != address(0),
+            _TeleportDAOToken != address(0) && _exchangeConnector != address(0) && _priceOracle != address(0) ,
             "Lockers: address is zero"
         );
 
@@ -89,6 +91,9 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         );
 
         TeleportDAOToken = _TeleportDAOToken;
+        // ccBurnRouter = _ccBurnRouter;
+        // burners[ccBurnRouter] = true;
+
         exchangeConnector = _exchangeConnector;
         priceOracle = _priceOracle;
         minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
