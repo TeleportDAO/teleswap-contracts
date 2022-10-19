@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../oracle/interfaces/IPriceOracle.sol";
 import "../connectors/interfaces/IExchangeConnector.sol";
-import "../erc20/interfaces/IERC20.sol";
+// import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../routers/interfaces/ICCBurnRouter.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -522,7 +522,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
             _rewardAmount + _amount, // Total amount of TeleBTC that is slashed
-            IERC20(teleBTC).decimals(), // Decimal of teleBTC
+            ITeleBTC(teleBTC).decimals(), // Decimal of teleBTC
             NATIVE_TOKEN_DECIMAL, // Decimal of TNT
             teleBTC, // Input token
             NATIVE_TOKEN // Output token
@@ -585,7 +585,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
         uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
             _amount, // Total amount of TeleBTC that is slashed
-            IERC20(teleBTC).decimals(), // Decimal of teleBTC
+            ITeleBTC(teleBTC).decimals(), // Decimal of teleBTC
             NATIVE_TOKEN_DECIMAL, // Decimal of TNT
             teleBTC, // Input token
             NATIVE_TOKEN // Output token
@@ -835,7 +835,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         return IPriceOracle(priceOracle).equivalentOutputAmount(
             (10**NATIVE_TOKEN_DECIMAL), // 1 Ether is 10^18 wei
             NATIVE_TOKEN_DECIMAL,
-            IERC20(teleBTC).decimals(),
+            ITeleBTC(teleBTC).decimals(),
             NATIVE_TOKEN,
             teleBTC
         );
@@ -953,7 +953,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         return IPriceOracle(priceOracle).equivalentOutputAmount(
             lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
             NATIVE_TOKEN_DECIMAL,
-            IERC20(teleBTC).decimals(),
+            ITeleBTC(teleBTC).decimals(),
             NATIVE_TOKEN,
             teleBTC
         );

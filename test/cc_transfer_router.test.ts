@@ -20,6 +20,8 @@ import { LockersLib__factory } from "../src/types/factories/LockersLib__factory"
 
 import { TeleBTC } from "../src/types/TeleBTC";
 import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
+import { ERC20AsDot } from "../src/types/ERC20AsDot";
+import { ERC20AsDot__factory } from "../src/types/factories/ERC20AsDot__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { ERC20__factory } from "../src/types/factories/ERC20__factory";
 
@@ -213,7 +215,7 @@ describe("CCTransferRouter", async () => {
     const deployTeleportDAOToken = async (
         _signer?: Signer
     ): Promise<ERC20> => {
-        const erc20Factory = new ERC20__factory(
+        const erc20Factory = new ERC20AsDot__factory(
             _signer || deployer
         );
 

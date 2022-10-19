@@ -3,7 +3,8 @@ import { deployments, ethers } from "hardhat";
 import { Signer, BigNumber } from "ethers";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
 import { Address } from "hardhat-deploy/types";
-
+import { ERC20AsDot } from "../src/types/ERC20AsDot";
+import { ERC20AsDot__factory } from "../src/types/factories/ERC20AsDot__factory";
 import {ERC20} from "../src/types/ERC20";
 import {ERC20__factory} from "../src/types/factories/ERC20__factory";
 import {TeleBTC} from "../src/types/TeleBTC";
@@ -97,7 +98,7 @@ describe("Instant Router", async () => {
         );
 
         // Deploys collateralToken and TeleportDAOToken contract
-        const erc20Factory = new ERC20__factory(deployer);
+        const erc20Factory = new ERC20AsDot__factory(deployer);
         collateralToken = await erc20Factory.deploy(
             "TestToken",
             "TT",

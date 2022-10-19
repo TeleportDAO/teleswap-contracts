@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../erc20/interfaces/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../types/ScriptTypesEnum.sol";
 import "../types/DataTypes.sol";
 
@@ -17,7 +17,7 @@ library LockersLib {
         // maxBuyable <= (upperHealthFactor*netMinted*liquidationRatio/10000 - nativeTokenLockedAmount*nativeTokenPrice)/(upperHealthFactor*liquidationRatio*discountedPrice - nativeTokenPrice)
         //  => maxBuyable <= (upperHealthFactor*netMinted*liquidationRatio * 10^18  - nativeTokenLockedAmount*nativeTokenPrice * 10^8)/(upperHealthFactor*liquidationRatio*discountedPrice - nativeTokenPrice * 10^8)
 
-        uint teleBTCDecimal = IERC20(libParams.teleBTC).decimals();
+        uint teleBTCDecimal = ERC20(libParams.teleBTC).decimals();
 
         uint antecedent = (libConstants.UpperHealthFactor * theLocker.netMinted * libParams.liquidationRatio * (10 ** libConstants.NativeTokenDecimal)) -
         (theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** teleBTCDecimal));
@@ -35,7 +35,7 @@ library LockersLib {
         uint _priceOfOneUnitOfCollateral
     ) external view returns (uint) {
         return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount * 
-            (10 ** (1 + IERC20(libParams.teleBTC).decimals())))/
+            (10 ** (1 + ERC20(libParams.teleBTC).decimals())))/
                 (theLocker.netMinted * libParams.liquidationRatio * (10 ** (1 + libConstants.NativeTokenDecimal)));
     }
 

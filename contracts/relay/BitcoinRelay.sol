@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../libraries/TypedMemView.sol";
 import "../libraries/BitcoinHelper.sol";
 import "./interfaces/IBitcoinRelay.sol";
-import "../erc20/interfaces/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";

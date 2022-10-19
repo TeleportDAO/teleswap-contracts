@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import './interfaces/ICollateralPool.sol';
-import '../erc20/interfaces/IERC20.sol';
-import '../erc20/ERC20.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import "./interfaces/ICollateralPool.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import 'hardhat/console.sol'; // Just for test
 
 contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
@@ -36,7 +36,7 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
         string memory _symbol,
         address _collateralToken,
         uint _collateralizationRatio
-    ) ERC20(_name, _symbol, 0) {
+    ) ERC20(_name, _symbol) {
         collateralToken = _collateralToken;
         collateralizationRatio = _collateralizationRatio;
     }

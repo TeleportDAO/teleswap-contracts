@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/ITeleBTC.sol";
-import "../erc20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol"; // Just for test
@@ -26,11 +26,24 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     constructor(
         string memory _name,
         string memory _symbol
-    ) ERC20(_name, _symbol, 0) {
+    ) ERC20(_name, _symbol) {}
 
-    }
+    // /**
+    //  * @dev Returns the name of the token.
+    //  */
+    // function name() public view virtual override returns (string memory) {
+    //     return _name;
+    // }
 
-    function decimals() public view virtual override(ERC20, IERC20) returns (uint8) {
+    // /**
+    //  * @dev Returns the symbol of the token, usually a shorter version of the
+    //  * name.
+    //  */
+    // function symbol() public view virtual override returns (string memory) {
+    //     return _symbol;
+    // }
+
+    function decimals() public view virtual override(ERC20, ITeleBTC) returns (uint8) {
         return 8;
     }
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import './IERC20.sol';
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface ITeleBTC is IERC20 {
 
@@ -10,6 +10,10 @@ interface ITeleBTC is IERC20 {
     event Mint(address indexed to, uint value);
 
     event Burn(address indexed to, uint value);
+
+    // function name() external view returns (string memory);
+    // function symbol() external view returns (string memory);
+    function decimals() external view returns (uint8);
 
     // state-changing functions
 

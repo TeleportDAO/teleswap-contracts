@@ -7,6 +7,8 @@ import { UniswapV2Connector } from "../src/types/UniswapV2Connector";
 import { UniswapV2Connector__factory } from "../src/types/factories/UniswapV2Connector__factory";
 import { UniswapV2Pair } from "../src/types/UniswapV2Pair";
 import { UniswapV2Pair__factory } from "../src/types/factories/UniswapV2Pair__factory";
+import { ERC20AsDot } from "../src/types/ERC20AsDot";
+import { ERC20AsDot__factory } from "../src/types/factories/ERC20AsDot__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { ERC20__factory } from "../src/types/factories/ERC20__factory";
 import { WETH } from "../src/types/WETH";
@@ -84,7 +86,7 @@ describe("UniswapV2Connector", async () => {
         );
 
         // Deploys erc20 token
-        const erc20Factory = new ERC20__factory(deployer);
+        const erc20Factory = new ERC20AsDot__factory(deployer);
         erc20 = await erc20Factory.deploy(
             "TestToken",
             "TT",
