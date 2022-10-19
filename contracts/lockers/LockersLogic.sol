@@ -123,6 +123,8 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         libParams.priceWithDiscountRatio = priceWithDiscountRatio;
     }
 
+    function renounceOwnership() public virtual override onlyOwner {}
+
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "Lockers: address is zero");
         _;

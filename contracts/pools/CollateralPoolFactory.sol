@@ -26,6 +26,8 @@ contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGua
     /// @notice         This contract creates collateral pool for tokens
     constructor() {}
 
+    function renounceOwnership() public virtual override onlyOwner {}
+
     /// @return         Total number of collateral pools
     function allCollateralPoolsLength() public override view returns (uint) {
         return allCollateralPools.length;

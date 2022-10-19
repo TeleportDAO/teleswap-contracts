@@ -28,6 +28,8 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
         string memory _symbol
     ) ERC20(_name, _symbol) {}
 
+    function renounceOwnership() public virtual override onlyOwner {}
+
     function decimals() public view virtual override(ERC20, ITeleBTC) returns (uint8) {
         return 8;
     }

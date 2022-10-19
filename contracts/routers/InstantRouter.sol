@@ -66,6 +66,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         defaultExchangeConnector = _defaultExchangeConnector;
     }
 
+    function renounceOwnership() public virtual override onlyOwner {}
+
     /// @notice       Pause the contract
     function pause() external override onlyOwner {
         _pause();

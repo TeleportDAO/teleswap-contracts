@@ -65,6 +65,8 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         treasury = _treasury;
     }
 
+    function renounceOwnership() public virtual override onlyOwner {}
+
     /// @notice                             Setter for protocol percentage fee
     /// @dev                                Only owner can call this
     /// @param _protocolPercentageFee       Percentage amount of protocol fee

@@ -65,6 +65,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         treasury = _treasury;
     }
 
+    function renounceOwnership() public virtual override onlyOwner {}
+
     /// @notice         Changes relay contract address
     /// @dev            Only owner can call this
     /// @param _relay   The new relay contract address
