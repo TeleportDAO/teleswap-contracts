@@ -28,21 +28,6 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
         string memory _symbol
     ) ERC20(_name, _symbol) {}
 
-    // /**
-    //  * @dev Returns the name of the token.
-    //  */
-    // function name() public view virtual override returns (string memory) {
-    //     return _name;
-    // }
-
-    // /**
-    //  * @dev Returns the symbol of the token, usually a shorter version of the
-    //  * name.
-    //  */
-    // function symbol() public view virtual override returns (string memory) {
-    //     return _symbol;
-    // }
-
     function decimals() public view virtual override(ERC20, ITeleBTC) returns (uint8) {
         return 8;
     }
