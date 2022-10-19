@@ -37,13 +37,11 @@ describe("CollateralPoolFactory", async () => {
         const erc20Factory = new ERC20__factory(deployer);
         erc20 = await erc20Factory.deploy(
             "TestToken",
-            "TT",
-            0
+            "TT"
         );
         _erc20 = await erc20Factory.deploy(
             "AnotherTestToken",
-            "ATT",
-            0
+            "ATT"
         );
 
     });

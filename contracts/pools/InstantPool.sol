@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IInstantPool.sol";
-import "../erc20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
@@ -22,7 +22,7 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
         uint _instantPercentageFee,
         string memory _name,
         string memory _symbol
-    ) ERC20(_name, _symbol, 0) {
+    ) ERC20(_name, _symbol) {
         teleBTC = _teleBTC;
         instantRouter = _instantRouter;
         instantPercentageFee = _instantPercentageFee;

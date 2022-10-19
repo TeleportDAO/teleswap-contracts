@@ -2,7 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import "./ERC20.sol";
+// import "./ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @dev Implementation of the {IERC20} interface.
@@ -33,5 +34,7 @@ contract ERC20AsDot is ERC20 {
         string memory name_,
         string memory symbol_,
         uint initialMintedAmount
-    ) ERC20(name_, symbol_, initialMintedAmount) {}
+    ) ERC20(name_, symbol_) {
+        _mint(_msgSender(), initialMintedAmount);
+    }
 }

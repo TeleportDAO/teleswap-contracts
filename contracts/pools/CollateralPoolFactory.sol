@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import './interfaces/ICollateralPoolFactory.sol';
-import '../erc20/interfaces/IERC20.sol';
-import './CollateralPool.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import "./interfaces/ICollateralPoolFactory.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./CollateralPool.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGuard {
 
@@ -58,8 +58,8 @@ contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGua
         CollateralPool pool;
         string memory name;
         string memory symbol;
-        name = string(abi.encodePacked(IERC20(_collateralToken).name(), "-", "Collateral-Pool"));
-        symbol = string(abi.encodePacked(IERC20(_collateralToken).symbol(), "CP"));
+        name = string(abi.encodePacked(ERC20(_collateralToken).name(), "-", "Collateral-Pool"));
+        symbol = string(abi.encodePacked(ERC20(_collateralToken).symbol(), "CP"));
         pool = new CollateralPool(name, symbol, _collateralToken, _collateralizationRatio);
 
         // Transfers ownership of collateral pool to owner of this contract

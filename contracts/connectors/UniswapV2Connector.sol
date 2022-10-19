@@ -5,7 +5,7 @@ import "./interfaces/IExchangeConnector.sol";
 import "../uniswap/v2-periphery/interfaces/IUniswapV2Router02.sol";
 import "../uniswap/v2-core/interfaces/IUniswapV2Pair.sol";
 import "../uniswap/v2-core/interfaces/IUniswapV2Factory.sol";
-import "../erc20/interfaces/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";

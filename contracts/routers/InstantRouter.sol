@@ -6,7 +6,7 @@ import '../connectors/interfaces/IExchangeConnector.sol';
 import '../pools/interfaces/IInstantPool.sol';
 import '../pools/interfaces/ICollateralPool.sol';
 import '../pools/interfaces/ICollateralPoolFactory.sol';
-import '../erc20/interfaces/IERC20.sol';
+import '../erc20/interfaces/ITeleBTC.sol';
 import '../oracle/interfaces/IPriceOracle.sol';
 import "../relay/interfaces/IBitcoinRelay.sol";
 import '@openzeppelin/contracts/access/Ownable.sol';
@@ -256,7 +256,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         IInstantPool(teleBTCInstantPool).getLoan(address(this), _loanAmount);
 
         // Gives allowance to exchange connector
-        IERC20(teleBTC).approve(_exchangeConnector, _loanAmount);
+        ITeleBTC(teleBTC).approve(_exchangeConnector, _loanAmount);
 
         // Exchanges teleBTC for output token
         bool result;
@@ -310,7 +310,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
                 remainedAmount = remainedAmount - instantRequests[_user][i-1].paybackAmount;
 
                 // Pays back the loan to instant pool
-                IERC20(teleBTC).transferFrom(
+                ITeleBTC(teleBTC).transferFrom(
                     _msgSender(),
                     teleBTCInstantPool,
                     instantRequests[_user][i-1].paybackAmount
@@ -341,7 +341,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
         // Transfers remained teleBTC to user
         if (remainedAmount > 0) {
-            IERC20(teleBTC).transferFrom(_msgSender(), _user, remainedAmount);
+            ITeleBTC(teleBTC).transferFrom(_msgSender(), _user, remainedAmount);
         }
 
         return true;
@@ -398,7 +398,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         // Checks that locked collateral is enough to pay back loan
         if (totalCollateralToken >= requiredCollateralToken) {
             // Approves exchange connector to use collateral token
-            IERC20(collateralToken).approve(defaultExchangeConnector, requiredCollateralToken);
+            ITeleBTC(collateralToken).approve(defaultExchangeConnector, requiredCollateralToken);
 
             // Exchanges collateral token for teleBTC
             IExchangeConnector(defaultExchangeConnector).swap(
@@ -413,7 +413,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             // Sends reward to slasher
             uint slasherReward = (totalCollateralToken - requiredCollateralToken)
             *slasherPercentageReward/MAX_SLASHER_PERCENTAGE_REWARD;
-            IERC20(collateralToken).transfer(_msgSender(), slasherReward);
+            ITeleBTC(collateralToken).transfer(_msgSender(), slasherReward);
 
             // Deposits rest of the tokens to collateral pool on behalf of the user
             ICollateralPool(collateralPool).addCollateral(
@@ -432,7 +432,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         } else { // Handles situations where locked collateral is not enough to pay back the loan
 
             // Approves exchange connector to use collateral token
-            IERC20(collateralToken).approve(defaultExchangeConnector, totalCollateralToken);
+            ITeleBTC(collateralToken).approve(defaultExchangeConnector, totalCollateralToken);
 
             // Buys teleBTC as much as possible and sends it to instant pool
             IExchangeConnector(defaultExchangeConnector).swap(
@@ -499,8 +499,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         // Gets the equivalent amount of collateral token
         uint equivalentCollateralToken = IPriceOracle(priceOracle).equivalentOutputAmount(
             _paybackAmount, // input amount
-            IERC20(teleBTC).decimals(),
-            IERC20(_collateralToken).decimals(),
+            ITeleBTC(teleBTC).decimals(),
+            ITeleBTC(_collateralToken).decimals(),
             teleBTC, // input token
             _collateralToken // output token
         );
