@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/ILockers.sol";
 import "../types/DataTypes.sol";
 import "../libraries/LockersLib.sol";
@@ -17,6 +18,7 @@ import "hardhat/console.sol";
 contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
 
     using LockersLib for *;
+    using SafeERC20 for IERC20;
 
     // Constants
     uint public constant ONE_HUNDRED_PERCENT = 10000;
@@ -352,7 +354,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             "Lockers: used locking script"
         );
 
-        require(IERC20(TeleportDAOToken).transferFrom(_msgSender(), address(this), _lockedTDTAmount));
+        IERC20(TeleportDAOToken).safeTransferFrom(_msgSender(), address(this), _lockedTDTAmount);
         DataTypes.locker memory locker_;
         locker_.lockerLockingScript = _candidateLockingScript;
         locker_.TDTLockedAmount = _lockedTDTAmount;
@@ -393,7 +395,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         totalNumberOfCandidates = totalNumberOfCandidates -1;
 
         // Sends back TDT and TNT collateral
-        IERC20(TeleportDAOToken).transfer(_msgSender(), lockerRequest.TDTLockedAmount);
+        IERC20(TeleportDAOToken).safeTransfer(_msgSender(), lockerRequest.TDTLockedAmount);
         Address.sendValue(payable(_msgSender()), lockerRequest.nativeTokenLockedAmount);
 
         emit RevokeAddLockerRequest(
@@ -986,7 +988,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         totalNumberOfLockers = totalNumberOfLockers - 1;
 
         // Sends back TDT and TNT collateral
-        IERC20(TeleportDAOToken).transfer(_lockerTargetAddress, _removingLokcer.TDTLockedAmount);
+        IERC20(TeleportDAOToken).safeTransfer(_lockerTargetAddress, _removingLokcer.TDTLockedAmount);
         Address.sendValue(payable(_lockerTargetAddress), _removingLokcer.nativeTokenLockedAmount);
 
         emit LockerRemoved(
