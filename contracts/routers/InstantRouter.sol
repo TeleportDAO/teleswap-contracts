@@ -12,10 +12,12 @@ import "../relay/interfaces/IBitcoinRelay.sol";
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "hardhat/console.sol"; // Just for test
 
 contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
-
+     using SafeERC20 for IERC20;
+     
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "InstantRouter: zero address");
         _;
@@ -319,7 +321,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
                 );
 
                 // Unlocks the locked collateral pool token after paying the loan
-                ICollateralPool(instantRequests[_user][i-1].collateralPool).transfer(
+                IERC20(instantRequests[_user][i-1].collateralPool).safeTransfer(
                     _user,
                     instantRequests[_user][i-1].lockedCollateralPoolTokenAmount
                 );
@@ -415,7 +417,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             // Sends reward to slasher
             uint slasherReward = (totalCollateralToken - requiredCollateralToken)
             *slasherPercentageReward/MAX_SLASHER_PERCENTAGE_REWARD;
-            ITeleBTC(collateralToken).transfer(_msgSender(), slasherReward);
+            IERC20(collateralToken).safeTransfer(_msgSender(), slasherReward);
 
             // Deposits rest of the tokens to collateral pool on behalf of the user
             ICollateralPool(collateralPool).addCollateral(
@@ -516,7 +518,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         );
 
         // Transfers collateral pool token from user to itself
-        ICollateralPool(collateralPool).transferFrom(_user, address(this), requiredCollateralPoolToken);
+        IERC20(collateralPool).safeTransferFrom(_user, address(this), requiredCollateralPoolToken);
 
         // Records the instant request for user
         instantRequest memory request;

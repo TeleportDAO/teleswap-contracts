@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "hardhat/console.sol";
 
 contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
@@ -16,6 +17,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
     using BitcoinHelper for bytes29;
+    using SafeERC20 for IERC20;
 
     // Public variables
     uint public override initialHeight;
@@ -478,7 +480,8 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         bool sentTDT;
         if (rewardAmountInTDT <= contractTDTBalance && rewardAmountInTDT > 0) {
             // Call ERC20 token contract to transfer reward tokens to the relayer
-            sentTDT = IERC20(TeleportDAOToken).transfer(_relayer, rewardAmountInTDT);
+            IERC20(TeleportDAOToken).safeTransfer(_relayer, rewardAmountInTDT);
+            sentTDT = true;
         }
 
         // Send reward in TNT
