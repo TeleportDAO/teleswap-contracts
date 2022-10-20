@@ -47,6 +47,25 @@ interface IBitcoinRelay {
         uint rewardAmountTNT,
         uint rewardAmountTDT
     );
+         
+
+    /// @notice                     Emits when changes made to reward amount in TDT
+    event NewRewardAmountInTDT (uint oldRewardAmountInTDT, uint newRewardAmountInTDT);
+
+    /// @notice                     Emits when changes made to finalization parameter
+    event NewFinalizationParameter (uint oldFinalizationParameter, uint newFinalizationParameter);
+
+    /// @notice                     Emits when changes made to relayer percentage fee
+    event NewRelayerPercentageFee (uint oldRelayerPercentageFee, uint newRelayerPercentageFee);
+
+    /// @notice                     Emits when changes made to epoch length
+    event NewEpochLength(uint oldEpochLength, uint newEpochLength);
+
+    /// @notice                     Emits when changes made to base queries
+    event NewBaseQueries(uint oldBaseQueries, uint newBaseQueries);
+
+    /// @notice                     Emits when changes made to submission gas used
+    event NewSubmissionGasUsed(uint oldSubmissionGasUsed, uint newSubmissionGasUsed);
 
     // Read-only functions
 
