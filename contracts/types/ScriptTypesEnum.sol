@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity >=0.8.0 <0.8.4;
 
     enum ScriptTypes {
         P2PK, // 32 bytes
