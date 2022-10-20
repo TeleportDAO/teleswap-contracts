@@ -67,7 +67,7 @@ describe("CCBurnRouter", async () => {
         signer1Address = await signer1.getAddress();
 
         // Mocks contracts
-
+    
         const bitcoinRelay = await deployments.getArtifact(
             "IBitcoinRelay"
         );
@@ -83,6 +83,9 @@ describe("CCBurnRouter", async () => {
             deployer,
             lockers.abi
         )
+
+        // mock finalization parameter
+        await mockBitcoinRelay.mock.finalizationParameter.returns(5);
 
         // Deploys contracts
         teleBTC = await deployTeleBTC();

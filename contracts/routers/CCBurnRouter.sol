@@ -58,14 +58,14 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint _slasherPercentageReward,
         uint _bitcoinFee
     ) {
-        relay = _relay;
-        lockers = _lockers;
-        treasury = _treasury;
-        teleBTC = _teleBTC;
-        transferDeadline = _transferDeadline;
-        protocolPercentageFee = _protocolPercentageFee;
-        slasherPercentageReward = _slasherPercentageReward;
-        bitcoinFee = _bitcoinFee;
+        _setRelay(_relay);
+        _setLockers(_lockers);
+        _setTreasury(_treasury);
+        _setTeleBTC(_teleBTC);
+        _setTransferDeadline(_transferDeadline);
+        _setProtocolPercentageFee(_protocolPercentageFee);
+        _setSlasherPercentageReward(_slasherPercentageReward);
+        _setBitcoinFee(_bitcoinFee);
     }
 
     /// @notice                         Shows if a burn request has been done or not
@@ -78,31 +78,31 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         return burnRequests[_lockerTargetAddress][_index].isTransferred;
     }
 
-    /// @notice               Changes relay contract address
-    /// @dev                  Only owner can call this
-    /// @param _relay         The new relay contract address
-    function setRelay(address _relay) external nonZeroAddress(_relay) override onlyOwner {
-        relay = _relay;
+    /// @notice                             Changes relay contract address
+    /// @dev                                Only owner can call this
+    /// @param _relay                       The new relay contract address
+    function setRelay(address _relay) external override onlyOwner {
+        _setRelay(_relay);
     }
 
-    /// @notice               Changes lockers contract address
-    /// @dev                  Only owner can call this
-    /// @param _lockers       The new lockers contract address
-    function setLockers(address _lockers) external nonZeroAddress(_lockers) override onlyOwner {
-        lockers = _lockers;
+    /// @notice                             Changes lockers contract address
+    /// @dev                                Only owner can call this
+    /// @param _lockers                     The new lockers contract address
+    function setLockers(address _lockers) external override onlyOwner {
+        _setLockers(_lockers);
     }
 
-    /// @notice                 Changes teleBTC contract address
-    /// @dev                    Only owner can call this
-    /// @param _teleBTC         The new teleBTC contract address
-    function setTeleBTC(address _teleBTC) external nonZeroAddress(_teleBTC) override onlyOwner {
-        teleBTC = _teleBTC;
+    /// @notice                             Changes teleBTC contract address
+    /// @dev                                Only owner can call this
+    /// @param _teleBTC                     The new teleBTC contract address
+    function setTeleBTC(address _teleBTC) external override onlyOwner {
+        _setTeleBTC(_teleBTC);
     }
 
-    /// @notice                     Changes protocol treasury address
-    /// @dev                        Only owner can call this
-    /// @param _treasury            The new treasury address
-    function setTreasury(address _treasury) external nonZeroAddress(_treasury) override onlyOwner {
+    /// @notice                             Changes protocol treasury address
+    /// @dev                                Only owner can call this
+    /// @param _treasury                    The new treasury address
+    function setTreasury(address _treasury) external override onlyOwner {
         treasury = _treasury;
     }
 
@@ -111,32 +111,89 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     ///                                     Deadline shoudl be greater than relay finalization parameter
     /// @param _transferDeadline            The new transfer deadline
     function setTransferDeadline(uint _transferDeadline) external override onlyOwner {
-        uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
-        // Gives lockers enough time to pay cc burn requests
-        require(_transferDeadline > _finalizationParameter, "CCBurnRouter: transfer deadline is too low");
-        transferDeadline = _transferDeadline;
+        _setTransferDeadline(_transferDeadline);
     }
 
     /// @notice                             Changes protocol percentage fee for burning tokens
     /// @dev                                Only owner can call this
     /// @param _protocolPercentageFee       The new protocol percentage fee
     function setProtocolPercentageFee(uint _protocolPercentageFee) external override onlyOwner {
-        require(MAX_PROTOCOL_FEE >= _protocolPercentageFee, "CCBurnRouter: protocol fee is out of range");
-        protocolPercentageFee = _protocolPercentageFee;
+        _setProtocolPercentageFee(_protocolPercentageFee);
     }
 
     /// @notice                            Changes slasher percentage reward for disputing lockers
     /// @dev                               Only owner can call this
     /// @param _slasherPercentageReward    The new slasher percentage reward
     function setSlasherPercentageReward(uint _slasherPercentageReward) external override onlyOwner {
+        _setSlasherPercentageReward(_slasherPercentageReward);
+    }
+
+    /// @notice                             Changes Bitcoin transaction fee
+    /// @dev                                Only owner can call this
+    /// @param _bitcoinFee                  The new Bitcoin transaction fee
+    function setBitcoinFee(uint _bitcoinFee) external override onlyOwner {
+        _setBitcoinFee(_bitcoinFee);
+    }
+
+    /// @notice                             Internal setter for relay contract address
+    /// @param _relay                       The new relay contract address
+    function _setRelay(address _relay) internal nonZeroAddress(_relay) {
+        emit NewRelay(relay, _relay);
+        relay = _relay;
+    }
+
+    /// @notice                             Internal setter for lockers contract address
+    /// @param _lockers                     The new lockers contract address
+    function _setLockers(address _lockers) internal nonZeroAddress(_lockers) {
+        emit NewLockers(lockers, _lockers);
+        lockers = _lockers;
+    }
+
+    /// @notice                             Internal setter for teleBTC contract address
+    /// @param _teleBTC                     The new teleBTC contract address
+    function _setTeleBTC(address _teleBTC) internal nonZeroAddress(_teleBTC) {
+        emit NewTeleBTC(teleBTC, _teleBTC);
+        teleBTC = _teleBTC;
+    }
+
+    /// @notice                             Internal setter for protocol treasury address
+    /// @param _treasury                    The new treasury address
+    function _setTreasury(address _treasury) internal nonZeroAddress(_treasury) {
+        emit NewTreasury(treasury, _treasury);
+        treasury = _treasury;
+    }
+
+    /// @notice                             Internal setter for deadline of executing burn requests
+    ///                                     Deadline shoudl be greater than relay finalization parameter
+    /// @param _transferDeadline            The new transfer deadline
+    function _setTransferDeadline(uint _transferDeadline) internal {
+        uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
+        // Gives lockers enough time to pay cc burn requests
+        require(_transferDeadline > _finalizationParameter, "CCBurnRouter: transfer deadline is too low");
+        emit NewTransferDeadline(transferDeadline, _transferDeadline);
+        transferDeadline = _transferDeadline;
+    }
+
+    /// @notice                             Internal setter for protocol percentage fee for burning tokens
+    /// @param _protocolPercentageFee       The new protocol percentage fee
+    function _setProtocolPercentageFee(uint _protocolPercentageFee) internal {
+        require(MAX_PROTOCOL_FEE >= _protocolPercentageFee, "CCBurnRouter: protocol fee is out of range");
+        emit NewProtocolPercentageFee(protocolPercentageFee, _protocolPercentageFee);
+        protocolPercentageFee = _protocolPercentageFee;
+    }
+
+    /// @notice                             Internal setter for slasher percentage reward for disputing lockers
+    /// @param _slasherPercentageReward     The new slasher percentage reward
+    function _setSlasherPercentageReward(uint _slasherPercentageReward) internal {
         require(MAX_SLASHER_REWARD >= _slasherPercentageReward, "CCBurnRouter: slasher percentage reward is out of range");
+        emit NewSlasherPercentageFee(slasherPercentageReward, _slasherPercentageReward);
         slasherPercentageReward = _slasherPercentageReward;
     }
 
-    /// @notice                       Changes Bitcoin transaction fee
-    /// @dev                          Only owner can call this
-    /// @param _bitcoinFee            The new Bitcoin transaction fee
-    function setBitcoinFee(uint _bitcoinFee) external override onlyOwner {
+    /// @notice                             Internal setter for Bitcoin transaction fee
+    /// @param _bitcoinFee                  The new Bitcoin transaction fee
+    function _setBitcoinFee(uint _bitcoinFee) internal {
+        emit NewBitcoinFee(bitcoinFee, _bitcoinFee);
         bitcoinFee = _bitcoinFee;
     }
 

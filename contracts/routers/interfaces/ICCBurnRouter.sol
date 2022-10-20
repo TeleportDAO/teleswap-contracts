@@ -71,6 +71,55 @@ interface ICCBurnRouter {
 		uint amount
     );
 
+	/// @notice                     	Emits when changes made to relay address
+    event NewRelay(
+        address oldRelay, 
+        address newRelay
+    );
+
+	/// @notice                     	Emits when changes made to treasury address
+    event NewTreasury(
+        address oldTreasury, 
+        address newTreasury
+    );
+
+	/// @notice                     	Emits when changes made to lockers address
+    event NewLockers(
+        address oldLockers, 
+        address newLockers
+    );
+
+	/// @notice                     	Emits when changes made to TeleBTC address
+    event NewTeleBTC(
+        address oldTeleBTC, 
+        address newTeleBTC
+    );
+
+	/// @notice                     	Emits when changes made to transfer deadline
+    event NewTransferDeadline(
+        uint oldTransferDeadline, 
+        uint newTransferDeadline
+    );
+
+	/// @notice                     	Emits when changes made to percentage fee
+    event NewProtocolPercentageFee(
+        uint oldProtocolPercentageFee, 
+        uint newProtocolPercentageFee
+    );
+
+	/// @notice                     	Emits when changes made to slasher percentage fee
+    event NewSlasherPercentageFee(
+        uint oldSlasherPercentageFee, 
+        uint newSlasherPercentageFee
+    );
+
+	/// @notice                     	Emits when changes made to bitcoin fee
+    event NewBitcoinFee(
+        uint oldBitcoinFee, 
+        uint newBitcoinFee
+    );
+
+
 	// Read-only functions
 
 	function relay() external view returns (address);
