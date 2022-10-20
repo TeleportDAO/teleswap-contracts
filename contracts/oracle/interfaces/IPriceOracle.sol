@@ -18,6 +18,12 @@ interface IPriceOracle {
     /// @param _priceProxyAddress   Address of price proxy contract
     event SetPriceProxy(address _firstToken, address _secondToken, address _priceProxyAddress);
 
+    /// @notice                     Emits when changes made to acceptable delay
+	event NewAcceptableDelay(uint oldAcceptableDelay, uint newAcceptableDelay);
+
+    /// @notice                     Emits when changes made to oracle native token
+	event NewOracleNativeToken(address oldOracleNativeToken, address newOracleNativeToken);
+
     // Read-only functions
     
     /// @notice                     Gives price proxy address for a pair of tokens
