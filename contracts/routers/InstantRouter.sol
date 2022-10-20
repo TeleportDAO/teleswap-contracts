@@ -53,17 +53,13 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         uint _paybackDeadline,
         address _defaultExchangeConnector
     ) {
-        teleBTC = _teleBTC;
-        relay = _relay;
-        priceOracle = _priceOracle;
-        collateralPoolFactory = _collateralPoolFactory;
-        slasherPercentageReward = _slasherPercentageReward;
-        require(
-            slasherPercentageReward <= MAX_SLASHER_PERCENTAGE_REWARD,
-            "InstantRouter: wrong slasher percentage reward"
-        );
-        paybackDeadline = _paybackDeadline;
-        defaultExchangeConnector = _defaultExchangeConnector;
+        _setTeleBTC(_teleBTC);
+        _setRelay(_relay);
+        _setPriceOracle(_priceOracle);
+        _setCollateralPoolFactory(_collateralPoolFactory);
+        _setSlasherPercentageReward(_slasherPercentageReward);
+        _setPaybackDeadline(_paybackDeadline);
+        _setDefaultExchangeConnector(_defaultExchangeConnector);
     }
 
     /// @notice       Pause the contract
@@ -108,57 +104,50 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     /// @dev                      Only owner can call this. It should be greater than relay finalization parameter so user has enough time to payback loan
     /// @param _paybackDeadline   The new payback deadline
     function setPaybackDeadline(uint _paybackDeadline) external override onlyOwner {
-        uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
-        // Gives users enough time to pay back loans
-        require(_paybackDeadline >= _finalizationParameter, "InstantRouter: wrong payback deadline");
-        paybackDeadline = _paybackDeadline;
+        _setPaybackDeadline(_paybackDeadline);
     }
 
     /// @notice                             Setter for slasher percentage reward
     /// @dev                                Only owner can call this
     /// @param _slasherPercentageReward     The new slasher reward
     function setSlasherPercentageReward(uint _slasherPercentageReward) external override onlyOwner {
-        require(
-            _slasherPercentageReward <= MAX_SLASHER_PERCENTAGE_REWARD,
-            "InstantRouter: wrong slasher percentage reward"
-        );
-        slasherPercentageReward = _slasherPercentageReward;
+        _setSlasherPercentageReward(_slasherPercentageReward);
     }
 
-    /// @notice                                 Setter for teleBTC instant pool
+    /// @notice                                 Setter for teleBTC
     /// @dev                                    Only owner can call this
-    /// @param _teleBTC                         The new teleBTC instant pool address
+    /// @param _teleBTC                         The new teleBTC address
     function setTeleBTC(
         address _teleBTC
-    ) external nonZeroAddress(_teleBTC) override onlyOwner {
-        teleBTC = _teleBTC;
+    ) external override onlyOwner {
+        _setTeleBTC(_teleBTC);
     }
 
-    /// @notice                                 Setter for teleBTC instant pool
+    /// @notice                                 Setter for relay
     /// @dev                                    Only owner can call this
-    /// @param _relay              The new teleBTC instant pool address
+    /// @param _relay                           The new relay address
     function setRelay(
         address _relay
-    ) external nonZeroAddress(_relay) override onlyOwner {
-        relay = _relay;
+    ) external override onlyOwner {
+        _setRelay(_relay);
     }
 
-    /// @notice                                 Setter for teleBTC instant pool
+    /// @notice                                 Setter for collateral pool factory
     /// @dev                                    Only owner can call this
-    /// @param _collateralPoolFactory              The new teleBTC instant pool address
+    /// @param _collateralPoolFactory           The new collateral pool factory address
     function setCollateralPoolFactory(
         address _collateralPoolFactory
-    ) external nonZeroAddress(_collateralPoolFactory) override onlyOwner {
-        collateralPoolFactory = _collateralPoolFactory;
+    ) external override onlyOwner {
+        _setCollateralPoolFactory(_collateralPoolFactory);
     }
 
-    /// @notice                                 Setter for teleBTC instant pool
+    /// @notice                                 Setter for price oracle
     /// @dev                                    Only owner can call this
-    /// @param _priceOracle              The new teleBTC instant pool address
+    /// @param _priceOracle                     The new price oracle address
     function setPriceOracle(
         address _priceOracle
-    ) external nonZeroAddress(_priceOracle) override onlyOwner {
-        priceOracle = _priceOracle;
+    ) external override onlyOwner {
+        _setPriceOracle(_priceOracle);
     }
 
     /// @notice                                 Setter for teleBTC instant pool
@@ -166,8 +155,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     /// @param _teleBTCInstantPool              The new teleBTC instant pool address
     function setTeleBTCInstantPool(
         address _teleBTCInstantPool
-    ) external nonZeroAddress(_teleBTCInstantPool) override onlyOwner {
-        teleBTCInstantPool = _teleBTCInstantPool;
+    ) external override onlyOwner {
+        _setTeleBTCInstantPool(_teleBTCInstantPool);
     }
 
     /// @notice                                 Setter for default exchange connector
@@ -175,7 +164,84 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     /// @param _defaultExchangeConnector        The new defaultExchangeConnector address
     function setDefaultExchangeConnector(
         address _defaultExchangeConnector
-    ) external nonZeroAddress(_defaultExchangeConnector) override onlyOwner {
+    ) external override onlyOwner {
+        _setDefaultExchangeConnector(_defaultExchangeConnector);
+    }
+
+    /// @notice                   Internal setter for payback deadline
+    /// @dev                      Only owner can call this. It should be greater than relay finalization parameter so user has enough time to payback loan
+    /// @param _paybackDeadline   The new payback deadline
+    function _setPaybackDeadline(uint _paybackDeadline) internal {
+        uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
+        // Gives users enough time to pay back loans
+        require(_paybackDeadline >= _finalizationParameter, "InstantRouter: wrong payback deadline");
+        emit NewPaybackDeadline(paybackDeadline, _paybackDeadline);
+        paybackDeadline = _paybackDeadline;
+    }
+
+    /// @notice                             Internal setter for slasher percentage reward
+    /// @dev                                Only owner can call this
+    /// @param _slasherPercentageReward     The new slasher reward
+    function _setSlasherPercentageReward(uint _slasherPercentageReward) internal {
+        require(
+            _slasherPercentageReward <= MAX_SLASHER_PERCENTAGE_REWARD,
+            "InstantRouter: wrong slasher percentage reward"
+        );
+        emit NewSlasherPercentageReward(slasherPercentageReward, _slasherPercentageReward);
+        slasherPercentageReward = _slasherPercentageReward;
+    }
+
+    /// @notice                                 Internal setter for teleBTC instant
+    /// @param _teleBTC                         The new teleBTC instant address
+    function _setTeleBTC(
+        address _teleBTC
+    ) internal nonZeroAddress(_teleBTC) {
+        emit NewTeleBTC(teleBTC, _teleBTC);
+        teleBTC = _teleBTC;
+    }
+
+    /// @notice                                 Internal setter for relay
+    /// @param _relay                           The new relay address
+    function _setRelay(
+        address _relay
+    ) internal nonZeroAddress(_relay) {
+        emit NewRelay(relay, _relay);
+        relay = _relay;
+    }
+
+    /// @notice                                 Internal setter for collateral pool factory
+    /// @param _collateralPoolFactory           The new collateral pool factory address
+    function _setCollateralPoolFactory(
+        address _collateralPoolFactory
+    ) internal nonZeroAddress(_collateralPoolFactory) {
+        emit NewCollateralPoolFactory(collateralPoolFactory, _collateralPoolFactory);
+        collateralPoolFactory = _collateralPoolFactory;
+    }
+
+    /// @notice                                 Internal setter for price oracle
+    /// @param _priceOracle                     The new price oracle address
+    function _setPriceOracle(
+        address _priceOracle
+    ) internal nonZeroAddress(_priceOracle) {
+        emit NewPriceOracle(priceOracle, _priceOracle);
+        priceOracle = _priceOracle;
+    }
+
+    /// @notice                                 Internal setter for teleBTC instant pool
+    /// @param _teleBTCInstantPool              The new teleBTC instant pool address
+    function _setTeleBTCInstantPool(
+        address _teleBTCInstantPool
+    ) internal nonZeroAddress(_teleBTCInstantPool) {
+        emit NewTeleBTCInstantPool(teleBTCInstantPool, _teleBTCInstantPool);
+        teleBTCInstantPool = _teleBTCInstantPool;
+    }
+
+    /// @notice                                 Internal setter for default exchange connector
+    /// @param _defaultExchangeConnector        The new defaultExchangeConnector address
+    function _setDefaultExchangeConnector(
+        address _defaultExchangeConnector
+    ) internal nonZeroAddress(_defaultExchangeConnector) {
+        emit NewDeafultExchangeConnector(defaultExchangeConnector, _defaultExchangeConnector);
         defaultExchangeConnector = _defaultExchangeConnector;
     }
 
