@@ -38,7 +38,7 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
         uint _collateralizationRatio
     ) ERC20(_name, _symbol) {
         collateralToken = _collateralToken;
-        collateralizationRatio = _collateralizationRatio;
+        _setCollateralizationRatio(_collateralizationRatio);
     }
 
     /// @return                 Amount of total added collateral
@@ -51,7 +51,16 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
     /// @param _collateralizationRatio   The new collateralization ratio
     function setCollateralizationRatio(
         uint _collateralizationRatio
-    ) external override nonZeroValue(_collateralizationRatio) onlyOwner {
+    ) external override onlyOwner {
+        _setCollateralizationRatio(_collateralizationRatio);
+    }
+
+    /// @notice                          Internal setter for collateralization ratio
+    /// @param _collateralizationRatio   The new collateralization ratio
+    function _setCollateralizationRatio(
+        uint _collateralizationRatio
+    ) internal nonZeroValue(_collateralizationRatio)  {
+        emit NewCollateralizationRatio(collateralizationRatio, _collateralizationRatio);
         collateralizationRatio = _collateralizationRatio;
     }
 

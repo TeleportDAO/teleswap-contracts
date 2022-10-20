@@ -11,6 +11,8 @@ interface ICollateralPool is IERC20 {
 
 	event RemoveCollateral(address indexed user, uint amount, uint collateralPoolTokenAmount);
 
+	event NewCollateralizationRatio(uint oldCollateralizationRatio, uint newCollateralizationRatio);
+
 	// Read-only functions
 
 	function collateralToken() external view returns (address);
