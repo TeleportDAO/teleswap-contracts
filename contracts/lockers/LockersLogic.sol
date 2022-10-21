@@ -305,41 +305,26 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         bytes calldata _lockerRescueScript
     ) external override payable nonReentrant returns (bool) {
 
-        require(
-            !lockersMapping[_msgSender()].isCandidate,
-            "Lockers: is candidate"
-        );
+        LockersLib.requestToBecomeLockerValidation(
+                lockersMapping,
+                libConstants,
+                libParams,
+                lockerTargetAddress[_candidateLockingScript],
+                _lockedTDTAmount,
+                _lockedNativeTokenAmount
+            );
 
-        require(
-            !lockersMapping[_msgSender()].isLocker,
-            "Lockers: is locker"
-        );
+        
+        IERC20(libParams.teleportDAOToken).safeTransferFrom(msg.sender, address(this), _lockedTDTAmount);
 
-        require(
-            _lockedTDTAmount >= minRequiredTDTLockedAmount,
-            "Lockers: low TDT"
-        );
-
-        require(
-            _lockedNativeTokenAmount >= minRequiredTNTLockedAmount && msg.value == _lockedNativeTokenAmount,
-            "Lockers: low TNT"
-        );
-
-        require(
-            lockerTargetAddress[_candidateLockingScript] == address(0),
-            "Lockers: used locking script"
-        );
-
-        IERC20(TeleportDAOToken).safeTransferFrom(_msgSender(), address(this), _lockedTDTAmount);
-        DataTypes.locker memory locker_;
-        locker_.lockerLockingScript = _candidateLockingScript;
-        locker_.TDTLockedAmount = _lockedTDTAmount;
-        locker_.nativeTokenLockedAmount = _lockedNativeTokenAmount;
-        locker_.isCandidate = true;
-        locker_.lockerRescueType = _lockerRescueType;
-        locker_.lockerRescueScript = _lockerRescueScript;
-
-        lockersMapping[_msgSender()] = locker_;
+        LockersLib.requestToBecomeLocker(
+                lockersMapping,
+                _candidateLockingScript,
+                _lockedTDTAmount,
+                _lockedNativeTokenAmount,
+                _lockerRescueType,
+                _lockerRescueScript
+            );
 
         totalNumberOfCandidates = totalNumberOfCandidates + 1;
 

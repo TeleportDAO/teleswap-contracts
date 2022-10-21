@@ -1,11 +1,72 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.8.4;
 
+
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../types/ScriptTypesEnum.sol";
 import "../types/DataTypes.sol";
 
 library LockersLib {
+
+    using SafeERC20 for IERC20;
+
+    function requestToBecomeLockerValidation(
+        mapping(address => DataTypes.locker) storage lockersMapping,
+        DataTypes.lockersLibConstants memory libConstants,
+        DataTypes.lockersLibParam memory libParams,
+        address theLockerTargetAddress,
+        uint _lockedTDTAmount,
+        uint _lockedNativeTokenAmount
+    ) external {
+
+        require(
+            !lockersMapping[msg.sender].isCandidate,
+            "Lockers: is candidate"
+        );
+
+        require(
+            !lockersMapping[msg.sender].isLocker,
+            "Lockers: is locker"
+        );
+
+        require(
+            _lockedTDTAmount >= libParams.minRequiredTDTLockedAmount,
+            "Lockers: low TDT"
+        );
+
+        require(
+            _lockedNativeTokenAmount >= libParams.minRequiredTNTLockedAmount && msg.value == _lockedNativeTokenAmount,
+            "Lockers: low TNT"
+        );
+
+        require(
+            theLockerTargetAddress == address(0),
+            "Lockers: used locking script"
+        );
+
+    }
+
+    function requestToBecomeLocker(
+        mapping(address => DataTypes.locker) storage lockersMapping,
+        bytes calldata _candidateLockingScript,
+        uint _lockedTDTAmount,
+        uint _lockedNativeTokenAmount,
+        ScriptTypes _lockerRescueType,
+        bytes calldata _lockerRescueScript
+    ) external {
+
+        DataTypes.locker memory locker_;
+        locker_.lockerLockingScript = _candidateLockingScript;
+        locker_.TDTLockedAmount = _lockedTDTAmount;
+        locker_.nativeTokenLockedAmount = _lockedNativeTokenAmount;
+        locker_.isCandidate = true;
+        locker_.lockerRescueType = _lockerRescueType;
+        locker_.lockerRescueScript = _lockerRescueScript;
+
+        lockersMapping[msg.sender] = locker_;
+
+    }
 
     function maximumBuyableCollateral(
         DataTypes.locker memory theLocker,
