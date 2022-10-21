@@ -16,6 +16,8 @@ import { LockersLogicLibraryAddresses } from "../src/types/factories/LockersLogi
 
 import { LockersLib } from "../src/types/LockersLib";
 import { LockersLib__factory } from "../src/types/factories/LockersLib__factory";
+import { LockersValidationLib } from "../src/types/LockersValidationLib";
+import { LockersValidationLib__factory } from "../src/types/factories/LockersValidationLib__factory";
 
 import { TeleBTC } from "../src/types/TeleBTC";
 import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
@@ -68,6 +70,7 @@ describe("Lockers", async () => {
 
     // Contracts
     let lockersLib: LockersLib;
+    let lockersValidationLib: LockersValidationLib;
     let lockers: Contract;
     let lockers2: Contract;
     let lockersAsAdmin: Contract;
@@ -204,16 +207,31 @@ describe("Lockers", async () => {
         return lockersLib;
     };
 
+    const deployLockersValidationLib = async (
+        _signer?: Signer
+    ): Promise<LockersValidationLib> => {
+        const LockersValidationLibFactory = new LockersValidationLib__factory(
+            _signer || deployer
+        );
+
+        const lockersValidationLib = await LockersValidationLibFactory.deploy(
+        );
+
+        return lockersValidationLib;
+    };
+
     const deployLockers = async (
         _signer?: Signer
     ): Promise<Contract> => {
 
         lockersLib = await deployLockersLib()
+        lockersValidationLib = await deployLockersValidationLib()
 
         let linkLibraryAddresses: LockersLogicLibraryAddresses;
 
         linkLibraryAddresses = {
             "contracts/libraries/LockersLib.sol:LockersLib": lockersLib.address,
+            "contracts/libraries/LockersValidationLib.sol:LockersValidationLib": lockersValidationLib.address,
         };
 
         // Deploys lockers logic
