@@ -11,49 +11,16 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/ILockers.sol";
-import "../types/DataTypes.sol";
 import "../libraries/LockersLib.sol";
+import "./LockersStorageStructure.sol";
 import "hardhat/console.sol";
 
-contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
+contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
 
     using LockersLib for *;
     using SafeERC20 for IERC20;
 
-    // Constants
-    uint public constant ONE_HUNDRED_PERCENT = 10000;
-    uint public constant HEALTH_FACTOR = 10000;
-    uint public constant UPPER_HEALTH_FACTOR = 12000;
-    uint public constant MAX_LOCKER_FEE = 10000;
-    uint public constant NATIVE_TOKEN_DECIMAL = 18;
-    address public constant NATIVE_TOKEN = address(1);
-
-    // Public variables
-    address public override TeleportDAOToken;
-    address public override teleBTC;
-    address public override ccBurnRouter;
-    address public override exchangeConnector;
-    address public override priceOracle;
-
-    uint public override minRequiredTDTLockedAmount;
-    uint public override minRequiredTNTLockedAmount;
-    uint public override lockerPercentageFee;
-    uint public override collateralRatio;
-    uint public override liquidationRatio;
-    uint public override priceWithDiscountRatio;
-    uint public override totalNumberOfCandidates;
-    uint public override totalNumberOfLockers;
-
-    mapping(address => DataTypes.locker) public lockersMapping; // locker's target address -> locker structure
-    mapping(address => bool) public lockerLeavingRequests;
-    mapping(address => bool) public lockerLeavingAcceptance;
-    mapping(bytes => address) public lockerTargetAddress; // locker's locking script -> locker's target address
-    mapping(address => bool) minters;
-    mapping(address => bool) burners;
-
-    DataTypes.lockersLibConstants public libConstants;
-    DataTypes.lockersLibParam public libParams;
-
+   
     function initialize(
         address _TeleportDAOToken,
         address _exchangeConnector,
