@@ -12,12 +12,14 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/ILockers.sol";
 import "../libraries/LockersLib.sol";
+import "../libraries/LockersValidationLib.sol";
 import "./LockersStorageStructure.sol";
 import "hardhat/console.sol";
 
 contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
 
     using LockersLib for *;
+    using LockersValidationLib for *;
     using SafeERC20 for IERC20;
 
    
@@ -37,7 +39,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
         PausableUpgradeable.__Pausable_init();
-
+        
         require(
             // _TeleportDAOToken != address(0) && _exchangeConnector != address(0) && _priceOracle != address(0) && _ccBurnRouter != address(0),
             _TeleportDAOToken != address(0) && _exchangeConnector != address(0) && _priceOracle != address(0) ,
@@ -214,7 +216,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @dev                          Only current owner can call this
     /// @param _lockerPercentageFee   The new locker percentage fee
     function setLockerPercentageFee(uint _lockerPercentageFee) external override onlyOwner {
-        require(_lockerPercentageFee <= MAX_LOCKER_FEE, "Lockers: invalid locker fee");
+        LockersValidationLib.validateLockerPercentageFee(_lockerPercentageFee);
         lockerPercentageFee = _lockerPercentageFee;
         libParams.lockerPercentageFee = lockerPercentageFee;
     }
