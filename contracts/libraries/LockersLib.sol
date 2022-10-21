@@ -4,6 +4,8 @@ pragma solidity >=0.8.0 <0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../oracle/interfaces/IPriceOracle.sol";
+import "../erc20/interfaces/ITeleBTC.sol";
 import "../types/ScriptTypesEnum.sol";
 import "../types/DataTypes.sol";
 
@@ -68,12 +70,159 @@ library LockersLib {
 
     }
 
+    function buySlashedCollateralOfLocker(
+        DataTypes.locker storage theLocker,
+        DataTypes.lockersLibConstants memory libConstants,
+        DataTypes.lockersLibParam memory libParams,
+        uint _collateralAmount
+    ) external  returns (uint neededTeleBTC) {
+
+        require(
+            theLocker.isLocker,
+            "Lockers: input address is not a valid locker"
+        );
+
+        require(
+            _collateralAmount <= theLocker.reservedNativeTokenForSlash,
+            "Lockers: not enough slashed collateral to buy"
+        );
+
+        // Finds needed amount of TeleBTC to buy collateral with discount
+        uint priceOfCollateral = priceOfOneUnitOfCollateralInBTC(
+            libConstants,
+            libParams
+        );
+        uint neededTeleBTC = neededTeleBTCToBuyCollateral(
+            libConstants,
+            libParams,
+            _collateralAmount,
+            priceOfCollateral
+        );
+
+        // Users cannot buy more than total slashed TeleBTC
+        require(
+            neededTeleBTC <= theLocker.slashingTeleBTCAmount,
+            "Lockers: cant slash"
+        );
+
+        // Updates locker's slashing info 
+        theLocker.slashingTeleBTCAmount =
+            theLocker.slashingTeleBTCAmount - neededTeleBTC;
+
+        theLocker.reservedNativeTokenForSlash =
+            theLocker.reservedNativeTokenForSlash - _collateralAmount;
+
+    }
+
+    function liquidateLocker(
+        DataTypes.locker storage theLocker,
+        DataTypes.lockersLibConstants memory libConstants,
+        DataTypes.lockersLibParam memory libParams,
+        uint _collateralAmount
+    ) external returns (uint neededTeleBTC) {
+
+        require(
+            theLocker.isLocker,
+            "Lockers: input address is not a valid locker"
+        );
+
+        // DataTypes.locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
+        uint priceOfCollateral = priceOfOneUnitOfCollateralInBTC(
+            libConstants,
+            libParams
+        );
+
+        // Checks that the collateral has become unhealthy
+        require(
+            calculateHealthFactor(
+                theLocker,
+                libConstants,
+                libParams,
+                priceOfCollateral
+            ) < libConstants.HealthFactor,
+            "Lockers: is healthy"
+        );
+
+        uint _maxBuyableCollateral = maximumBuyableCollateral(
+            theLocker,
+            libConstants,
+            libParams,
+            priceOfCollateral
+        );
+
+        if (_maxBuyableCollateral > theLocker.nativeTokenLockedAmount) {
+            _maxBuyableCollateral = theLocker.nativeTokenLockedAmount;
+        }
+
+        require(
+            _collateralAmount <= _maxBuyableCollateral,
+            "Lockers: not enough collateral to buy"
+        );
+
+        // Needed amount of TeleBTC to buy collateralAmount
+        uint neededTeleBTC = neededTeleBTCToBuyCollateral(
+            libConstants,
+            libParams,
+            _collateralAmount,
+            priceOfCollateral
+        );
+
+    }
+
+    function slashTheifLocker(
+        DataTypes.locker storage theLocker,
+        DataTypes.lockersLibConstants memory libConstants,
+        DataTypes.lockersLibParam memory libParams,
+        uint _rewardAmount,
+        address _rewardRecipient,
+        uint _amount
+    ) external returns (uint rewardInNativeToken, uint neededNativeTokenForSlash) {
+
+        require(
+            theLocker.isLocker,
+            "Lockers: input address is not a valid locker"
+        );
+
+        uint equivalentNativeToken = IPriceOracle(libParams.priceOracle).equivalentOutputAmount(
+            _amount, // Total amount of TeleBTC that is slashed
+            ITeleBTC(libParams.teleBTC).decimals(), // Decimal of teleBTC
+            libConstants.NativeTokenDecimal, // Decimal of TNT
+            libParams.teleBTC, // Input token
+            libConstants.NativeToken // Output token
+        );
+
+        uint rewardInNativeToken = equivalentNativeToken*_rewardAmount/_amount;
+        uint neededNativeTokenForSlash = equivalentNativeToken*libParams.liquidationRatio/libConstants.OneHundredPercent;
+
+        if ((rewardInNativeToken + neededNativeTokenForSlash) > theLocker.nativeTokenLockedAmount) {
+            // Divides total locker's collateral proportional to reward amount and slash amount
+            rewardInNativeToken = rewardInNativeToken*theLocker.nativeTokenLockedAmount/
+                (rewardInNativeToken + neededNativeTokenForSlash);
+            neededNativeTokenForSlash = theLocker.nativeTokenLockedAmount - rewardInNativeToken;
+        }
+
+        // Updates locker's bond (in TNT)
+        theLocker.nativeTokenLockedAmount
+            = theLocker.nativeTokenLockedAmount - (rewardInNativeToken + neededNativeTokenForSlash);
+
+        theLocker.netMinted
+            = theLocker.netMinted - _amount;
+
+        theLocker.slashingTeleBTCAmount
+            = theLocker.slashingTeleBTCAmount + _amount;
+
+        theLocker.reservedNativeTokenForSlash
+            = theLocker.reservedNativeTokenForSlash + neededNativeTokenForSlash;
+
+
+    }
+
     function maximumBuyableCollateral(
         DataTypes.locker memory theLocker,
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
         uint _priceOfOneUnitOfCollateral
-    ) external view returns (uint) {
+    ) public view returns (uint) {
 
         // maxBuyable <= (upperHealthFactor*netMinted*liquidationRatio/10000 - nativeTokenLockedAmount*nativeTokenPrice)/(upperHealthFactor*liquidationRatio*discountedPrice - nativeTokenPrice)
         //  => maxBuyable <= (upperHealthFactor*netMinted*liquidationRatio * 10^18  - nativeTokenLockedAmount*nativeTokenPrice * 10^8)/(upperHealthFactor*liquidationRatio*discountedPrice - nativeTokenPrice * 10^8)
@@ -94,7 +243,7 @@ library LockersLib {
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
         uint _priceOfOneUnitOfCollateral
-    ) external view returns (uint) {
+    ) public view returns (uint) {
         return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount * 
             (10 ** (1 + ERC20(libParams.teleBTC).decimals())))/
                 (theLocker.netMinted * libParams.liquidationRatio * (10 ** (1 + libConstants.NativeTokenDecimal)));
@@ -105,7 +254,7 @@ library LockersLib {
         DataTypes.lockersLibParam memory libParams,
         uint _collateralAmount,
         uint _priceOfCollateral
-    ) external pure returns (uint) {
+    ) public pure returns (uint) {
         return (_collateralAmount * _priceOfCollateral * libParams.priceWithDiscountRatio)/
             (libConstants.OneHundredPercent*(10 ** libConstants.NativeTokenDecimal));
     }
@@ -154,38 +303,53 @@ library LockersLib {
     }
 
 
-    function slashTheifLocker(
-        DataTypes.locker storage theLocker,
+    // function slashTheifLocker(
+    //     DataTypes.locker storage theLocker,
+    //     DataTypes.lockersLibConstants memory libConstants,
+    //     DataTypes.lockersLibParam memory libParams,
+    //     uint _equivalentNativeToken,
+    //     uint _rewardAmount,
+    //     uint _amount
+    // ) public returns (uint, uint) {
+    //     uint rewardInNativeToken = _equivalentNativeToken*_rewardAmount/_amount;
+    //     uint neededNativeTokenForSlash = _equivalentNativeToken*libParams.liquidationRatio/libConstants.OneHundredPercent;
+
+    //     if ((rewardInNativeToken + neededNativeTokenForSlash) > theLocker.nativeTokenLockedAmount) {
+    //         // Divides total locker's collateral proportional to reward amount and slash amount
+    //         rewardInNativeToken = rewardInNativeToken*theLocker.nativeTokenLockedAmount/
+    //             (rewardInNativeToken + neededNativeTokenForSlash);
+    //         neededNativeTokenForSlash = theLocker.nativeTokenLockedAmount - rewardInNativeToken;
+    //     }
+
+    //     // Updates locker's bond (in TNT)
+    //     theLocker.nativeTokenLockedAmount
+    //         = theLocker.nativeTokenLockedAmount - (rewardInNativeToken + neededNativeTokenForSlash);
+
+    //     theLocker.netMinted
+    //         = theLocker.netMinted - _amount;
+
+    //     theLocker.slashingTeleBTCAmount
+    //         = theLocker.slashingTeleBTCAmount + _amount;
+
+    //     theLocker.reservedNativeTokenForSlash
+    //         = theLocker.reservedNativeTokenForSlash + neededNativeTokenForSlash;
+
+    //     return (rewardInNativeToken, neededNativeTokenForSlash);
+    // }
+
+    function priceOfOneUnitOfCollateralInBTC(
         DataTypes.lockersLibConstants memory libConstants,
-        DataTypes.lockersLibParam memory libParams,
-        uint _equivalentNativeToken,
-        uint _rewardAmount,
-        uint _amount
-    ) external returns (uint, uint) {
-        uint rewardInNativeToken = _equivalentNativeToken*_rewardAmount/_amount;
-        uint neededNativeTokenForSlash = _equivalentNativeToken*libParams.liquidationRatio/libConstants.OneHundredPercent;
+        DataTypes.lockersLibParam memory libParams
+    ) public view returns (uint) {
 
-        if ((rewardInNativeToken + neededNativeTokenForSlash) > theLocker.nativeTokenLockedAmount) {
-            // Divides total locker's collateral proportional to reward amount and slash amount
-            rewardInNativeToken = rewardInNativeToken*theLocker.nativeTokenLockedAmount/
-                (rewardInNativeToken + neededNativeTokenForSlash);
-            neededNativeTokenForSlash = theLocker.nativeTokenLockedAmount - rewardInNativeToken;
-        }
+        return IPriceOracle(libParams.priceOracle).equivalentOutputAmount(
+            (10**libConstants.NativeTokenDecimal), // 1 Ether is 10^18 wei
+            libConstants.NativeTokenDecimal,
+            ITeleBTC(libParams.teleBTC).decimals(),
+            libConstants.NativeToken,
+            libParams.teleBTC
+        );
 
-        // Updates locker's bond (in TNT)
-        theLocker.nativeTokenLockedAmount
-            = theLocker.nativeTokenLockedAmount - (rewardInNativeToken + neededNativeTokenForSlash);
-
-        theLocker.netMinted
-            = theLocker.netMinted - _amount;
-
-        theLocker.slashingTeleBTCAmount
-            = theLocker.slashingTeleBTCAmount + _amount;
-
-        theLocker.reservedNativeTokenForSlash
-            = theLocker.reservedNativeTokenForSlash + neededNativeTokenForSlash;
-
-        return (rewardInNativeToken, neededNativeTokenForSlash);
     }
 
 }
