@@ -3,8 +3,11 @@ pragma solidity >=0.8.0 <0.8.4;
 
 import "../types/DataTypes.sol";
 
+import "../types/DataTypes.sol";
+
 library LockersValidationLib {
     //TODO remove constants
+    //TODO make function for duplicated codes
 
     // Constants
     uint public constant ONE_HUNDRED_PERCENT = 10000;
@@ -49,6 +52,74 @@ library LockersValidationLib {
 
     function validateLockerPercentageFee(uint _lockerPercentageFee) external view{
         require(_lockerPercentageFee <= MAX_LOCKER_FEE, "Lockers: invalid locker fee");
+    }
+
+    function ValidateCollateralRatio(
+        uint _collateralRatio,
+        DataTypes.lockersLibParam memory libParams
+    ) external view{
+        require(_collateralRatio >= libParams.liquidationRatio, "Lockers: CR must be greater than LR");
+    }
+
+    function ValidateRequestToBecomeLocker(
+        DataTypes.locker storage theLocker,
+        uint _lockedTDTAmount,
+        uint _lockedNativeTokenAmount,
+        address lockerTargetAddress,
+        DataTypes.lockersLibParam memory libParams
+    ) external view{
+        require(
+            !theLocker.isCandidate,
+            "Lockers: is candidate"
+        );
+
+        require(
+            !theLocker.isLocker,
+            "Lockers: is locker"
+        );
+
+        require(
+            _lockedTDTAmount >= libParams.minRequiredTDTLockedAmount,
+            "Lockers: low TDT"
+        );
+
+        require(
+            _lockedNativeTokenAmount >= libParams.minRequiredTNTLockedAmount && msg.value == _lockedNativeTokenAmount,
+            "Lockers: low TNT"
+        );
+
+        require(
+            lockerTargetAddress == address(0),
+            "Lockers: used locking script"
+        );
+
+    }
+
+    function validateRevokeRequest(
+        DataTypes.locker storage theLocker
+    ) external view{
+        require(
+            theLocker.isCandidate,
+            "Lockers: no req"
+        );
+    }
+
+    function validateAddLocker(
+        DataTypes.locker storage theLocker
+    ) external view{
+        require(
+            theLocker.isCandidate,
+            "Lockers: no request"
+        );
+    }
+
+    function validateRequestToRemoveLocker(
+        DataTypes.locker storage theLocker
+    ) external view{
+        require(
+            theLocker.isLocker,
+            "Lockers: input address is not a valid locker"
+        );
     }
 }
 
