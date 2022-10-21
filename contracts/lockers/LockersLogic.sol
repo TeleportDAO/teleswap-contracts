@@ -216,7 +216,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @dev                          Only current owner can call this
     /// @param _lockerPercentageFee   The new locker percentage fee
     function setLockerPercentageFee(uint _lockerPercentageFee) external override onlyOwner {
-        LockersValidationLib.validateLockerPercentageFee(_lockerPercentageFee);
+        require(_lockerPercentageFee <= MAX_LOCKER_FEE, "Lockers: invalid locker fee");
         lockerPercentageFee = _lockerPercentageFee;
         libParams.lockerPercentageFee = lockerPercentageFee;
     }

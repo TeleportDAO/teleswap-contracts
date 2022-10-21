@@ -189,7 +189,7 @@ describe("CCTransferRouter", async () => {
 
         linkLibraryAddresses = {
             "contracts/libraries/LockersLib.sol:LockersLib": lockersLib.address,
-            "contracts/libraries/LockersValidationLib.sol:LockersValidationLib": lockersValidationLib.address,
+            // "contracts/libraries/LockersValidationLib.sol:LockersValidationLib": lockersValidationLib.address,
         };
 
         // Deploys lockers logic
