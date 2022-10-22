@@ -209,7 +209,15 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     function getLockerCapacity(
         address _lockerTargetAddress
     ) public override view nonZeroAddress(_lockerTargetAddress) returns (uint) {
-        return (_lockerCollateralInTeleBTC(_lockerTargetAddress)*ONE_HUNDRED_PERCENT/collateralRatio) - lockersMapping[_lockerTargetAddress].netMinted;
+        
+        return ((
+            LockersLib.lockerCollateralInTeleBTC(
+                lockersMapping[_lockerTargetAddress],
+                libConstants,
+                libParams
+            )*ONE_HUNDRED_PERCENT/collateralRatio) - 
+            lockersMapping[_lockerTargetAddress].netMinted
+        );
     }
 
     /// @notice                       Changes percentage fee of locker
@@ -823,20 +831,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         return burners[account];
     }
 
-    /// @notice                             Get the locker collateral in terms of TeleBTC
-    /// @dev
-    /// @param _lockerTargetAddress         Address of locker on the target chain
-    /// @return                             The locker collateral in TeleBTC
-    function _lockerCollateralInTeleBTC(address _lockerTargetAddress) private view returns (uint) {
-
-        return IPriceOracle(priceOracle).equivalentOutputAmount(
-            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
-            NATIVE_TOKEN_DECIMAL,
-            ITeleBTC(teleBTC).decimals(),
-            NATIVE_TOKEN,
-            teleBTC
-        );
-    }
 
     /// @notice                       Removes a locker from lockers list
     /// @dev                          Checks that net minted TeleBTC of locker is zero
