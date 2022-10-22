@@ -68,6 +68,42 @@ interface ICCExchangeRouter {
         address exchangeConnector
     );
 
+    /// @notice                     Emits when changes made to relay address
+    event NewRelay (
+        uint oldRelay, 
+        uint newRelay
+    );
+
+    /// @notice                     Emits when changes made to InstantRouter address
+    event NewInstantRouter (
+        uint oldInstantRouter, 
+        uint newInstantRouter
+    );
+
+    /// @notice                     Emits when changes made to Lockers address
+    event NewLockers (
+        uint oldLockers, 
+        uint newLockers
+    );
+
+    /// @notice                     Emits when changes made to TeleBTC address
+    event NewTeleBTC (
+        uint oldTeleBTC, 
+        uint newTeleBTC
+    );
+
+    /// @notice                     Emits when changes made to protocol percentage fee
+    event NewProtocolPercentageFee (
+        uint oldProtocolPercentageFee, 
+        uint newProtocolPercentageFee
+    );
+
+    /// @notice                     Emits when changes made to Treasury address
+    event NewTreasury (
+        uint oldTreasury, 
+        uint newTreasury
+    );
+
     // Read-only functions
     
     function startingBlockNumber() external view returns (uint);
