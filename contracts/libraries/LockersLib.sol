@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0 <0.8.4;
 
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+// import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../oracle/interfaces/IPriceOracle.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
@@ -11,7 +11,7 @@ import "../types/DataTypes.sol";
 
 library LockersLib {
 
-    using SafeERC20 for IERC20;
+    // using SafeERC20 for IERC20;
 
     function requestToBecomeLockerValidation(
         mapping(address => DataTypes.locker) storage lockersMapping,
