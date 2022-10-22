@@ -32,6 +32,7 @@ describe("CCTransferRouter", async () => {
     // Constants
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     let ONE_ADDRESS = "0x0000000000000000000000000000000000000001";
+    let TWO_ADDRESS = "0x0000000000000000000000000000000000000002";
     const CHAIN_ID = 1;
     const APP_ID = 0;
     const PROTOCOL_PERCENTAGE_FEE = 10; // Means %0.1
@@ -122,7 +123,7 @@ describe("CCTransferRouter", async () => {
             APP_ID,
             mockBitcoinRelay.address,
             ONE_ADDRESS,
-            ZERO_ADDRESS,
+            TWO_ADDRESS,
             TREASURY
         );
 

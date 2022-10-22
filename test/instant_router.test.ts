@@ -110,6 +110,9 @@ describe("Instant Router", async () => {
             "TBTC"
         );
 
+        // mock finalizationParameter
+        await mockBitcoinRelay.mock.finalizationParameter.returns(0);
+
         // Deploys instant router
         let instantRouterFactory = new InstantRouter__factory(deployer);
         instantRouter = await instantRouterFactory.deploy(
