@@ -12,14 +12,12 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/ILockers.sol";
 import "../libraries/LockersLib.sol";
-import "../libraries/LockersValidationLib.sol";
 import "./LockersStorageStructure.sol";
 import "hardhat/console.sol";
 
 contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
 
     using LockersLib for *;
-    using LockersValidationLib for *;
     using SafeERC20 for IERC20;
 
    
