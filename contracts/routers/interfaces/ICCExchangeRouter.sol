@@ -70,26 +70,26 @@ interface ICCExchangeRouter {
 
     /// @notice                     Emits when changes made to relay address
     event NewRelay (
-        uint oldRelay, 
-        uint newRelay
+        address oldRelay, 
+        address newRelay
     );
 
     /// @notice                     Emits when changes made to InstantRouter address
     event NewInstantRouter (
-        uint oldInstantRouter, 
-        uint newInstantRouter
+        address oldInstantRouter, 
+        address newInstantRouter
     );
 
     /// @notice                     Emits when changes made to Lockers address
     event NewLockers (
-        uint oldLockers, 
-        uint newLockers
+        address oldLockers, 
+        address newLockers
     );
 
     /// @notice                     Emits when changes made to TeleBTC address
     event NewTeleBTC (
-        uint oldTeleBTC, 
-        uint newTeleBTC
+        address oldTeleBTC, 
+        address newTeleBTC
     );
 
     /// @notice                     Emits when changes made to protocol percentage fee
@@ -100,8 +100,8 @@ interface ICCExchangeRouter {
 
     /// @notice                     Emits when changes made to Treasury address
     event NewTreasury (
-        uint oldTreasury, 
-        uint newTreasury
+        address oldTreasury, 
+        address newTreasury
     );
 
     // Read-only functions
