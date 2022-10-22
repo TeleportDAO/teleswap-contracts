@@ -55,54 +55,100 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         address _treasury
     ) {
         startingBlockNumber = _startingBlockNumber;
-        protocolPercentageFee = _protocolPercentageFee;
-        require(MAX_PROTOCOL_FEE >= _protocolPercentageFee, "CCTransferRouter: invalid percentage fee");
         chainId = _chainId;
         appId = _appId;
-        relay = _relay;
-        lockers = _lockers;
-        teleBTC = _teleBTC;
-        treasury = _treasury;
+        _setProtocolPercentageFee(_protocolPercentageFee);
+        _setRelay(_relay);
+        _setLockers(_lockers);
+        _setTeleBTC(_teleBTC);
+        _setTreasury(_treasury);
     }
 
     /// @notice                             Setter for protocol percentage fee
     /// @dev                                Only owner can call this
     /// @param _protocolPercentageFee       Percentage amount of protocol fee
     function setProtocolPercentageFee(uint _protocolPercentageFee) external override onlyOwner {
+        _setProtocolPercentageFee(_protocolPercentageFee);
+    }
+
+    /// @notice                             Setter for relay
+    /// @dev                                Only owner can call this
+    /// @param _relay                       Address of the relay contract
+    function setRelay(address _relay) external override nonZeroAddress(_relay) onlyOwner {
+        _setRelay(_relay);
+    }
+
+    /// @notice                             Setter for lockers
+    /// @dev                                Only owner can call this
+    /// @param _lockers                     Address of the lockers contract
+    function setLockers(address _lockers) external override nonZeroAddress(_lockers) onlyOwner {
+        _setLockers(_lockers);
+    }
+
+    /// @notice                             Setter for instant router
+    /// @dev                                Only owner can call this
+    /// @param _instantRouter               Address of the instant router contract
+    function setInstantRouter(address _instantRouter) external override nonZeroAddress(_instantRouter) onlyOwner {
+        _setInstantRouter(_instantRouter);
+    }
+
+    /// @notice                             Setter for teleBTC
+    /// @dev                                Only owner can call this
+    /// @param _teleBTC                     TeleportDAO BTC ERC20 token address
+    function setTeleBTC(address _teleBTC) external override nonZeroAddress(_teleBTC) onlyOwner {
+        _setTeleBTC(_teleBTC);
+    }
+
+    /// @notice                             Setter for treasury
+    /// @dev                                Only owner can call this
+    /// @param _treasury                    Treasury address
+    function setTreasury(address _treasury) external override nonZeroAddress(_treasury) onlyOwner {
+        _setTreasury(_treasury);
+    }
+
+    /// @notice                             Setter for protocol percentage fee
+    /// @param _protocolPercentageFee       Percentage amount of protocol fee
+    function _setProtocolPercentageFee(uint _protocolPercentageFee) internal {
         require(
             MAX_PROTOCOL_FEE >= _protocolPercentageFee,
             "CCTransferRouter: protocol fee is out of range"
         );
+        emit NewProtocolPercentageFee(protocolPercentageFee, _protocolPercentageFee);
         protocolPercentageFee = _protocolPercentageFee;
     }
 
     /// @notice                             Setter for relay
     /// @param _relay                       Address of the relay contract
-    function setRelay(address _relay) external override nonZeroAddress(_relay) onlyOwner {
+    function _setRelay(address _relay) internal nonZeroAddress(_relay) {
+        emit NewRelay(relay, _relay);
         relay = _relay;
     }
 
     /// @notice                             Setter for relay
     /// @param _lockers                     Address of the lockers contract
-    function setLockers(address _lockers) external override nonZeroAddress(_lockers) onlyOwner {
+    function _setLockers(address _lockers) internal nonZeroAddress(_lockers) {
+        emit NewLockers(lockers, _lockers);
         lockers = _lockers;
     }
 
     /// @notice                             Setter for instant router
     /// @param _instantRouter               Address of the instant router contract
-    function setInstantRouter(address _instantRouter) external override nonZeroAddress(_instantRouter) onlyOwner {
+    function _setInstantRouter(address _instantRouter) internal nonZeroAddress(_instantRouter) {
+        emit NewInstantRouter(instantRouter, _instantRouter);
         instantRouter = _instantRouter;
     }
 
     /// @notice                             Setter for teleBTC
     /// @param _teleBTC                     TeleportDAO BTC ERC20 token address
-    function setTeleBTC(address _teleBTC) external override nonZeroAddress(_teleBTC) onlyOwner {
+    function _setTeleBTC(address _teleBTC) internal nonZeroAddress(_teleBTC) {
+        emit NewTeleBTC(teleBTC, _teleBTC);
         teleBTC = _teleBTC;
     }
 
     /// @notice                             Setter for treasury
     /// @param _treasury                    Treasury address
-    function setTreasury(address _treasury) external override nonZeroAddress(_treasury) onlyOwner {
+    function _setTreasury(address _treasury) internal nonZeroAddress(_treasury) {
+        emit NewTreasury(treasury, _treasury);
         treasury = _treasury;
     }
 
