@@ -11,49 +11,16 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/ILockers.sol";
-import "../types/DataTypes.sol";
 import "../libraries/LockersLib.sol";
+import "./LockersStorageStructure.sol";
 import "hardhat/console.sol";
 
-contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
+contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
 
     using LockersLib for *;
     using SafeERC20 for IERC20;
 
-    // Constants
-    uint public constant ONE_HUNDRED_PERCENT = 10000;
-    uint public constant HEALTH_FACTOR = 10000;
-    uint public constant UPPER_HEALTH_FACTOR = 12000;
-    uint public constant MAX_LOCKER_FEE = 10000;
-    uint public constant NATIVE_TOKEN_DECIMAL = 18;
-    address public constant NATIVE_TOKEN = address(1);
-
-    // Public variables
-    address public override TeleportDAOToken;
-    address public override teleBTC;
-    address public override ccBurnRouter;
-    address public override exchangeConnector;
-    address public override priceOracle;
-
-    uint public override minRequiredTDTLockedAmount;
-    uint public override minRequiredTNTLockedAmount;
-    uint public override lockerPercentageFee;
-    uint public override collateralRatio;
-    uint public override liquidationRatio;
-    uint public override priceWithDiscountRatio;
-    uint public override totalNumberOfCandidates;
-    uint public override totalNumberOfLockers;
-
-    mapping(address => DataTypes.locker) public lockersMapping; // locker's target address -> locker structure
-    mapping(address => bool) public lockerLeavingRequests;
-    mapping(address => bool) public lockerLeavingAcceptance;
-    mapping(bytes => address) public lockerTargetAddress; // locker's locking script -> locker's target address
-    mapping(address => bool) minters;
-    mapping(address => bool) burners;
-
-    DataTypes.lockersLibConstants public libConstants;
-    DataTypes.lockersLibParam public libParams;
-
+   
     function initialize(
         address _TeleportDAOToken,
         address _exchangeConnector,
@@ -70,7 +37,7 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
         PausableUpgradeable.__Pausable_init();
-
+        
         require(
             // _TeleportDAOToken != address(0) && _exchangeConnector != address(0) && _priceOracle != address(0) && _ccBurnRouter != address(0),
             _TeleportDAOToken != address(0) && _exchangeConnector != address(0) && _priceOracle != address(0) ,
@@ -240,7 +207,15 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     function getLockerCapacity(
         address _lockerTargetAddress
     ) public override view nonZeroAddress(_lockerTargetAddress) returns (uint) {
-        return (_lockerCollateralInTeleBTC(_lockerTargetAddress)*ONE_HUNDRED_PERCENT/collateralRatio) - lockersMapping[_lockerTargetAddress].netMinted;
+        
+        return ((
+            LockersLib.lockerCollateralInTeleBTC(
+                lockersMapping[_lockerTargetAddress],
+                libConstants,
+                libParams
+            )*ONE_HUNDRED_PERCENT/collateralRatio) - 
+            lockersMapping[_lockerTargetAddress].netMinted
+        );
     }
 
     /// @notice                       Changes percentage fee of locker
@@ -336,41 +311,26 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         bytes calldata _lockerRescueScript
     ) external override payable nonReentrant returns (bool) {
 
-        require(
-            !lockersMapping[_msgSender()].isCandidate,
-            "Lockers: is candidate"
-        );
+        LockersLib.requestToBecomeLockerValidation(
+                lockersMapping,
+                libConstants,
+                libParams,
+                lockerTargetAddress[_candidateLockingScript],
+                _lockedTDTAmount,
+                _lockedNativeTokenAmount
+            );
 
-        require(
-            !lockersMapping[_msgSender()].isLocker,
-            "Lockers: is locker"
-        );
+        
+        IERC20(libParams.teleportDAOToken).safeTransferFrom(msg.sender, address(this), _lockedTDTAmount);
 
-        require(
-            _lockedTDTAmount >= minRequiredTDTLockedAmount,
-            "Lockers: low TDT"
-        );
-
-        require(
-            _lockedNativeTokenAmount >= minRequiredTNTLockedAmount && msg.value == _lockedNativeTokenAmount,
-            "Lockers: low TNT"
-        );
-
-        require(
-            lockerTargetAddress[_candidateLockingScript] == address(0),
-            "Lockers: used locking script"
-        );
-
-        IERC20(TeleportDAOToken).safeTransferFrom(_msgSender(), address(this), _lockedTDTAmount);
-        DataTypes.locker memory locker_;
-        locker_.lockerLockingScript = _candidateLockingScript;
-        locker_.TDTLockedAmount = _lockedTDTAmount;
-        locker_.nativeTokenLockedAmount = _lockedNativeTokenAmount;
-        locker_.isCandidate = true;
-        locker_.lockerRescueType = _lockerRescueType;
-        locker_.lockerRescueScript = _lockerRescueScript;
-
-        lockersMapping[_msgSender()] = locker_;
+        LockersLib.requestToBecomeLocker(
+                lockersMapping,
+                _candidateLockingScript,
+                _lockedTDTAmount,
+                _lockedNativeTokenAmount,
+                _lockerRescueType,
+                _lockerRescueScript
+            );
 
         totalNumberOfCandidates = totalNumberOfCandidates + 1;
 
@@ -523,26 +483,15 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             "Lockers: message sender is not ccBurn"
         );
 
-        require(
-            lockersMapping[_lockerTargetAddress].isLocker,
-            "Lockers: input address is not a valid locker"
+        uint equivalentNativeToken = LockersLib.slashIdleLocker(
+            lockersMapping[_lockerTargetAddress],
+            libConstants,
+            libParams,
+            _rewardAmount,
+            _rewardRecipient,
+            _amount,
+            _recipient
         );
-
-        uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
-            _rewardAmount + _amount, // Total amount of TeleBTC that is slashed
-            ITeleBTC(teleBTC).decimals(), // Decimal of teleBTC
-            NATIVE_TOKEN_DECIMAL, // Decimal of TNT
-            teleBTC, // Input token
-            NATIVE_TOKEN // Output token
-        );
-
-        if (equivalentNativeToken > lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount) {
-            equivalentNativeToken = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount;
-        }
-
-        // Updates locker's bond (in TNT)
-        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount
-        = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - equivalentNativeToken;
 
         // Transfers TNT to user
         payable(_recipient).transfer(equivalentNativeToken*_amount/(_amount + _rewardAmount));
@@ -586,25 +535,12 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
             "Lockers: message sender is not ccBurn"
         );
 
-        require(
-            lockersMapping[_lockerTargetAddress].isLocker,
-            "Lockers: input address is not a valid locker"
-        );
-
-        uint equivalentNativeToken = IPriceOracle(priceOracle).equivalentOutputAmount(
-            _amount, // Total amount of TeleBTC that is slashed
-            ITeleBTC(teleBTC).decimals(), // Decimal of teleBTC
-            NATIVE_TOKEN_DECIMAL, // Decimal of TNT
-            teleBTC, // Input token
-            NATIVE_TOKEN // Output token
-        );
-
         (uint rewardInNativeToken, uint neededNativeTokenForSlash) = LockersLib.slashTheifLocker(
             lockersMapping[_lockerTargetAddress],
             libConstants,
             libParams,
-            equivalentNativeToken,
             _rewardAmount,
+            _rewardRecipient,
             _amount
         );
 
@@ -637,48 +573,16 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     ) external override nonZeroAddress(_lockerTargetAddress) nonZeroValue(_collateralAmount)
     nonReentrant whenNotPaused returns (bool) {
 
-        require(
-            lockersMapping[_lockerTargetAddress].isLocker,
-            "Lockers: input address is not a valid locker"
+        uint neededTeleBTC = LockersLib.liquidateLocker(
+            lockersMapping[_lockerTargetAddress],
+            libConstants,
+            libParams,
+            _collateralAmount
         );
+
 
         DataTypes.locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
-        uint priceOfCollateral = priceOfOneUnitOfCollateralInBTC();
 
-        // Checks that the collateral has become unhealthy
-        require(
-            LockersLib.calculateHealthFactor(
-                theLiquidatingLocker,
-                libConstants,
-                libParams,
-                priceOfCollateral
-            ) < HEALTH_FACTOR,
-            "Lockers: is healthy"
-        );
-
-        uint _maxBuyableCollateral = LockersLib.maximumBuyableCollateral(
-            theLiquidatingLocker,
-            libConstants,
-            libParams,
-            priceOfCollateral
-        );
-
-        if (_maxBuyableCollateral > theLiquidatingLocker.nativeTokenLockedAmount) {
-            _maxBuyableCollateral = theLiquidatingLocker.nativeTokenLockedAmount;
-        }
-
-        require(
-            _collateralAmount <= _maxBuyableCollateral,
-            "Lockers: not enough collateral to buy"
-        );
-
-        // Needed amount of TeleBTC to buy collateralAmount
-        uint neededTeleBTC = LockersLib.neededTeleBTCToBuyCollateral(
-            libConstants,
-            libParams,
-            _collateralAmount,
-            priceOfCollateral
-        );
 
         // Burns TeleBTC for locker rescue script
         // note: user should give allowance for TeleBTC to cc burn router
@@ -721,39 +625,12 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
     ) external nonZeroAddress(_lockerTargetAddress) nonZeroValue(_collateralAmount)
         nonReentrant whenNotPaused override returns (bool) {
 
-        require(
-            lockersMapping[_lockerTargetAddress].isLocker,
-            "Lockers: input address is not a valid locker"
-        );
-
-        DataTypes.locker memory theSlashedLocker = lockersMapping[_lockerTargetAddress];
-
-        require(
-            _collateralAmount <= theSlashedLocker.reservedNativeTokenForSlash,
-            "Lockers: not enough slashed collateral to buy"
-        );
-
-        // Finds needed amount of TeleBTC to buy collateral with discount
-        uint priceOfCollateral = priceOfOneUnitOfCollateralInBTC();
-        uint neededTeleBTC = LockersLib.neededTeleBTCToBuyCollateral(
+        uint neededTeleBTC = LockersLib.buySlashedCollateralOfLocker(
+            lockersMapping[_lockerTargetAddress],
             libConstants,
             libParams,
-            _collateralAmount,
-            priceOfCollateral
+            _collateralAmount
         );
-
-        // Users cannot buy more than total slashed TeleBTC
-        require(
-            neededTeleBTC <= theSlashedLocker.slashingTeleBTCAmount,
-            "Lockers: cant slash"
-        );
-
-        // Updates locker's slashing info 
-        lockersMapping[_lockerTargetAddress].slashingTeleBTCAmount =
-            lockersMapping[_lockerTargetAddress].slashingTeleBTCAmount - neededTeleBTC;
-
-        lockersMapping[_lockerTargetAddress].reservedNativeTokenForSlash =
-            lockersMapping[_lockerTargetAddress].reservedNativeTokenForSlash - _collateralAmount;
 
         // Burns user's TeleBTC
         ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), neededTeleBTC);
@@ -812,7 +689,10 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         uint _removingNativeTokenAmount
     ) external override payable nonReentrant returns (bool) {
 
-        uint priceOfOnUnitOfCollateral = priceOfOneUnitOfCollateralInBTC();
+        uint priceOfOnUnitOfCollateral = LockersLib.priceOfOneUnitOfCollateralInBTC(
+            libConstants,
+            libParams
+        );
 
         LockersLib.removeFromCollateral(
             lockersMapping[_msgSender()],
@@ -840,12 +720,9 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
      */
     function priceOfOneUnitOfCollateralInBTC() public override view returns (uint) {
 
-        return IPriceOracle(priceOracle).equivalentOutputAmount(
-            (10**NATIVE_TOKEN_DECIMAL), // 1 Ether is 10^18 wei
-            NATIVE_TOKEN_DECIMAL,
-            ITeleBTC(teleBTC).decimals(),
-            NATIVE_TOKEN,
-            teleBTC
+        return LockersLib.priceOfOneUnitOfCollateralInBTC(
+            libConstants,
+            libParams
         );
 
     }
@@ -952,20 +829,6 @@ contract LockersLogic is ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeabl
         return burners[account];
     }
 
-    /// @notice                             Get the locker collateral in terms of TeleBTC
-    /// @dev
-    /// @param _lockerTargetAddress         Address of locker on the target chain
-    /// @return                             The locker collateral in TeleBTC
-    function _lockerCollateralInTeleBTC(address _lockerTargetAddress) private view returns (uint) {
-
-        return IPriceOracle(priceOracle).equivalentOutputAmount(
-            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
-            NATIVE_TOKEN_DECIMAL,
-            ITeleBTC(teleBTC).decimals(),
-            NATIVE_TOKEN,
-            teleBTC
-        );
-    }
 
     /// @notice                       Removes a locker from lockers list
     /// @dev                          Checks that net minted TeleBTC of locker is zero
