@@ -100,6 +100,68 @@ interface ILockers is ILockersStorage {
         uint burningTime
     );
 
+    event MinterAdded(
+        address indexed account
+    );
+
+    event MinterRemoved(
+        address indexed account
+    );
+
+    event BurnerAdded(
+        address indexed account
+    );
+    
+    event BurnerRemoved(
+        address indexed account
+    );
+
+    event NewLockerPercentageFee(
+        uint oldLockerPercentageFee,
+        uint newLockerPercentageFee
+    );
+
+    event NewMinRequiredTDTLockedAmount(
+        uint oldMinRequiredTDTLockedAmount,
+        uint newMinRequiredTDTLockedAmount
+    );
+
+    event NewMinRequiredTNTLockedAmount(
+        uint oldMinRequiredTNTLockedAmount,
+        uint newMinRequiredTNTLockedAmount
+    );
+
+    event NewPriceOracle(
+        address oldPriceOracle,
+        address newPriceOracle
+    );
+
+    event NewCCBurnRouter(
+        address oldCCBurnRouter,
+        address newCCBurnRouter
+    );
+
+    event NewExchangeConnector(
+        address oldExchangeConnector,
+        address newExchangeConnector
+    );
+
+    event NewTeleBTC(
+        address oldTeleBTC,
+        address newTeleBTC
+    );   
+
+    event NewCollateralRatio(
+        uint oldCollateralRatio,
+        uint newCollateralRatio
+    );  
+
+     event NewLiquidationRatio(
+        uint oldLiquidationRatio,
+        uint newLiquidationRatio
+    );   
+
+
     // Read-only functions
     function getLockerTargetAddress(bytes calldata _lockerLockingScript) external view returns (address);
 
