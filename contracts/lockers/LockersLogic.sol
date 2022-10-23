@@ -40,10 +40,11 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         
         require(
             // _TeleportDAOToken != address(0) && _exchangeConnector != address(0) && _priceOracle != address(0) && _ccBurnRouter != address(0),
-            _TeleportDAOToken != address(0) && _exchangeConnector != address(0) && _priceOracle != address(0) ,
+            _TeleportDAOToken != address(0) ,
             "Lockers: address is zero"
         );
 
+        // TODO not checked in setter function
         require(
             _minRequiredTDTLockedAmount != 0 || _minRequiredTNTLockedAmount != 0,
             "Lockers: amount is zero"
@@ -63,13 +64,14 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         // ccBurnRouter = _ccBurnRouter;
         // burners[ccBurnRouter] = true;
 
-        exchangeConnector = _exchangeConnector;
-        priceOracle = _priceOracle;
-        minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
-        minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
-        collateralRatio = _collateralRatio;
-        liquidationRatio = _liquidationRatio;
-        lockerPercentageFee = _lockerPercentageFee;
+        _setExchangeConnector(_exchangeConnector);
+        _setPriceOracle(_priceOracle);
+        _setMinRequiredTDTLockedAmount(_minRequiredTDTLockedAmount);
+        _setMinRequiredTNTLockedAmount(_minRequiredTNTLockedAmount);
+        _setCollateralRatio(_collateralRatio);
+        _setLiquidationRatio(_liquidationRatio);
+        _setLockerPercentageFee(_lockerPercentageFee);
+        
         priceWithDiscountRatio= _priceWithDiscountRatio;
 
         libConstants.OneHundredPercent = ONE_HUNDRED_PERCENT;
@@ -80,15 +82,12 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         libConstants.NativeToken = NATIVE_TOKEN;
 
         libParams.teleportDAOToken = TeleportDAOToken;
+        
+        // TODO ?
         libParams.teleBTC = teleBTC;
         libParams.ccBurnRouter = ccBurnRouter;
-        libParams.exchangeConnector = exchangeConnector;
-        libParams.priceOracle = priceOracle;
-        libParams.minRequiredTDTLockedAmount = minRequiredTDTLockedAmount;
-        libParams.minRequiredTNTLockedAmount = minRequiredTNTLockedAmount;
-        libParams.lockerPercentageFee = lockerPercentageFee;
-        libParams.collateralRatio = collateralRatio;
-        libParams.liquidationRatio = liquidationRatio;
+        // ?
+
         libParams.priceWithDiscountRatio = priceWithDiscountRatio;
     }
 
@@ -115,6 +114,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     function addMinter(address _account) external override nonZeroAddress(_account) onlyOwner {
         require(!_isMinter(_account), "Lockers: account already has role");
         minters[_account] = true;
+        emit MinterAdded(_account);
     }
 
     /**
@@ -123,6 +123,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     function removeMinter(address _account) external override nonZeroAddress(_account) onlyOwner {
         require(_isMinter(_account), "Lockers: account does not have role");
         minters[_account] = false;
+        emit MinterRemoved(_account);
     }
 
     modifier onlyBurner() {
@@ -136,6 +137,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     function addBurner(address _account) external override nonZeroAddress(_account) onlyOwner {
         require(!_isBurner(_account), "Lockers: account already has role");
         burners[_account] = true;
+        emit BurnerAdded(_account);
     }
 
     /**
@@ -144,6 +146,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     function removeBurner(address _account) external override nonZeroAddress(_account) onlyOwner {
         require(_isBurner(_account), "Lockers: account does not have role");
         burners[_account] = false;
+        emit BurnerRemoved(_account);
     }
 
     /// @notice                 Pause the locker, so only the functions can be called which are whenPaused
@@ -222,72 +225,135 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @dev                          Only current owner can call this
     /// @param _lockerPercentageFee   The new locker percentage fee
     function setLockerPercentageFee(uint _lockerPercentageFee) external override onlyOwner {
-        require(_lockerPercentageFee <= MAX_LOCKER_FEE, "Lockers: invalid locker fee");
-        lockerPercentageFee = _lockerPercentageFee;
-        libParams.lockerPercentageFee = lockerPercentageFee;
+        _setLockerPercentageFee(_lockerPercentageFee);
     }
 
     /// @notice         Changes the required bond amount to become locker
     /// @dev            Only current owner can call this
     /// @param _minRequiredTDTLockedAmount   The new required bond amount
     function setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) external override onlyOwner {
-        minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
-        libParams.minRequiredTDTLockedAmount = minRequiredTDTLockedAmount;
+        _setMinRequiredTDTLockedAmount(_minRequiredTDTLockedAmount);
     }
 
     /// @notice         Changes the required bond amount to become locker
     /// @dev            Only current owner can call this
     /// @param _minRequiredTNTLockedAmount   The new required bond amount
     function setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) external override onlyOwner {
-        minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
-        libParams.minRequiredTNTLockedAmount = minRequiredTNTLockedAmount;
+        _setMinRequiredTNTLockedAmount(_minRequiredTNTLockedAmount);
     }
 
     /// @notice                 Changes the price oracle
     /// @dev                    Only current owner can call this
     /// @param _priceOracle     The new price oracle
     function setPriceOracle(address _priceOracle) external override nonZeroAddress(_priceOracle) onlyOwner {
-        priceOracle = _priceOracle;
-        libParams.priceOracle = priceOracle;
+        _setPriceOracle(_priceOracle);
     }
 
     /// @notice                Changes cc burn router contract
     /// @dev                   Only current owner can call this
     /// @param _ccBurnRouter   The new cc burn router contract address
     function setCCBurnRouter(address _ccBurnRouter) external override nonZeroAddress(_ccBurnRouter) onlyOwner {
-        ccBurnRouter = _ccBurnRouter;
-        libParams.ccBurnRouter = ccBurnRouter;
+        _setCCBurnRouter(_ccBurnRouter);
     }
 
     /// @notice                 Changes exchange router contract address and updates wrapped avax addresses
     /// @dev                    Only owner can call this
     /// @param _exchangeConnector  The new exchange router contract address
     function setExchangeConnector(address _exchangeConnector) external override nonZeroAddress(_exchangeConnector) onlyOwner {
-        exchangeConnector = _exchangeConnector;
-        libParams.exchangeConnector = exchangeConnector;
+        _setExchangeConnector(_exchangeConnector);
     }
 
     /// @notice                 Changes wrapped token contract address
     /// @dev                    Only owner can call this
     /// @param _teleBTC         The new wrapped token contract address
     function setTeleBTC(address _teleBTC) external override nonZeroAddress(_teleBTC) onlyOwner {
-        teleBTC = _teleBTC;
-        libParams.teleBTC = teleBTC;
+        _setTeleBTC(_teleBTC);
     }
 
     /// @notice                     Changes collateral ratio
     /// @dev                        Only owner can call this
     /// @param _collateralRatio     The new collateral ratio
     function setCollateralRatio(uint _collateralRatio) external override onlyOwner {
-        require(_collateralRatio >= liquidationRatio, "Lockers: CR must be greater than LR");
-        collateralRatio = _collateralRatio;
-        libParams.collateralRatio = collateralRatio;
+        _setCollateralRatio(_collateralRatio);
     }
 
     /// @notice                     Changes liquidation ratio
     /// @dev                        Only owner can call this
     /// @param _liquidationRatio    The new liquidation ratio
-    function setLiquidationRatio(uint _liquidationRatio) external override onlyOwner {
+    function setLiquidationRatio(uint _liquidationRatio) external override onlyOwner { 
+        _setLiquidationRatio(_liquidationRatio);
+    }
+
+    /// @notice                       Internal setter for percentage fee of locker
+    /// @param _lockerPercentageFee   The new locker percentage fee
+    function _setLockerPercentageFee(uint _lockerPercentageFee) internal {
+        require(_lockerPercentageFee <= MAX_LOCKER_FEE, "Lockers: invalid locker fee");
+        emit NewLockerPercentageFee(lockerPercentageFee, _lockerPercentageFee);
+        lockerPercentageFee = _lockerPercentageFee;
+        libParams.lockerPercentageFee = lockerPercentageFee;
+    }
+
+    /// @notice         Internal setter for the required bond amount to become locker
+    /// @param _minRequiredTDTLockedAmount   The new required bond amount
+    function _setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) internal {
+        emit NewMinRequiredTDTLockedAmount(minRequiredTDTLockedAmount, _minRequiredTDTLockedAmount);
+        minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
+        libParams.minRequiredTDTLockedAmount = minRequiredTDTLockedAmount;
+    }
+
+    /// @notice         Internal setter for the required bond amount to become locker
+    /// @param _minRequiredTNTLockedAmount   The new required bond amount
+    function _setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) internal {
+        emit NewMinRequiredTNTLockedAmount(minRequiredTNTLockedAmount, _minRequiredTNTLockedAmount);
+        minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
+        libParams.minRequiredTNTLockedAmount = minRequiredTNTLockedAmount;
+    }
+
+    /// @notice                 Internal setter for the price oracle
+    /// @param _priceOracle     The new price oracle
+    function _setPriceOracle(address _priceOracle) internal nonZeroAddress(_priceOracle) {
+        emit NewPriceOracle(priceOracle, _priceOracle);
+        priceOracle = _priceOracle;
+        libParams.priceOracle = priceOracle;
+    }
+
+    /// @notice                Internal setter for cc burn router contract
+    /// @param _ccBurnRouter   The new cc burn router contract address
+    function _setCCBurnRouter(address _ccBurnRouter) internal nonZeroAddress(_ccBurnRouter) {
+        emit NewCCBurnRouter(ccBurnRouter, _ccBurnRouter);
+        ccBurnRouter = _ccBurnRouter;
+        libParams.ccBurnRouter = ccBurnRouter;
+    }
+
+    /// @notice                 Internal setter for exchange router contract address and updates wrapped avax addresses
+    /// @param _exchangeConnector  The new exchange router contract address
+    function _setExchangeConnector(address _exchangeConnector) internal nonZeroAddress(_exchangeConnector) {
+        emit NewExchangeConnector(exchangeConnector, _exchangeConnector);
+        exchangeConnector = _exchangeConnector;
+        libParams.exchangeConnector = exchangeConnector;
+    }
+
+    /// @notice                 Internal setter for wrapped token contract address
+    /// @param _teleBTC         The new wrapped token contract address
+    function _setTeleBTC(address _teleBTC) internal nonZeroAddress(_teleBTC) {
+        emit NewTeleBTC(teleBTC, _teleBTC);
+        teleBTC = _teleBTC;
+        libParams.teleBTC = teleBTC;
+    }
+
+    /// @notice                     Internal setter for collateral ratio
+    /// @param _collateralRatio     The new collateral ratio
+    function _setCollateralRatio(uint _collateralRatio) internal {
+        require(_collateralRatio >= liquidationRatio, "Lockers: CR must be greater than LR");
+        emit NewCollateralRatio(collateralRatio, _collateralRatio);
+        collateralRatio = _collateralRatio;
+        libParams.collateralRatio = collateralRatio;
+    }
+
+    /// @notice                     Internal setter for liquidation ratio
+    /// @param _liquidationRatio    The new liquidation ratio
+    function _setLiquidationRatio(uint _liquidationRatio) internal {
+        emit NewLiquidationRatio(liquidationRatio, _liquidationRatio);
         liquidationRatio = _liquidationRatio;
         libParams.liquidationRatio = liquidationRatio;
     }
