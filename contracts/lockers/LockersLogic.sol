@@ -286,7 +286,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
     /// @notice                       Internal setter for percentage fee of locker
     /// @param _lockerPercentageFee   The new locker percentage fee
-    function _setLockerPercentageFee(uint _lockerPercentageFee) internal {
+    function _setLockerPercentageFee(uint _lockerPercentageFee) private {
         require(_lockerPercentageFee <= MAX_LOCKER_FEE, "Lockers: invalid locker fee");
         emit NewLockerPercentageFee(lockerPercentageFee, _lockerPercentageFee);
         lockerPercentageFee = _lockerPercentageFee;
@@ -295,7 +295,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
     /// @notice         Internal setter for the required bond amount to become locker
     /// @param _minRequiredTDTLockedAmount   The new required bond amount
-    function _setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) internal {
+    function _setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) private {
         emit NewMinRequiredTDTLockedAmount(minRequiredTDTLockedAmount, _minRequiredTDTLockedAmount);
         minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
         libParams.minRequiredTDTLockedAmount = minRequiredTDTLockedAmount;
@@ -303,7 +303,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
     /// @notice         Internal setter for the required bond amount to become locker
     /// @param _minRequiredTNTLockedAmount   The new required bond amount
-    function _setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) internal {
+    function _setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) private {
         emit NewMinRequiredTNTLockedAmount(minRequiredTNTLockedAmount, _minRequiredTNTLockedAmount);
         minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
         libParams.minRequiredTNTLockedAmount = minRequiredTNTLockedAmount;
@@ -311,7 +311,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
     /// @notice                 Internal setter for the price oracle
     /// @param _priceOracle     The new price oracle
-    function _setPriceOracle(address _priceOracle) internal nonZeroAddress(_priceOracle) {
+    function _setPriceOracle(address _priceOracle) private nonZeroAddress(_priceOracle) {
         emit NewPriceOracle(priceOracle, _priceOracle);
         priceOracle = _priceOracle;
         libParams.priceOracle = priceOracle;
@@ -319,7 +319,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
     /// @notice                Internal setter for cc burn router contract
     /// @param _ccBurnRouter   The new cc burn router contract address
-    function _setCCBurnRouter(address _ccBurnRouter) internal nonZeroAddress(_ccBurnRouter) {
+    function _setCCBurnRouter(address _ccBurnRouter) private nonZeroAddress(_ccBurnRouter) {
         emit NewCCBurnRouter(ccBurnRouter, _ccBurnRouter);
         ccBurnRouter = _ccBurnRouter;
         libParams.ccBurnRouter = ccBurnRouter;
@@ -327,7 +327,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
     /// @notice                 Internal setter for exchange router contract address and updates wrapped avax addresses
     /// @param _exchangeConnector  The new exchange router contract address
-    function _setExchangeConnector(address _exchangeConnector) internal nonZeroAddress(_exchangeConnector) {
+    function _setExchangeConnector(address _exchangeConnector) private nonZeroAddress(_exchangeConnector) {
         emit NewExchangeConnector(exchangeConnector, _exchangeConnector);
         exchangeConnector = _exchangeConnector;
         libParams.exchangeConnector = exchangeConnector;
@@ -335,7 +335,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
     /// @notice                 Internal setter for wrapped token contract address
     /// @param _teleBTC         The new wrapped token contract address
-    function _setTeleBTC(address _teleBTC) internal nonZeroAddress(_teleBTC) {
+    function _setTeleBTC(address _teleBTC) private nonZeroAddress(_teleBTC) {
         emit NewTeleBTC(teleBTC, _teleBTC);
         teleBTC = _teleBTC;
         libParams.teleBTC = teleBTC;
@@ -343,7 +343,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
     /// @notice                     Internal setter for collateral ratio
     /// @param _collateralRatio     The new collateral ratio
-    function _setCollateralRatio(uint _collateralRatio) internal {
+    function _setCollateralRatio(uint _collateralRatio) private {
         require(_collateralRatio >= liquidationRatio, "Lockers: CR must be greater than LR");
         emit NewCollateralRatio(collateralRatio, _collateralRatio);
         collateralRatio = _collateralRatio;
@@ -352,7 +352,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
     /// @notice                     Internal setter for liquidation ratio
     /// @param _liquidationRatio    The new liquidation ratio
-    function _setLiquidationRatio(uint _liquidationRatio) internal {
+    function _setLiquidationRatio(uint _liquidationRatio) private {
         emit NewLiquidationRatio(liquidationRatio, _liquidationRatio);
         liquidationRatio = _liquidationRatio;
         libParams.liquidationRatio = liquidationRatio;
