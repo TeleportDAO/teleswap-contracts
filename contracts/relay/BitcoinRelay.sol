@@ -68,16 +68,16 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         blockHeight[_periodStart] = _height - (_height % 2016);
 
         // Relay parameters
-        finalizationParameter = 3;
+        _setFinalizationParameter(3);
         initialHeight = _height;
         lastSubmittedHeight = _height;
         TeleportDAOToken = _TeleportDAOToken;
-        relayerPercentageFee = 5;
-        epochLength = 2016;
-        baseQueries = epochLength;
+        _setRelayerPercentageFee(5);
+        _setEpochLength(2016);
+        _setBaseQueries(epochLength);
         lastEpochQueries = baseQueries;
         currentEpochQueries = 0;
-        submissionGasUsed = 300000; // in wei
+        _setSubmissionGasUsed(300000); // in wei
     }
 
     function renounceOwnership() public virtual override onlyOwner {}
@@ -156,44 +156,91 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         return _isAncestor(_ancestor, _descendant, _limit);
     }
 
-    /// @notice                             Setter for rewardAmountInTDT
+    /// @notice                             External setter for rewardAmountInTDT
     /// @dev                                This award is for the relayer who has a finalized block header
     /// @param _rewardAmountInTDT           The reward amount in TDT
     function setRewardAmountInTDT(uint _rewardAmountInTDT) external override onlyOwner {
-        rewardAmountInTDT = _rewardAmountInTDT;
+        _setRewardAmountInTDT(_rewardAmountInTDT);
     }
 
-    /// @notice                             Setter for finalizationParameter
+    /// @notice                             External setter for finalizationParameter
     /// @dev                                This might change if finalization rule of the source chain gets updated
     /// @param _finalizationParameter       The finalization parameter of the source chain
     function setFinalizationParameter(uint _finalizationParameter) external override onlyOwner {
-        finalizationParameter = _finalizationParameter;
+        _setFinalizationParameter(_finalizationParameter);
     }
 
-    /// @notice                             Setter for relayerPercentageFee
+    /// @notice                             External setter for relayerPercentageFee
     /// @dev                                This is updated when we want to change the Relayer reward
     /// @param _relayerPercentageFee               Ratio > 1 that determines percentage of reward to the Relayer
     function setRelayerPercentageFee(uint _relayerPercentageFee) external override onlyOwner {
-        relayerPercentageFee = _relayerPercentageFee;
+        _setRelayerPercentageFee(_relayerPercentageFee);
     }
 
-    /// @notice                             Setter for epochLength
+    /// @notice                             External setter for epochLength
     /// @param _epochLength                 The length of epochs for estimating the user queries hence their fees
     function setEpochLength(uint _epochLength) external override onlyOwner {
-        epochLength = _epochLength;
+        _setEpochLength(_epochLength);
     }
 
-    /// @notice                             Setter for baseQueries
+    /// @notice                             External setter for baseQueries
     /// @param _baseQueries                 The base amount of queries we assume in each epoch
     ///                                     (This is for preventing user fees to grow significantly)
     function setBaseQueries(uint _baseQueries) external override onlyOwner {
-        baseQueries = _baseQueries;
+        _setBaseQueries(_baseQueries);
     }
 
-    /// @notice                             Setter for submissionGasUsed
+    /// @notice                             External setter for submissionGasUsed
     /// @dev                                This is updated when the smart contract changes the way of getting block headers
     /// @param _submissionGasUsed           The gas used for submitting one block header
     function setSubmissionGasUsed(uint _submissionGasUsed) external override onlyOwner {
+        _setSubmissionGasUsed(_submissionGasUsed);
+    }
+
+    /// @notice                             Internal setter for rewardAmountInTDT
+    /// @dev                                This award is for the relayer who has a finalized block header
+    /// @param _rewardAmountInTDT           The reward amount in TDT
+    function _setRewardAmountInTDT(uint _rewardAmountInTDT) private {
+        emit NewRewardAmountInTDT(rewardAmountInTDT, _rewardAmountInTDT);
+        rewardAmountInTDT = _rewardAmountInTDT;
+    }
+
+    /// @notice                             Internal setter for finalizationParameter
+    /// @dev                                This might change if finalization rule of the source chain gets updated
+    /// @param _finalizationParameter       The finalization parameter of the source chain
+    function _setFinalizationParameter(uint _finalizationParameter) private {
+        emit NewFinalizationParameter(finalizationParameter, _finalizationParameter);
+        finalizationParameter = _finalizationParameter;
+    }
+
+    /// @notice                             Internal setter for relayerPercentageFee
+    /// @dev                                This is updated when we want to change the Relayer reward
+    /// @param _relayerPercentageFee               Ratio > 1 that determines percentage of reward to the Relayer
+    function _setRelayerPercentageFee(uint _relayerPercentageFee) private {
+        emit NewRelayerPercentageFee(relayerPercentageFee, _relayerPercentageFee);
+        relayerPercentageFee = _relayerPercentageFee;
+    }
+
+    /// @notice                             Internal setter for epochLength
+    /// @param _epochLength                 The length of epochs for estimating the user queries hence their fees
+    function _setEpochLength(uint _epochLength) private {
+        emit NewEpochLength(epochLength, _epochLength);
+        epochLength = _epochLength;
+    }
+
+    /// @notice                             Internal setter for baseQueries
+    /// @param _baseQueries                 The base amount of queries we assume in each epoch
+    ///                                     (This is for preventing user fees to grow significantly)
+    function _setBaseQueries(uint _baseQueries) private {
+        emit NewBaseQueries(baseQueries, _baseQueries);
+        baseQueries = _baseQueries;
+    }
+
+    /// @notice                             Internal setter for submissionGasUsed
+    /// @dev                                This is updated when the smart contract changes the way of getting block headers
+    /// @param _submissionGasUsed           The gas used for submitting one block header
+    function _setSubmissionGasUsed(uint _submissionGasUsed) private {
+        emit NewSubmissionGasUsed(submissionGasUsed, _submissionGasUsed);
         submissionGasUsed = _submissionGasUsed;
     }
 

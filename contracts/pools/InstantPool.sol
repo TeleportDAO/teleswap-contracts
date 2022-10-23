@@ -23,9 +23,9 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
         string memory _name,
         string memory _symbol
     ) ERC20(_name, _symbol) {
-        teleBTC = _teleBTC;
-        instantRouter = _instantRouter;
-        instantPercentageFee = _instantPercentageFee;
+        _setTeleBTC(_teleBTC);
+        _setInstantRouter(_instantRouter);
+        _setInstantPercentageFee(_instantPercentageFee);
     }
 
     function renounceOwnership() public virtual override onlyOwner {}
@@ -47,20 +47,41 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
     /// @dev                    Only owner can call this
     /// @param _instantRouter   The new instant router contract address
     function setInstantRouter(address _instantRouter) external override onlyOwner {
-        instantRouter = _instantRouter;
+        _setInstantRouter(_instantRouter);
     }
 
     /// @notice                        Changes instant loan fee
     /// @dev                           Only current owner can call this
     /// @param _instantPercentageFee   The new percentage fee
     function setInstantPercentageFee(uint _instantPercentageFee) external override onlyOwner {
-        instantPercentageFee = _instantPercentageFee;
+        _setInstantPercentageFee(_instantPercentageFee);
     }
 
     /// @notice                 Changes teleBTC contract address
     /// @dev                    Only owner can call this
     /// @param _teleBTC         The new teleBTC contract address
     function setTeleBTC(address _teleBTC) external override onlyOwner {
+        _setTeleBTC(_teleBTC);
+    }
+
+    /// @notice                 Internal setter for instant router contract address
+    /// @param _instantRouter   The new instant router contract address
+    function _setInstantRouter(address _instantRouter) private {
+        emit NewInstantRouter(instantRouter, _instantRouter);
+        instantRouter = _instantRouter;
+    }
+
+    /// @notice                         Internal setter for instant loan fee
+    /// @param _instantPercentageFee    The new percentage fee
+    function _setInstantPercentageFee(uint _instantPercentageFee) private {
+        emit NewInstantPercentageFee(instantPercentageFee, _instantPercentageFee);
+        instantPercentageFee = _instantPercentageFee;
+    }
+
+    /// @notice                 Internal setter for teleBTC contract address
+    /// @param _teleBTC         The new teleBTC contract address
+    function _setTeleBTC(address _teleBTC) private {
+        emit NewTeleBTC(teleBTC, _teleBTC);
         teleBTC = _teleBTC;
     }
 

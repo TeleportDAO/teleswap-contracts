@@ -92,6 +92,55 @@ interface IInstantRouter {
         uint slasherReward
 	);
 
+    /// @notice                     	Emits when changes made to payback deadline
+    event NewPaybackDeadline(
+        uint oldPaybackDeadline, 
+        uint newPaybackDeadline
+    );
+
+    /// @notice                     	Emits when changes made to slasher percentage reward
+    event NewSlasherPercentageReward(
+        uint oldSlasherPercentageReward, 
+        uint newSlasherPercentageReward
+    );
+
+    /// @notice                     	Emits when changes made to TeleBTC address
+    event NewTeleBTC(
+        address oldTeleBTC, 
+        address newTeleBTC
+    );
+
+    /// @notice                     	Emits when changes made to relay address
+    event NewRelay(
+        address oldRelay, 
+        address newRelay
+    );
+
+    /// @notice                     	Emits when changes made to collateral pool factory address
+    event NewCollateralPoolFactory(
+        address oldCollateralPoolFactory, 
+        address newCollateralPoolFactory
+    );
+
+    /// @notice                     	Emits when changes made to price oracle address
+    event NewPriceOracle(
+        address oldPriceOracle, 
+        address newPriceOracle
+    );
+
+    /// @notice                     	Emits when changes made to TeleBTC instant pool address
+    event NewTeleBTCInstantPool(
+        address oldTeleBTCInstantPool, 
+        address newTeleBTCInstantPool
+    );
+
+    /// @notice                     	Emits when changes made to default exchange connector address
+    event NewDeafultExchangeConnector(
+        address oldDeafultExchangeConnector, 
+        address newDeafultExchangeConnector
+    );
+
+
     // Read-only functions
 
     function pause() external;

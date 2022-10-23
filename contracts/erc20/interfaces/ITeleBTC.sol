@@ -11,6 +11,14 @@ interface ITeleBTC is IERC20 {
 
     event Burn(address indexed to, uint value);
 
+    event AddMinter(address indexed account);
+
+    event RemoveMinter(address indexed account);
+
+    event AddBurner(address indexed account);
+
+    event RemoveBurner(address indexed account);
+
     // function name() external view returns (string memory);
     // function symbol() external view returns (string memory);
     function decimals() external view returns (uint8);

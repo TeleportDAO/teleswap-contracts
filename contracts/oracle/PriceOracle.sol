@@ -29,8 +29,8 @@ contract PriceOracle is IPriceOracle, Ownable {
     /// @notice                         This contract is used to get relative price of two assets from Chainlink and available exchanges 
     /// @param _acceptableDelay         Maximum acceptable delay for data given from Chainlink
     constructor(uint _acceptableDelay,address _oracleNativeToken) {
-        acceptableDelay = _acceptableDelay;
-        oracleNativeToken = _oracleNativeToken;
+        _setAcceptableDelay(_acceptableDelay);
+        _setOracleNativeToken(_oracleNativeToken);
     }
 
     function renounceOwnership() public virtual override onlyOwner {}
@@ -204,7 +204,22 @@ contract PriceOracle is IPriceOracle, Ownable {
     }
 
     /// @notice                     Sets oracle native token address
-    function setOracleNativeToken(address _oracleNativeToken) external nonZeroAddress(_oracleNativeToken) override onlyOwner {
+    function setOracleNativeToken(address _oracleNativeToken) external override onlyOwner {
+        oracleNativeToken = _oracleNativeToken;
+    }
+
+    /// @notice                     Internal setter for acceptable delay for oracle responses
+    /// @dev                        If oracle data has not been updated for a while, 
+    ///                             we will get data from exchange routers
+    /// @param _acceptableDelay     Maximum acceptable delay (in seconds)
+    function _setAcceptableDelay(uint _acceptableDelay) private {
+        emit NewAcceptableDelay(acceptableDelay, _acceptableDelay);
+        acceptableDelay = _acceptableDelay;
+    }
+
+    /// @notice                     Internal setter for oracle native token address
+    function _setOracleNativeToken(address _oracleNativeToken) private nonZeroAddress(_oracleNativeToken) {
+        emit NewOracleNativeToken(oracleNativeToken, _oracleNativeToken);
         oracleNativeToken = _oracleNativeToken;
     }
 
