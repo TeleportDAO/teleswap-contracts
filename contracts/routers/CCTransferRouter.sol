@@ -106,9 +106,9 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         _setTreasury(_treasury);
     }
 
-    /// @notice                             Setter for protocol percentage fee
+    /// @notice                             Internal setter for protocol percentage fee
     /// @param _protocolPercentageFee       Percentage amount of protocol fee
-    function _setProtocolPercentageFee(uint _protocolPercentageFee) internal {
+    function _setProtocolPercentageFee(uint _protocolPercentageFee) private {
         require(
             MAX_PROTOCOL_FEE >= _protocolPercentageFee,
             "CCTransferRouter: protocol fee is out of range"
@@ -117,37 +117,37 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         protocolPercentageFee = _protocolPercentageFee;
     }
 
-    /// @notice                             Setter for relay
+    /// @notice                             Internal setter for relay
     /// @param _relay                       Address of the relay contract
-    function _setRelay(address _relay) internal nonZeroAddress(_relay) {
+    function _setRelay(address _relay) private nonZeroAddress(_relay) {
         emit NewRelay(relay, _relay);
         relay = _relay;
     }
 
-    /// @notice                             Setter for relay
+    /// @notice                             Internal setter for relay
     /// @param _lockers                     Address of the lockers contract
-    function _setLockers(address _lockers) internal nonZeroAddress(_lockers) {
+    function _setLockers(address _lockers) private nonZeroAddress(_lockers) {
         emit NewLockers(lockers, _lockers);
         lockers = _lockers;
     }
 
-    /// @notice                             Setter for instant router
+    /// @notice                             Internal setter for instant router
     /// @param _instantRouter               Address of the instant router contract
-    function _setInstantRouter(address _instantRouter) internal nonZeroAddress(_instantRouter) {
+    function _setInstantRouter(address _instantRouter) private nonZeroAddress(_instantRouter) {
         emit NewInstantRouter(instantRouter, _instantRouter);
         instantRouter = _instantRouter;
     }
 
-    /// @notice                             Setter for teleBTC
+    /// @notice                             Internal setter for teleBTC
     /// @param _teleBTC                     TeleportDAO BTC ERC20 token address
-    function _setTeleBTC(address _teleBTC) internal nonZeroAddress(_teleBTC) {
+    function _setTeleBTC(address _teleBTC) private nonZeroAddress(_teleBTC) {
         emit NewTeleBTC(teleBTC, _teleBTC);
         teleBTC = _teleBTC;
     }
 
-    /// @notice                             Setter for treasury
+    /// @notice                             Internal setter for treasury
     /// @param _treasury                    Treasury address
-    function _setTreasury(address _treasury) internal nonZeroAddress(_treasury) {
+    function _setTreasury(address _treasury) private nonZeroAddress(_treasury) {
         emit NewTreasury(treasury, _treasury);
         treasury = _treasury;
     }

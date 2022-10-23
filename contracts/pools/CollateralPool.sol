@@ -59,7 +59,7 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
     /// @param _collateralizationRatio   The new collateralization ratio
     function _setCollateralizationRatio(
         uint _collateralizationRatio
-    ) internal nonZeroValue(_collateralizationRatio)  {
+    ) private nonZeroValue(_collateralizationRatio)  {
         emit NewCollateralizationRatio(collateralizationRatio, _collateralizationRatio);
         collateralizationRatio = _collateralizationRatio;
     }

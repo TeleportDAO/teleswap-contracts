@@ -210,13 +210,13 @@ contract PriceOracle is IPriceOracle, Ownable {
     /// @dev                        If oracle data has not been updated for a while, 
     ///                             we will get data from exchange routers
     /// @param _acceptableDelay     Maximum acceptable delay (in seconds)
-    function _setAcceptableDelay(uint _acceptableDelay) internal {
+    function _setAcceptableDelay(uint _acceptableDelay) private {
         emit NewAcceptableDelay(acceptableDelay, _acceptableDelay);
         acceptableDelay = _acceptableDelay;
     }
 
     /// @notice                     Internal setter for oracle native token address
-    function _setOracleNativeToken(address _oracleNativeToken) internal nonZeroAddress(_oracleNativeToken) {
+    function _setOracleNativeToken(address _oracleNativeToken) private nonZeroAddress(_oracleNativeToken) {
         emit NewOracleNativeToken(oracleNativeToken, _oracleNativeToken);
         oracleNativeToken = _oracleNativeToken;
     }

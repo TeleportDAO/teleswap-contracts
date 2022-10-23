@@ -137,28 +137,28 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     /// @notice                             Internal setter for relay contract address
     /// @param _relay                       The new relay contract address
-    function _setRelay(address _relay) internal nonZeroAddress(_relay) {
+    function _setRelay(address _relay) private nonZeroAddress(_relay) {
         emit NewRelay(relay, _relay);
         relay = _relay;
     }
 
     /// @notice                             Internal setter for lockers contract address
     /// @param _lockers                     The new lockers contract address
-    function _setLockers(address _lockers) internal nonZeroAddress(_lockers) {
+    function _setLockers(address _lockers) private nonZeroAddress(_lockers) {
         emit NewLockers(lockers, _lockers);
         lockers = _lockers;
     }
 
     /// @notice                             Internal setter for teleBTC contract address
     /// @param _teleBTC                     The new teleBTC contract address
-    function _setTeleBTC(address _teleBTC) internal nonZeroAddress(_teleBTC) {
+    function _setTeleBTC(address _teleBTC) private nonZeroAddress(_teleBTC) {
         emit NewTeleBTC(teleBTC, _teleBTC);
         teleBTC = _teleBTC;
     }
 
     /// @notice                             Internal setter for protocol treasury address
     /// @param _treasury                    The new treasury address
-    function _setTreasury(address _treasury) internal nonZeroAddress(_treasury) {
+    function _setTreasury(address _treasury) private nonZeroAddress(_treasury) {
         emit NewTreasury(treasury, _treasury);
         treasury = _treasury;
     }
@@ -166,7 +166,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @notice                             Internal setter for deadline of executing burn requests
     ///                                     Deadline shoudl be greater than relay finalization parameter
     /// @param _transferDeadline            The new transfer deadline
-    function _setTransferDeadline(uint _transferDeadline) internal {
+    function _setTransferDeadline(uint _transferDeadline) private {
         uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
         // Gives lockers enough time to pay cc burn requests
         require(_transferDeadline > _finalizationParameter, "CCBurnRouter: transfer deadline is too low");
@@ -176,7 +176,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     /// @notice                             Internal setter for protocol percentage fee for burning tokens
     /// @param _protocolPercentageFee       The new protocol percentage fee
-    function _setProtocolPercentageFee(uint _protocolPercentageFee) internal {
+    function _setProtocolPercentageFee(uint _protocolPercentageFee) private {
         require(MAX_PROTOCOL_FEE >= _protocolPercentageFee, "CCBurnRouter: protocol fee is out of range");
         emit NewProtocolPercentageFee(protocolPercentageFee, _protocolPercentageFee);
         protocolPercentageFee = _protocolPercentageFee;
@@ -184,7 +184,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     /// @notice                             Internal setter for slasher percentage reward for disputing lockers
     /// @param _slasherPercentageReward     The new slasher percentage reward
-    function _setSlasherPercentageReward(uint _slasherPercentageReward) internal {
+    function _setSlasherPercentageReward(uint _slasherPercentageReward) private {
         require(MAX_SLASHER_REWARD >= _slasherPercentageReward, "CCBurnRouter: slasher percentage reward is out of range");
         emit NewSlasherPercentageFee(slasherPercentageReward, _slasherPercentageReward);
         slasherPercentageReward = _slasherPercentageReward;
@@ -192,7 +192,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     /// @notice                             Internal setter for Bitcoin transaction fee
     /// @param _bitcoinFee                  The new Bitcoin transaction fee
-    function _setBitcoinFee(uint _bitcoinFee) internal {
+    function _setBitcoinFee(uint _bitcoinFee) private {
         emit NewBitcoinFee(bitcoinFee, _bitcoinFee);
         bitcoinFee = _bitcoinFee;
     }

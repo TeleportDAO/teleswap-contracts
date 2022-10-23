@@ -196,7 +196,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @notice                             Internal setter for rewardAmountInTDT
     /// @dev                                This award is for the relayer who has a finalized block header
     /// @param _rewardAmountInTDT           The reward amount in TDT
-    function _setRewardAmountInTDT(uint _rewardAmountInTDT) internal {
+    function _setRewardAmountInTDT(uint _rewardAmountInTDT) private {
         emit NewRewardAmountInTDT(rewardAmountInTDT, _rewardAmountInTDT);
         rewardAmountInTDT = _rewardAmountInTDT;
     }
@@ -204,7 +204,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @notice                             Internal setter for finalizationParameter
     /// @dev                                This might change if finalization rule of the source chain gets updated
     /// @param _finalizationParameter       The finalization parameter of the source chain
-    function _setFinalizationParameter(uint _finalizationParameter) internal {
+    function _setFinalizationParameter(uint _finalizationParameter) private {
         emit NewFinalizationParameter(finalizationParameter, _finalizationParameter);
         finalizationParameter = _finalizationParameter;
     }
@@ -212,14 +212,14 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @notice                             Internal setter for relayerPercentageFee
     /// @dev                                This is updated when we want to change the Relayer reward
     /// @param _relayerPercentageFee               Ratio > 1 that determines percentage of reward to the Relayer
-    function _setRelayerPercentageFee(uint _relayerPercentageFee) internal {
+    function _setRelayerPercentageFee(uint _relayerPercentageFee) private {
         emit NewRelayerPercentageFee(relayerPercentageFee, _relayerPercentageFee);
         relayerPercentageFee = _relayerPercentageFee;
     }
 
     /// @notice                             Internal setter for epochLength
     /// @param _epochLength                 The length of epochs for estimating the user queries hence their fees
-    function _setEpochLength(uint _epochLength) internal {
+    function _setEpochLength(uint _epochLength) private {
         emit NewEpochLength(epochLength, _epochLength);
         epochLength = _epochLength;
     }
@@ -227,7 +227,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @notice                             Internal setter for baseQueries
     /// @param _baseQueries                 The base amount of queries we assume in each epoch
     ///                                     (This is for preventing user fees to grow significantly)
-    function _setBaseQueries(uint _baseQueries) internal {
+    function _setBaseQueries(uint _baseQueries) private {
         emit NewBaseQueries(baseQueries, _baseQueries);
         baseQueries = _baseQueries;
     }
@@ -235,7 +235,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @notice                             Internal setter for submissionGasUsed
     /// @dev                                This is updated when the smart contract changes the way of getting block headers
     /// @param _submissionGasUsed           The gas used for submitting one block header
-    function _setSubmissionGasUsed(uint _submissionGasUsed) internal {
+    function _setSubmissionGasUsed(uint _submissionGasUsed) private {
         emit NewSubmissionGasUsed(submissionGasUsed, _submissionGasUsed);
         submissionGasUsed = _submissionGasUsed;
     }

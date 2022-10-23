@@ -171,7 +171,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     /// @notice                   Internal setter for payback deadline
     /// @dev                      Only owner can call this. It should be greater than relay finalization parameter so user has enough time to payback loan
     /// @param _paybackDeadline   The new payback deadline
-    function _setPaybackDeadline(uint _paybackDeadline) internal {
+    function _setPaybackDeadline(uint _paybackDeadline) private {
         uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
         // Gives users enough time to pay back loans
         require(_paybackDeadline >= _finalizationParameter, "InstantRouter: wrong payback deadline");
@@ -182,7 +182,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     /// @notice                             Internal setter for slasher percentage reward
     /// @dev                                Only owner can call this
     /// @param _slasherPercentageReward     The new slasher reward
-    function _setSlasherPercentageReward(uint _slasherPercentageReward) internal {
+    function _setSlasherPercentageReward(uint _slasherPercentageReward) private {
         require(
             _slasherPercentageReward <= MAX_SLASHER_PERCENTAGE_REWARD,
             "InstantRouter: wrong slasher percentage reward"
@@ -195,7 +195,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     /// @param _teleBTC                         The new teleBTC instant address
     function _setTeleBTC(
         address _teleBTC
-    ) internal nonZeroAddress(_teleBTC) {
+    ) private nonZeroAddress(_teleBTC) {
         emit NewTeleBTC(teleBTC, _teleBTC);
         teleBTC = _teleBTC;
     }
@@ -204,7 +204,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     /// @param _relay                           The new relay address
     function _setRelay(
         address _relay
-    ) internal nonZeroAddress(_relay) {
+    ) private nonZeroAddress(_relay) {
         emit NewRelay(relay, _relay);
         relay = _relay;
     }
@@ -213,7 +213,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     /// @param _collateralPoolFactory           The new collateral pool factory address
     function _setCollateralPoolFactory(
         address _collateralPoolFactory
-    ) internal nonZeroAddress(_collateralPoolFactory) {
+    ) private nonZeroAddress(_collateralPoolFactory) {
         emit NewCollateralPoolFactory(collateralPoolFactory, _collateralPoolFactory);
         collateralPoolFactory = _collateralPoolFactory;
     }
@@ -222,7 +222,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     /// @param _priceOracle                     The new price oracle address
     function _setPriceOracle(
         address _priceOracle
-    ) internal nonZeroAddress(_priceOracle) {
+    ) private nonZeroAddress(_priceOracle) {
         emit NewPriceOracle(priceOracle, _priceOracle);
         priceOracle = _priceOracle;
     }
@@ -231,7 +231,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     /// @param _teleBTCInstantPool              The new teleBTC instant pool address
     function _setTeleBTCInstantPool(
         address _teleBTCInstantPool
-    ) internal nonZeroAddress(_teleBTCInstantPool) {
+    ) private nonZeroAddress(_teleBTCInstantPool) {
         emit NewTeleBTCInstantPool(teleBTCInstantPool, _teleBTCInstantPool);
         teleBTCInstantPool = _teleBTCInstantPool;
     }
@@ -240,7 +240,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     /// @param _defaultExchangeConnector        The new defaultExchangeConnector address
     function _setDefaultExchangeConnector(
         address _defaultExchangeConnector
-    ) internal nonZeroAddress(_defaultExchangeConnector) {
+    ) private nonZeroAddress(_defaultExchangeConnector) {
         emit NewDeafultExchangeConnector(defaultExchangeConnector, _defaultExchangeConnector);
         defaultExchangeConnector = _defaultExchangeConnector;
     }

@@ -64,21 +64,21 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
 
     /// @notice                 Internal setter for instant router contract address
     /// @param _instantRouter   The new instant router contract address
-    function _setInstantRouter(address _instantRouter) internal {
+    function _setInstantRouter(address _instantRouter) private {
         emit NewInstantRouter(instantRouter, _instantRouter);
         instantRouter = _instantRouter;
     }
 
     /// @notice                         Internal setter for instant loan fee
     /// @param _instantPercentageFee    The new percentage fee
-    function _setInstantPercentageFee(uint _instantPercentageFee) internal {
+    function _setInstantPercentageFee(uint _instantPercentageFee) private {
         emit NewInstantPercentageFee(instantPercentageFee, _instantPercentageFee);
         instantPercentageFee = _instantPercentageFee;
     }
 
     /// @notice                 Internal setter for teleBTC contract address
     /// @param _teleBTC         The new teleBTC contract address
-    function _setTeleBTC(address _teleBTC) internal {
+    function _setTeleBTC(address _teleBTC) private {
         emit NewTeleBTC(teleBTC, _teleBTC);
         teleBTC = _teleBTC;
     }

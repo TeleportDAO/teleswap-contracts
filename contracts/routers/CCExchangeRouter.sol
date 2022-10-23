@@ -120,35 +120,35 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
     /// @notice         Internal setter for relay contract address
     /// @param _relay   The new relay contract address
-    function _setRelay(address _relay) internal nonZeroAddress(_relay) {
+    function _setRelay(address _relay) private nonZeroAddress(_relay) {
         emit NewRelay(relay, _relay);
         relay = _relay;
     }
 
     /// @notice                 Internal setter for instantRouter contract address
     /// @param _instantRouter   The new instantRouter contract address
-    function _setInstantRouter(address _instantRouter) internal nonZeroAddress(_instantRouter) {
+    function _setInstantRouter(address _instantRouter) private nonZeroAddress(_instantRouter) {
         emit NewInstantRouter(instantRouter, _instantRouter);
         instantRouter = _instantRouter;
     }
 
     /// @notice                 Internal setter for lockers contract address
     /// @param _lockers         The new lockers contract address
-    function _setLockers(address _lockers) internal nonZeroAddress(_lockers) {
+    function _setLockers(address _lockers) private nonZeroAddress(_lockers) {
         emit NewLockers(lockers, _lockers);
         lockers = _lockers;
     }
 
     /// @notice                 Internal setter for teleBTC contract address
     /// @param _teleBTC         The new teleBTC contract address
-    function _setTeleBTC(address _teleBTC) internal nonZeroAddress(_teleBTC) {
+    function _setTeleBTC(address _teleBTC) private nonZeroAddress(_teleBTC) {
         emit NewTeleBTC(teleBTC, _teleBTC);
         teleBTC = _teleBTC;
     }
 
     /// @notice                             Internal setter for protocol percentage fee
     /// @param _protocolPercentageFee       Percentage amount of protocol fee
-    function _setProtocolPercentageFee(uint _protocolPercentageFee) internal {
+    function _setProtocolPercentageFee(uint _protocolPercentageFee) private {
         require(
             MAX_PROTOCOL_FEE >= _protocolPercentageFee,
             "CCExchangeRouter: fee is out of range"
@@ -159,7 +159,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
     /// @notice                    Internal setter for treasury
     /// @param _treasury           Treasury address
-    function _setTreasury(address _treasury) internal nonZeroAddress(_treasury) {
+    function _setTreasury(address _treasury) private nonZeroAddress(_treasury) {
         emit NewTreasury(treasury, _treasury);
         treasury = _treasury;
     }
