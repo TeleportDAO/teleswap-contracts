@@ -1211,7 +1211,7 @@ describe("CCBurnRouter", async () => {
             ).to.equal(100);
         })
 
-        it.only("Sets relay, lockers, teleBTC and treasury", async function () {
+        it("Sets relay, lockers, teleBTC and treasury", async function () {
             await expect(
                 ccBurnRouter.setRelay(ONE_ADDRESS)
             ).to.emit(
