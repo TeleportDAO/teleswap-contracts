@@ -849,7 +849,9 @@ describe("CCTransferRouter", async () => {
         it("Sets protocol percentage fee", async function () {
             await expect(
                 ccTransferRouter.setProtocolPercentageFee(100)
-            ).to.not.reverted;
+            ).to.emit(
+                ccTransferRouter, "NewProtocolPercentageFee"
+            ).withArgs(PROTOCOL_PERCENTAGE_FEE, 100);
 
             expect(
                 await ccTransferRouter.protocolPercentageFee()
@@ -865,7 +867,10 @@ describe("CCTransferRouter", async () => {
         it("Sets relay, lockers, instant router, teleBTC and treasury", async function () {
             await expect(
                 ccTransferRouter.setRelay(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                ccTransferRouter, "NewRelay"
+            ).withArgs(mockBitcoinRelay.address, ONE_ADDRESS);
+
 
             expect(
                 await ccTransferRouter.relay()
@@ -873,7 +878,10 @@ describe("CCTransferRouter", async () => {
 
             await expect(
                 ccTransferRouter.setLockers(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                ccTransferRouter, "NewLockers"
+            ).withArgs(lockers.address, ONE_ADDRESS);
+
 
             expect(
                 await ccTransferRouter.lockers()
@@ -881,7 +889,10 @@ describe("CCTransferRouter", async () => {
 
             await expect(
                 ccTransferRouter.setInstantRouter(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                ccTransferRouter, "NewInstantRouter"
+            ).withArgs(mockInstantRouter.address, ONE_ADDRESS);
+
 
             expect(
                 await ccTransferRouter.instantRouter()
@@ -889,7 +900,10 @@ describe("CCTransferRouter", async () => {
 
             await expect(
                 ccTransferRouter.setTeleBTC(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                ccTransferRouter, "NewTeleBTC"
+            ).withArgs(teleBTC.address, ONE_ADDRESS);
+
 
             expect(
                 await ccTransferRouter.teleBTC()
@@ -897,7 +911,10 @@ describe("CCTransferRouter", async () => {
 
             await expect(
                 ccTransferRouter.setTreasury(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                ccTransferRouter, "NewTreasury"
+            ).withArgs(TREASURY, ONE_ADDRESS);
+
 
             expect(
                 await ccTransferRouter.treasury()
