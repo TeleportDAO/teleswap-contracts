@@ -139,8 +139,6 @@ describe("CCExchangeRouter", async () => {
 
         await mockInstantRouter.mock.payBackLoan.returns(true);
 
-        lockers = await deployLockers();
-
         // Deploys teleBTC contract
         const teleBTCFactory = new TeleBTC__factory(deployer);
         teleBTC = await teleBTCFactory.deploy(
@@ -193,6 +191,8 @@ describe("CCExchangeRouter", async () => {
             "ATT",
             100000
         );
+
+        lockers = await deployLockers();
 
         // Deploys ccExchangeRouter contract
         const ccExchangeRouterFactory = new CCExchangeRouter__factory(deployer);
@@ -285,10 +285,11 @@ describe("CCExchangeRouter", async () => {
 
         // Initializes lockers proxy
         await lockers.initialize(
+            teleBTC.address,
             teleportDAOToken.address,
             ONE_ADDRESS,
             mockPriceOracle.address,
-            // ONE_ADDRESS,
+            ONE_ADDRESS,
             minRequiredTDTLockedAmount,
             0,
             collateralRatio,
