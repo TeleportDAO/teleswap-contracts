@@ -159,7 +159,6 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
         require(availableTeleBTC() >= _amount, "InstantPool: liquidity is not sufficient");
         // Instant fee increases the total teleBTC amount
         uint instantFee = _amount*instantPercentageFee/10000;
-        // totalAddedTeleBTC = totalAddedTeleBTC + instantFee;
         IERC20(teleBTC).transfer(_user, _amount);
         emit InstantLoan(_user, _amount, instantFee);
         return true;

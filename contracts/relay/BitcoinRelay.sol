@@ -52,6 +52,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         // Adds the initial block header to the chain
         bytes29 _genesisView = _genesisHeader.ref(0).tryAsHeader();
         require(_genesisView.notNull(), "BitcoinRelay: stop being dumb");
+        // genesis header and period start can be same
         bytes32 _genesisHash = _genesisView.hash256();
         relayGenesisHash = _genesisHash;
         blockHeader memory newBlockHeader;
