@@ -8,6 +8,11 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
 
+    modifier nonZeroAddress(address _address) {
+        require(_address != address(0), "InstantPool: zero address");
+        _;
+    }
+
     // Constants
     uint constant MAX_INSTANT_PERCENTAGE_FEE = 10000;
 
@@ -66,7 +71,7 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
 
     /// @notice                 Internal setter for instant router contract address
     /// @param _instantRouter   The new instant router contract address
-    function _setInstantRouter(address _instantRouter) private {
+    function _setInstantRouter(address _instantRouter) nonZeroAddress(_instantRouter) private {
         emit NewInstantRouter(instantRouter, _instantRouter);
         instantRouter = _instantRouter;
     }
@@ -84,7 +89,7 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
 
     /// @notice                 Internal setter for teleBTC contract address
     /// @param _teleBTC         The new teleBTC contract address
-    function _setTeleBTC(address _teleBTC) private {
+    function _setTeleBTC(address _teleBTC) nonZeroAddress(_teleBTC) private {
         emit NewTeleBTC(teleBTC, _teleBTC);
         teleBTC = _teleBTC;
     }

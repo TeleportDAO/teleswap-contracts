@@ -321,7 +321,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @param _ccBurnRouter   The new cc burn router contract address
     function _setCCBurnRouter(address _ccBurnRouter) private nonZeroAddress(_ccBurnRouter) {
         emit NewCCBurnRouter(ccBurnRouter, _ccBurnRouter);
-        // TODO: what will happen in subgraph for first (zero address)?
+        // TODO: what will happen in subgraph for first (zero address)? (remove)
         emit BurnerRemoved(ccBurnRouter);
         burners[ccBurnRouter] = false;
         ccBurnRouter = _ccBurnRouter;

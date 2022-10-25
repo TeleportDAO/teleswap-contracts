@@ -202,6 +202,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param _rewardAmountInTDT           The reward amount in TDT
     function _setRewardAmountInTDT(uint _rewardAmountInTDT) private {
         emit NewRewardAmountInTDT(rewardAmountInTDT, _rewardAmountInTDT);
+        // this reward can be zero as well
         rewardAmountInTDT = _rewardAmountInTDT;
     }
 
@@ -210,6 +211,11 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param _finalizationParameter       The finalization parameter of the source chain
     function _setFinalizationParameter(uint _finalizationParameter) private {
         emit NewFinalizationParameter(finalizationParameter, _finalizationParameter);
+        require(
+            _finalizationParameter > 0,
+            "BitcoinRelay: zero finalization param"
+        );
+
         finalizationParameter = _finalizationParameter;
     }
 
@@ -218,6 +224,11 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param _relayerPercentageFee               Ratio > 1 that determines percentage of reward to the Relayer
     function _setRelayerPercentageFee(uint _relayerPercentageFee) private {
         emit NewRelayerPercentageFee(relayerPercentageFee, _relayerPercentageFee);
+        require(
+            // TODO: change all 100s to 10000 in this contract
+            _relayerPercentageFee <= 100,
+            "BitcoinRelay: relay fee is above max"
+        );
         relayerPercentageFee = _relayerPercentageFee;
     }
 
@@ -225,6 +236,10 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param _epochLength                 The length of epochs for estimating the user queries hence their fees
     function _setEpochLength(uint _epochLength) private {
         emit NewEpochLength(epochLength, _epochLength);
+        require(
+            _epochLength > 0,
+            "BitcoinRelay: zero epoch length"
+        );
         epochLength = _epochLength;
     }
 
@@ -233,6 +248,10 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     ///                                     (This is for preventing user fees to grow significantly)
     function _setBaseQueries(uint _baseQueries) private {
         emit NewBaseQueries(baseQueries, _baseQueries);
+        require(
+            _baseQueries > 0,
+            "BitcoinRelay: zero base query"
+        );
         baseQueries = _baseQueries;
     }
 
@@ -241,6 +260,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param _submissionGasUsed           The gas used for submitting one block header
     function _setSubmissionGasUsed(uint _submissionGasUsed) private {
         emit NewSubmissionGasUsed(submissionGasUsed, _submissionGasUsed);
+        // TODO: is there any scenario we want to set this to zero
         submissionGasUsed = _submissionGasUsed;
     }
 
