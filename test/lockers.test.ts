@@ -119,11 +119,15 @@ describe("Lockers", async () => {
         lockers = await deployLockers();
         lockers2 = await deployLockers();
 
+        teleBTC = await deployTeleBTC()
+
         // Initializes lockers proxy
         await lockers.initialize(
+            teleBTC.address,
             teleportDAOToken.address,
             mockExchangeConnector.address,
             mockPriceOracle.address,
+            ccBurnSimulatorAddress,
             minRequiredTDTLockedAmount,
             minRequiredNativeTokenLockedAmount,
             collateralRatio,
@@ -133,16 +137,15 @@ describe("Lockers", async () => {
         )
 
         // Sets ccBurnRouter address
-        await lockers.setCCBurnRouter(ccBurnSimulatorAddress);
+        // await lockers.setCCBurnRouter(ccBurnSimulatorAddress);
 
-        teleBTC = await deployTeleBTC()
 
         await teleBTC.addMinter(lockers.address)
         await teleBTC.addBurner(lockers.address)
 
         // lockersAsAdmin = await lockers.connect(proxyAdmin)
 
-        await lockers.setTeleBTC(teleBTC.address)
+        // await lockers.setTeleBTC(teleBTC.address)
 
     });
 
@@ -247,9 +250,11 @@ describe("Lockers", async () => {
         it("initialize can be called only once", async function () {
             await expect(
                 lockers.initialize(
+                    teleBTC.address,
                     teleportDAOToken.address,
                     mockExchangeConnector.address,
                     mockPriceOracle.address,
+                    ONE_ADDRESS,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
                     collateralRatio,
@@ -263,9 +268,11 @@ describe("Lockers", async () => {
         it("initialize cant be called with zero address", async function () {
             await expect(
                 lockers2.initialize(
+                    teleBTC.address,
                     ZERO_ADDRESS,
                     mockExchangeConnector.address,
                     mockPriceOracle.address,
+                    ONE_ADDRESS,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
                     collateralRatio,
@@ -279,9 +286,11 @@ describe("Lockers", async () => {
         it("initialize cant be called with zero amount", async function () {
             await expect(
                 lockers2.initialize(
+                    teleBTC.address,
                     teleportDAOToken.address,
                     mockExchangeConnector.address,
                     mockPriceOracle.address,
+                    ONE_ADDRESS,
                     0,
                     0,
                     collateralRatio,
@@ -296,9 +305,11 @@ describe("Lockers", async () => {
         it("initialize cant be called LR greater than CR", async function () {
             await expect(
                 lockers2.initialize(
+                    teleBTC.address,
                     teleportDAOToken.address,
                     mockExchangeConnector.address,
                     mockPriceOracle.address,
+                    ONE_ADDRESS,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
                     liquidationRatio,
@@ -312,9 +323,11 @@ describe("Lockers", async () => {
         it("initialize cant be called with Price discount greater than 100%", async function () {
             await expect(
                 lockers2.initialize(
+                    teleBTC.address,
                     teleportDAOToken.address,
                     mockExchangeConnector.address,
                     mockPriceOracle.address,
+                    ONE_ADDRESS,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
                     collateralRatio,

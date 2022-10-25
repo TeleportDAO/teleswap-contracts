@@ -199,10 +199,11 @@ describe("CCTransferRouter", async () => {
 
         // Initializes lockers proxy
         await lockers.initialize(
+            teleBTC.address,
             teleportDAOToken.address,
             ONE_ADDRESS,
             mockPriceOracle.address,
-            // ONE_ADDRESS,
+            ONE_ADDRESS,
             minRequiredTDTLockedAmount,
             0,
             collateralRatio,

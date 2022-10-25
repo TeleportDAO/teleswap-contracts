@@ -22,10 +22,11 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
    
     function initialize(
+        address _teleBTC,
         address _TeleportDAOToken,
         address _exchangeConnector,
         address _priceOracle,
-        // address _ccBurnRouter,
+        address _ccBurnRouter,
         uint _minRequiredTDTLockedAmount,
         uint _minRequiredTNTLockedAmount,
         uint _collateralRatio,
@@ -61,9 +62,8 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         );
 
         TeleportDAOToken = _TeleportDAOToken;
-        // ccBurnRouter = _ccBurnRouter;
-        // burners[ccBurnRouter] = true;
-
+        _setTeleBTC(_teleBTC);
+        _setCCBurnRouter(_ccBurnRouter);
         _setExchangeConnector(_exchangeConnector);
         _setPriceOracle(_priceOracle);
         _setMinRequiredTDTLockedAmount(_minRequiredTDTLockedAmount);
@@ -321,8 +321,13 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @param _ccBurnRouter   The new cc burn router contract address
     function _setCCBurnRouter(address _ccBurnRouter) private nonZeroAddress(_ccBurnRouter) {
         emit NewCCBurnRouter(ccBurnRouter, _ccBurnRouter);
+        // TODO: what will happen in subgraph for first (zero address)?
+        emit BurnerRemoved(ccBurnRouter);
+        burners[ccBurnRouter] = false;
         ccBurnRouter = _ccBurnRouter;
         libParams.ccBurnRouter = ccBurnRouter;
+        emit BurnerAdded(ccBurnRouter);
+        burners[ccBurnRouter] = true;
     }
 
     /// @notice                 Internal setter for exchange router contract address and updates wrapped avax addresses
