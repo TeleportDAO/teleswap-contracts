@@ -39,7 +39,7 @@ describe("CollateralPool", async () => {
         erc20 = await erc20Factory.deploy(
             "TestToken",
             "TT",
-            1000
+            10000
         );
         
         // Deploys collateralPool contract
@@ -48,7 +48,7 @@ describe("CollateralPool", async () => {
             "Test-Collateral-Pool",
             "TCP",
             erc20.address,
-            100
+            10000
         );
 
     });
@@ -318,11 +318,11 @@ describe("CollateralPool", async () => {
         });
 
         it("Sets new collateralization ratio", async function () {
-            await collateralPool.setCollateralizationRatio(200);
+            await collateralPool.setCollateralizationRatio(20000);
             
             expect(
                 await collateralPool.collateralizationRatio()
-            ).to.equal(200); 
+            ).to.equal(20000); 
         })
 
         it("Reverts since given ratio is zero", async function () {

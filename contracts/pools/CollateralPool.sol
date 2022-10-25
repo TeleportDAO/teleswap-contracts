@@ -65,6 +65,10 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
         uint _collateralizationRatio
     ) private nonZeroValue(_collateralizationRatio)  {
         emit NewCollateralizationRatio(collateralizationRatio, _collateralizationRatio);
+        require(
+            _collateralizationRatio >= 10000,
+            "CollateralPool: CR is low"
+        );
         collateralizationRatio = _collateralizationRatio;
     }
 

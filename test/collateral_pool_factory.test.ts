@@ -66,7 +66,7 @@ describe("CollateralPoolFactory", async () => {
             expect(
                 await collateralPoolFactory.createCollateralPool(
                     erc20.address,
-                    100
+                    10000
                 )
             ).to.emit(collateralPoolFactory, 'CreateCollateralPool');
             
@@ -92,7 +92,7 @@ describe("CollateralPoolFactory", async () => {
         it("Reverts since collateral pool has been already created", async function () {
             await collateralPoolFactory.createCollateralPool(
                 erc20.address,
-                100
+                10000
             );
 
             await expect(
@@ -149,8 +149,8 @@ describe("CollateralPoolFactory", async () => {
         it("Removes a collateral pool", async function () {
 
             // Creates two collateral pools
-            await collateralPoolFactory.createCollateralPool(erc20.address, 100);
-            await collateralPoolFactory.createCollateralPool(_erc20.address, 200);
+            await collateralPoolFactory.createCollateralPool(erc20.address, 10000);
+            await collateralPoolFactory.createCollateralPool(_erc20.address, 20000);
             
             // Removes collateral pool
             expect(
@@ -175,7 +175,7 @@ describe("CollateralPoolFactory", async () => {
 
         it("Reverts since the index is out of range", async function () {
             // Creates a collateral pool
-            await collateralPoolFactory.createCollateralPool(erc20.address, 100);
+            await collateralPoolFactory.createCollateralPool(erc20.address, 10000);
             
             // Removes collateral pool
             await expect(
@@ -185,8 +185,8 @@ describe("CollateralPoolFactory", async () => {
 
         it("Reverts since the index doesn't belong to collateral token", async function () {     
             // Creates two collateral pools
-            await collateralPoolFactory.createCollateralPool(erc20.address, 100);
-            await collateralPoolFactory.createCollateralPool(_erc20.address, 200);
+            await collateralPoolFactory.createCollateralPool(erc20.address, 10000);
+            await collateralPoolFactory.createCollateralPool(_erc20.address, 20000);
 
             // Removes collateral pool
             await expect(
@@ -195,7 +195,7 @@ describe("CollateralPoolFactory", async () => {
         })
 
         it("Reverts since the collateral pool doesn't exist", async function () {    
-            await collateralPoolFactory.createCollateralPool(_erc20.address, 200);
+            await collateralPoolFactory.createCollateralPool(_erc20.address, 20000);
 
             // Removes collateral pool
             await expect(

@@ -75,6 +75,10 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
     /// @param _instantPercentageFee    The new percentage fee
     function _setInstantPercentageFee(uint _instantPercentageFee) private {
         emit NewInstantPercentageFee(instantPercentageFee, _instantPercentageFee);
+        require(
+            _instantPercentageFee <= MAX_INSTANT_PERCENTAGE_FEE,
+            "InstantPool: amount more than max"
+        );
         instantPercentageFee = _instantPercentageFee;
     }
 
