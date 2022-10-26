@@ -55,6 +55,11 @@ contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGua
             getCollateralPoolByToken[_collateralToken] == address(0), 
             'CollateralPoolFactory: collateral pool already exists'
         );
+
+        require(
+            _collateralizationRatio >= 10000, 
+            'CollateralPoolFactory: low amount'
+        );
         
         // Creates collateral pool
         CollateralPool pool;

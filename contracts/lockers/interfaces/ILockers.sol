@@ -121,6 +121,11 @@ interface ILockers is ILockersStorage {
         uint newLockerPercentageFee
     );
 
+    event NewPriceWithDiscountRatio(
+        uint oldPriceWithDiscountRatio,
+        uint newPriceWithDiscountRatio
+    );
+
     event NewMinRequiredTDTLockedAmount(
         uint oldMinRequiredTDTLockedAmount,
         uint newMinRequiredTDTLockedAmount
@@ -145,6 +150,11 @@ interface ILockers is ILockersStorage {
         address oldExchangeConnector,
         address newExchangeConnector
     );
+
+    event NewTeleportDAOToken(
+        address oldTDTToken,
+        address newTDTToken
+    ); 
 
     event NewTeleBTC(
         address oldTeleBTC,
@@ -195,7 +205,11 @@ interface ILockers is ILockersStorage {
 
     function burn(bytes calldata _lockerLockingScript, uint256 _amount) external returns(uint);
 
+    function setTeleportDAOToken(address _tdtTokenAddress) external;
+
     function setLockerPercentageFee(uint _lockerPercentageFee) external;
+
+    function setPriceWithDiscountRatio(uint _priceWithDiscountRatio) external;
 
     function setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) external;
 

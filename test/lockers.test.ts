@@ -317,7 +317,7 @@ describe("Lockers", async () => {
                     LOCKER_PERCENTAGE_FEE,
                     PRICE_WITH_DISCOUNT_RATIO
                 )
-            ).to.be.revertedWith("Lockers: problem in CR and LR")
+            ).to.be.revertedWith("Lockers: CR must be greater than LR")
         })
 
         it("initialize cant be called with Price discount greater than 100%", async function () {

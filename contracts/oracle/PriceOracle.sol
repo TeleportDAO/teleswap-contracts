@@ -214,6 +214,10 @@ contract PriceOracle is IPriceOracle, Ownable {
     /// @param _acceptableDelay     Maximum acceptable delay (in seconds)
     function _setAcceptableDelay(uint _acceptableDelay) private {
         emit NewAcceptableDelay(acceptableDelay, _acceptableDelay);
+        require(
+            _acceptableDelay > 0,
+            "PriceOracle: zero amount"
+        );
         acceptableDelay = _acceptableDelay;
     }
 

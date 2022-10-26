@@ -25,6 +25,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     // Constants
     uint constant MAX_PROTOCOL_FEE = 10000;
+    // TODO: why only 100?!
     uint constant MAX_SLASHER_REWARD = 100;
 
     // Public variables
@@ -196,6 +197,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _bitcoinFee                  The new Bitcoin transaction fee
     function _setBitcoinFee(uint _bitcoinFee) private {
         emit NewBitcoinFee(bitcoinFee, _bitcoinFee);
+        require(MAX_PROTOCOL_FEE >= _bitcoinFee, "CCBurnRouter: btc fee is out of range");
         bitcoinFee = _bitcoinFee;
     }
 
