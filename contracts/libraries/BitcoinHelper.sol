@@ -3,9 +3,13 @@ pragma solidity >=0.8.0 <0.8.4;
 
 import "./TypedMemView.sol";
 import "../types/ScriptTypesEnum.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "hardhat/console.sol";
 
 library BitcoinHelper {
+
+    using SafeCast for uint96;
+
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
 
@@ -50,7 +54,7 @@ library BitcoinHelper {
 
     // Revert with an error message re: non-minimal VarInts
     function revertNonMinimal(bytes29 ref) private pure returns (string memory) {
-        (, uint256 g) = TypedMemView.encodeHex(ref.indexUint(0, uint8(ref.len())));
+        (, uint256 g) = TypedMemView.encodeHex(ref.indexUint(0, ref.len().toUint8()));
         string memory err = string(
             abi.encodePacked(
                 "Non-minimal var int. Got 0x",
