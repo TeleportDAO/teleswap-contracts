@@ -6,18 +6,17 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 interface ITeleBTC is IERC20 {
 
     // Events
+    event Mint(address indexed doer, address indexed receiver, uint value);
 
-    event Mint(address indexed to, uint value);
+    event Burn(address indexed doer, address indexed burner, uint value);
 
-    event Burn(address indexed to, uint value);
+    event MinterAdded(address indexed newMinter);
 
-    event AddMinter(address indexed account);
+    event MinterRemoved(address indexed minter);
 
-    event RemoveMinter(address indexed account);
+    event BurnerAdded(address indexed newBurner);
 
-    event AddBurner(address indexed account);
-
-    event RemoveBurner(address indexed account);
+    event BurnerRemoved(address indexed burner);
 
     // function name() external view returns (string memory);
     // function symbol() external view returns (string memory);
