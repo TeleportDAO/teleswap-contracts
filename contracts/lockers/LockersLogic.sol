@@ -38,12 +38,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
         PausableUpgradeable.__Pausable_init();
-        
-        require(
-            // _TeleportDAOToken != address(0) && _exchangeConnector != address(0) && _priceOracle != address(0) && _ccBurnRouter != address(0),
-            _TeleportDAOToken != address(0) ,
-            "Lockers: address is zero"
-        );
 
         // TODO not checked in setter function
         require(
@@ -51,28 +45,30 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             "Lockers: amount is zero"
         );
 
-        require(
-            _collateralRatio >= _liquidationRatio && _liquidationRatio >= ONE_HUNDRED_PERCENT,
-            "Lockers: problem in CR and LR"
-        );
+        // require(
+        //     _collateralRatio >= _liquidationRatio && _liquidationRatio >= ONE_HUNDRED_PERCENT,
+        //     "Lockers: problem in CR and LR"
+        // );
 
-        require(
-            _priceWithDiscountRatio <= ONE_HUNDRED_PERCENT,
-            "Lockers: less than 100%"
-        );
+        // require(
+        //     _priceWithDiscountRatio <= ONE_HUNDRED_PERCENT,
+        //     "Lockers: less than 100%"
+        // );
 
-        TeleportDAOToken = _TeleportDAOToken;
+        _setTeleportDAOToken(_TeleportDAOToken);
         _setTeleBTC(_teleBTC);
         _setCCBurnRouter(_ccBurnRouter);
         _setExchangeConnector(_exchangeConnector);
         _setPriceOracle(_priceOracle);
         _setMinRequiredTDTLockedAmount(_minRequiredTDTLockedAmount);
         _setMinRequiredTNTLockedAmount(_minRequiredTNTLockedAmount);
-        _setCollateralRatio(_collateralRatio);
         _setLiquidationRatio(_liquidationRatio);
+        _setCollateralRatio(_collateralRatio);
         _setLockerPercentageFee(_lockerPercentageFee);
+        _setPriceWithDiscountRatio(_priceWithDiscountRatio);
         
-        priceWithDiscountRatio= _priceWithDiscountRatio;
+        // priceWithDiscountRatio= _priceWithDiscountRatio;
+        // libParams.priceWithDiscountRatio = priceWithDiscountRatio;
 
         libConstants.OneHundredPercent = ONE_HUNDRED_PERCENT;
         libConstants.HealthFactor = HEALTH_FACTOR;
@@ -81,14 +77,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         libConstants.NativeTokenDecimal = NATIVE_TOKEN_DECIMAL;
         libConstants.NativeToken = NATIVE_TOKEN;
 
-        libParams.teleportDAOToken = TeleportDAOToken;
-        
-        // TODO ?
-        libParams.teleBTC = teleBTC;
-        libParams.ccBurnRouter = ccBurnRouter;
-        // ?
-
-        libParams.priceWithDiscountRatio = priceWithDiscountRatio;
     }
 
     function renounceOwnership() public virtual override onlyOwner {}
@@ -221,11 +209,26 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         );
     }
 
+    /// @notice                       Changes teleportDAO token in lockers 
+    /// @dev                          Only current owner can call this
+    /// @param _tdtTokenAddress       The new teleportDAO token address
+    function setTeleportDAOToken(address _tdtTokenAddress) external override onlyOwner {
+        _setTeleportDAOToken(_tdtTokenAddress);
+    }
+
+
     /// @notice                       Changes percentage fee of locker
     /// @dev                          Only current owner can call this
     /// @param _lockerPercentageFee   The new locker percentage fee
     function setLockerPercentageFee(uint _lockerPercentageFee) external override onlyOwner {
         _setLockerPercentageFee(_lockerPercentageFee);
+    }
+
+    /// @notice                          Changes price with discount ratio
+    /// @dev                             Only current owner can call this
+    /// @param _priceWithDiscountRatio   The new price with discount ratioo
+    function setPriceWithDiscountRatio(uint _priceWithDiscountRatio) external override onlyOwner {
+        _setPriceWithDiscountRatio(_priceWithDiscountRatio);
     }
 
     /// @notice         Changes the required bond amount to become locker
@@ -284,6 +287,14 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         _setLiquidationRatio(_liquidationRatio);
     }
 
+    /// @notice                     Internal setter for teleportDAO token of lockers
+    /// @param _tdtTokenAddress     The new teleportDAO token address
+    function _setTeleportDAOToken(address _tdtTokenAddress) private nonZeroAddress(_tdtTokenAddress) {
+        emit NewTeleportDAOToken(TeleportDAOToken, _tdtTokenAddress);
+        TeleportDAOToken = _tdtTokenAddress;
+        libParams.teleportDAOToken = TeleportDAOToken;
+    }
+
     /// @notice                       Internal setter for percentage fee of locker
     /// @param _lockerPercentageFee   The new locker percentage fee
     function _setLockerPercentageFee(uint _lockerPercentageFee) private {
@@ -291,6 +302,17 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         emit NewLockerPercentageFee(lockerPercentageFee, _lockerPercentageFee);
         lockerPercentageFee = _lockerPercentageFee;
         libParams.lockerPercentageFee = lockerPercentageFee;
+    }
+
+    function _setPriceWithDiscountRatio(uint _priceWithDiscountRatio) private {
+        require(
+            _priceWithDiscountRatio <= ONE_HUNDRED_PERCENT,
+            "Lockers: less than 100%"
+        );
+        emit NewPriceWithDiscountRatio(priceWithDiscountRatio, priceWithDiscountRatio);
+        
+        priceWithDiscountRatio= _priceWithDiscountRatio;
+        libParams.priceWithDiscountRatio = priceWithDiscountRatio;
     }
 
     /// @notice         Internal setter for the required bond amount to become locker
@@ -358,6 +380,10 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @notice                     Internal setter for liquidation ratio
     /// @param _liquidationRatio    The new liquidation ratio
     function _setLiquidationRatio(uint _liquidationRatio) private {
+        require(
+            _liquidationRatio >= ONE_HUNDRED_PERCENT,
+            "Lockers: problem in CR and LR"
+        );
         emit NewLiquidationRatio(liquidationRatio, _liquidationRatio);
         liquidationRatio = _liquidationRatio;
         libParams.liquidationRatio = liquidationRatio;

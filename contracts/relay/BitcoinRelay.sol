@@ -71,6 +71,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         _setFinalizationParameter(3);
         initialHeight = _height;
         lastSubmittedHeight = _height;
+        // TODO: add a setter function for tdt token
         TeleportDAOToken = _TeleportDAOToken;
         _setRelayerPercentageFee(5);
         _setEpochLength(2016);
