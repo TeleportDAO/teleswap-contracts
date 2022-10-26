@@ -1016,8 +1016,8 @@ describe("Bitcoin Relay", async () => {
             await setTDTbalanceOf(2 * rewardAmountInTDTtest);
             await setTDTtransfer(false);
 
-            expect(
-                await instance.addHeaders(
+            await expect(
+                instance.addHeaders(
                     genesis.hex,
                     headers
                 )
