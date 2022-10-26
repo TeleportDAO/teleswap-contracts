@@ -3,9 +3,14 @@ pragma solidity >=0.8.0 <0.8.4;
 
 import "./TypedMemView.sol";
 import "../types/ScriptTypesEnum.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "hardhat/console.sol";
 
 library BitcoinHelper {
+
+    using SafeCast for uint96;
+    using SafeCast for uint256;
+
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
 
@@ -50,7 +55,7 @@ library BitcoinHelper {
 
     // Revert with an error message re: non-minimal VarInts
     function revertNonMinimal(bytes29 ref) private pure returns (string memory) {
-        (, uint256 g) = TypedMemView.encodeHex(ref.indexUint(0, uint8(ref.len())));
+        (, uint256 g) = TypedMemView.encodeHex(ref.indexUint(0, ref.len().toUint8()));
         string memory err = string(
             abi.encodePacked(
                 "Non-minimal var int. Got 0x",
@@ -67,15 +72,16 @@ library BitcoinHelper {
     function indexCompactInt(bytes29 memView, uint256 _index) internal pure returns (uint64 number) {
         uint256 flag = memView.indexUint(_index, 1);
         if (flag <= 0xfc) {
-            return uint64(flag);
+            // TODO: use safe cast to all the following lines
+            return flag.toUint64();
         } else if (flag == 0xfd) {
-            number = uint64(memView.indexLEUint(_index + 1, 2));
+            number = memView.indexLEUint(_index + 1, 2).toUint64();
             if (compactIntLength(number) != 3) {revertNonMinimal(memView.slice(_index, 3, 0));}
         } else if (flag == 0xfe) {
-            number = uint64(memView.indexLEUint(_index + 1, 4));
+            number = memView.indexLEUint(_index + 1, 4).toUint64();
             if (compactIntLength(number) != 5) {revertNonMinimal(memView.slice(_index, 5, 0));}
         } else if (flag == 0xff) {
-            number = uint64(memView.indexLEUint(_index + 1, 8));
+            number = memView.indexLEUint(_index + 1, 8).toUint64();
             if (compactIntLength(number) != 9) {revertNonMinimal(memView.slice(_index, 9, 0));}
         }
     }
@@ -157,7 +163,7 @@ library BitcoinHelper {
     /// @param _outpoint    the outpoint
     /// @return             the index
     function outpointIdx(bytes29 _outpoint) internal pure typeAssert(_outpoint, BTCTypes.Outpoint) returns (uint32) {
-        return uint32(_outpoint.indexLEUint(32, 4));
+        return _outpoint.indexLEUint(32, 4).toUint32();
     }
 
     /// @notice          extracts the outpoint from an input
@@ -208,7 +214,7 @@ library BitcoinHelper {
     /// @param _output  the output
     /// @return         the value
     function value(bytes29 _output) internal pure typeAssert(_output, BTCTypes.TxOut) returns (uint64) {
-        return uint64(_output.indexLEUint(0, 8));
+        return _output.indexLEUint(0, 8).toUint64();
     }
 
     /// @notice                   Finds total outputs value
@@ -468,7 +474,7 @@ library BitcoinHelper {
     /// @return         the Op Return Payload (or null if not a valid Op Return output)
     function opReturnPayloadBig(bytes29 _spk) internal pure typeAssert(_spk, BTCTypes.ScriptPubkey) returns (bytes29) {
         uint64 _bodyLength = indexCompactInt(_spk, 0);
-        uint64 _payloadLen = uint64(_spk.indexUint(3, 1));
+        uint64 _payloadLen = _spk.indexUint(3, 1).toUint64();
         if (_bodyLength > 83 || _bodyLength < 4 || _spk.indexUint(1, 1) != 0x6a || _spk.indexUint(3, 1) != _bodyLength - 3) {
             return TypedMemView.nullView();
         }
@@ -481,7 +487,7 @@ library BitcoinHelper {
     /// @return         the Op Return Payload (or null if not a valid Op Return output)
     function opReturnPayloadSmall(bytes29 _spk) internal pure typeAssert(_spk, BTCTypes.ScriptPubkey) returns (bytes29) {
         uint64 _bodyLength = indexCompactInt(_spk, 0);
-        uint64 _payloadLen = uint64(_spk.indexUint(2, 1));
+        uint64 _payloadLen = _spk.indexUint(2, 1).toUint64();
         if (_bodyLength > 77 || _bodyLength < 4 || _spk.indexUint(1, 1) != 0x6a || _spk.indexUint(2, 1) != _bodyLength - 2) {
             return TypedMemView.nullView();
         }
