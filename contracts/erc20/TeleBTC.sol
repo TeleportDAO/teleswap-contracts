@@ -58,7 +58,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     function addMinter(address account) external override onlyOwner {
         require(!isMinter(account), "TeleBTC: account already has role");
         minters[account] = true;
-        emit AddMinter(account);
+        emit MinterAdded(account);
     }
 
     /**
@@ -67,7 +67,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     function removeMinter(address account) external override onlyOwner {
         require(isMinter(account), "TeleBTC: account does not have role");
         minters[account] = false;
-        emit RemoveMinter(account);
+        emit MinterRemoved(account);
     }
 
     /**
@@ -76,7 +76,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     function addBurner(address account) external override onlyOwner {
         require(!isBurner(account), "TeleBTC: account already has role");
         burners[account] = true;
-        emit AddBurner(account);
+        emit BurnerAdded(account);
     }
 
     /**
@@ -85,7 +85,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     function removeBurner(address account) external override onlyOwner {
         require(isBurner(account), "TeleBTC: account does not have role");
         burners[account] = false;
-        emit RemoveBurner(account);
+        emit BurnerRemoved(account);
     }
 
     // TODO: remove it
@@ -98,8 +98,8 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     /// @dev                   Only burners can call this
     /// @param _amount         Amount of burnt tokens
     function burn(uint _amount) external nonReentrant onlyBurner override returns (bool) {
-        _burn(msg.sender, _amount);
-        emit Burn(msg.sender, _amount);
+        _burn(_msgSender(), _amount);
+        emit Burn(_msgSender(), _msgSender(), _amount);
         return true;
     }
 
@@ -109,7 +109,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     /// @param _amount         Amount of minted tokens
     function mint(address _receiver, uint _amount) external nonReentrant onlyMinter override returns (bool) {
         _mint(_receiver, _amount);
-        emit Mint(_receiver, _amount);
+        emit Mint(_msgSender(), _receiver, _amount);
         return true;
     }
 }
