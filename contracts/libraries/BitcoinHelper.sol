@@ -71,6 +71,7 @@ library BitcoinHelper {
     function indexCompactInt(bytes29 memView, uint256 _index) internal pure returns (uint64 number) {
         uint256 flag = memView.indexUint(_index, 1);
         if (flag <= 0xfc) {
+            // TODO: use safe cast to all the following lines
             return uint64(flag);
         } else if (flag == 0xfd) {
             number = uint64(memView.indexLEUint(_index + 1, 2));
@@ -161,6 +162,7 @@ library BitcoinHelper {
     /// @param _outpoint    the outpoint
     /// @return             the index
     function outpointIdx(bytes29 _outpoint) internal pure typeAssert(_outpoint, BTCTypes.Outpoint) returns (uint32) {
+        // TODO: safe cast
         return uint32(_outpoint.indexLEUint(32, 4));
     }
 
