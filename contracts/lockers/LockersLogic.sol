@@ -45,16 +45,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             "Lockers: amount is zero"
         );
 
-        // require(
-        //     _collateralRatio >= _liquidationRatio && _liquidationRatio >= ONE_HUNDRED_PERCENT,
-        //     "Lockers: problem in CR and LR"
-        // );
-
-        // require(
-        //     _priceWithDiscountRatio <= ONE_HUNDRED_PERCENT,
-        //     "Lockers: less than 100%"
-        // );
-
         _setTeleportDAOToken(_TeleportDAOToken);
         _setTeleBTC(_teleBTC);
         _setCCBurnRouter(_ccBurnRouter);
@@ -66,9 +56,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         _setCollateralRatio(_collateralRatio);
         _setLockerPercentageFee(_lockerPercentageFee);
         _setPriceWithDiscountRatio(_priceWithDiscountRatio);
-        
-        // priceWithDiscountRatio= _priceWithDiscountRatio;
-        // libParams.priceWithDiscountRatio = priceWithDiscountRatio;
 
         libConstants.OneHundredPercent = ONE_HUNDRED_PERCENT;
         libConstants.HealthFactor = HEALTH_FACTOR;

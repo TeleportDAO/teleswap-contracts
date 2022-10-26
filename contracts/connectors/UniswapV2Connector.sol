@@ -231,10 +231,6 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         uint256 _deadline,
         bool _isFixedToken
     ) private view returns (bool, uint) {
-        // TODO: un-comment on production
-        // if (_deadline < 2236952) {
-        //     return (false, 0);
-        // }
 
         // Checks deadline has not passed
         if (_deadline < block.timestamp) {
