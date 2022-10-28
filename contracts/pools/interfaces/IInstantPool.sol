@@ -7,6 +7,10 @@ interface IInstantPool is IERC20 {
 
 	// Events
 
+	/// @notice 							emits when an instant pool is created 
+	/// @param instantToken 				The instant token of this instant pool
+	event CreatedInstantPool(address indexed instantToken);
+
 	/// @notice                             emits when some liquidity gets added to the pool               
 	/// @param user                         User who added the liquidity
 	/// @param teleBTCAmount                Amount of teleBTC added to the pool
