@@ -938,6 +938,8 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         DataTypes.locker memory _removingLokcer = lockersMapping[_lockerTargetAddress];
 
         // Removes locker from lockersMapping
+
+        delete lockerTargetAddress[lockersMapping[_lockerTargetAddress].lockerLockingScript];
         delete lockersMapping[_lockerTargetAddress];
         totalNumberOfLockers = totalNumberOfLockers - 1;
 
