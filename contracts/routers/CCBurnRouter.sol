@@ -38,6 +38,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     uint public override slasherPercentageReward; // Min amount is %1
     uint public override bitcoinFee; // Fee of submitting a tx on Bitcoin
     mapping(address => burnRequest[]) public burnRequests; // Mapping from locker target address to assigned burn requests
+    mapping(address => uint) public burnRequestCounter;
     mapping(bytes32 => bool) public override isUsedAsBurnProof; // Mapping that shows a txId has been submitted to pay a burn request
 
     /// @notice                             Handles cross-chain burn requests
@@ -639,6 +640,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         request.scriptType = _scriptType;
         request.deadline = _lastSubmittedHeight + transferDeadline;
         request.isTransferred = false;
+        request.requestIdOfLocker = burnRequestCounter[_lockerTargetAddress];
+        burnRequestCounter[_lockerTargetAddress] = burnRequestCounter[_lockerTargetAddress] + 1;
         burnRequests[_lockerTargetAddress].push(request);
     }
 
