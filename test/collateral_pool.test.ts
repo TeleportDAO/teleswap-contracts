@@ -318,7 +318,12 @@ describe("CollateralPool", async () => {
         });
 
         it("Sets new collateralization ratio", async function () {
-            await collateralPool.setCollateralizationRatio(200);
+            await expect (
+                await collateralPool.setCollateralizationRatio(200)
+            ).to.emit(
+                collateralPool, "NewCollateralizationRatio"
+            ).withArgs(100, 200);
+;
             
             expect(
                 await collateralPool.collateralizationRatio()
