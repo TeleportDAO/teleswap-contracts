@@ -32,32 +32,42 @@ interface ICCExchangeRouter {
 
     /// @notice                     Emits when a cc exchange request gets done
     /// @param user                 Exchange recipient address
-    /// @param inputToken           Input token (teleBTC)
-    /// @param outputToken          Output token
-    /// @param inputAmount          Amount of locked tokens on the source chain
-    /// @param outputAmount         Amount of exchange token that user received
     /// @param speed                Speed of the request (normal or instant)
     /// @param teleporter          Address of teleporter who submitted the request
     /// @param teleporterFee        Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
     event CCExchange(
+        bytes lockerLockingScript,
+        uint lockerScriptType,
+        address lockerTargetAddress,
         address indexed user,
-        address inputToken,
-        address indexed outputToken,
-        uint inputAmount,
-        uint outputAmount,
+        address[2] inputAndOutputToken,
+        uint[2] inputAndOutputAmount,
         uint indexed speed,
         address teleporter,
-        uint teleporterFee
+        uint teleporterFee,
+        bytes32 bitcoinTxId,
+        uint appId
     );
 
     /// @notice                     Emits when a cc exchange request fails
     /// @dev                        In this case, instead of excahnging tokens,
     ///                             we mint teleBTC and send it to the user
     /// @param recipientAddress     Exchange recipient address
-    /// @param remainedInputAmount  Amount of teleBTC that transferred to the user
+    /// @param speed                Speed of the request (normal or instant)
+    /// @param teleporter          Address of teleporter who submitted the request
+    /// @param teleporterFee        Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
     event FailedCCExchange(
-        address recipientAddress,
-        uint remainedInputAmount
+        bytes lockerLockingScript,
+        uint lockerScriptType,
+        address lockerTargetAddress,
+        address indexed recipientAddress,
+        address[2] inputAndOutputToken,
+        uint[2] inputAndOutputAmount,
+        uint indexed speed,
+        address teleporter,
+        uint teleporterFee,
+        bytes32 bitcoinTxId,
+        uint appId
     );
 
     /// @notice                      Emits when appId for an exchange connector is set

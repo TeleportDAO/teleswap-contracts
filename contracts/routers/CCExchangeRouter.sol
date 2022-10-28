@@ -254,51 +254,56 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             remainedInputAmount
         );
         
-        if (IExchangeConnector(_exchangeConnector).isPathValid(ccExchangeRequests[_txId].path)) {
+        ccExchangeRequest memory theCCExchangeReq = ccExchangeRequests[_txId];
+
+        if (IExchangeConnector(_exchangeConnector).isPathValid(theCCExchangeReq.path)) {
             // Exchanges minted teleBTC for output token
             (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
                 remainedInputAmount,
-                ccExchangeRequests[_txId].outputAmount,
-                ccExchangeRequests[_txId].path,
-                ccExchangeRequests[_txId].recipientAddress,
-                ccExchangeRequests[_txId].deadline,
-                ccExchangeRequests[_txId].isFixedToken
+                theCCExchangeReq.outputAmount,
+                theCCExchangeReq.path,
+                theCCExchangeReq.recipientAddress,
+                theCCExchangeReq.deadline,
+                theCCExchangeReq.isFixedToken
             );
         } else {
             // Exchanges minted teleBTC for output token via wrappedNativeToken
             // note: path is [teleBTC, wrappedNativeToken, outputToken]
             address[] memory _path = new address[](3);
-            _path[0] = ccExchangeRequests[_txId].path[0];
+            _path[0] = theCCExchangeReq.path[0];
             _path[1] = IExchangeConnector(_exchangeConnector).wrappedNativeToken();
-            _path[2] = ccExchangeRequests[_txId].path[1];
+            _path[2] = theCCExchangeReq.path[1];
 
             (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
                 remainedInputAmount,
-                ccExchangeRequests[_txId].outputAmount,
+                theCCExchangeReq.outputAmount,
                 _path,
-                ccExchangeRequests[_txId].recipientAddress,
-                ccExchangeRequests[_txId].deadline,
-                ccExchangeRequests[_txId].isFixedToken
+                theCCExchangeReq.recipientAddress,
+                theCCExchangeReq.deadline,
+                theCCExchangeReq.isFixedToken
             );
         }
 
         if (result) {
             // Emits CCExchange if exchange was successful
             emit CCExchange(
-                ccExchangeRequests[_txId].recipientAddress,
-                ccExchangeRequests[_txId].path[0], // input token
-                ccExchangeRequests[_txId].path[1], // output token
-                amounts[0], // input amount
-                amounts[amounts.length-1], // output amount
-                ccExchangeRequests[_txId].speed,
-                msg.sender, // Teleporter address
-                ccExchangeRequests[_txId].fee
+                _lockerLockingScript,
+                0,
+                ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
+                theCCExchangeReq.recipientAddress,
+                [theCCExchangeReq.path[0], theCCExchangeReq.path[1]], // input token // output token
+                [amounts[0], amounts[amounts.length-1]], // input amount // output amount
+                theCCExchangeReq.speed,
+                _msgSender(), // Teleporter address
+                theCCExchangeReq.fee,
+                _txId,
+                theCCExchangeReq.appId
             );
 
             // Transfers rest of teleBTC to recipientAddress (if input amount is not fixed)
-            if (ccExchangeRequests[_txId].isFixedToken == false) {
+            if (theCCExchangeReq.isFixedToken == false) {
                 ITeleBTC(teleBTC).transfer(
-                    ccExchangeRequests[_txId].recipientAddress,
+                    theCCExchangeReq.recipientAddress,
                     remainedInputAmount - amounts[0]
                 );
             }
@@ -313,13 +318,22 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
             // Sends teleBTC to recipient if exchange wasn't successful
             ITeleBTC(teleBTC).transfer(
-                ccExchangeRequests[_txId].recipientAddress,
+                theCCExchangeReq.recipientAddress,
                 remainedInputAmount
             );
 
             emit FailedCCExchange(
-                ccExchangeRequests[_txId].recipientAddress,
-                remainedInputAmount
+                _lockerLockingScript,
+                0,
+                ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
+                theCCExchangeReq.recipientAddress,
+                [theCCExchangeReq.path[0], theCCExchangeReq.path[1]], // input token // output token
+                [remainedInputAmount, 0],// input amount //  output amount
+                theCCExchangeReq.speed,
+                _msgSender(), // Teleporter address
+                theCCExchangeReq.fee,
+                _txId,
+                theCCExchangeReq.appId
             );
         }
     }
@@ -478,4 +492,6 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
         _remainedAmount = mintedAmount - protocolFee - teleporterFee;
     }
+
+    receive() external payable {}
 }
