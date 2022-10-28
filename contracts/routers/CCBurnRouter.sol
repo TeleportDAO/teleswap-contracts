@@ -69,6 +69,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         _setBitcoinFee(_bitcoinFee);
     }
 
+    receive() external payable {}
+
     function renounceOwnership() public virtual override onlyOwner {}
 
     /// @notice                         Shows if a burn request has been done or not
