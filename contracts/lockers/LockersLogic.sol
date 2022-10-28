@@ -381,6 +381,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @notice                             Internal setter for liquidation ratio
     /// @param _minLeavingIntervalTime      The new liquidation ratio
     function _setMinLeavingIntervalTime(uint _minLeavingIntervalTime) private {
+        // TODO: write tests (both for lockers leaving and setter)
         emit NewMinLeavingIntervalTime(minLeavingIntervalTime, _minLeavingIntervalTime);
         minLeavingIntervalTime = _minLeavingIntervalTime;
         libParams.minLeavingIntervalTime = minLeavingIntervalTime;
