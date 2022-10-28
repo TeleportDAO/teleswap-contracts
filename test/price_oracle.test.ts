@@ -765,7 +765,9 @@ describe("PriceOracle", async () => {
         it("Sets acceptable delay", async function () {
             await expect(
                 priceOracle.setAcceptableDelay(100)
-            ).to.not.reverted;
+            ).to.emit(
+                priceOracle, "NewAcceptableDelay"
+            ).withArgs(acceptableDelay, 100);
 
             expect(
                 await priceOracle.acceptableDelay()
@@ -775,7 +777,9 @@ describe("PriceOracle", async () => {
         it("Sets oracle native token", async function () {
             await expect(
                 priceOracle.setOracleNativeToken(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                priceOracle, "NewOracleNativeToken"
+            ).withArgs(TWO_ADDRESS, ONE_ADDRESS);
 
             expect(
                 await priceOracle.oracleNativeToken()
