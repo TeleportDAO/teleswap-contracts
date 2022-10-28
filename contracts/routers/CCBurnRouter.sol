@@ -260,7 +260,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             _burntAmount,
             _lockerTargetAddress,
             _lockerLockingScript,
-            burnRequests[_lockerTargetAddress].length - 1, // index of request
+            burnRequests[_lockerTargetAddress][burnRequests[_lockerTargetAddress].length - 1].requestIdOfLocker,// index of request
             burnRequests[_lockerTargetAddress][burnRequests[_lockerTargetAddress].length - 1].deadline
         );
 
