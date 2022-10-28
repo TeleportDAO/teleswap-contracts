@@ -31,6 +31,8 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
         _setTeleBTC(_teleBTC);
         _setInstantRouter(_instantRouter);
         _setInstantPercentageFee(_instantPercentageFee);
+
+        emit CreatedInstantPool(_teleBTC);
     }
 
     function renounceOwnership() public virtual override onlyOwner {}
