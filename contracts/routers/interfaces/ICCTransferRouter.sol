@@ -21,20 +21,32 @@ interface ICCTransferRouter {
 
 	// Events
 
-	/// @notice                    Emits when a cc transfer request gets done
-	/// @param user                Address of teleBTC recipient
-	/// @param inputAmount         Amount of tokens that user locked on source chain
-	/// @param receivedAmount      Amount of tokens that user receives
-	/// @param speed               Speed of the request (normal or instant)
-	/// @param teleporter          Address of teleporter who submitted the request
-	/// @param teleporterFee       Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
+	/// @notice                    	Emits when a cc transfer request gets done
+	/// @param lockerLockingScript  Locking script of the locker on bitcoin network
+	/// @param lockerScriptType     Script type of the locker locking script
+	/// @param lockerTargetAddress  Address of the locker on EVM based target chain
+	/// @param user                	Address of teleBTC recipient
+	/// @param inputAmount         	Amount of tokens that user locked on source chain
+	/// @param receivedAmount      	Amount of tokens that user receives
+	/// @param speed               	Speed of the request (normal or instant)
+	/// @param teleporter          	Address of teleporter who submitted the request
+	/// @param teleporterFee       	Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
+	/// @param relayFee       	   	Amount of fee that is paid to relay contract
+	/// @param protocolFee         	Amount of fee that is paid to the protocol
+	/// @param bitcoinTxId         	Address of teleporter who submitted the request
 	event CCTransfer(
-		address indexed user, 
-		uint inputAmount, 
+		bytes indexed lockerLockingScript,
+		uint lockerScriptType,
+		address lockerTargetAddress,
+		address indexed user,
+		uint inputAmount,
 		uint receivedAmount,
 		uint indexed speed,
 		address teleporter,
-		uint teleporterFee
+		uint teleporterFee,
+		uint relayFee,
+		uint protocolFee,
+		bytes32 bitcoinTxId
 	);
 
 	/// @notice                     Emits when changes made to relay address

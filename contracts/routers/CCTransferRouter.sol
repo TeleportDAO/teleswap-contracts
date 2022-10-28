@@ -217,26 +217,38 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
 
         // Normal cc transfer request
         if (ccTransferRequests[txId].speed == 0) {
-            uint receivedAmount = _sendTeleBTC(_lockerLockingScript, txId);
+            (uint receivedAmount, uint _protocolFee, uint _teleporterFee) = _sendTeleBTC(_lockerLockingScript, txId);
             emit CCTransfer(
+                _lockerLockingScript,
+                0,
+                ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
                 ccTransferRequests[txId].recipientAddress,
                 ccTransferRequests[txId].inputAmount,
                 receivedAmount,
                 ccTransferRequests[txId].speed,
-                msg.sender,
-                ccTransferRequests[txId].fee
+                _msgSender(),
+                _teleporterFee,
+                0,
+                _protocolFee,
+                txId
             );
             return true;
         } else {
             // Pays back instant loan (ccTransferRequests[txId].speed == 1)
-            uint receivedAmount = _payBackInstantLoan(_lockerLockingScript, txId);
+            (uint receivedAmount, uint _protocolFee, uint _teleporterFee) = _payBackInstantLoan(_lockerLockingScript, txId);
             emit CCTransfer(
+                _lockerLockingScript,
+                0,
+                ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
                 ccTransferRequests[txId].recipientAddress,
                 ccTransferRequests[txId].inputAmount,
                 receivedAmount,
                 ccTransferRequests[txId].speed,
-                msg.sender,
-                ccTransferRequests[txId].fee
+                _msgSender(),
+                _teleporterFee,
+                0,
+                _protocolFee,
+                txId
             );
             return true;
         }
@@ -246,9 +258,13 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _lockerLockingScript         Locker's locking script
     /// @param _txId                        The transaction ID of the request
     /// @return _remainedAmount             Amount of teleBTC that user receives after reducing fees
-    function _sendTeleBTC(bytes memory _lockerLockingScript, bytes32 _txId) private returns (uint _remainedAmount) {
+    function _sendTeleBTC(bytes memory _lockerLockingScript, bytes32 _txId) private returns (
+        uint _remainedAmount,
+        uint _protocolFee, 
+        uint _teleporterFee
+    ) {
         // Gets remained amount after reducing fees
-        _remainedAmount = _mintAndReduceFees(_lockerLockingScript, _txId);
+        (_remainedAmount, _protocolFee, _teleporterFee) = _mintAndReduceFees(_lockerLockingScript, _txId);
 
         // Transfers rest of tokens to recipient
         ITeleBTC(teleBTC).transfer(
@@ -264,10 +280,10 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     function _payBackInstantLoan(
         bytes memory _lockerLockingScript, 
         bytes32 _txId
-    ) private returns (uint _remainedAmount) {
+    ) private returns (uint _remainedAmount, uint _protocolFee, uint _teleporterFee) {
 
         // Gets remained amount after reducing fees
-        _remainedAmount = _mintAndReduceFees(_lockerLockingScript, _txId);
+        (_remainedAmount, _protocolFee, _teleporterFee) = _mintAndReduceFees(_lockerLockingScript, _txId);
 
         // Gives allowance to instant router to transfer remained teleBTC
         ITeleBTC(teleBTC).approve(
@@ -361,8 +377,8 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
             feeAmount
         );
         
-        // Sends extra ETH back to msg.sender
-        Address.sendValue(payable(msg.sender), msg.value - feeAmount);
+        // Sends extra ETH back to _msgSender()
+        Address.sendValue(payable(_msgSender()), msg.value - feeAmount);
 
         return abi.decode(data, (bool));
     }
@@ -374,7 +390,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     function _mintAndReduceFees(
         bytes memory _lockerLockingScript,
         bytes32 _txId
-    ) private returns (uint _remainedAmount) {
+    ) private returns (uint _remainedAmount, uint _protocolFee, uint _teleporterFee) {
 
         // Mints teleBTC for cc transfer router
         // Lockers contract gets locker's fee
@@ -385,19 +401,21 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         );
 
         // Calculates fees
-        uint protocolFee = ccTransferRequests[_txId].inputAmount*protocolPercentageFee/MAX_PROTOCOL_FEE;
-        uint teleporterFee = ccTransferRequests[_txId].fee;
+        _protocolFee = ccTransferRequests[_txId].inputAmount*protocolPercentageFee/MAX_PROTOCOL_FEE;
+        _teleporterFee = ccTransferRequests[_txId].fee;
 
         // Pays Teleporter fee
-        if (teleporterFee > 0) {
-            ITeleBTC(teleBTC).transfer(msg.sender, teleporterFee);
+        if (_teleporterFee > 0) {
+            ITeleBTC(teleBTC).transfer(_msgSender(), _teleporterFee);
         }
 
         // Pays protocol fee
-        if (protocolFee > 0) {
-            ITeleBTC(teleBTC).transfer(treasury, protocolFee);
+        if (_protocolFee > 0) {
+            ITeleBTC(teleBTC).transfer(treasury, _protocolFee);
         }
 
-        _remainedAmount = mintedAmount - protocolFee - teleporterFee;
+        _remainedAmount = mintedAmount - _protocolFee - _teleporterFee;
     }
+
+    receive() external payable {}
 }
