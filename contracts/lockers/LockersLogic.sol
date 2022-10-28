@@ -79,7 +79,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     }
 
     modifier onlyMinter() {
-        require(_isMinter(_msgSender()), "Lockers: only minters can mint");
+        require(isMinter(_msgSender()), "Lockers: only minters can mint");
         _;
     }
 
@@ -87,7 +87,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
      * @dev Give an account access to mint.
      */
     function addMinter(address _account) external override nonZeroAddress(_account) onlyOwner {
-        require(!_isMinter(_account), "Lockers: account already has role");
+        require(!isMinter(_account), "Lockers: account already has role");
         minters[_account] = true;
         emit MinterAdded(_account);
     }
@@ -96,13 +96,13 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
      * @dev Remove an account's access to mint.
      */
     function removeMinter(address _account) external override nonZeroAddress(_account) onlyOwner {
-        require(_isMinter(_account), "Lockers: account does not have role");
+        require(isMinter(_account), "Lockers: account does not have role");
         minters[_account] = false;
         emit MinterRemoved(_account);
     }
 
     modifier onlyBurner() {
-        require(_isBurner(_msgSender()), "Lockers: only burners can burn");
+        require(isBurner(_msgSender()), "Lockers: only burners can burn");
         _;
     }
 
@@ -110,7 +110,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
      * @dev Give an account access to burn.
      */
     function addBurner(address _account) external override nonZeroAddress(_account) onlyOwner {
-        require(!_isBurner(_account), "Lockers: account already has role");
+        require(!isBurner(_account), "Lockers: account already has role");
         burners[_account] = true;
         emit BurnerAdded(_account);
     }
@@ -119,7 +119,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
      * @dev Remove an account's access to burn.
      */
     function removeBurner(address _account) external override nonZeroAddress(_account) onlyOwner {
-        require(_isBurner(_account), "Lockers: account does not have role");
+        require(isBurner(_account), "Lockers: account does not have role");
         burners[_account] = false;
         emit BurnerRemoved(_account);
     }
@@ -901,7 +901,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
      * @dev Check if an account is minter.
      * @return bool
      */
-    function _isMinter(address account) private view nonZeroAddress(account) returns (bool) {
+    function isMinter(address account) public override view nonZeroAddress(account) returns (bool) {
         return minters[account];
     }
 
@@ -909,7 +909,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
      * @dev Check if an account is burner.
      * @return bool
      */
-    function _isBurner(address account) private view nonZeroAddress(account) returns (bool) {
+    function isBurner(address account) public override view nonZeroAddress(account) returns (bool) {
         return burners[account];
     }
 

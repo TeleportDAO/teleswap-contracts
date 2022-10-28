@@ -187,6 +187,10 @@ interface ILockers is ILockersStorage {
 
     function priceOfOneUnitOfCollateralInBTC() external view returns (uint);
 
+    function isMinter(address account) external view returns(bool);
+
+    function isBurner(address account) external view returns(bool);
+
     // State-changing functions
 
     function pauseLocker() external;
