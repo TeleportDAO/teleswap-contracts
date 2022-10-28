@@ -166,9 +166,14 @@ interface ILockers is ILockersStorage {
         uint newCollateralRatio
     );  
 
-     event NewLiquidationRatio(
+    event NewLiquidationRatio(
         uint oldLiquidationRatio,
         uint newLiquidationRatio
+    );   
+
+    event NewMinLeavingIntervalTime(
+        uint oldMinLeavingIntervalTime,
+        uint newMinLeavingIntervalTime
     );   
 
 
@@ -186,6 +191,10 @@ interface ILockers is ILockersStorage {
     function getLockerCapacity(address _lockerTargetAddress) external view returns (uint);
 
     function priceOfOneUnitOfCollateralInBTC() external view returns (uint);
+
+    function isMinter(address account) external view returns(bool);
+
+    function isBurner(address account) external view returns(bool);
 
     // State-changing functions
 

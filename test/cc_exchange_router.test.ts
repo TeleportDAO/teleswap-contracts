@@ -48,6 +48,7 @@ describe("CCExchangeRouter", async () => {
     const PROTOCOL_PERCENTAGE_FEE = 10; // Means %0.1
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
     const PRICE_WITH_DISCOUNT_RATIO = 9500; // Means %95
+    const MIN_LEAVING_INTERVAL_TIMESTAMP = 0
     const STARTING_BLOCK_NUMBER = 1;
     const TREASURY = "0x0000000000000000000000000000000000000002";
 
@@ -295,7 +296,8 @@ describe("CCExchangeRouter", async () => {
             collateralRatio,
             liquidationRatio,
             LOCKER_PERCENTAGE_FEE,
-            PRICE_WITH_DISCOUNT_RATIO
+            PRICE_WITH_DISCOUNT_RATIO,
+            MIN_LEAVING_INTERVAL_TIMESTAMP
         )
 
         return lockers;

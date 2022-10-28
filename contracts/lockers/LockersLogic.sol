@@ -32,7 +32,8 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         uint _collateralRatio,
         uint _liquidationRatio,
         uint _lockerPercentageFee,
-        uint _priceWithDiscountRatio
+        uint _priceWithDiscountRatio,
+        uint _minLeavingIntervalTime
     ) public initializer {
 
         OwnableUpgradeable.__Ownable_init();
@@ -56,6 +57,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         _setCollateralRatio(_collateralRatio);
         _setLockerPercentageFee(_lockerPercentageFee);
         _setPriceWithDiscountRatio(_priceWithDiscountRatio);
+        _setMinLeavingIntervalTime(_minLeavingIntervalTime);
 
         libConstants.OneHundredPercent = ONE_HUNDRED_PERCENT;
         libConstants.HealthFactor = HEALTH_FACTOR;
@@ -79,7 +81,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     }
 
     modifier onlyMinter() {
-        require(_isMinter(_msgSender()), "Lockers: only minters can mint");
+        require(isMinter(_msgSender()), "Lockers: only minters can mint");
         _;
     }
 
@@ -87,7 +89,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
      * @dev Give an account access to mint.
      */
     function addMinter(address _account) external override nonZeroAddress(_account) onlyOwner {
-        require(!_isMinter(_account), "Lockers: account already has role");
+        require(!isMinter(_account), "Lockers: account already has role");
         minters[_account] = true;
         emit MinterAdded(_account);
     }
@@ -96,13 +98,13 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
      * @dev Remove an account's access to mint.
      */
     function removeMinter(address _account) external override nonZeroAddress(_account) onlyOwner {
-        require(_isMinter(_account), "Lockers: account does not have role");
+        require(isMinter(_account), "Lockers: account does not have role");
         minters[_account] = false;
         emit MinterRemoved(_account);
     }
 
     modifier onlyBurner() {
-        require(_isBurner(_msgSender()), "Lockers: only burners can burn");
+        require(isBurner(_msgSender()), "Lockers: only burners can burn");
         _;
     }
 
@@ -110,7 +112,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
      * @dev Give an account access to burn.
      */
     function addBurner(address _account) external override nonZeroAddress(_account) onlyOwner {
-        require(!_isBurner(_account), "Lockers: account already has role");
+        require(!isBurner(_account), "Lockers: account already has role");
         burners[_account] = true;
         emit BurnerAdded(_account);
     }
@@ -119,7 +121,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
      * @dev Remove an account's access to burn.
      */
     function removeBurner(address _account) external override nonZeroAddress(_account) onlyOwner {
-        require(_isBurner(_account), "Lockers: account does not have role");
+        require(isBurner(_account), "Lockers: account does not have role");
         burners[_account] = false;
         emit BurnerRemoved(_account);
     }
@@ -376,6 +378,15 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         libParams.liquidationRatio = liquidationRatio;
     }
 
+    /// @notice                             Internal setter for liquidation ratio
+    /// @param _minLeavingIntervalTime      The new liquidation ratio
+    function _setMinLeavingIntervalTime(uint _minLeavingIntervalTime) private {
+        // TODO: write tests (both for lockers leaving and setter)
+        emit NewMinLeavingIntervalTime(minLeavingIntervalTime, _minLeavingIntervalTime);
+        minLeavingIntervalTime = _minLeavingIntervalTime;
+        libParams.minLeavingIntervalTime = minLeavingIntervalTime;
+    }
+
     /// @notice                                 Adds user to candidates list
     /// @dev                                    Users mint TeleBTC by sending BTC to locker's locking script
     ///                                         In case of liqudation of locker's bond, the burn TeleBTC is sent to
@@ -510,6 +521,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         lockersMapping[_msgSender()].isActive = false;
 
         lockerLeavingRequests[_msgSender()] = true;
+        lockerLeavingRequestsTimestamp[_msgSender()] = block.timestamp;
 
         emit RequestRemoveLocker(
             _msgSender(),
@@ -833,6 +845,11 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             "Lockers: insufficient capacity"
         );
 
+        require(
+            lockersMapping[_lockerTargetAddress].isActive,
+            "Lockers: not active"
+        );
+
         lockersMapping[_lockerTargetAddress].netMinted =
         lockersMapping[_lockerTargetAddress].netMinted + _amount;
 
@@ -901,7 +918,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
      * @dev Check if an account is minter.
      * @return bool
      */
-    function _isMinter(address account) private view nonZeroAddress(account) returns (bool) {
+    function isMinter(address account) public override view nonZeroAddress(account) returns (bool) {
         return minters[account];
     }
 
@@ -909,7 +926,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
      * @dev Check if an account is burner.
      * @return bool
      */
-    function _isBurner(address account) private view nonZeroAddress(account) returns (bool) {
+    function isBurner(address account) public override view nonZeroAddress(account) returns (bool) {
         return burners[account];
     }
 
@@ -931,6 +948,11 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         );
 
         require(
+            lockerLeavingRequestsTimestamp[_lockerTargetAddress] + minLeavingIntervalTime < block.timestamp,
+            "Lockers: wait more"
+        );
+
+        require(
             lockersMapping[_lockerTargetAddress].netMinted == 0,
             "Lockers: 0 net minted"
         );
@@ -938,6 +960,8 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         DataTypes.locker memory _removingLokcer = lockersMapping[_lockerTargetAddress];
 
         // Removes locker from lockersMapping
+
+        delete lockerTargetAddress[lockersMapping[_lockerTargetAddress].lockerLockingScript];
         delete lockersMapping[_lockerTargetAddress];
         totalNumberOfLockers = totalNumberOfLockers - 1;
 

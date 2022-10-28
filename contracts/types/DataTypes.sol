@@ -57,5 +57,6 @@ library DataTypes {
         uint collateralRatio;
         uint liquidationRatio;
         uint priceWithDiscountRatio;
+        uint minLeavingIntervalTime;
     }
 }
