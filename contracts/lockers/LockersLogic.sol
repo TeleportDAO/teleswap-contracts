@@ -833,6 +833,11 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             "Lockers: insufficient capacity"
         );
 
+        require(
+            lockersMapping[_lockerTargetAddress].isActive,
+            "Lockers: not active"
+        );
+
         lockersMapping[_lockerTargetAddress].netMinted =
         lockersMapping[_lockerTargetAddress].netMinted + _amount;
 
