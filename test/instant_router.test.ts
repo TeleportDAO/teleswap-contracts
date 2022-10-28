@@ -1207,7 +1207,9 @@ describe("Instant Router", async () => {
         it("Sets slasher percentage reward", async function () {
             await expect(
                 instantRouter.setSlasherPercentageReward(100)
-            ).to.not.reverted;
+            ).to.emit(
+                instantRouter, "NewSlasherPercentageReward"
+            ).withArgs(slasherPercentageReward, 100);
 
             expect(
                 await instantRouter.slasherPercentageReward()
@@ -1225,7 +1227,9 @@ describe("Instant Router", async () => {
 
             await expect(
                 instantRouter.setPaybackDeadline(2)
-            ).to.not.reverted;
+            ).to.emit(
+                instantRouter, "NewPaybackDeadline"
+            ).withArgs(paybackDeadline, 2);
 
             expect(
                 await instantRouter.paybackDeadline()
@@ -1243,7 +1247,9 @@ describe("Instant Router", async () => {
         it("Sets relay, lockers, instant router, teleBTC and treasury", async function () {
             await expect(
                 instantRouter.setRelay(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                instantRouter, "NewRelay"
+            ).withArgs(mockBitcoinRelay.address, ONE_ADDRESS);
 
             expect(
                 await instantRouter.relay()
@@ -1251,7 +1257,9 @@ describe("Instant Router", async () => {
 
             await expect(
                 instantRouter.setTeleBTC(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                instantRouter, "NewTeleBTC"
+            ).withArgs(teleBTC.address, ONE_ADDRESS);
 
             expect(
                 await instantRouter.teleBTC()
@@ -1259,7 +1267,9 @@ describe("Instant Router", async () => {
 
             await expect(
                 instantRouter.setCollateralPoolFactory(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                instantRouter, "NewCollateralPoolFactory"
+            ).withArgs(mockCollateralPoolFactory.address, ONE_ADDRESS);
 
             expect(
                 await instantRouter.collateralPoolFactory()
@@ -1267,7 +1277,9 @@ describe("Instant Router", async () => {
 
             await expect(
                 instantRouter.setPriceOracle(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                instantRouter, "NewPriceOracle"
+            ).withArgs(mockPriceOracle.address, ONE_ADDRESS);
 
             expect(
                 await instantRouter.priceOracle()
@@ -1275,7 +1287,9 @@ describe("Instant Router", async () => {
 
             await expect(
                 instantRouter.setDefaultExchangeConnector(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                instantRouter, "NewDeafultExchangeConnector"
+            ).withArgs(mockExchangeConnector.address, ONE_ADDRESS);
 
             expect(
                 await instantRouter.defaultExchangeConnector()
@@ -1283,7 +1297,9 @@ describe("Instant Router", async () => {
 
             await expect(
                 instantRouter.setTeleBTCInstantPool(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                instantRouter, "NewTeleBTCInstantPool"
+            ).withArgs(teleBTCInstantPool.address, ONE_ADDRESS);
 
             expect(
                 await instantRouter.teleBTCInstantPool()

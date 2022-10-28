@@ -106,7 +106,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @dev                                Only owner can call this
     /// @param _treasury                    The new treasury address
     function setTreasury(address _treasury) external override onlyOwner {
-        treasury = _treasury;
+        _setTreasury(_treasury);
     }
 
     /// @notice                             Changes deadline of executing burn requests

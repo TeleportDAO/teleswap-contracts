@@ -81,9 +81,11 @@ describe("Instant pool", async () => {
         })
 
         it("Owner can set instant router successfully", async function () {
-            await instantPool.setInstantRouter(
+            await expect( await instantPool.setInstantRouter(
                 signer1Address
-            )
+            )).to.emit(
+                instantPool, "NewInstantRouter"
+            ).withArgs(deployerAddress, signer1Address);
 
             expect(
                 await instantPool.instantRouter()
@@ -111,9 +113,11 @@ describe("Instant pool", async () => {
         })
 
         it("Owner can set instant router successfully", async function () {
-            await instantPool.setInstantPercentageFee(
+            await expect (await instantPool.setInstantPercentageFee(
                 5000
-            )
+            )).to.emit(
+                instantPool, "NewInstantPercentageFee"
+            ).withArgs(instantFee, 5000);
 
             expect(
                 await instantPool.instantPercentageFee()
@@ -141,9 +145,11 @@ describe("Instant pool", async () => {
         })
 
         it("Owner can set instant router successfully", async function () {
-            await instantPool.setTeleBTC(
+            await expect(await instantPool.setTeleBTC(
                 ONE_ADDRESS
-            )
+            )).to.emit(
+                instantPool, "NewTeleBTC"
+            ).withArgs(teleBTC.address, ONE_ADDRESS);
 
             expect(
                 await instantPool.teleBTC()

@@ -200,12 +200,12 @@ contract PriceOracle is IPriceOracle, Ownable {
     ///                             we will get data from exchange routers
     /// @param _acceptableDelay     Maximum acceptable delay (in seconds)
     function setAcceptableDelay(uint _acceptableDelay) external override onlyOwner {
-        acceptableDelay = _acceptableDelay;
+        _setAcceptableDelay(_acceptableDelay);
     }
 
     /// @notice                     Sets oracle native token address
     function setOracleNativeToken(address _oracleNativeToken) external override onlyOwner {
-        oracleNativeToken = _oracleNativeToken;
+       _setOracleNativeToken(_oracleNativeToken);
     }
 
     /// @notice                     Internal setter for acceptable delay for oracle responses

@@ -1140,7 +1140,9 @@ describe("CCBurnRouter", async () => {
         it("Sets protocol percentage fee", async function () {
             await expect(
                 ccBurnRouter.setProtocolPercentageFee(100)
-            ).to.not.reverted;
+            ).to.emit(
+                ccBurnRouter, "NewProtocolPercentageFee"
+            ).withArgs(PROTOCOL_PERCENTAGE_FEE, 100);
 
             expect(
                 await ccBurnRouter.protocolPercentageFee()
@@ -1159,7 +1161,10 @@ describe("CCBurnRouter", async () => {
 
             await expect(
                 ccBurnRouter.setTransferDeadline(100)
-            ).to.not.reverted;
+            ).to.emit(
+                ccBurnRouter, "NewTransferDeadline"
+            ).withArgs(TRANSFER_DEADLINE, 100);
+
 
             expect(
                 await ccBurnRouter.transferDeadline()
@@ -1178,7 +1183,9 @@ describe("CCBurnRouter", async () => {
         it("Sets slasher reward", async function () {
             await expect(
                 ccBurnRouter.setSlasherPercentageReward(100)
-            ).to.not.reverted;
+            ).to.emit(
+                ccBurnRouter, "NewSlasherPercentageFee"
+            ).withArgs(SLASHER_PERCENTAGE_REWARD, 100);
 
             expect(
                 await ccBurnRouter.slasherPercentageReward()
@@ -1194,17 +1201,22 @@ describe("CCBurnRouter", async () => {
         it("Sets bitcoin fee", async function () {
             await expect(
                 ccBurnRouter.setBitcoinFee(100)
-            ).to.not.reverted;
+            ).to.emit(
+                ccBurnRouter, "NewBitcoinFee"
+            ).withArgs(BITCOIN_FEE, 100);
+
 
             expect(
                 await ccBurnRouter.bitcoinFee()
             ).to.equal(100);
         })
 
-        it("Sets relay, lockers, instant router, teleBTC and treasury", async function () {
+        it("Sets relay, lockers, teleBTC and treasury", async function () {
             await expect(
                 ccBurnRouter.setRelay(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                ccBurnRouter, "NewRelay"
+            ).withArgs(mockBitcoinRelay.address, ONE_ADDRESS);
 
             expect(
                 await ccBurnRouter.relay()
@@ -1212,7 +1224,9 @@ describe("CCBurnRouter", async () => {
 
             await expect(
                 ccBurnRouter.setLockers(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                ccBurnRouter, "NewLockers"
+            ).withArgs(mockLockers.address, ONE_ADDRESS);
 
             expect(
                 await ccBurnRouter.lockers()
@@ -1220,7 +1234,9 @@ describe("CCBurnRouter", async () => {
 
             await expect(
                 ccBurnRouter.setTeleBTC(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                ccBurnRouter, "NewTeleBTC"
+            ).withArgs(teleBTC.address, ONE_ADDRESS);
 
             expect(
                 await ccBurnRouter.teleBTC()
@@ -1228,7 +1244,10 @@ describe("CCBurnRouter", async () => {
 
             await expect(
                 ccBurnRouter.setTreasury(ONE_ADDRESS)
-            ).to.not.reverted;
+            ).to.emit(
+                ccBurnRouter, "NewTreasury"
+            ).withArgs(TREASURY, ONE_ADDRESS);
+
 
             expect(
                 await ccBurnRouter.treasury()
