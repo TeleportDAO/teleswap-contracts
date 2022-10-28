@@ -259,6 +259,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             _amount,
             _burntAmount,
             _lockerTargetAddress,
+            _lockerLockingScript,
             burnRequests[_lockerTargetAddress].length - 1, // index of request
             burnRequests[_lockerTargetAddress][burnRequests[_lockerTargetAddress].length - 1].deadline
         );
@@ -322,6 +323,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         // Checks the paid burn requests
         uint paidOutputCounter = _checkPaidBurnRequests(
+            txId,
             _blockNumber,
             _lockerTargetAddress,
             _vout,
@@ -382,6 +384,13 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
                 _msgSender(), // Slasher address
                 burnRequests[_lockerTargetAddress][_indices[i]].amount,
                 burnRequests[_lockerTargetAddress][_indices[i]].sender // User address
+            );
+
+            emit BurnDispute(
+                burnRequests[_lockerTargetAddress][_indices[i]].sender,
+                _lockerTargetAddress,
+                _lockerLockingScript,
+                burnRequests[_lockerTargetAddress][_indices[i]].requestIdOfLocker
             );
         }
 
@@ -514,6 +523,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         // Emits the event
         emit LockerDispute(
             _lockerTargetAddress,
+            _lockerLockingScript,
             _inputBlockNumber,
             _inputTxId,
             totalValue + totalValue*slasherPercentageReward/MAX_SLASHER_REWARD
@@ -528,6 +538,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _voutIndexes                 Indexes of outputs that were used to pay burn requests (_voutIndexes[i] belongs to _burnReqIndexes[i])
     /// @return paidOutputCounter           Number of executed burn requests
     function _checkPaidBurnRequests(
+        bytes32 txId,
         uint _paidBlockNumber,
         address _lockerTargetAddress,
         bytes memory _vout,
@@ -562,11 +573,10 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
                     burnRequests[_lockerTargetAddress][_burnReqIndex].isTransferred = true;
                     paidOutputCounter = paidOutputCounter + 1;
                     emit PaidCCBurn(
-                        burnRequests[_lockerTargetAddress][_burnReqIndex].sender,
-                        burnRequests[_lockerTargetAddress][_burnReqIndex].userScript,
-                        parsedAmount,
                         _lockerTargetAddress,
-                        _burnReqIndex // Index of request
+                        burnRequests[_lockerTargetAddress][_burnReqIndex].requestIdOfLocker,
+                        txId,
+                        _voutIndexes[i]
                     );
                 }
             }

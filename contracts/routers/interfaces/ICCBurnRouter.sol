@@ -22,6 +22,7 @@ interface ICCBurnRouter {
 		uint deadline;
 		bool isTransferred;
 		ScriptTypes scriptType;
+		uint requestIdOfLocker;
   	}
 
   	// Events
@@ -32,7 +33,7 @@ interface ICCBurnRouter {
     /// @param amount         			Toral requested amount
     /// @param burntAmount   		    Amount that user will receive (after reducing fees)
 	/// @param lockerTargetAddress		Locker's address on the target chain
-    /// @param index       				The index of a request for a locker
+    /// @param requestIdOfLocker        The index of a request for a locker
     /// @param deadline         		Deadline of locker for executing the request
   	event CCBurn(
 		address indexed userTargetAddress,
@@ -41,22 +42,21 @@ interface ICCBurnRouter {
 		uint amount, 
 		uint burntAmount, 
 		address indexed lockerTargetAddress,
-		uint index, 
+		bytes lockerLockingScript,
+		uint requestIdOfLocker,
 		uint indexed deadline
 	);
 
 	/// @notice                 		Emits when a burn proof is provided
-    /// @param userTargetAddress        Target address of the user
-    /// @param userScript        Locking script of the user on Bitcoin
-    /// @param burntAmount   		    Amount that user received
-	/// @param lockerTargetAddress		Locker's address on the target chain
-    /// @param index       				The index of a request for a locker
+    /// @param lockerTargetAddress      Target address of the locker
+    /// @param requestIdOfLocker        The index of a request of a locker
+    /// @param bitcoinTxId   		    The bitcoin transaction hash
+	/// @param bitcoinTxOutputIndex		The output index in the transaction
 	event PaidCCBurn(
-		address indexed userTargetAddress, 
-		bytes userScript, 
-		uint burntAmount, 
-		address indexed lockerTargetAddress, 
-		uint index
+		address indexed lockerTargetAddress,
+		uint requestIdOfLocker,
+		bytes32 bitcoinTxId,
+		uint bitcoinTxOutputIndex
 	);
 
 	/// @notice                 		Emits when a locker gets slashed for withdrawing BTC without proper reason
@@ -66,10 +66,18 @@ interface ICCBurnRouter {
 	/// @param amount					Slashed amount
 	event LockerDispute(
         address _lockerTargetAddress,
+		bytes lockerLockingScript,
     	uint _blockNumber,
         bytes32 txId,
 		uint amount
     );
+
+	event BurnDispute(
+		address indexed userTargetAddress,
+		address indexed _lockerTargetAddress,
+		bytes lockerLockingScript,
+		uint requestIdOfLocker
+	);
 
 	/// @notice                     	Emits when changes made to relay address
     event NewRelay(
