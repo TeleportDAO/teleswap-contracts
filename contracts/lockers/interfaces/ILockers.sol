@@ -166,9 +166,14 @@ interface ILockers is ILockersStorage {
         uint newCollateralRatio
     );  
 
-     event NewLiquidationRatio(
+    event NewLiquidationRatio(
         uint oldLiquidationRatio,
         uint newLiquidationRatio
+    );   
+
+    event NewMinLeavingIntervalTime(
+        uint oldMinLeavingIntervalTime,
+        uint newMinLeavingIntervalTime
     );   
 
 

@@ -32,7 +32,8 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         uint _collateralRatio,
         uint _liquidationRatio,
         uint _lockerPercentageFee,
-        uint _priceWithDiscountRatio
+        uint _priceWithDiscountRatio,
+        uint _minLeavingIntervalTime
     ) public initializer {
 
         OwnableUpgradeable.__Ownable_init();
@@ -56,6 +57,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         _setCollateralRatio(_collateralRatio);
         _setLockerPercentageFee(_lockerPercentageFee);
         _setPriceWithDiscountRatio(_priceWithDiscountRatio);
+        _setMinLeavingIntervalTime(_minLeavingIntervalTime);
 
         libConstants.OneHundredPercent = ONE_HUNDRED_PERCENT;
         libConstants.HealthFactor = HEALTH_FACTOR;
@@ -376,6 +378,14 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         libParams.liquidationRatio = liquidationRatio;
     }
 
+    /// @notice                             Internal setter for liquidation ratio
+    /// @param _minLeavingIntervalTime      The new liquidation ratio
+    function _setMinLeavingIntervalTime(uint _minLeavingIntervalTime) private {
+        emit NewMinLeavingIntervalTime(minLeavingIntervalTime, _minLeavingIntervalTime);
+        minLeavingIntervalTime = _minLeavingIntervalTime;
+        libParams.minLeavingIntervalTime = minLeavingIntervalTime;
+    }
+
     /// @notice                                 Adds user to candidates list
     /// @dev                                    Users mint TeleBTC by sending BTC to locker's locking script
     ///                                         In case of liqudation of locker's bond, the burn TeleBTC is sent to
@@ -510,6 +520,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         lockersMapping[_msgSender()].isActive = false;
 
         lockerLeavingRequests[_msgSender()] = true;
+        lockerLeavingRequestsTimestamp[_msgSender()] = block.timestamp;
 
         emit RequestRemoveLocker(
             _msgSender(),
@@ -933,6 +944,11 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         require(
             lockerLeavingRequests[_lockerTargetAddress],
             "Lockers: no remove req"
+        );
+
+        require(
+            lockerLeavingRequestsTimestamp[_lockerTargetAddress] + minLeavingIntervalTime < block.timestamp,
+            "Lockers: wait more"
         );
 
         require(
