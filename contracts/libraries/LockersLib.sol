@@ -56,7 +56,7 @@ library LockersLib {
         bytes calldata _lockerRescueScript
     ) external {
 
-        DataTypes.locker memory locker_;
+        DataTypes.locker storage locker_;
         locker_.lockerLockingScript = _candidateLockingScript;
         locker_.TDTLockedAmount = _lockedTDTAmount;
         locker_.nativeTokenLockedAmount = _lockedNativeTokenAmount;
@@ -246,7 +246,7 @@ library LockersLib {
     }
 
     function maximumBuyableCollateral(
-        DataTypes.locker memory theLocker,
+        DataTypes.locker storage theLocker,
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
         uint _priceOfOneUnitOfCollateral
@@ -267,7 +267,7 @@ library LockersLib {
     }
 
     function calculateHealthFactor(
-        DataTypes.locker memory theLocker,
+        DataTypes.locker storage theLocker,
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
         uint _priceOfOneUnitOfCollateral
