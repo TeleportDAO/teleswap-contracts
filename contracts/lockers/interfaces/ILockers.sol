@@ -236,6 +236,8 @@ interface ILockers is ILockersStorage {
 
     function setLiquidationRatio(uint _liquidationRatio) external;
 
+    function setMinLeavingIntervalTime(uint _minLeavingIntervalTime) external;
+
     function liquidateLocker(
         address _lockerTargetAddress,
         uint _btcAmount
