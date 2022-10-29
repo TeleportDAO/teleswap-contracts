@@ -738,7 +738,7 @@ describe("Bitcoin Relay", async () => {
 
     });
 
-    describe.only('## Setters', async () => {
+    describe('## Setters', async () => {
         /* eslint-disable-next-line camelcase */
         const { genesis, orphan_562630 } = REGULAR_CHAIN;
         let bitcoinRelaySigner2: any;
@@ -757,7 +757,7 @@ describe("Bitcoin Relay", async () => {
             await expect(
                 await instance.setRewardAmountInTDT(5)
             ).to.emit(
-                bitcoinRelay, "NewRewardAmountInTDT"
+                instance, "NewRewardAmountInTDT"
             ).withArgs(0, 5);
 
             expect(
@@ -775,7 +775,7 @@ describe("Bitcoin Relay", async () => {
             await expect(
                 await instance.setFinalizationParameter(6)
             ).to.emit(
-                bitcoinRelay, "NewFinalizationParameter"
+                instance, "NewFinalizationParameter"
             ).withArgs(3, 6);
 
             expect(
@@ -793,7 +793,7 @@ describe("Bitcoin Relay", async () => {
             await expect(
                 await instance.setRelayerPercentageFee(10)
             ).to.emit(
-                bitcoinRelay, "NewRelayerPercentageFee"
+                instance, "NewRelayerPercentageFee"
             ).withArgs(5, 10);
 
             expect(
@@ -811,7 +811,7 @@ describe("Bitcoin Relay", async () => {
             await expect(
                 await instance.setEpochLength(10)
             ).to.emit(
-                bitcoinRelay, "NewEpochLength"
+                instance, "NewEpochLength"
             ).withArgs(2016, 10);
 
             expect(
@@ -829,7 +829,7 @@ describe("Bitcoin Relay", async () => {
             await expect(
                 await instance.setBaseQueries(100)
             ).to.emit(
-                bitcoinRelay, "NewBaseQueries"
+                instance, "NewBaseQueries"
             ).withArgs(2016, 100);
 
             expect(
@@ -847,7 +847,7 @@ describe("Bitcoin Relay", async () => {
             await expect(
                 await instance.setSubmissionGasUsed(100)
             ).to.emit(
-                bitcoinRelay, "NewSubmissionGasUsed"
+                instance, "NewSubmissionGasUsed"
             ).withArgs(300000, 100);
             
             expect(
