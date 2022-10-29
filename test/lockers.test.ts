@@ -370,9 +370,11 @@ describe("Lockers", async () => {
 
         it("owner successfully adds a minter", async function () {
 
-            await lockers.addMinter(
+            await expect(await lockers.addMinter(
                 ONE_ADDRESS
-            )
+            )).to.emit(
+                lockers, "MinterAdded"
+            ).withArgs(ONE_ADDRESS);
         })
 
         it("can't add an account that already is minter", async function () {
@@ -426,9 +428,11 @@ describe("Lockers", async () => {
                 ONE_ADDRESS
             )
 
-            await lockers.removeMinter(
+            await expect(await lockers.removeMinter(
                 ONE_ADDRESS
-            )
+            )).to.emit(
+                lockers, "MinterRemoved"
+            ).withArgs(ONE_ADDRESS);
         })
 
     })
@@ -456,9 +460,11 @@ describe("Lockers", async () => {
 
         it("owner successfully adds a burner", async function () {
 
-            await lockers.addBurner(
+            await expect(await lockers.addBurner(
                 ONE_ADDRESS
-            )
+            )).to.emit(
+                lockers, "BurnerAdded"
+            ).withArgs(ONE_ADDRESS);
         })
 
         it("can't add an account that already is burner", async function () {
@@ -512,9 +518,11 @@ describe("Lockers", async () => {
                 ONE_ADDRESS
             )
 
-            await lockers.removeBurner(
+            await expect(await lockers.removeBurner(
                 ONE_ADDRESS
-            )
+            )).to.emit(
+                lockers, "BurnerRemoved"
+            ).withArgs(ONE_ADDRESS);
         })
 
     })
@@ -629,6 +637,83 @@ describe("Lockers", async () => {
 
     });
 
+    describe("#setTeleportDAOToken",async () => {
+
+        it("non owners can't call setTeleportDAOToken", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.setTeleportDAOToken(
+                    ONE_ADDRESS
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("only owner can call setTeleportDAOToken", async function () {
+
+            await expect(await lockers.setTeleportDAOToken(
+                ONE_ADDRESS
+            )).to.emit(
+                lockers, "NewTeleportDAOToken"
+            ).withArgs(teleportDAOToken.address, ONE_ADDRESS);
+
+            expect(
+                await lockers.TeleportDAOToken()
+            ).to.equal(ONE_ADDRESS)
+        })
+    })
+
+    describe("#setLockerPercentageFee",async () => {
+
+        it("non owners can't call setLockerPercentageFee", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.setLockerPercentageFee(
+                    2100
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("only owner can call setLockerPercentageFee", async function () {
+
+            await expect(await lockers.setLockerPercentageFee(
+                2100
+            )).to.emit(
+                lockers, "NewLockerPercentageFee"
+            ).withArgs(LOCKER_PERCENTAGE_FEE, 2100);
+
+            expect(
+                await lockers.lockerPercentageFee()
+            ).to.equal(2100)
+        })
+    })
+
+    describe("#setPriceWithDiscountRatio",async () => {
+
+        it("non owners can't call setPriceWithDiscountRatio", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.setPriceWithDiscountRatio(
+                    2100
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("only owner can call setPriceWithDiscountRatio", async function () {
+
+            await expect(await lockers.setPriceWithDiscountRatio(
+                2100
+            )).to.emit(
+                lockers, "NewPriceWithDiscountRatio"
+            ).withArgs(PRICE_WITH_DISCOUNT_RATIO, 2100);
+
+            expect(
+                await lockers.priceWithDiscountRatio()
+            ).to.equal(2100)
+        })
+    })
 
     describe("#setMinRequiredTDTLockedAmount",async () => {
         it("non owners can't call setMinRequiredTDTLockedAmount", async function () {
@@ -643,9 +728,11 @@ describe("Lockers", async () => {
 
         it("only owner can call setMinRequiredTDTLockedAmount", async function () {
 
-            await lockers.setMinRequiredTDTLockedAmount(
+            await expect(await lockers.setMinRequiredTDTLockedAmount(
                 REQUIRED_LOCKED_AMOUNT + 55
-            )
+            )).to.emit(
+                lockers, "NewMinRequiredTDTLockedAmount"
+            ).withArgs(minRequiredTDTLockedAmount, REQUIRED_LOCKED_AMOUNT + 55);
 
             expect(
                 await lockers.minRequiredTDTLockedAmount()
@@ -666,9 +753,12 @@ describe("Lockers", async () => {
 
         it("only owner can call setMinRequiredTNTLockedAmount", async function () {
 
-            await lockers.setMinRequiredTNTLockedAmount(
+            await expect(await lockers.setMinRequiredTNTLockedAmount(
                 REQUIRED_LOCKED_AMOUNT + 55
-            )
+            )).to.emit(
+                lockers, "NewMinRequiredTNTLockedAmount"
+            ).withArgs(minRequiredNativeTokenLockedAmount, REQUIRED_LOCKED_AMOUNT + 55);
+
 
             expect(
                 await lockers.minRequiredTNTLockedAmount()
@@ -699,9 +789,12 @@ describe("Lockers", async () => {
 
         it("only owner can call setPriceOracle", async function () {
 
-            await lockers.setPriceOracle(
+            await expect(await lockers.setPriceOracle(
                 ONE_ADDRESS
-            )
+            )).to.emit(
+                lockers, "NewPriceOracle"
+            ).withArgs(mockPriceOracle.address, ONE_ADDRESS);
+
 
             expect(
                 await lockers.priceOracle()
@@ -733,9 +826,11 @@ describe("Lockers", async () => {
 
         it("only owner can call setCCBurnRouter", async function () {
 
-            await lockers.setCCBurnRouter(
+            await expect(await lockers.setCCBurnRouter(
                 ONE_ADDRESS
-            )
+            )).to.emit(
+                lockers, "NewCCBurnRouter"
+            ).withArgs(ccBurnSimulatorAddress, ONE_ADDRESS);
 
             expect(
                 await lockers.ccBurnRouter()
@@ -766,9 +861,11 @@ describe("Lockers", async () => {
 
         it("only owner can call setExchangeConnector", async function () {
 
-            await lockers.setExchangeConnector(
+            await expect(await lockers.setExchangeConnector(
                 ONE_ADDRESS
-            )
+            )).to.emit(
+                lockers, "NewExchangeConnector"
+            ).withArgs(mockExchangeConnector.address, ONE_ADDRESS);
 
             expect(
                 await lockers.exchangeConnector()
@@ -799,9 +896,11 @@ describe("Lockers", async () => {
 
         it("only owner can call setTeleBTC", async function () {
 
-            await lockers.setTeleBTC(
+            await expect(await lockers.setTeleBTC(
                 ONE_ADDRESS
-            )
+            )).to.emit(
+                lockers, "NewTeleBTC"
+            ).withArgs(teleBTC.address, ONE_ADDRESS);
 
             expect(
                 await lockers.teleBTC()
@@ -823,12 +922,66 @@ describe("Lockers", async () => {
 
         it("only owner can call setCollateralRatio", async function () {
 
-            await lockers.setCollateralRatio(
+            await expect(await lockers.setCollateralRatio(
                 21000
-            )
+            )).to.emit(
+                lockers, "NewCollateralRatio"
+            ).withArgs(collateralRatio, 21000);
 
             expect(
                 await lockers.collateralRatio()
+            ).to.equal(21000)
+        })
+    })
+
+    describe("#setLiquidationRatio",async () => {
+
+        it("non owners can't call setLiquidationRatio", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.setLiquidationRatio(
+                    1234
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("only owner can call setLiquidationRatio", async function () {
+
+            await expect(await lockers.setLiquidationRatio(
+                21000
+            )).to.emit(
+                lockers, "NewLiquidationRatio"
+            ).withArgs(liquidationRatio, 21000);
+
+            expect(
+                await lockers.liquidationRatio()
+            ).to.equal(21000)
+        })
+    })
+
+    describe("#setMinLeavingIntervalTime",async () => {
+
+        it("non owners can't call setMinLeavingIntervalTime", async function () {
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.setMinLeavingIntervalTime(
+                    1234
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("only owner can call setMinLeavingIntervalTime", async function () {
+
+            await expect(await lockers.setMinLeavingIntervalTime(
+                21000
+            )).to.emit(
+                lockers, "NewMinLeavingIntervalTime"
+            ).withArgs(MIN_LEAVING_INTERVAL_TIMESTAMP, 21000);
+
+            expect(
+                await lockers.minLeavingIntervalTime()
             ).to.equal(21000)
         })
     })
