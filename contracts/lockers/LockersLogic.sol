@@ -276,6 +276,13 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         _setLiquidationRatio(_liquidationRatio);
     }
 
+    /// @notice                             Changes minimum leaving interval
+    /// @dev                                Only owner can call this
+    /// @param _minLeavingIntervalTime      The new minimum leaving interval
+    function setMinLeavingIntervalTime(uint _minLeavingIntervalTime) external override onlyOwner {
+        _setMinLeavingIntervalTime(_minLeavingIntervalTime);
+    }
+
     /// @notice                     Internal setter for teleportDAO token of lockers
     /// @param _tdtTokenAddress     The new teleportDAO token address
     function _setTeleportDAOToken(address _tdtTokenAddress) private nonZeroAddress(_tdtTokenAddress) {
@@ -298,7 +305,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             _priceWithDiscountRatio <= ONE_HUNDRED_PERCENT,
             "Lockers: less than 100%"
         );
-        emit NewPriceWithDiscountRatio(priceWithDiscountRatio, priceWithDiscountRatio);
+        emit NewPriceWithDiscountRatio(priceWithDiscountRatio, _priceWithDiscountRatio);
         
         priceWithDiscountRatio= _priceWithDiscountRatio;
         libParams.priceWithDiscountRatio = priceWithDiscountRatio;
@@ -378,8 +385,8 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         libParams.liquidationRatio = liquidationRatio;
     }
 
-    /// @notice                             Internal setter for liquidation ratio
-    /// @param _minLeavingIntervalTime      The new liquidation ratio
+    /// @notice                             Internal setter for minimum leaving interval
+    /// @param _minLeavingIntervalTime      The new minimum leaving interval
     function _setMinLeavingIntervalTime(uint _minLeavingIntervalTime) private {
         // TODO: write tests (both for lockers leaving and setter)
         emit NewMinLeavingIntervalTime(minLeavingIntervalTime, _minLeavingIntervalTime);
