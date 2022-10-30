@@ -28,6 +28,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
     // Public variables
     mapping(address => instantRequest[]) public instantRequests; // Mapping from user address to user's unpaid instant requests
+    mapping(address => uint256) public instantRequestCounter;
     uint public override slasherPercentageReward;
     uint public override paybackDeadline;
     address public override teleBTC;
@@ -446,10 +447,6 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
         // Gets loan information
         instantRequest memory theRequest = instantRequests[_user][_requestIndex];
-        // uint lockedCollateralPoolTokenAmount = instantRequests[_user][_requestIndex].lockedCollateralPoolTokenAmount;
-        // address collateralToken = instantRequests[_user][_requestIndex].collateralToken;
-        // address collateralPool = instantRequests[_user][_requestIndex].collateralPool;
-        // uint paybackAmount = instantRequests[_user][_requestIndex].paybackAmount;
 
         // Finds needed collateral token to pay back loan
         (bool result, uint requiredCollateralToken) = IExchangeConnector(defaultExchangeConnector).getInputAmount(
@@ -475,7 +472,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         // Checks that locked collateral is enough to pay back loan
         if (totalCollateralToken >= requiredCollateralToken) {
             // Approves exchange connector to use collateral token
-            ITeleBTC(theRequest.collateralToken).approve(defaultExchangeConnector, requiredCollateralToken);
+            IERC20(theRequest.collateralToken).approve(defaultExchangeConnector, requiredCollateralToken);
 
             // Exchanges collateral token for teleBTC
             IExchangeConnector(defaultExchangeConnector).swap(
@@ -512,7 +509,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         } else { // Handles situations where locked collateral is not enough to pay back the loan
 
             // Approves exchange connector to use collateral token
-            ITeleBTC(theRequest.collateralToken).approve(defaultExchangeConnector, totalCollateralToken);
+            IERC20(theRequest.collateralToken).approve(defaultExchangeConnector, totalCollateralToken);
 
             // Buys teleBTC as much as possible and sends it to instant pool
             IExchangeConnector(defaultExchangeConnector).swap(
@@ -605,6 +602,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         request.collateralPool = collateralPool;
         request.collateralToken = _collateralToken;
         request.deadline = IBitcoinRelay(relay).lastSubmittedHeight() + paybackDeadline;
+        request.requestCounterOfUser = instantRequestCounter[_user];
+        instantRequestCounter[_user] = instantRequestCounter[_user] + 1;
         instantRequests[_user].push(request);
 
     }
