@@ -754,7 +754,12 @@ describe("Bitcoin Relay", async () => {
         });
 
         it('#setRewardAmountInTDT', async () => {
-            await instance.setRewardAmountInTDT(5);
+            await expect(
+                await instance.setRewardAmountInTDT(5)
+            ).to.emit(
+                instance, "NewRewardAmountInTDT"
+            ).withArgs(0, 5);
+
             expect(
                 await instance.rewardAmountInTDT()
             ).to.equal(5)
@@ -767,7 +772,12 @@ describe("Bitcoin Relay", async () => {
         });
 
         it('#setFinalizationParameter', async () => {
-            await instance.setFinalizationParameter(6);
+            await expect(
+                await instance.setFinalizationParameter(6)
+            ).to.emit(
+                instance, "NewFinalizationParameter"
+            ).withArgs(3, 6);
+
             expect(
                 await instance.finalizationParameter()
             ).to.equal(6)
@@ -780,10 +790,15 @@ describe("Bitcoin Relay", async () => {
         });
 
         it('#setRelayerPercentageFee', async () => {
-            await instance.setRelayerPercentageFee(5);
+            await expect(
+                await instance.setRelayerPercentageFee(10)
+            ).to.emit(
+                instance, "NewRelayerPercentageFee"
+            ).withArgs(5, 10);
+
             expect(
                 await instance.relayerPercentageFee()
-            ).to.equal(5)
+            ).to.equal(10)
         });
 
         it('setRelayerPercentageFee owner check', async () => {
@@ -793,7 +808,12 @@ describe("Bitcoin Relay", async () => {
         });
 
         it('#setEpochLength', async () => {
-            await instance.setEpochLength(10);
+            await expect(
+                await instance.setEpochLength(10)
+            ).to.emit(
+                instance, "NewEpochLength"
+            ).withArgs(2016, 10);
+
             expect(
                 await instance.epochLength()
             ).to.equal(10)
@@ -806,7 +826,12 @@ describe("Bitcoin Relay", async () => {
         });
 
         it('#setBaseQueries', async () => {
-            await instance.setBaseQueries(100);
+            await expect(
+                await instance.setBaseQueries(100)
+            ).to.emit(
+                instance, "NewBaseQueries"
+            ).withArgs(2016, 100);
+
             expect(
                 await instance.baseQueries()
             ).to.equal(100)
@@ -819,7 +844,12 @@ describe("Bitcoin Relay", async () => {
         });
 
         it('#setSubmissionGasUsed', async () => {
-            await instance.setSubmissionGasUsed(100);
+            await expect(
+                await instance.setSubmissionGasUsed(100)
+            ).to.emit(
+                instance, "NewSubmissionGasUsed"
+            ).withArgs(300000, 100);
+            
             expect(
                 await instance.submissionGasUsed()
             ).to.equal(100)
