@@ -246,7 +246,7 @@ library LockersLib {
     }
 
     function maximumBuyableCollateral(
-        DataTypes.locker memory theLocker,
+        DataTypes.locker storage theLocker,
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
         uint _priceOfOneUnitOfCollateral
@@ -267,7 +267,7 @@ library LockersLib {
     }
 
     function calculateHealthFactor(
-        DataTypes.locker memory theLocker,
+        DataTypes.locker storage theLocker,
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
         uint _priceOfOneUnitOfCollateral
