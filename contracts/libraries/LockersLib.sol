@@ -56,7 +56,7 @@ library LockersLib {
         bytes calldata _lockerRescueScript
     ) external {
 
-        DataTypes.locker storage locker_;
+        DataTypes.locker memory locker_;
         locker_.lockerLockingScript = _candidateLockingScript;
         locker_.TDTLockedAmount = _lockedTDTAmount;
         locker_.nativeTokenLockedAmount = _lockedNativeTokenAmount;
