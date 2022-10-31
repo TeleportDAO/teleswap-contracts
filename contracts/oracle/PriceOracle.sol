@@ -345,9 +345,7 @@ contract PriceOracle is IPriceOracle, Ownable {
     /// @dev                Deletes and shifts the array
     /// @param _index       Index of the element that will be deleted
     function _removeElementFromExchangeRoutersList(uint _index) private {
-        for (uint i = _index; i < exchangeRoutersList.length - 1; i++) {
-            exchangeRoutersList[i] = exchangeRoutersList[i+1];
-        }
+        exchangeRoutersList[_index] = exchangeRoutersList[exchangeRoutersList.length - 1];
         exchangeRoutersList.pop();
     }
 
