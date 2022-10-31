@@ -107,9 +107,7 @@ contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGua
     /// @dev                Deletes and shifts the array  
     /// @param _index       Index of the element that is deleted
     function _removeElement(uint _index) private {
-        for (uint i = _index; i < allCollateralPoolsLength() - 1; i++) {
-            allCollateralPools[i] = allCollateralPools[i+1];
-        }
+        allCollateralPools[_index] = allCollateralPools[allCollateralPoolsLength() - 1];
         allCollateralPools.pop();
     }
 }
