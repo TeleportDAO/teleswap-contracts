@@ -38,6 +38,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     uint public override slasherPercentageReward; // Min amount is %1
     uint public override bitcoinFee; // Fee of submitting a tx on Bitcoin
     mapping(address => burnRequest[]) public burnRequests; // Mapping from locker target address to assigned burn requests
+    mapping(address => uint) public burnRequestCounter;
     mapping(bytes32 => bool) public override isUsedAsBurnProof; // Mapping that shows a txId has been submitted to pay a burn request
 
     /// @notice                             Handles cross-chain burn requests
@@ -68,6 +69,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         _setSlasherPercentageReward(_slasherPercentageReward);
         _setBitcoinFee(_bitcoinFee);
     }
+
+    receive() external payable {}
 
     function renounceOwnership() public virtual override onlyOwner {}
 
@@ -259,7 +262,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             _amount,
             _burntAmount,
             _lockerTargetAddress,
-            burnRequests[_lockerTargetAddress].length - 1, // index of request
+            _lockerLockingScript,
+            burnRequests[_lockerTargetAddress][burnRequests[_lockerTargetAddress].length - 1].requestIdOfLocker,// index of request
             burnRequests[_lockerTargetAddress][burnRequests[_lockerTargetAddress].length - 1].deadline
         );
 
@@ -322,6 +326,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         // Checks the paid burn requests
         uint paidOutputCounter = _checkPaidBurnRequests(
+            txId,
             _blockNumber,
             _lockerTargetAddress,
             _vout,
@@ -382,6 +387,13 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
                 _msgSender(), // Slasher address
                 burnRequests[_lockerTargetAddress][_indices[i]].amount,
                 burnRequests[_lockerTargetAddress][_indices[i]].sender // User address
+            );
+
+            emit BurnDispute(
+                burnRequests[_lockerTargetAddress][_indices[i]].sender,
+                _lockerTargetAddress,
+                _lockerLockingScript,
+                burnRequests[_lockerTargetAddress][_indices[i]].requestIdOfLocker
             );
         }
 
@@ -514,6 +526,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         // Emits the event
         emit LockerDispute(
             _lockerTargetAddress,
+            _lockerLockingScript,
             _inputBlockNumber,
             _inputTxId,
             totalValue + totalValue*slasherPercentageReward/MAX_SLASHER_REWARD
@@ -528,6 +541,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _voutIndexes                 Indexes of outputs that were used to pay burn requests (_voutIndexes[i] belongs to _burnReqIndexes[i])
     /// @return paidOutputCounter           Number of executed burn requests
     function _checkPaidBurnRequests(
+        bytes32 txId,
         uint _paidBlockNumber,
         address _lockerTargetAddress,
         bytes memory _vout,
@@ -562,11 +576,10 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
                     burnRequests[_lockerTargetAddress][_burnReqIndex].isTransferred = true;
                     paidOutputCounter = paidOutputCounter + 1;
                     emit PaidCCBurn(
-                        burnRequests[_lockerTargetAddress][_burnReqIndex].sender,
-                        burnRequests[_lockerTargetAddress][_burnReqIndex].userScript,
-                        parsedAmount,
                         _lockerTargetAddress,
-                        _burnReqIndex // Index of request
+                        burnRequests[_lockerTargetAddress][_burnReqIndex].requestIdOfLocker,
+                        txId,
+                        _voutIndexes[i]
                     );
                 }
             }
@@ -627,6 +640,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         request.scriptType = _scriptType;
         request.deadline = _lastSubmittedHeight + transferDeadline;
         request.isTransferred = false;
+        request.requestIdOfLocker = burnRequestCounter[_lockerTargetAddress];
+        burnRequestCounter[_lockerTargetAddress] = burnRequestCounter[_lockerTargetAddress] + 1;
         burnRequests[_lockerTargetAddress].push(request);
     }
 
