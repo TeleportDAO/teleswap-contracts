@@ -380,6 +380,46 @@ describe("Instant Router", async () => {
             ).to.revertedWith("InstantPool: liquidity is not sufficient")
         });
 
+
+        it("Reverts because has reached to max loan number", async function () {
+            // Set parameters
+            loanAmount = 4;
+            equivalentCollateralToken = 50; // Assumes that: 1 collateralToken = 2 teleBTC
+            requiredCollateralPoolToken = equivalentCollateralToken*collateralizationRatio; // Assumes that: 1 collateralToken = 1 collateralPoolToken
+            lastSubmittedHeight = 100;
+            isCollateral = true;
+            transferFromResult = true;
+
+            // Mocks functions
+            await mockFunctionsCollateralPoolFactory(isCollateral, mockCollateralPool.address);
+            await mockFunctionsCollateralPool(collateralizationRatio, requiredCollateralPoolToken);
+            await mockFunctionsPriceOracle(equivalentCollateralToken);
+            await mockFunctionsBitcoinRelay(lastSubmittedHeight);
+
+            // Gets last block timestamp
+            let lastBlockTimestamp = await getTimestamp();
+
+            for (var i = 0; i < 15; i++) {
+                await instantRouter.instantCCTransfer(
+                    signer1Address,
+                    loanAmount,
+                    lastBlockTimestamp*2,
+                    collateralToken.address
+                )
+            }
+
+            // Checks that loan has been issued successfully
+            await expect(
+                instantRouter.instantCCTransfer(
+                    signer1Address,
+                    loanAmount,
+                    lastBlockTimestamp*2,
+                    collateralToken.address
+                )
+            ).to.revertedWith("InstantRouter: reached max loan number")
+            
+        });
+
     });
 
     describe("#instantCCExchange", async () => {
