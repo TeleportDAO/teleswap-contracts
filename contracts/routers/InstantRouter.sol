@@ -29,6 +29,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
     // Public variables
     mapping(address => instantRequest[]) public instantRequests; // Mapping from user address to user's unpaid instant requests
+    mapping(address => uint) public instantRequestStartingPoint; // Mapping from user address to the user's first unpaid loan index (the requests less than this pointer have been paid)
     mapping(address => uint256) public instantRequestCounter;
     uint public override slasherPercentageReward;
     uint public override paybackDeadline;
@@ -378,39 +379,43 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         uint remainedAmount = _teleBTCAmount;
         uint lastSubmittedHeight = IBitcoinRelay(relay).lastSubmittedHeight();
 
-        for (uint i = 1; i <= instantRequests[_user].length; i++) {
+        uint startingPoint = instantRequestStartingPoint[_user];
+
+        for (uint i = startingPoint; i < instantRequests[_user].length; i++) {
 
             // Checks that remained teleBTC is enough to pay back the loan and payback deadline has not passed
             if (
-                remainedAmount >= instantRequests[_user][i-1].paybackAmount &&
-                instantRequests[_user][i-1].deadline >= lastSubmittedHeight
+                remainedAmount >= instantRequests[_user][i].paybackAmount &&
+                instantRequests[_user][i].deadline >= lastSubmittedHeight
             ) {
-                remainedAmount = remainedAmount - instantRequests[_user][i-1].paybackAmount;
+                remainedAmount = remainedAmount - instantRequests[_user][i].paybackAmount;
 
                 // Pays back the loan to instant pool
                 ITeleBTC(teleBTC).transferFrom(
                     _msgSender(),
                     teleBTCInstantPool,
-                    instantRequests[_user][i-1].paybackAmount
+                    instantRequests[_user][i].paybackAmount
                 );
 
                 // Unlocks the locked collateral pool token after paying the loan
-                IERC20(instantRequests[_user][i-1].collateralPool).safeTransfer(
+                IERC20(instantRequests[_user][i].collateralPool).safeTransfer(
                     _user,
-                    instantRequests[_user][i-1].lockedCollateralPoolTokenAmount
+                    instantRequests[_user][i].lockedCollateralPoolTokenAmount
                 );
 
                 emit PaybackLoan(
                     _user,
-                    instantRequests[_user][i-1].paybackAmount,
-                    instantRequests[_user][i-1].collateralToken,
-                    instantRequests[_user][i-1].lockedCollateralPoolTokenAmount,
-                    instantRequests[_user][i-1].requestCounterOfUser
+                    instantRequests[_user][i].paybackAmount,
+                    instantRequests[_user][i].collateralToken,
+                    instantRequests[_user][i].lockedCollateralPoolTokenAmount,
+                    instantRequests[_user][i].requestCounterOfUser
                 );
 
+                instantRequestStartingPoint[_user] = i+1;
+
                 // Deletes the request after paying it
-                _removeElement(_user, i-1);
-                i--;
+                // _removeElement(_user, i-1);
+                // i--;
             }
 
             if (remainedAmount == 0) {
@@ -418,6 +423,12 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             }
         }
 
+        if (2 * instantRequestStartingPoint[_user] > instantRequests[_user].length) {
+            _removeAndShiftElements(_user);
+        }
+        
+        //  FIXME: What's happenning here? why we are sending an amount 
+        // that haven't get ?!
         // Transfers remained teleBTC to user
         if (remainedAmount > 0) {
             ITeleBTC(teleBTC).transferFrom(_msgSender(), _user, remainedAmount);
@@ -436,7 +447,15 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         uint _requestIndex
     ) override nonReentrant nonZeroAddress(_user) external returns (bool) {
 
-        require(instantRequests[_user].length > _requestIndex, "InstantRouter: request index does not exist");
+        require(
+            _requestIndex >= instantRequestStartingPoint[_user] , 
+            "InstantRouter: only un-paid loans can be slashed"
+        );
+
+        require(
+            instantRequests[_user].length > _requestIndex, 
+            "InstantRouter: request index does not exist"
+        );
 
         // Gets last submitted height on relay
         uint lastSubmittedHeight = IBitcoinRelay(relay).lastSubmittedHeight();
@@ -535,7 +554,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         }
 
         // Deletes the request after slashing user
-        _removeElement(_user, _requestIndex);
+        _removeOneElement(_user, _requestIndex);
 
         return true;
     }
@@ -544,12 +563,36 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     /// @dev                Deletes and shifts the array
     /// @param _user        Address of the user whose instant requests array is considered
     /// @param _index       Index of the element that will be deleted
-    function _removeElement(address _user, uint _index) private {
+    function _removeOneElement(address _user, uint _index) private {
         require(_index < instantRequests[_user].length, "InstantRouter: index is out of bound");
         for (uint i = _index; i < instantRequests[_user].length - 1; i++) {
             instantRequests[_user][i] = instantRequests[_user][i+1];
         }
         instantRequests[_user].pop();
+    }
+
+    /// @notice             Removes the elements of the array of user's instant requests which are already paid
+    /// @dev                Deletes and shifts the array
+    /// @param _user        Address of the user whose instant requests array is considered
+    function _removeAndShiftElements(address _user) private {
+        uint theLength = instantRequests[_user].length;
+        require(
+            theLength > 0, 
+            "InstantRouter: no unpaid loan"
+        );
+
+        uint startingPoint = instantRequestStartingPoint[_user];
+
+        for (uint i = startingPoint; i < theLength; i++) {
+            instantRequests[_user][i - startingPoint] = instantRequests[_user][i];
+        }
+
+        for (uint i = 0; i < startingPoint; i++) {
+            instantRequests[_user].pop();
+        }
+
+        instantRequestStartingPoint[_user] = 0;
+
     }
 
     /// @notice                   Locks the required amount of user's collateral
