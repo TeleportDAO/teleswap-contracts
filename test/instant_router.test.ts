@@ -294,11 +294,11 @@ describe("Instant Router", async () => {
                 await instantRouter.getUserRequestDeadline(deployerAddress, 0)
             ).to.equal(lastSubmittedHeight + paybackDeadline);
             
-            await expect(
+            expect(
                 instantRouter.getLockedCollateralPoolTokenAmount(deployerAddress, 1)
             ).to.revertedWith("InstantRouter: wrong index");
 
-            await expect(
+            expect(
                 instantRouter.getUserRequestDeadline(deployerAddress, 1)
             ).to.revertedWith("InstantRouter: wrong index");
             
@@ -323,7 +323,7 @@ describe("Instant Router", async () => {
             let lastBlockTimestamp = await getTimestamp();
 
             // Checks that loan has been issued successfully
-            await expect(
+            expect(
                 instantRouter.instantCCTransfer(
                     signer1Address,
                     loanAmount,
@@ -342,7 +342,7 @@ describe("Instant Router", async () => {
             let lastBlockTimestamp = await getTimestamp();
 
             // Checks that loan has been issued successfully
-            await expect(
+            expect(
                 instantRouter.instantCCTransfer(
                     signer1Address,
                     loanAmount,
@@ -370,7 +370,7 @@ describe("Instant Router", async () => {
             // Gets last block timestamp
             let lastBlockTimestamp = await getTimestamp();
 
-            await expect(
+            expect(
                 instantRouter.instantCCTransfer(
                     signer1Address,
                     loanAmount,
@@ -496,7 +496,7 @@ describe("Instant Router", async () => {
 
             await instantRouter.pause();
 
-            await expect(
+            expect(
                 instantRouter.instantCCExchange(
                     mockExchangeConnector.address,
                     signer1Address,
@@ -515,7 +515,7 @@ describe("Instant Router", async () => {
             let lastBlockTimestamp = await getTimestamp();
 
             // Checks that loan has been issued successfully
-            await expect(
+            expect(
                 instantRouter.instantCCExchange(
                     mockExchangeConnector.address,
                     signer1Address,
@@ -534,7 +534,7 @@ describe("Instant Router", async () => {
             let lastBlockTimestamp = await getTimestamp();
 
             // Path's first token is not teleBTC
-            await expect(
+            expect(
                 instantRouter.instantCCExchange(
                     mockExchangeConnector.address,
                     signer1Address,
@@ -548,7 +548,7 @@ describe("Instant Router", async () => {
             ).to.revertedWith("InstantRouter: path is invalid");
             
             // Path only has one token
-            await expect(
+            expect(
                 instantRouter.instantCCExchange(
                     mockExchangeConnector.address,
                     signer1Address,
@@ -585,7 +585,7 @@ describe("Instant Router", async () => {
             // Gets last block timestamp
             let lastBlockTimestamp = await getTimestamp();
 
-            await expect(
+            expect(
                 instantRouter.instantCCExchange(
                     mockExchangeConnector.address,
                     signer1Address,
@@ -608,7 +608,7 @@ describe("Instant Router", async () => {
             let lastBlockTimestamp = await getTimestamp();
 
             // Checks that loan has been issued successfully
-            await expect(
+            expect(
                 instantRouter.instantCCExchange(
                     mockExchangeConnector.address,
                     signer1Address,
@@ -645,7 +645,7 @@ describe("Instant Router", async () => {
             // Gets last block timestamp
             let lastBlockTimestamp = await getTimestamp();
 
-            await expect(
+            expect(
                 instantRouter.instantCCExchange(
                     mockExchangeConnector.address,
                     signer1Address,
@@ -800,12 +800,6 @@ describe("Instant Router", async () => {
                 await instantRouter.getUserRequestsLength(
                     deployerAddress
                 )
-            ).to.equal(2);
-
-            expect(
-                await instantRouter.instantRequestStartingPoint(
-                    deployerAddress
-                )
             ).to.equal(1);
 
             expect(
@@ -868,12 +862,6 @@ describe("Instant Router", async () => {
             // User only pays back one of debts
             expect(
                 await instantRouter.getUserRequestsLength(
-                    deployerAddress
-                )
-            ).to.equal(2);
-
-            expect(
-                await instantRouter.instantRequestStartingPoint(
                     deployerAddress
                 )
             ).to.equal(1);
@@ -1172,7 +1160,7 @@ describe("Instant Router", async () => {
         });
 
         it("Reverts since request index is out of range", async function () {
-            await expect(
+            expect(
                 instantRouter.slashUser(
                     deployerAddress,
                     0
@@ -1197,7 +1185,7 @@ describe("Instant Router", async () => {
 
             await mockFunctionsBitcoinRelay(lastSubmittedHeight);
 
-            await expect(
+            expect(
                 instantRouter.slashUser(
                     deployerAddress,
                     0
@@ -1236,83 +1224,12 @@ describe("Instant Router", async () => {
             await mockFunctionsBitcoinRelay(lastSubmittedHeight*2);
             await mockFunctionsExchangeConnector(false, [], requiredCollateralToken);
 
-            await expect(
+            expect(
                 instantRouter.slashUser(
                     deployerAddress,
                     0
                 )
             ).to.revertedWith("InstantRouter: liquidity pool doesn't exist");
-        });
-
-        it("Tx will be reverted when a paid loan wanted to be slashed", async function () {
-
-            // Gets last block timestamp
-            let lastBlockTimestamp = await getTimestamp();
-
-            // Adds more liquidity to instant pool
-            await teleBTC.approve(teleBTCInstantPool.address, addedLiquidity);
-            await teleBTCInstantPool.addLiquidity(deployerAddress, addedLiquidity);
-
-            // Creates two debts for deployer
-            await instantRouter.instantCCTransfer(
-                signer1Address,
-                loanAmount,
-                lastBlockTimestamp*2,
-                collateralToken.address
-            );
-            await instantRouter.instantCCTransfer(
-                signer1Address,
-                loanAmount,
-                lastBlockTimestamp*2,
-                collateralToken.address
-            );
-
-            // Mints teleBTC for deployer to payback loan
-            await teleBTC.mintTestToken()
-            let instantFee = Math.floor(loanAmount*instantPercentageFee/10000);
-            await teleBTC.approve(instantRouter.address, loanAmount + instantFee)
-
-            expect(
-                await instantRouter.getUserRequestsLength(
-                    deployerAddress
-                )
-            ).to.equal(2);
-
-            expect(
-                await teleBTCInstantPool.totalUnpaidLoan()
-            ).to.equal((loanAmount + instantFee)*2);
-
-            expect(
-                await instantRouter.payBackLoan(
-                    deployerAddress,
-                    loanAmount + instantFee
-                )
-            ).to.emit(instantRouter, "PaybackLoan").withArgs(
-                deployerAddress,
-                loanAmount + instantFee,
-                collateralToken.address,
-                requiredCollateralPoolToken  
-            );
-
-            // User only pays back one of debts
-            expect(
-                await instantRouter.getUserRequestsLength(
-                    deployerAddress
-                )
-            ).to.equal(2);
-
-            expect(
-                await instantRouter.instantRequestStartingPoint(
-                    deployerAddress
-                )
-            ).to.equal(1);
-
-            await expect(
-                instantRouter.slashUser(
-                    deployerAddress,
-                    0
-                )
-            ).to.revertedWith("InstantRouter: only un-paid loans can be slashed")
         });
 
     });
@@ -1340,8 +1257,8 @@ describe("Instant Router", async () => {
         })
 
         it("Reverts since slasher percentage reward is greater than 100", async function () {
-            await expect(
-                instantRouter.setSlasherPercentageReward(10001)
+            expect(
+                instantRouter.setSlasherPercentageReward(101)
             ).to.revertedWith("InstantRouter: wrong slasher percentage reward");
         })
 
@@ -1362,7 +1279,7 @@ describe("Instant Router", async () => {
         it("Reverts since payback deadline is lower than relay finalization parameter", async function () {
             await mockBitcoinRelay.mock.finalizationParameter.returns(2);
 
-            await expect(
+            expect(
                 instantRouter.setPaybackDeadline(1)
             ).to.revertedWith("InstantRouter: wrong payback deadline");
         })
@@ -1431,32 +1348,32 @@ describe("Instant Router", async () => {
         })
 
         it("Reverts since given address is zero", async function () {
-            await expect(
+            expect(
                 instantRouter.setRelay(ZERO_ADDRESS)
             ).to.revertedWith("InstantRouter: zero address");
 
-            await expect(
+            expect(
                 instantRouter.setTeleBTC(ZERO_ADDRESS)
             ).to.revertedWith("InstantRouter: zero address");
 
-            await expect(
+            expect(
                 instantRouter.setPriceOracle(ZERO_ADDRESS)
             ).to.revertedWith("InstantRouter: zero address");
 
-            await expect(
+            expect(
                 instantRouter.setTeleBTC(ZERO_ADDRESS)
             ).to.revertedWith("InstantRouter: zero address");
 
-            await expect(
+            expect(
                 instantRouter.setTeleBTCInstantPool(ZERO_ADDRESS)
             ).to.revertedWith("InstantRouter: zero address");
 
 
-            await expect(
+            expect(
                 instantRouter.setDefaultExchangeConnector(ZERO_ADDRESS)
             ).to.revertedWith("InstantRouter: zero address");
 
-            await expect(
+            expect(
                 instantRouter.setCollateralPoolFactory(ZERO_ADDRESS)
             ).to.revertedWith("InstantRouter: zero address");
         })
