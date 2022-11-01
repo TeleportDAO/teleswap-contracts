@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.8.4;
 
-import './interfaces/IInstantRouter.sol';
-import '../connectors/interfaces/IExchangeConnector.sol';
-import '../pools/interfaces/IInstantPool.sol';
-import '../pools/interfaces/ICollateralPool.sol';
-import '../pools/interfaces/ICollateralPoolFactory.sol';
-import '../erc20/interfaces/ITeleBTC.sol';
-import '../oracle/interfaces/IPriceOracle.sol';
+import "./interfaces/IInstantRouter.sol";
+import "../connectors/interfaces/IExchangeConnector.sol";
+import "../pools/interfaces/IInstantPool.sol";
+import "../pools/interfaces/ICollateralPool.sol";
+import "../pools/interfaces/ICollateralPoolFactory.sol";
+import "../erc20/interfaces/ITeleBTC.sol";
+import "../oracle/interfaces/IPriceOracle.sol";
 import "../relay/interfaces/IBitcoinRelay.sol";
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
-import '@openzeppelin/contracts/security/Pausable.sol';
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "hardhat/console.sol"; // Just for test
 
@@ -25,6 +25,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
     // Constants
     uint constant MAX_SLASHER_PERCENTAGE_REWARD = 10000;
+    uint constant MAX_INSTANT_LOAN_NUMBER = 20;
 
     // Public variables
     mapping(address => instantRequest[]) public instantRequests; // Mapping from user address to user's unpaid instant requests
@@ -378,6 +379,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         uint lastSubmittedHeight = IBitcoinRelay(relay).lastSubmittedHeight();
 
         for (uint i = 1; i <= instantRequests[_user].length; i++) {
+
             // Checks that remained teleBTC is enough to pay back the loan and payback deadline has not passed
             if (
                 remainedAmount >= instantRequests[_user][i-1].paybackAmount &&
@@ -564,6 +566,11 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         require(
             ICollateralPoolFactory(collateralPoolFactory).isCollateral(_collateralToken),
             "InstantRouter: collateral token is not acceptable"
+        );
+
+        require(
+            instantRequests[_user].length < MAX_INSTANT_LOAN_NUMBER,
+            "InstantRouter: reached max loan number"
         );
 
         // Gets the collateral pool address
