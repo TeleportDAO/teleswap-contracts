@@ -399,7 +399,7 @@ describe("Instant Router", async () => {
             // Gets last block timestamp
             let lastBlockTimestamp = await getTimestamp();
 
-            for (var i = 0; i < 20; i++) {
+            for (var i = 0; i < 15; i++) {
                 await instantRouter.instantCCTransfer(
                     signer1Address,
                     loanAmount,

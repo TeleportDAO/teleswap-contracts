@@ -25,7 +25,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
     // Constants
     uint constant MAX_SLASHER_PERCENTAGE_REWARD = 10000;
-    uint constant MAX_INSTANT_LOAN_NUMBER = 20;
+    uint constant MAX_INSTANT_LOAN_NUMBER = 15;
 
     // Public variables
     mapping(address => instantRequest[]) public instantRequests; // Mapping from user address to user's unpaid instant requests
@@ -182,8 +182,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     function _setPaybackDeadline(uint _paybackDeadline) private {
         uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
         // Gives users enough time to pay back loans
-        // TODO: should have "=" or not?!
-        require(_paybackDeadline >= _finalizationParameter, "InstantRouter: wrong payback deadline");
+        require(_paybackDeadline > _finalizationParameter, "InstantRouter: wrong payback deadline");
         emit NewPaybackDeadline(paybackDeadline, _paybackDeadline);
         paybackDeadline = _paybackDeadline;
     }
@@ -378,6 +377,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         uint remainedAmount = _teleBTCAmount;
         uint lastSubmittedHeight = IBitcoinRelay(relay).lastSubmittedHeight();
 
+        uint amountToTransfer = 0;
+
         for (uint i = 1; i <= instantRequests[_user].length; i++) {
 
             // Checks that remained teleBTC is enough to pay back the loan and payback deadline has not passed
@@ -388,11 +389,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
                 remainedAmount = remainedAmount - instantRequests[_user][i-1].paybackAmount;
 
                 // Pays back the loan to instant pool
-                ITeleBTC(teleBTC).transferFrom(
-                    _msgSender(),
-                    teleBTCInstantPool,
-                    instantRequests[_user][i-1].paybackAmount
-                );
+                amountToTransfer += instantRequests[_user][i-1].paybackAmount;
 
                 // Unlocks the locked collateral pool token after paying the loan
                 IERC20(instantRequests[_user][i-1].collateralPool).safeTransfer(
@@ -417,6 +414,12 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
                 break;
             }
         }
+
+        ITeleBTC(teleBTC).transferFrom(
+            _msgSender(),
+            teleBTCInstantPool,
+            amountToTransfer
+        );
 
         // Transfers remained teleBTC to user
         if (remainedAmount > 0) {
