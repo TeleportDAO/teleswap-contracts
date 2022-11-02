@@ -8,7 +8,6 @@ import "../uniswap/v2-core/interfaces/IUniswapV2Factory.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "hardhat/console.sol";
 
 contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
 

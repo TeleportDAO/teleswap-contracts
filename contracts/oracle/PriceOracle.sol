@@ -6,7 +6,6 @@ import '../connectors/interfaces/IExchangeConnector.sol';
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import '@openzeppelin/contracts/access/Ownable.sol';
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "hardhat/console.sol"; // Just for test
 
 
 contract PriceOracle is IPriceOracle, Ownable {

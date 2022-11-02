@@ -2,7 +2,6 @@
 pragma solidity >=0.8.0 <0.8.4;
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "hardhat/console.sol";
 
 contract LockersProxy is TransparentUpgradeableProxy {
 
