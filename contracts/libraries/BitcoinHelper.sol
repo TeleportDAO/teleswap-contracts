@@ -71,7 +71,6 @@ library BitcoinHelper {
     function indexCompactInt(bytes29 memView, uint256 _index) internal pure returns (uint64 number) {
         uint256 flag = memView.indexUint(_index, 1);
         if (flag <= 0xfc) {
-            // TODO: use safe cast to all the following lines
             return flag.toUint64();
         } else if (flag == 0xfd) {
             number = memView.indexLEUint(_index + 1, 2).toUint64();
@@ -87,7 +86,7 @@ library BitcoinHelper {
 
     /// @notice         gives the total length (in bytes) of a CompactInt-encoded number
     /// @param number   the number as uint64
-    /// @return         the compact integer as uint8
+    /// @return         the compact integer length as uint8
     function compactIntLength(uint64 number) private pure returns (uint8) {
         if (number <= 0xfc) {
             return 1;

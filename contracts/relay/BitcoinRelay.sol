@@ -31,7 +31,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     uint public override lastEpochQueries;
     address public override TeleportDAOToken;
     bytes32 public override relayGenesisHash; // Initial block header of relay
-    mapping(bytes32 => bytes32) internal previousBlock; // block header hash => parnet header hash
+    mapping(bytes32 => bytes32) internal previousBlock; // block header hash => parent header hash
     mapping(bytes32 => uint256) internal blockHeight; // block header hash => block height
 
     // Private variables
@@ -95,7 +95,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         _unpause();
     }
 
-    /// @notice             Getter for an specific block header's hash in the stored chain
+    /// @notice             Getter for a specific block header's hash in the stored chain
     /// @param  _height     The height of the desired block header
     /// @param  _index      The index of the desired block header in that height
     /// @return             Block header's hash
@@ -103,7 +103,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         return chain[_height][_index].selfHash;
     }
 
-    /// @notice             Getter for an specific block header's fee price for a query
+    /// @notice             Getter for a specific block header's fee price for a query
     /// @param  _height     The height of the desired block header
     /// @param  _index      The index of the desired block header in that height
     /// @return             Block header's fee price for a query
@@ -377,16 +377,16 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     }
 
     /// @notice                 Checks the size of addHeaders inputs 
-    /// @param  _headersView    Input to the addHeaders functions
-    /// @param  _anchorView     Input to the addHeaders functions
+    /// @param  _headersView    Input to the addHeaders and ownerAddHeaders functions
+    /// @param  _anchorView     Input to the addHeaders and ownerAddHeaders functions
     function _checkInputSizeAddHeaders(bytes29 _headersView, bytes29 _anchorView) internal pure {
         require(_headersView.notNull(), "BitcoinRelay: header array length must be divisible by 80");
         require(_anchorView.notNull(), "BitcoinRelay: anchor must be 80 bytes");
     }
 
     /// @notice                     Checks the size of addHeadersWithRetarget inputs 
-    /// @param  _oldStart           Input to the addHeadersWithRetarget functions
-    /// @param  _oldEnd             Input to the addHeadersWithRetarget functions
+    /// @param  _oldStart           Input to the addHeadersWithRetarget and ownerAddHeadersWithRetarget functions
+    /// @param  _oldEnd             Input to the addHeadersWithRetarget and ownerAddHeadersWithRetarget functions
     /// @param  _headersView        Input to the addHeadersWithRetarget functions
     function _checkInputSizeAddHeadersWithRetarget(
         bytes29 _oldStart,

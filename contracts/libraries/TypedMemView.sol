@@ -462,7 +462,7 @@ library TypedMemView {
     }
 
     /**
-     * @notice          Shortcut to `slice`. Gets a view representing the last `_len` byte.
+     * @notice          Shortcut to `slice`. Gets a view representing the last `_len` bytes.
      * @param memView   The view
      * @param _len      The length
      * @param newType   The new type
@@ -537,7 +537,7 @@ library TypedMemView {
 
     /**
      * @notice          Parse an unsigned integer from the view at `_index`.
-     * @dev             Requires that the view have >= `_bytes` bytes following that index.
+     * @dev             Requires that the view has >= `_bytes` bytes following that index.
      * @param memView   The view
      * @param _index    The index
      * @param _bytes    The bytes
