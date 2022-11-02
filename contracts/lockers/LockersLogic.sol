@@ -663,11 +663,11 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
 
     /// @notice                           Liquidates the locker whose collateral is unhealthy
-    /// @dev                              Anyone can liquidate a locker which its health factor
+    /// @dev                              Anyone can liquidate a locker whose health factor
     ///                                   is less than 10000 (100%) by providing a sufficient amount of teleBTC
     /// @param _lockerTargetAddress       Locker's target chain address
-    /// @param _collateralAmount          Amount of collateral (TNT) that someone is intend to buy with discount
-    /// @return                           True is liquidation was successful
+    /// @param _collateralAmount          Amount of collateral (TNT) that someone intends to buy with discount
+    /// @return                           True if liquidation was successful
     function liquidateLocker(
         address _lockerTargetAddress,
         uint _collateralAmount
@@ -716,8 +716,8 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     ///                                   If all the needed TeleBTC is collected and burnt,
     ///                                   the rest of slashed collateral is sent back to locker 
     /// @param _lockerTargetAddress       Locker's target chain address
-    /// @param _collateralAmount          Amount of collateral (TNT) that someone is intend to buy with discount
-    /// @return                           True is buying was successful
+    /// @param _collateralAmount          Amount of collateral (TNT) that someone intends to buy with discount
+    /// @return                           True if buying was successful
     function buySlashedCollateralOfLocker(
         address _lockerTargetAddress,
         uint _collateralAmount
@@ -827,7 +827,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     }
 
     /// @notice                       Mint teleBTC for an account
-    /// @dev                          Mint teleBTC for an account and got the locker fee as well
+    /// @dev                          Mint teleBTC for an account and the locker fee as well
     /// @param _lockerLockingScript   Locking script of a locker
     /// @param _receiver              Address of the receiver of the minted teleBTCs
     /// @param _amount                Amount of the teleBTC which is minted, including the locker's fee
@@ -880,7 +880,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @dev                          Burn teleBTC and also get the locker's fee
     /// @param _lockerLockingScript   Locking script of a locker
     /// @param _amount                Amount of the teleBTC which is minted, including the locker's fee
-    /// @return uint                  The amount of teleBTC burned the
+    /// @return uint                  The amount of teleBTC burnt
     function burn(
         bytes calldata _lockerLockingScript,
         uint _amount
@@ -960,7 +960,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             "Lockers: 0 net minted"
         );
 
-        DataTypes.locker memory _removingLokcer = lockersMapping[_lockerTargetAddress];
+        DataTypes.locker memory _removingLocker = lockersMapping[_lockerTargetAddress];
 
         // Removes locker from lockersMapping
 
@@ -969,14 +969,14 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         totalNumberOfLockers = totalNumberOfLockers - 1;
 
         // Sends back TDT and TNT collateral
-        IERC20(TeleportDAOToken).safeTransfer(_lockerTargetAddress, _removingLokcer.TDTLockedAmount);
-        Address.sendValue(payable(_lockerTargetAddress), _removingLokcer.nativeTokenLockedAmount);
+        IERC20(TeleportDAOToken).safeTransfer(_lockerTargetAddress, _removingLocker.TDTLockedAmount);
+        Address.sendValue(payable(_lockerTargetAddress), _removingLocker.nativeTokenLockedAmount);
 
         emit LockerRemoved(
             _lockerTargetAddress,
-            _removingLokcer.lockerLockingScript,
-            _removingLokcer.TDTLockedAmount,
-            _removingLokcer.nativeTokenLockedAmount
+            _removingLocker.lockerLockingScript,
+            _removingLocker.TDTLockedAmount,
+            _removingLocker.nativeTokenLockedAmount
         );
 
     }

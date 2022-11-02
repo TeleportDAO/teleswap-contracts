@@ -30,7 +30,7 @@ interface ICCBurnRouter {
 	/// @notice                 		Emits when a burn request gets submitted
     /// @param userTargetAddress        Target address of the user
     /// @param userScript        Locking script of user on Bitcoin
-    /// @param amount         			Toral requested amount
+    /// @param amount         			Total requested amount
     /// @param burntAmount   		    Amount that user will receive (after reducing fees)
 	/// @param lockerTargetAddress		Locker's address on the target chain
     /// @param requestIdOfLocker        The index of a request for a locker

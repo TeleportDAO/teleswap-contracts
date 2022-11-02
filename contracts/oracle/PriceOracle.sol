@@ -19,7 +19,7 @@ contract PriceOracle is IPriceOracle, Ownable {
 
     // Public variables
     mapping(address => mapping (address => address)) public override ChainlinkPriceProxy; // Given two token addresses returns related Chainlink price proxy
-    mapping(address => address) public override exchangeConnector; // Mapping from exchange router to exchnage connector
+    mapping(address => address) public override exchangeConnector; // Mapping from exchange router to exchange connector
     address[] public override exchangeRoutersList; // List of available exchange routers
     uint public override acceptableDelay;
     address public constant NATIVE_TOKEN = address(1); // ONE_ADDRESS is used for getting price of blockchain native token 

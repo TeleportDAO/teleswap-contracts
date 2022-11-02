@@ -243,7 +243,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
         bool result;
         uint[] memory amounts;
 
-        // Gets exchnage connector address
+        // Gets exchange connector address
         address _exchangeConnector = exchangeConnector[ccExchangeRequests[_txId].appId];
         require(_exchangeConnector != address(0), "CCExchangeRouter: app id doesn't exist");
 
