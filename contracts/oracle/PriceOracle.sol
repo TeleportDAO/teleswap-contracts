@@ -27,6 +27,7 @@ contract PriceOracle is IPriceOracle, Ownable {
 
     /// @notice                         This contract is used to get relative price of two assets from Chainlink and available exchanges 
     /// @param _acceptableDelay         Maximum acceptable delay for data given from Chainlink
+    /// @param _oracleNativeToken       The address of the chainlink oracle for the native token
     constructor(uint _acceptableDelay,address _oracleNativeToken) {
         _setAcceptableDelay(_acceptableDelay);
         _setOracleNativeToken(_oracleNativeToken);

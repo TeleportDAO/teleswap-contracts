@@ -23,7 +23,7 @@ interface IInstantPool is IERC20 {
 	/// @param instantPoolTokenAmount       User's share from the pool
 	event RemoveLiquidity(address indexed user, uint teleBTCAmount, uint instantPoolTokenAmount);
 
-	/// @notice                       		Adds collateral to collateral pool
+	/// @notice                       		Gets an instant loan from the contract
 	/// @param user                   		User who wants to get the loan
 	/// @param requestedAmount        		Amount of loan requested and sent to the user
 	/// @param instantFee             		Amount of fee that the user should pay back later with the loan

@@ -11,9 +11,11 @@ interface ICCBurnRouter {
     /// @param amount         		Amount of tokens that user wants to burn
     /// @param burntAmount   	    Amount that user will receive (after reducing fees from amount)
     /// @param sender       		Address of user who requests burning
-    /// @param userScript    Locking script of the user on Bitcoin
+    /// @param userScript    		Locking script of the user on Bitcoin
     /// @param deadline         	Deadline of locker for executing the request
     /// @param isTransferred    	True if the request has been executed
+    /// @param scriptType    		The script type of the user (for bitcoin address)
+    /// @param requestIdOfLocker    The index of the request for a specific locker
 	struct burnRequest {
 		uint amount;
 		uint burntAmount;
@@ -29,10 +31,12 @@ interface ICCBurnRouter {
 
 	/// @notice                 		Emits when a burn request gets submitted
     /// @param userTargetAddress        Target address of the user
-    /// @param userScript        Locking script of user on Bitcoin
+    /// @param userScript        		Locking script of user on Bitcoin
+    /// @param scriptType        		The script type of the user (for bitcoin address)
     /// @param amount         			Total requested amount
     /// @param burntAmount   		    Amount that user will receive (after reducing fees)
 	/// @param lockerTargetAddress		Locker's address on the target chain
+	/// @param lockerLockingScript		Locker's locking script on Bitcoin blockchain
     /// @param requestIdOfLocker        The index of a request for a locker
     /// @param deadline         		Deadline of locker for executing the request
   	event CCBurn(
