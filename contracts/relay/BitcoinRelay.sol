@@ -289,13 +289,16 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
             _blockHeight >= initialHeight,
             "BitcoinRelay: the requested height is not submitted on the relay (too old)"
         );
+        
+        // Count the query for next epoch fee calculation
+        currentEpochQueries += 1;
+
         // Get the relay fee from the user
         require(
             _getFee(chain[_blockHeight][0].gasPrice), 
             "BitcoinRelay: getting fee was not successful"
         );
-        // Count the query for next epoch fee calculation
-        currentEpochQueries += 1;
+        
         // Check the inclusion of the transaction
         bytes32 _merkleRoot = chain[_blockHeight][0].merkleRoot;
         bytes29 intermediateNodes = _intermediateNodes.ref(0).tryAsMerkleArray(); // Check for errors if any
@@ -522,8 +525,8 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
 
             previousBlock[_currentHash] = _previousHash;
             blockHeight[_currentHash] = _height;
-            _addToChain(_header, _height);
             emit BlockAdded(_height, _currentHash, _previousHash, _msgSender());
+            _addToChain(_header, _height);
             _previousHash = _currentHash;
         }
         return true;
@@ -582,8 +585,8 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         chain[_height].push(newBlockHeader);
         if(_height > lastSubmittedHeight){
             lastSubmittedHeight += 1;
-            _pruneChain();
             _updateFee();
+            _pruneChain();
         }
     }
 
