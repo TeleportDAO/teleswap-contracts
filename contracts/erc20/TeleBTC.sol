@@ -5,7 +5,6 @@ import "./interfaces/ITeleBTC.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "hardhat/console.sol"; // Just for test
 
 contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
 
@@ -86,12 +85,6 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
         require(isBurner(account), "TeleBTC: account does not have role");
         burners[account] = false;
         emit BurnerRemoved(account);
-    }
-
-    // TODO: remove it
-    ///@notice      Mints TeleBTC just for test
-    function mintTestToken () external override {
-        _mint(msg.sender, 10000000000); // mint 100 teleBTC
     }
 
     /// @notice                Burns TeleBTC tokens of msg.sender

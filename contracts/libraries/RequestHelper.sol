@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.8.4;
 
-import "hardhat/console.sol";
-
 // A library for parsing cc transfer and cc exchange requests
 library RequestHelper {
 

@@ -3,7 +3,6 @@ pragma solidity >=0.8.0 <0.8.4;
 
 import "./interfaces/IWETH.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "hardhat/console.sol";
 
 contract WETH is ERC20 {
 

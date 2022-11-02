@@ -139,8 +139,9 @@ describe("Lockers", async () => {
         )
 
         // Sets ccBurnRouter address
-        // await lockers.setCCBurnRouter(ccBurnSimulatorAddress);
+        // await lockers.setCCBurnRouter(ccBurnSimulatorAddress)
 
+        await teleBTC.addMinter(deployerAddress)
 
         await teleBTC.addMinter(lockers.address)
         await teleBTC.addBurner(lockers.address)
@@ -1853,9 +1854,9 @@ describe("Lockers", async () => {
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(TeleBTCAmount)
 
-            let teleBTCSigner2 = await teleBTC.connect(signer2);
+            await teleBTC.mint(signer2Address, 10000000000)
 
-            await teleBTCSigner2.mintTestToken()
+            let teleBTCSigner2 = await teleBTC.connect(signer2);
 
             await teleBTCSigner2.approve(lockers.address, TeleBTCAmount*95/100)
 
@@ -2015,9 +2016,9 @@ describe("Lockers", async () => {
                 theLockerMapping[5]
             ).to.equal(1000);
 
-            let teleBTCSigner2 = teleBTC.connect(signer2)
+            await teleBTC.mint(signer2Address, 10000000000)
 
-            await teleBTCSigner2.mintTestToken()
+            let teleBTCSigner2 = teleBTC.connect(signer2)
 
             amount = 900;
             let lockerFee = Math.floor(amount*LOCKER_PERCENTAGE_FEE/10000);

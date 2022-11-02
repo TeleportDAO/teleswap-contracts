@@ -4,7 +4,6 @@ pragma solidity >=0.8.0 <0.8.4;
 import "./TypedMemView.sol";
 import "../types/ScriptTypesEnum.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "hardhat/console.sol";
 
 library BitcoinHelper {
 
