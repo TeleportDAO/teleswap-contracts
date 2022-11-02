@@ -25,5 +25,5 @@ module.exports = {
         'uniswap/v2-periphery/libraries/TransferHelper.sol',
         'uniswap/v2-periphery/libraries/UniswapV2Library.sol',
     ],
-    configureYulOptimizer: 'ture'
+    configureYulOptimizer: 'true'
 };
