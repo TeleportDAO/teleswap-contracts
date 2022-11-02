@@ -515,7 +515,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         address _lockerTargetAddress = ILockers(lockers)
         .getLockerTargetAddress(_lockerLockingScript);
 
-        ILockers(lockers).slashTheifLocker(
+        ILockers(lockers).slashThiefLocker(
             _lockerTargetAddress,
             totalValue*slasherPercentageReward/MAX_SLASHER_REWARD, // Slasher reward
             _msgSender(), // Slasher address

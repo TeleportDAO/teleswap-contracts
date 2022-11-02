@@ -31,11 +31,11 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     uint public override lastEpochQueries;
     address public override TeleportDAOToken;
     bytes32 public override relayGenesisHash; // Initial block header of relay
+
+    // Private and internal variables
+    mapping(uint => blockHeader[]) private chain; // height => list of block headers
     mapping(bytes32 => bytes32) internal previousBlock; // block header hash => parent header hash
     mapping(bytes32 => uint256) internal blockHeight; // block header hash => block height
-
-    // Private variables
-    mapping(uint => blockHeader[]) private chain; // height => list of block headers
 
     /// @notice                   Gives a starting point for the relay
     /// @param  _genesisHeader    The starting header

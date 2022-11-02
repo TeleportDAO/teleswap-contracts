@@ -167,7 +167,7 @@ library LockersLib {
 
     }
 
-    function slashTheifLocker(
+    function slashThiefLocker(
         DataTypes.locker storage theLocker,
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,

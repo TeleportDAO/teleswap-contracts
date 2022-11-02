@@ -1624,7 +1624,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
-                lockerSigner1.slashTheifLocker(
+                lockerSigner1.slashThiefLocker(
                     signer1Address,
                     0,
                     deployerAddress,
@@ -1637,7 +1637,7 @@ describe("Lockers", async () => {
             let lockerCCBurnSimulator = lockers.connect(ccBurnSimulator)
 
             await expect(
-                lockerCCBurnSimulator.slashTheifLocker(
+                lockerCCBurnSimulator.slashThiefLocker(
                     signer1Address,
                     0,
                     deployerAddress,
@@ -1679,7 +1679,7 @@ describe("Lockers", async () => {
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
 
             expect(
-                await lockerCCBurnSigner.slashTheifLocker(
+                await lockerCCBurnSigner.slashThiefLocker(
                     signer1Address,
                     0,
                     deployerAddress,
@@ -1735,7 +1735,7 @@ describe("Lockers", async () => {
             // ccBurn calls to slash the locker
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
 
-            await lockerCCBurnSigner.slashTheifLocker(
+            await lockerCCBurnSigner.slashThiefLocker(
                 signer1Address,
                 0,
                 deployerAddress,
@@ -1787,7 +1787,7 @@ describe("Lockers", async () => {
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(minRequiredNativeTokenLockedAmount.div(5))
 
-            await lockerCCBurnSigner.slashTheifLocker(
+            await lockerCCBurnSigner.slashThiefLocker(
                 signer1Address,
                 0,
                 deployerAddress,
@@ -1839,7 +1839,7 @@ describe("Lockers", async () => {
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(minRequiredNativeTokenLockedAmount.div(5))
 
-            await lockerCCBurnSigner.slashTheifLocker(
+            await lockerCCBurnSigner.slashThiefLocker(
                 signer1Address,
                 0,
                 deployerAddress,

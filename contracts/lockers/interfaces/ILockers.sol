@@ -278,7 +278,7 @@ interface ILockers is ILockersStorage {
         address _recipient
     ) external returns(bool);
 
-    function slashTheifLocker(
+    function slashThiefLocker(
         address _lockerTargetAddress,
         uint _rewardAmount,
         address _rewardRecipient,

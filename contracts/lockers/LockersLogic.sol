@@ -529,7 +529,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             lockersMapping[_msgSender()].TDTLockedAmount,
             lockersMapping[_msgSender()].nativeTokenLockedAmount,
             lockersMapping[_msgSender()].netMinted
-        // TODO: adding more fields to this event
         );
 
         return true;
@@ -620,7 +619,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @param _rewardRecipient           Address of slasher who receives reward
     /// @param _amount                    Value of slashed collateral (in TeleBTC)
     /// @return                           True if the locker is slashed successfully
-    function slashTheifLocker(
+    function slashThiefLocker(
         address _lockerTargetAddress,
         uint _rewardAmount,
         address _rewardRecipient,
@@ -631,7 +630,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             "Lockers: message sender is not ccBurn"
         );
 
-        (uint rewardInNativeToken, uint neededNativeTokenForSlash) = LockersLib.slashTheifLocker(
+        (uint rewardInNativeToken, uint neededNativeTokenForSlash) = LockersLib.slashThiefLocker(
             lockersMapping[_lockerTargetAddress],
             libConstants,
             libParams,
