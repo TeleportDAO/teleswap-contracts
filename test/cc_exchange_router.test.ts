@@ -488,7 +488,8 @@ describe("CCExchangeRouter", async () => {
             snapshotId = await takeSnapshot(deployer.provider);
 
             // Adds liquidity to teleBTC-TDT liquidity pool
-            await teleBTC.mintTestToken();
+            await teleBTC.addMinter(deployerAddress)
+            await teleBTC.mint(deployerAddress, 10000000000);
             await teleBTC.approve(uniswapV2Router02.address, 10000);
             await exchangeToken.approve(uniswapV2Router02.address, 10000);
             let addedLiquidityA = 10000;

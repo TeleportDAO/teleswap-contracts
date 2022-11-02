@@ -92,8 +92,9 @@ describe("CCBurnRouter", async () => {
         ccBurnRouter = await deployCCBurnRouter();
 
         // Mints TeleBTC for user
+        await teleBTC.addMinter(signer1Address)
         TeleBTCSigner1 = await teleBTC.connect(signer1);
-        await TeleBTCSigner1.mintTestToken();
+        await TeleBTCSigner1.mint(signer1Address, 10000000000);
 
         // Connects signer1 and signer2 to ccBurnRouter
         ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1);
@@ -173,7 +174,7 @@ describe("CCBurnRouter", async () => {
 
     async function mintTeleBTCForTest(): Promise<void> {
         let TeleBTCSigner1 = await teleBTC.connect(signer1)
-        await TeleBTCSigner1.mintTestToken();
+        await TeleBTCSigner1.mint(signer1Address, 10000000000);
     }
 
     async function sendBurnRequest(

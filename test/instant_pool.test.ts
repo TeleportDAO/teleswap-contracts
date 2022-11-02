@@ -44,7 +44,8 @@ describe("Instant pool", async () => {
         );
 
         // Mints teleBTC for deployer
-        await teleBTC.mintTestToken();
+        await teleBTC.addMinter(deployerAddress)
+        await teleBTC.mint(deployerAddress, 10000000000);
 
         // Deploys instant pool contract
         const instantPoolFactory = new InstantPool__factory(deployer);

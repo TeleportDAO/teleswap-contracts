@@ -140,7 +140,8 @@ describe("Instant Router", async () => {
 
         // Adds liquidity to instant pool
         addedLiquidity = 100;
-        await teleBTC.mintTestToken();
+        await teleBTC.addMinter(deployerAddress)
+        await teleBTC.mint(deployerAddress, 10000000000);
         await teleBTC.approve(teleBTCInstantPool.address, addedLiquidity);
         await teleBTCInstantPool.addLiquidity(deployerAddress, addedLiquidity);
 
@@ -706,7 +707,7 @@ describe("Instant Router", async () => {
             );
 
             // Mints teleBTC for deployer to payback loan
-            await teleBTC.mintTestToken()
+            await teleBTC.mint(deployerAddress, 10000000000)
             let instantFee = Math.floor(loanAmount*instantPercentageFee/10000);
             await teleBTC.approve(instantRouter.address, loanAmount + instantFee)
 
@@ -769,7 +770,7 @@ describe("Instant Router", async () => {
             );
 
             // Mints teleBTC for deployer to payback loan
-            await teleBTC.mintTestToken()
+            await teleBTC.mint(deployerAddress, 10000000000)
             let instantFee = Math.floor(loanAmount*instantPercentageFee/10000);
             await teleBTC.approve(instantRouter.address, loanAmount + instantFee)
 
@@ -831,7 +832,7 @@ describe("Instant Router", async () => {
             );
 
             // Mints teleBTC for deployer to payback loan
-            await teleBTC.mintTestToken()
+            await teleBTC.mint(deployerAddress, 10000000000)
             let instantFee = Math.floor(loanAmount*instantPercentageFee/10000);
             await teleBTC.approve(instantRouter.address, loanAmount + loanAmount + instantFee);
             let deployerBalance: BigNumber;
@@ -899,7 +900,7 @@ describe("Instant Router", async () => {
             );
 
             // Mints teleBTC for deployer to payback loan
-            await teleBTC.mintTestToken()
+            await teleBTC.mint(deployerAddress, 10000000000)
             let instantFee = Math.floor(loanAmount*instantPercentageFee/10000);
             await teleBTC.approve(instantRouter.address, 2*(loanAmount + instantFee));
 
@@ -951,7 +952,7 @@ describe("Instant Router", async () => {
             );
 
             // Mints teleBTC for deployer to payback loan
-            await teleBTC.mintTestToken();
+            await teleBTC.mint(deployerAddress, 10000000000);
             await teleBTC.approve(instantRouter.address, loanAmount - 1);
 
             let deployerBalance = await teleBTC.balanceOf(
@@ -987,7 +988,7 @@ describe("Instant Router", async () => {
             );
 
             // Mints teleBTC for deployer to payback loan
-            await teleBTC.mintTestToken()
+            await teleBTC.mint(deployerAddress, 10000000000)
             let instantFee = Math.floor(loanAmount*instantPercentageFee/10000);
             await teleBTC.approve(instantRouter.address, loanAmount + instantFee);
 
