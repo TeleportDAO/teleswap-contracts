@@ -36,6 +36,4 @@ interface ITeleBTC is IERC20 {
 
     function burn(uint256 amount) external returns(bool);
 
-    function mintTestToken() external; // Just for test
-
 }
