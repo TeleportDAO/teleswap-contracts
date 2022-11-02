@@ -70,7 +70,7 @@ contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGua
         pool = new CollateralPool(name, symbol, _collateralToken, _collateralizationRatio);
 
         // Transfers ownership of collateral pool to owner of this contract
-        CollateralPool(address(pool)).transferOwnership(msg.sender);
+        CollateralPool(address(pool)).transferOwnership(_msgSender());
 
         // Stores collateral pool address
         getCollateralPoolByToken[_collateralToken] = address(pool);
