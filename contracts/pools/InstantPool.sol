@@ -145,8 +145,8 @@ contract InstantPool is IInstantPool, ERC20, Ownable, ReentrancyGuard {
         require(balanceOf(_msgSender()) >= _instantPoolTokenAmount, "InstantPool: balance is not sufficient");
         uint teleBTCAmount = _instantPoolTokenAmount*totalAddedTeleBTC/totalSupply();
         totalAddedTeleBTC = totalAddedTeleBTC - teleBTCAmount;
-        IERC20(teleBTC).transfer(_user, teleBTCAmount);
         _burn(_msgSender(), _instantPoolTokenAmount);
+        IERC20(teleBTC).transfer(_user, teleBTCAmount);
         emit RemoveLiquidity(_msgSender(), teleBTCAmount, _instantPoolTokenAmount);
         return teleBTCAmount;
     }

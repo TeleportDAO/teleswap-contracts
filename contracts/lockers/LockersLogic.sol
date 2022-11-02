@@ -420,9 +420,10 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
                 _lockedTDTAmount,
                 _lockedNativeTokenAmount
             );
-
         
         IERC20(libParams.teleportDAOToken).safeTransferFrom(_msgSender(), address(this), _lockedTDTAmount);
+
+        totalNumberOfCandidates = totalNumberOfCandidates + 1;
 
         LockersLib.requestToBecomeLocker(
                 lockersMapping,
@@ -432,8 +433,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
                 _lockerRescueType,
                 _lockerRescueScript
             );
-
-        totalNumberOfCandidates = totalNumberOfCandidates + 1;
 
         emit RequestAddLocker(
             _msgSender(),
@@ -682,9 +681,11 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             _collateralAmount
         );
 
-
         DataTypes.locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
 
+        // Updates net minted and TNT bond of locker
+        lockersMapping[_lockerTargetAddress].netMinted = lockersMapping[_lockerTargetAddress].netMinted - neededTeleBTC;
+        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - _collateralAmount;
 
         // Burns TeleBTC for locker rescue script
         // note: user should give allowance for TeleBTC to cc burn router
@@ -694,10 +695,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             theLiquidatingLocker.lockerRescueType,
             theLiquidatingLocker.lockerLockingScript
         );
-
-        // Updates net minted and TNT bond of locker
-        lockersMapping[_lockerTargetAddress].netMinted = lockersMapping[_lockerTargetAddress].netMinted - neededTeleBTC;
-        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - _collateralAmount;
 
         Address.sendValue(payable(_msgSender()), _collateralAmount);
 
