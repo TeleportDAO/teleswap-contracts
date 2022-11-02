@@ -146,7 +146,7 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         
         if (_result) {
             // Gets tokens from user
-            IERC20(_path[0]).transferFrom(msg.sender, address(this), neededInputAmount);
+            IERC20(_path[0]).transferFrom(_msgSender(), address(this), neededInputAmount);
 
             // Gives allowance to exchange router
             IERC20(_path[0]).approve(exchangeRouter, neededInputAmount);

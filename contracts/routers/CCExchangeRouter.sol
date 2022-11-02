@@ -454,8 +454,8 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             feeAmount
         );
 
-        // Sends extra ETH back to msg.sender
-        Address.sendValue(payable(msg.sender), msg.value - feeAmount);
+        // Sends extra ETH back to _msgSender()
+        Address.sendValue(payable(_msgSender()), msg.value - feeAmount);
 
         return abi.decode(data, (bool));
     }
@@ -482,7 +482,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
 
         // Pays Teleporter fee
         if (teleporterFee > 0) {
-            ITeleBTC(teleBTC).transfer(msg.sender, teleporterFee);
+            ITeleBTC(teleBTC).transfer(_msgSender(), teleporterFee);
         }
 
         // Pays protocol fee

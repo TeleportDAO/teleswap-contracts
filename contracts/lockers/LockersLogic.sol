@@ -416,7 +416,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             );
 
         
-        IERC20(libParams.teleportDAOToken).safeTransferFrom(msg.sender, address(this), _lockedTDTAmount);
+        IERC20(libParams.teleportDAOToken).safeTransferFrom(_msgSender(), address(this), _lockedTDTAmount);
 
         LockersLib.requestToBecomeLocker(
                 lockersMapping,

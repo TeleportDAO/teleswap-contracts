@@ -59,7 +59,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         newBlockHeader.selfHash = _genesisHash;
         newBlockHeader.parentHash = _genesisView.parent();
         newBlockHeader.merkleRoot = _genesisView.merkleRoot();
-        newBlockHeader.relayer = msg.sender;
+        newBlockHeader.relayer = _msgSender();
         newBlockHeader.gasPrice = 0;
         chain[_height].push(newBlockHeader);
         require(
@@ -460,7 +460,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         uint feeAmount;
         feeAmount = (submissionGasUsed * gasPrice * (100 + relayerPercentageFee) * epochLength) / lastEpochQueries / 100;
         require(msg.value >= feeAmount, "BitcoinRelay: fee is not enough");
-        Address.sendValue(payable(msg.sender), msg.value - feeAmount);
+        Address.sendValue(payable(_msgSender()), msg.value - feeAmount);
         return true;
     }
 
@@ -524,7 +524,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
             previousBlock[_currentHash] = _previousHash;
             blockHeight[_currentHash] = _height;
             _addToChain(_header, _height);
-            emit BlockAdded(_height, _currentHash, _previousHash, msg.sender);
+            emit BlockAdded(_height, _currentHash, _previousHash, _msgSender());
             _previousHash = _currentHash;
         }
         return true;
@@ -578,7 +578,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         newBlockHeader.selfHash = _header.hash256();
         newBlockHeader.parentHash = _header.parent();
         newBlockHeader.merkleRoot = _header.merkleRoot();
-        newBlockHeader.relayer = msg.sender;
+        newBlockHeader.relayer = _msgSender();
         newBlockHeader.gasPrice = tx.gasprice;
         chain[_height].push(newBlockHeader);
         if(_height > lastSubmittedHeight){
