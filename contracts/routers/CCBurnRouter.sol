@@ -207,7 +207,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @dev                                After submitting the burn request, lockers have a limited time
     ///                                     to send BTC and provide burn proof
     /// @param _amount                      Amount of teleBTC that user wants to burn
-    /// @param _userScript                  User's script
+    /// @param _userScript                  User's bitcoin script type
     /// @param _lockerLockingScript	        Locking script of locker that should execute the burn request
     /// @return _burntAmount                Amount of teleBTC that user will receive (after reducing fees)
     function ccBurn(
@@ -620,7 +620,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @notice                           Records burn request of user
     /// @param _amount                    Amount of wrapped token that user wants to burn
     /// @param _burntAmount               Amount of wrapped token that actually gets burnt after deducting fees from the original value (_amount)
-    /// @param _userScript                User's Bitcoin address
+    /// @param _userScript                User's Bitcoin script type
     /// @param _lastSubmittedHeight       Last block header height submitted on the relay contract
     /// @param _lockerTargetAddress       Locker's target chain address that the request belongs to
     function _saveBurnRequest(
@@ -682,8 +682,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     /// @notice                      Checks inclusion of the transaction in the specified block
     /// @dev                         Calls the relay contract to check Merkle inclusion proof
-    /// @param _amount               Id of the transaction
-    /// @param _lockerTargetAddress  Id of the transaction
+    /// @param _amount               The amount to be burnt
+    /// @param _lockerTargetAddress  The locker's address on the target blockchain
     /// @return                      Remaining amount after reducing fees
     function _getFees(
         uint _amount,

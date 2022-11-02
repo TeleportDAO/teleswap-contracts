@@ -269,8 +269,8 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @dev                            Checks if the block is finalized, and Merkle proof is correct
     /// @param  _txid                   Desired transaction's tx Id
     /// @param  _blockHeight            Block height of the desired tx
-    /// @param  _intermediateNodes      Part of the Merkle proof for the desired tx
-    /// @param  _index                  Part of the Merkle proof for the desired tx
+    /// @param  _intermediateNodes      Part of the Merkle tree from the tx to the root using for proof
+    /// @param  _index                  The index of the tx in Merkle tree
     /// @return                         True if the provided tx is confirmed on the source blockchain, False otherwise
     function checkTxProof (
         bytes32 _txid, // In BE form
@@ -399,10 +399,10 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         );
     }
 
-    /// @notice         Finds the height of a header by its hash
-    /// @dev            Will fail if the header is unknown
-    /// @param _hash    The header hash to search for
-    /// @return         The height of the header
+    /// @notice             Finds the height of a header by its hash
+    /// @dev                Will fail if the header is unknown
+    /// @param _hash        The header hash to search for
+    /// @return             The height of the header
     function _findHeight(bytes32 _hash) internal view returns (uint256) {
         if (blockHeight[_hash] == 0) {
             revert("BitcoinRelay: unknown block");
@@ -412,10 +412,11 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         }
     }
 
-    /// @notice         Finds an ancestor for a block by its hash
-    /// @dev            Will fail if the header is unknown
-    /// @param _hash  The header hash to search for
-    /// @return         The height of the header, or error if unknown
+    /// @notice             Finds an ancestor for a block by its hash
+    /// @dev                Will fail if the header is unknown
+    /// @param _hash        The header hash to search for
+    /// @param _offset      The depth which is going to be searched
+    /// @return             The height of the header, or error if unknown
     function _findAncestor(bytes32 _hash, uint256 _offset) internal view returns (bytes32) {
         bytes32 _current = _hash;
         for (uint256 i = 0; i < _offset; i++) {
@@ -457,6 +458,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
 
     /// @notice                 Gets fee from the user
     /// @dev                    Fee is paid in target blockchain native token
+    /// @param gasPrice         The gas price had been used for adding the bitcoin block header
     /// @return                 True if the fee payment was successful
     function _getFee(uint gasPrice) internal returns (bool){
         uint feeAmount;
@@ -535,7 +537,9 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @notice                     Sends reward and compensation to the relayer
     /// @dev                        We pay the block submission cost in TNT and the extra reward in TDT
     /// @param  _relayer            The relayer address
-    /// @return                     True if the amount is paid and False if treasury is empty
+    /// @param  _height             The height of the bitcoin block
+    /// @return                     Reward in native token
+    /// @return                     Reward in TDT token
     function _sendReward(address _relayer, uint _height) internal returns (uint, uint) {
 
         // Reward in TNT

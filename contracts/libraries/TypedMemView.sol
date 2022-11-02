@@ -361,7 +361,7 @@ library TypedMemView {
         assembly {
         // solium-disable-previous-line security/no-inline-assembly
         // 216 == 256 - 40
-            _type := shr(216, memView) // shift out lower 24 bytes
+            _type := shr(216, memView) // shift out lower (12 + 12 + 3) bytes
         }
     }
 
