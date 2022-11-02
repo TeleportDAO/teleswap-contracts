@@ -126,15 +126,13 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     }
 
     /// @notice                 Pause the locker, so only the functions can be called which are whenPaused
-    /// @dev
-    /// @param
+    /// @dev                    Only owner can pause 
     function pauseLocker() external override onlyOwner {
         _pause();
     }
 
     /// @notice                 Un-pause the locker, so only the functions can be called which are whenNotPaused
-    /// @dev
-    /// @param
+    /// @dev                    Only owner can pause
     function unPauseLocker() external override onlyOwner {
         _unpause();
     }
@@ -143,23 +141,20 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         return lockerTargetAddress[_lockerLockingScript];
     }
 
-    /// @notice                           Checks whether an address is locker
-    /// @dev
-    /// @param _lockerTargetAddress       Address of locker on the target chain
-    /// @return                           True if user is locker
+    /// @notice                           Checks whether a locking script is locker
+    /// @param _lockerLockingScript       Locking script of locker on the target chain
+    /// @return                           True if a locking script is locker
     function isLocker(bytes calldata _lockerLockingScript) external override view returns(bool) {
         return lockersMapping[lockerTargetAddress[_lockerLockingScript]].isLocker;
     }
 
     /// @notice                           Give number of lockers
-    /// @dev
     /// @return                           Number of lockers
     function getNumberOfLockers() external override view returns (uint) {
         return totalNumberOfLockers;
     }
 
     /// @notice                             Give Bitcoin public key of locker
-    /// @dev
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             Bitcoin public key of locker
     function getLockerLockingScript(
@@ -219,16 +214,16 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         _setPriceWithDiscountRatio(_priceWithDiscountRatio);
     }
 
-    /// @notice         Changes the required bond amount to become locker
+    /// @notice         Changes the required TDT token bond amount to become locker
     /// @dev            Only current owner can call this
-    /// @param _minRequiredTDTLockedAmount   The new required bond amount
+    /// @param _minRequiredTDTLockedAmount   The new required TDT token bond amount
     function setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) external override onlyOwner {
         _setMinRequiredTDTLockedAmount(_minRequiredTDTLockedAmount);
     }
 
-    /// @notice         Changes the required bond amount to become locker
+    /// @notice         Changes the required native token bond amount to become locker
     /// @dev            Only current owner can call this
-    /// @param _minRequiredTNTLockedAmount   The new required bond amount
+    /// @param _minRequiredTNTLockedAmount   The new required native token bond amount
     function setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) external override onlyOwner {
         _setMinRequiredTNTLockedAmount(_minRequiredTNTLockedAmount);
     }
@@ -247,8 +242,8 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         _setCCBurnRouter(_ccBurnRouter);
     }
 
-    /// @notice                 Changes exchange router contract address and updates wrapped avax addresses
-    /// @dev                    Only owner can call this
+    /// @notice                    Changes exchange connector contract address
+    /// @dev                       Only owner can call this
     /// @param _exchangeConnector  The new exchange router contract address
     function setExchangeConnector(address _exchangeConnector) external override nonZeroAddress(_exchangeConnector) onlyOwner {
         _setExchangeConnector(_exchangeConnector);
@@ -568,7 +563,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     ///                                   User who made the cc burn request will receive the slashed bond
     /// @param _lockerTargetAddress       Locker's target chain address
     /// @param _rewardAmount              Amount of TeleBTC that slasher receives
-    /// @param _rewardAmount              Address of slasher who receives reward
+    /// @param _rewardRecipient           Address of slasher who receives reward
     /// @param _amount                    Amount of TeleBTC that is slashed from lockers
     /// @param _recipient                 Address of user who receives the slashed amount
     /// @return                           True if the locker is slashed successfully
@@ -814,8 +809,8 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     }
 
     /**
-     * @dev Returns the price of one native token (1*10^18) in teleBTC
-     * @return uint
+     * @dev         Returns the price of one native token (1*10^18) in teleBTC
+     * @return uint The price of one unit of collateral token (native token in teleBTC)
      */
     function priceOfOneUnitOfCollateralInBTC() public override view returns (uint) {
 
@@ -917,18 +912,16 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         return remainedAmount;
     }
 
-    /**
-     * @dev Check if an account is minter.
-     * @return bool
-     */
+    /// @notice                Check if an account is minter    
+    /// @param  account        The account which intended to be checked
+    /// @return bool
     function isMinter(address account) public override view nonZeroAddress(account) returns (bool) {
         return minters[account];
     }
 
-    /**
-     * @dev Check if an account is burner.
-     * @return bool
-     */
+    /// @notice                Check if an account is burner    
+    /// @param  account        The account which intended to be checked
+    /// @return bool
     function isBurner(address account) public override view nonZeroAddress(account) returns (bool) {
         return burners[account];
     }
