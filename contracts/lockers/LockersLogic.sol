@@ -39,7 +39,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
         PausableUpgradeable.__Pausable_init();
 
-        // TODO not checked in setter function
         require(
             _minRequiredTDTLockedAmount != 0 || _minRequiredTNTLockedAmount != 0,
             "Lockers: amount is zero"
@@ -333,7 +332,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @param _ccBurnRouter   The new cc burn router contract address
     function _setCCBurnRouter(address _ccBurnRouter) private nonZeroAddress(_ccBurnRouter) {
         emit NewCCBurnRouter(ccBurnRouter, _ccBurnRouter);
-        // TODO: what will happen in subgraph for first (zero address)? (remove)
         emit BurnerRemoved(ccBurnRouter);
         burners[ccBurnRouter] = false;
         ccBurnRouter = _ccBurnRouter;
@@ -382,7 +380,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @notice                             Internal setter for minimum leaving interval
     /// @param _minLeavingIntervalTime      The new minimum leaving interval
     function _setMinLeavingIntervalTime(uint _minLeavingIntervalTime) private {
-        // TODO: write tests (both for lockers leaving and setter)
         emit NewMinLeavingIntervalTime(minLeavingIntervalTime, _minLeavingIntervalTime);
         minLeavingIntervalTime = _minLeavingIntervalTime;
         libParams.minLeavingIntervalTime = minLeavingIntervalTime;

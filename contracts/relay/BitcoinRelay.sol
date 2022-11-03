@@ -700,6 +700,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
             _oldEnd.time()
         );
         require(
+            // TODO: check it precisely
             (_actualTarget & _expectedTarget) == _actualTarget, // is this correct?
             // it was in the original code, and we are not sure why is it this way
             "BitcoinRelay: invalid retarget provided");

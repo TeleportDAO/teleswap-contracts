@@ -80,7 +80,7 @@ contract PriceOracle is IPriceOracle, Ownable {
             }
 
             // Gets output amounts from exchange routers
-            // note: we assume that the decimal of exchange returned result is _outputDecimals. Is that right?
+            // note: we assume that the decimal of exchange returned result is _outputDecimals.
             for (uint i = 0; i < getExchangeRoutersListLength(); i++) {
                 (result, outputAmount) = _equivalentOutputAmountFromExchange(
                     exchangeRoutersList[i],

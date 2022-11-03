@@ -177,7 +177,6 @@ library TypedMemView {
      * @return      mask - The mask
      */
     function leftMask(uint8 _len) private pure returns (uint256 mask) {
-        // ugly. redo without assembly?
         assembly {
         // solium-disable-previous-line security/no-inline-assembly
             mask := sar(
@@ -522,7 +521,6 @@ library TypedMemView {
         }
         require(_bytes <= 32, "TypedMemView/index - Attempted to index more than 32 bytes");
 
-        // FIXME: why the following lines need `unchecked`
         unchecked {
             uint8 bitLength = _bytes * 8;
             uint256 _loc = loc(memView);

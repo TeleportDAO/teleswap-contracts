@@ -121,9 +121,9 @@ interface IBitcoinRelay {
 
     function findHeight(bytes32 _hash) external view returns (uint256);
 
-    function findAncestor(bytes32 _hash, uint256 _offset) external view returns (bytes32); // see if it's needed
+    function findAncestor(bytes32 _hash, uint256 _offset) external view returns (bytes32); 
 
-    function isAncestor(bytes32 _ancestor, bytes32 _descendant, uint256 _limit) external view returns (bool); // see if it's needed
+    function isAncestor(bytes32 _ancestor, bytes32 _descendant, uint256 _limit) external view returns (bool); 
 
     function rewardAmountInTDT() external view returns (uint);
 
