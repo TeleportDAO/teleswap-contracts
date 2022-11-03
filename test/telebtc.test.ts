@@ -195,6 +195,14 @@ describe("TeleBTC", async () => {
             ).to.equal(10)
 
         })
+
+        it("can't change epoch length to zero", async function () {
+            await expect(
+                teleBTC.setEpochLength(0)
+            ).to.be.revertedWith(
+                "TeleBTC: value is zero"
+            )
+        })
     })
     
 

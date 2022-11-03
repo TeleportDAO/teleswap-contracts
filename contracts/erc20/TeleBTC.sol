@@ -18,6 +18,11 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
         _;
     }
 
+    modifier nonZeroValue(uint _value) {
+        require(_value > 0, "TeleBTC: value is zero");
+        _;
+    }
+
     // Public variables
     mapping(address => bool) public minters;
     mapping(address => bool) public burners;
@@ -54,7 +59,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     /**
      * @dev change blocks number per epoch.
      */
-    function setEpochLength(uint _length) public override onlyOwner {
+    function setEpochLength(uint _length) public override onlyOwner nonZeroValue(_length) {
         emit NewEpochLength(epochLength, _length);
         epochLength = _length;
     }
