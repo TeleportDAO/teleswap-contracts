@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
-
+ 
     modifier onlyMinter() {
         require(isMinter(_msgSender()), "TeleBTC: only minters can mint");
         _;
@@ -18,14 +18,29 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
         _;
     }
 
+    modifier nonZeroValue(uint _value) {
+        require(_value > 0, "TeleBTC: value is zero");
+        _;
+    }
+
     // Public variables
     mapping(address => bool) public minters;
     mapping(address => bool) public burners;
 
+    uint public maxmimumMintLimit;      // Maximum mint limit per epoch
+    uint public lastMintLimit;          // Current mint limit in last epoch, decrease by minting in an epoch
+    uint public epochLength;            // Number of blocks in every epoch
+    uint public lastEpoch;              // Epoch number of last mint transaction
+
+
     constructor(
         string memory _name,
         string memory _symbol
-    ) ERC20(_name, _symbol) {}
+    ) ERC20(_name, _symbol) {
+        maxmimumMintLimit = 200 * 10 ** 8;
+        lastMintLimit = 200 * 10 ** 8;
+        epochLength = 2000;
+    }
 
     function renounceOwnership() public virtual override onlyOwner {}
 
@@ -33,9 +48,26 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
         return 8;
     }
 
-    /// @notice                Check if an account is minter    
-    /// @param  account        The account which intended to be checked
-    /// @return bool
+    /**
+     * @dev change maximum mint limit per epoch.
+     */
+    function setMaxmimumMintLimit(uint _mintLimit) public override onlyOwner {
+        emit NewMintLimit(maxmimumMintLimit, _mintLimit);
+        maxmimumMintLimit = _mintLimit;
+    }
+
+    /**
+     * @dev change blocks number per epoch.
+     */
+    function setEpochLength(uint _length) public override onlyOwner nonZeroValue(_length) {
+        emit NewEpochLength(epochLength, _length);
+        epochLength = _length;
+    }
+
+    /**
+     * @dev Check if an account is minter.
+     * @return bool
+     */
     function isMinter(address account) internal view returns (bool) {
         require(account != address(0), "TeleBTC: account is the zero address");
         return minters[account];
@@ -99,8 +131,27 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     /// @param _receiver       Address of token's receiver
     /// @param _amount         Amount of minted tokens
     function mint(address _receiver, uint _amount) external nonReentrant onlyMinter override returns (bool) {
+        require(_amount <= maxmimumMintLimit, "TeleBTC: mint amount is more than maximum mint limit");
+        require(checkAndReduceMintLimit(_amount) == true, "TeleBTC: reached maximum mint limit");
+
         _mint(_receiver, _amount);
         emit Mint(_msgSender(), _receiver, _amount);
+        return true;
+    }
+
+    /// @notice                Check if can mint new tokens and update mint limit
+    /// @param _amount         Desired mint amount
+    function checkAndReduceMintLimit(uint _amount) private returns (bool) {
+        uint currentEpoch = block.number / epochLength;
+        
+        if (currentEpoch == lastEpoch) {
+            if (_amount > lastMintLimit)
+                return false;
+            lastMintLimit -= _amount;
+        } else {
+            lastEpoch = currentEpoch;
+            lastMintLimit = maxmimumMintLimit - _amount;
+        }
         return true;
     }
 }

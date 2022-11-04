@@ -18,6 +18,10 @@ interface ITeleBTC is IERC20 {
 
     event BurnerRemoved(address indexed burner);
 
+    event NewMintLimit(uint oldMintLimit, uint newMintLimit);
+
+    event NewEpochLength(uint oldEpochLength, uint newEpochLength);
+
     // read functions
 
     function decimals() external view returns (uint8);
@@ -36,4 +40,7 @@ interface ITeleBTC is IERC20 {
 
     function burn(uint256 amount) external returns(bool);
 
+    function setMaxmimumMintLimit(uint _mintLimit) external;
+
+    function setEpochLength(uint _length) external;
 }
