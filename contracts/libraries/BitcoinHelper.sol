@@ -71,7 +71,6 @@ library BitcoinHelper {
     function indexCompactInt(bytes29 memView, uint256 _index) internal pure returns (uint64 number) {
         uint256 flag = memView.indexUint(_index, 1);
         if (flag <= 0xfc) {
-            // TODO: use safe cast to all the following lines
             return flag.toUint64();
         } else if (flag == 0xfd) {
             number = memView.indexLEUint(_index + 1, 2).toUint64();
@@ -87,7 +86,7 @@ library BitcoinHelper {
 
     /// @notice         gives the total length (in bytes) of a CompactInt-encoded number
     /// @param number   the number as uint64
-    /// @return         the compact integer as uint8
+    /// @return         the compact integer length as uint8
     function compactIntLength(uint64 number) private pure returns (uint8) {
         if (number <= 0xfc) {
             return 1;
@@ -122,13 +121,13 @@ library BitcoinHelper {
     ) internal pure returns (bytes32) {
         bytes32 inputHash1 = sha256(abi.encodePacked(_version, _vin, _vout, _locktime));
         bytes32 inputHash2 = sha256(abi.encodePacked(inputHash1));
-        return revertBytes32(inputHash2);
+        return reverseBytes32(inputHash2);
     }
 
     /// @notice                      Reverts a Bytes32 input
     /// @param _input                Bytes32 input that we want to revert
     /// @return                      Reverted bytes32
-    function revertBytes32(bytes32 _input) private pure returns (bytes32) {
+    function reverseBytes32(bytes32 _input) private pure returns (bytes32) {
         bytes memory temp;
         bytes32 result;
         for (uint i = 0; i < 32; i++) {
@@ -150,7 +149,7 @@ library BitcoinHelper {
         bytes memory _vin, 
         uint _index
     ) internal pure returns (bytes32 _txId, uint _outputIndex) {
-        bytes29 vin = tryAsVin(_vin.ref(0));
+        bytes29 vin = tryAsVin(_vin.ref(uint40(BTCTypes.Unknown)));
         require(!vin.isNull(), "BitcoinHelper: vin is null");
         bytes29 input = indexVin(vin, _index);
         bytes29 _outpoint = outpoint(input);
@@ -221,7 +220,7 @@ library BitcoinHelper {
     /// @param _vout              The vout of a Bitcoin transaction
     /// @return _totalValue       Total vout value
     function parseOutputsTotalValue(bytes memory _vout) internal pure returns (uint64 _totalValue) {
-        bytes29 voutView = tryAsVout(_vout.ref(0));
+        bytes29 voutView = tryAsVout(_vout.ref(uint40(BTCTypes.Unknown)));
         require(!voutView.isNull(), "BitcoinHelper: vout is null");
         bytes29 output;
 
@@ -248,7 +247,7 @@ library BitcoinHelper {
         ScriptTypes _scriptType
     ) internal pure returns (uint64 bitcoinAmount) {
 
-        bytes29 voutView = tryAsVout(_vout.ref(0));
+        bytes29 voutView = tryAsVout(_vout.ref(uint40(BTCTypes.Unknown)));
         require(!voutView.isNull(), "BitcoinHelper: vout is null");
         bytes29 output = indexVout(voutView, _voutIndex);
         bytes29 _scriptPubkey = scriptPubkey(output);
@@ -288,7 +287,7 @@ library BitcoinHelper {
         bytes memory _lockingScript
     ) internal view returns (uint64 bitcoinAmount) {
         // Checks that vout is not null
-        bytes29 voutView = tryAsVout(_vout.ref(0));
+        bytes29 voutView = tryAsVout(_vout.ref(uint40(BTCTypes.Unknown)));
         require(!voutView.isNull(), "BitcoinHelper: vout is null");
 
         bytes29 output;
@@ -323,7 +322,7 @@ library BitcoinHelper {
         bytes memory _lockingScript
     ) internal view returns (uint64 bitcoinAmount, bytes memory arbitraryData) {
         // Checks that vout is not null
-        bytes29 voutView = tryAsVout(_vout.ref(0));
+        bytes29 voutView = tryAsVout(_vout.ref(uint40(BTCTypes.Unknown)));
         require(!voutView.isNull(), "BitcoinHelper: vout is null");
 
         bytes29 output;
@@ -341,7 +340,7 @@ library BitcoinHelper {
             _arbitraryData = opReturnPayloadSmall(_scriptPubkeyWithLength);
 
             // Checks whether the output is an arbitarary data or not
-            if(_arbitraryData == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
+            if(_arbitraryData == TypedMemView.NULL) {
                 // Output is not an arbitrary data
                 if (
                     keccak256(abi.encodePacked(_scriptPubkey.clone())) == keccak256(abi.encodePacked(_lockingScript))
@@ -367,7 +366,7 @@ library BitcoinHelper {
         bytes memory _lockingScript
     ) internal view returns (uint64 bitcoinAmount, bytes memory arbitraryData) {
         // Checks that vout is not null
-        bytes29 voutView = tryAsVout(_vout.ref(0));
+        bytes29 voutView = tryAsVout(_vout.ref(uint40(BTCTypes.Unknown)));
         require(!voutView.isNull(), "BitcoinHelper: vout is null");
 
         bytes29 output;
@@ -424,7 +423,7 @@ library BitcoinHelper {
         bytes memory _vout, 
         uint _index
     ) internal view returns (bytes memory _lockingScript) {
-        bytes29 vout = tryAsVout(_vout.ref(0));
+        bytes29 vout = tryAsVout(_vout.ref(uint40(BTCTypes.Unknown)));
         require(!vout.isNull(), "BitcoinHelper: vout is null");
         bytes29 output = indexVout(vout, _index);
         bytes29 _lockingScriptBytes29 = scriptPubkey(output);
@@ -434,7 +433,7 @@ library BitcoinHelper {
     /// @notice                   Returns number of outputs in a vout
     /// @param _vout              The vout of a Bitcoin transaction           
     function numberOfOutputs(bytes memory _vout) internal pure returns (uint _numberOfOutputs) {
-        bytes29 voutView = tryAsVout(_vout.ref(0));
+        bytes29 voutView = tryAsVout(_vout.ref(uint40(BTCTypes.Unknown)));
         _numberOfOutputs = uint256(indexCompactInt(voutView, 0));
     }
 
@@ -721,8 +720,8 @@ library BitcoinHelper {
             let ptr := mload(0x40)
             mstore(ptr, _a)
             mstore(add(ptr, 0x20), _b)
-            pop(staticcall(gas(), 2, ptr, 0x40, ptr, 0x20)) // sha2 #1
-            pop(staticcall(gas(), 2, ptr, 0x20, ptr, 0x20)) // sha2 #2
+            pop(staticcall(gas(), 2, ptr, 0x40, ptr, 0x20)) // sha256 #1
+            pop(staticcall(gas(), 2, ptr, 0x20, ptr, 0x20)) // sha256 #2
             digest := mload(ptr)
         }
     }

@@ -19,7 +19,7 @@ contract PriceOracle is IPriceOracle, Ownable {
 
     // Public variables
     mapping(address => mapping (address => address)) public override ChainlinkPriceProxy; // Given two token addresses returns related Chainlink price proxy
-    mapping(address => address) public override exchangeConnector; // Mapping from exchange router to exchnage connector
+    mapping(address => address) public override exchangeConnector; // Mapping from exchange router to exchange connector
     address[] public override exchangeRoutersList; // List of available exchange routers
     uint public override acceptableDelay;
     address public constant NATIVE_TOKEN = address(1); // ONE_ADDRESS is used for getting price of blockchain native token 
@@ -27,6 +27,7 @@ contract PriceOracle is IPriceOracle, Ownable {
 
     /// @notice                         This contract is used to get relative price of two assets from Chainlink and available exchanges 
     /// @param _acceptableDelay         Maximum acceptable delay for data given from Chainlink
+    /// @param _oracleNativeToken       The address of the chainlink oracle for the native token
     constructor(uint _acceptableDelay,address _oracleNativeToken) {
         _setAcceptableDelay(_acceptableDelay);
         _setOracleNativeToken(_oracleNativeToken);
@@ -79,7 +80,7 @@ contract PriceOracle is IPriceOracle, Ownable {
             }
 
             // Gets output amounts from exchange routers
-            // note: we assume that the decimal of exchange returned result is _outputDecimals. Is that right?
+            // note: we assume that the decimal of exchange returned result is _outputDecimals.
             for (uint i = 0; i < getExchangeRoutersListLength(); i++) {
                 (result, outputAmount) = _equivalentOutputAmountFromExchange(
                     exchangeRoutersList[i],

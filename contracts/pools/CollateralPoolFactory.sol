@@ -33,7 +33,7 @@ contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGua
         return allCollateralPools.length;
     }
 
-    /// @notice                   Checks that whether the token is accepted as collateral or not
+    /// @notice                   Checks whether the token is accepted as collateral or not
     /// @param _collateralToken   Address of collateral token
     /// @return                   True if the corresponding collateral pool exists
     function isCollateral(address _collateralToken) external override view returns (bool) {

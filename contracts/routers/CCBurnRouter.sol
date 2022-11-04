@@ -24,8 +24,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     // Constants
     uint constant MAX_PROTOCOL_FEE = 10000;
-    // TODO: why only 100?!
-    uint constant MAX_SLASHER_REWARD = 100;
+    uint constant MAX_SLASHER_REWARD = 10000;
 
     // Public variables
     address public override relay;
@@ -113,7 +112,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     /// @notice                             Changes deadline of executing burn requests
     /// @dev                                Only owner can call this
-    ///                                     Deadline shoudl be greater than relay finalization parameter
+    ///                                     Deadline should be greater than relay finalization parameter
     /// @param _transferDeadline            The new transfer deadline
     function setTransferDeadline(uint _transferDeadline) external override onlyOwner {
         _setTransferDeadline(_transferDeadline);
@@ -169,7 +168,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     }
 
     /// @notice                             Internal setter for deadline of executing burn requests
-    ///                                     Deadline shoudl be greater than relay finalization parameter
+    ///                                     Deadline should be greater than relay finalization parameter
     /// @param _transferDeadline            The new transfer deadline
     function _setTransferDeadline(uint _transferDeadline) private {
         uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
@@ -207,7 +206,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @dev                                After submitting the burn request, lockers have a limited time
     ///                                     to send BTC and provide burn proof
     /// @param _amount                      Amount of teleBTC that user wants to burn
-    /// @param _userScript                  User's script
+    /// @param _userScript                  User's bitcoin script type
     /// @param _lockerLockingScript	        Locking script of locker that should execute the burn request
     /// @return _burntAmount                Amount of teleBTC that user will receive (after reducing fees)
     function ccBurn(
@@ -236,14 +235,14 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         // Transfers users's teleBTC
         ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), _amount);
 
-        uint remainedAmount = _getFees(
+        uint remainingAmount = _getFees(
             _amount,
             _lockerTargetAddress
         );
 
         // Burns remained teleBTC
-        ITeleBTC(teleBTC).approve(lockers, remainedAmount);
-        _burntAmount = ILockers(lockers).burn(_lockerLockingScript, remainedAmount);
+        ITeleBTC(teleBTC).approve(lockers, remainingAmount);
+        _burntAmount = ILockers(lockers).burn(_lockerLockingScript, remainingAmount);
 
         _saveBurnRequest(
             _amount,
@@ -342,10 +341,10 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         return true;
     }
 
-    /// @notice                             Slashes a locker if she did not paid a cc burn request before its deadline
+    /// @notice                             Slashes a locker if she did not pay a cc burn request before its deadline
     /// @param _lockerLockingScript         locker's locking script that the unpaid request belongs to
-    /// @param _indices                     Array of indices of the requests that their deadline has passed
-    /// @return                             True if dispute is successfull
+    /// @param _indices                     Array of indices of the requests whose deadline has passed
+    /// @return                             True if dispute is successful
     function disputeBurn(
         bytes calldata _lockerLockingScript,
         uint[] memory _indices
@@ -412,7 +411,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _locktimes                       Locktimes of input and output tx
     /// @param _inputIntermediateNodes          Merkle inclusion proof for the malicious transaction
     /// @param _indexesAndBlockNumbers          Indices of malicious input in input tx, input tx in block and block number of input tx
-    /// @return                                 True if dispute is successfull
+    /// @return                                 True if dispute is successful
     function disputeLocker(
         bytes memory _lockerLockingScript,
         bytes4[] memory _versions, // [inputTxVersion, outputTxVersion]
@@ -515,7 +514,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         address _lockerTargetAddress = ILockers(lockers)
         .getLockerTargetAddress(_lockerLockingScript);
 
-        ILockers(lockers).slashTheifLocker(
+        ILockers(lockers).slashThiefLocker(
             _lockerTargetAddress,
             totalValue*slasherPercentageReward/MAX_SLASHER_REWARD, // Slasher reward
             _msgSender(), // Slasher address
@@ -601,7 +600,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint numberOfOutputs = BitcoinHelper.numberOfOutputs(_vout);
 
         if (parsedAmount != 0 && _paidOutputCounter + 1 == numberOfOutputs) {
-            // One output sends the remained value to locker
+            // One output sends the remaining value to locker
             isUsedAsBurnProof[_txId] = true;
         } else if (_paidOutputCounter == numberOfOutputs) {
             // All output pays cc burn requests
@@ -620,7 +619,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @notice                           Records burn request of user
     /// @param _amount                    Amount of wrapped token that user wants to burn
     /// @param _burntAmount               Amount of wrapped token that actually gets burnt after deducting fees from the original value (_amount)
-    /// @param _userScript                User's Bitcoin address
+    /// @param _userScript                User's Bitcoin script type
     /// @param _lastSubmittedHeight       Last block header height submitted on the relay contract
     /// @param _lockerTargetAddress       Locker's target chain address that the request belongs to
     function _saveBurnRequest(
@@ -682,9 +681,9 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     /// @notice                      Checks inclusion of the transaction in the specified block
     /// @dev                         Calls the relay contract to check Merkle inclusion proof
-    /// @param _amount               Id of the transaction
-    /// @param _lockerTargetAddress  Id of the transaction
-    /// @return                      Remained amount after reducing fees
+    /// @param _amount               The amount to be burnt
+    /// @param _lockerTargetAddress  The locker's address on the target blockchain
+    /// @return                      Remaining amount after reducing fees
     function _getFees(
         uint _amount,
         address _lockerTargetAddress
@@ -694,7 +693,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         require(_amount > protocolFee + bitcoinFee, "CCBurnRouter: amount is too low");
 
-        uint remainedAmount = _amount - protocolFee - bitcoinFee;
+        uint remainingAmount = _amount - protocolFee - bitcoinFee;
 
         // Transfers protocol fee
         ITeleBTC(teleBTC).transfer(treasury, protocolFee);
@@ -702,7 +701,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         // Transfers bitcoin fee to locker
         ITeleBTC(teleBTC).transfer(_lockerTargetAddress, bitcoinFee);
 
-        return remainedAmount;
+        return remainingAmount;
     }
 
 }

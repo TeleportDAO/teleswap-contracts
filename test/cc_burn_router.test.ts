@@ -142,8 +142,8 @@ describe("CCBurnRouter", async () => {
             .returns(true);
     }
 
-    async function setLockersSlashTheifLockerReturn(): Promise<void> {
-        await mockLockers.mock.slashTheifLocker
+    async function setLockersSlashThiefLockerReturn(): Promise<void> {
+        await mockLockers.mock.slashThiefLocker
             .returns(true);
     }
 
@@ -921,7 +921,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLocker(true);
             await setRelayLastSubmittedHeight(burnReqBlockNumber + TRANSFER_DEADLINE + 1);
             await setLockersGetLockerTargetAddress();
-            await setLockersSlashTheifLockerReturn();
+            await setLockersSlashThiefLockerReturn();
 
             expect(
                 await ccBurnRouterSigner2.disputeLocker(

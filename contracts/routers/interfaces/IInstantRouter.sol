@@ -7,10 +7,11 @@ interface IInstantRouter {
     /// @notice                                 Structure for recording instant requests
     /// @param user                             Address of user who recieves loan
     /// @param collateralPool                   Address of collateral pool
-    /// @param paybackAmount                    Amount of (loan + instant fee)
     /// @param collateralToken                  Address of underlying collateral token
+    /// @param paybackAmount                    Amount of (loan + instant fee)
     /// @param lockedCollateralPoolTokenAmount  Amount of locked collateral pool token for getting loan
     /// @param deadline                         Deadline for paying back the loan
+    /// @param requestCounterOfUser             The index of the request for a specific user
     struct instantRequest {
         address user;
         address collateralPool;
@@ -92,7 +93,7 @@ interface IInstantRouter {
 		address indexed collateralToken, 
 		uint slashedAmount, 
 		uint paybackAmount,
-        address slasher,
+        address indexed slasher,
         uint slasherReward,
         uint requestCounterOfUser
 	);

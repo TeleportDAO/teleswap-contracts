@@ -33,54 +33,52 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
         return 8;
     }
 
-    /**
-     * @dev Check if an account is minter.
-     * @return bool
-     */
+    /// @notice                Check if an account is minter    
+    /// @param  account        The account which intended to be checked
+    /// @return bool
     function isMinter(address account) internal view returns (bool) {
         require(account != address(0), "TeleBTC: account is the zero address");
         return minters[account];
     }
 
-    /**
-     * @dev Check if an account is burner.
-     * @return bool
-     */
+    /// @notice                Check if an account is burner    
+    /// @param  account        The account which intended to be checked
+    /// @return bool
     function isBurner(address account) internal view returns (bool) {
         require(account != address(0), "TeleBTC: account is the zero address");
         return burners[account];
     }
 
-    /**
-     * @dev Give an account access to mint.
-     */
+    /// @notice                Adds a minter
+    /// @dev                   Only owner can call this function
+    /// @param  account        The account which intended to be added to minters
     function addMinter(address account) external override onlyOwner {
         require(!isMinter(account), "TeleBTC: account already has role");
         minters[account] = true;
         emit MinterAdded(account);
     }
 
-    /**
-     * @dev Remove an account's access to mint.
-     */
+    /// @notice                Removes a minter
+    /// @dev                   Only owner can call this function
+    /// @param  account        The account which intended to be removed from minters
     function removeMinter(address account) external override onlyOwner {
         require(isMinter(account), "TeleBTC: account does not have role");
         minters[account] = false;
         emit MinterRemoved(account);
     }
 
-    /**
-     * @dev Give an account access to burn.
-     */
+    /// @notice                Adds a burner
+    /// @dev                   Only owner can call this function
+    /// @param  account        The account which intended to be added to burners
     function addBurner(address account) external override onlyOwner {
         require(!isBurner(account), "TeleBTC: account already has role");
         burners[account] = true;
         emit BurnerAdded(account);
     }
 
-    /**
-     * @dev Remove an account's access to burn.
-     */
+    /// @notice                Removes a burner
+    /// @dev                   Only owner can call this function
+    /// @param  account        The account which intended to be removed from burners
     function removeBurner(address account) external override onlyOwner {
         require(isBurner(account), "TeleBTC: account does not have role");
         burners[account] = false;

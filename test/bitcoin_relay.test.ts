@@ -794,7 +794,7 @@ describe("Bitcoin Relay", async () => {
                 await instance.setRelayerPercentageFee(10)
             ).to.emit(
                 instance, "NewRelayerPercentageFee"
-            ).withArgs(5, 10);
+            ).withArgs(500, 10);
 
             expect(
                 await instance.relayerPercentageFee()

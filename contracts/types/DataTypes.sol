@@ -17,7 +17,7 @@ library DataTypes {
     /// @param reservedNativeTokenForSlash  Total native token reserved to support slashing teleBTC
     /// @param isLocker                     Indicates that is already a locker or not
     /// @param isCandidate                  Indicates that is a candidate or not
-    /// @param isScriptHash
+    /// @param isScriptHash                 Shows if it's script hash 
     /// @param isActive                     Shows if a locker is active (has not requested for removal and
     ///                                     has enough collateral to accept more minting requests)
     struct locker {

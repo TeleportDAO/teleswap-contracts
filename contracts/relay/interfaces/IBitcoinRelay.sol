@@ -67,6 +67,12 @@ interface IBitcoinRelay {
         uint newRelayerPercentageFee
     );
 
+    /// @notice                     Emits when changes made to teleportDAO token
+    event NewTeleportDAOToken (
+        address oldTeleportDAOToken, 
+        address newTeleportDAOToken
+    );
+
     /// @notice                     Emits when changes made to epoch length
     event NewEpochLength(
         uint oldEpochLength, 
@@ -121,9 +127,9 @@ interface IBitcoinRelay {
 
     function findHeight(bytes32 _hash) external view returns (uint256);
 
-    function findAncestor(bytes32 _hash, uint256 _offset) external view returns (bytes32); // see if it's needed
+    function findAncestor(bytes32 _hash, uint256 _offset) external view returns (bytes32); 
 
-    function isAncestor(bytes32 _ancestor, bytes32 _descendant, uint256 _limit) external view returns (bool); // see if it's needed
+    function isAncestor(bytes32 _ancestor, bytes32 _descendant, uint256 _limit) external view returns (bool); 
 
     function rewardAmountInTDT() external view returns (uint);
 
@@ -138,6 +144,8 @@ interface IBitcoinRelay {
     function setFinalizationParameter(uint _finalizationParameter) external;
 
     function setRelayerPercentageFee(uint _relayerPercentageFee) external;
+
+    function setTeleportDAOToken(address _TeleportDAOToken) external;
 
     function setEpochLength(uint _epochLength) external;
 

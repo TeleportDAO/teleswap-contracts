@@ -7,6 +7,7 @@ library RequestHelper {
     /// @notice                     Returns chain id of the request
     /// @dev                        Determines the chain that request belongs to
     /// @param _arbitraryData       Data written in Bitcoin tx
+    /// @return parsedValue         The parsed value of chain id
     function parseChainId(bytes memory _arbitraryData) internal pure returns (uint8 parsedValue) {
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 0, 0);
         assembly {
@@ -17,6 +18,7 @@ library RequestHelper {
     /// @notice                     Returns app id of the request
     /// @dev                        Determines the app that request belongs to (e.g. cross-chain transfer app id is 0)
     /// @param _arbitraryData       Data written in Bitcoin tx
+    /// @return parsedValue         The parsed value of app id
     function parseAppId(bytes memory _arbitraryData) internal pure returns (uint16 parsedValue) {
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 1, 2);
         assembly {
@@ -27,6 +29,7 @@ library RequestHelper {
     /// @notice                     Returns recipient address
     /// @dev                        Minted TeleBTC or exchanged tokens will be sent to this address
     /// @param _arbitraryData       Data written in Bitcoin tx
+    /// @return parsedValue         The parsed value of recipient address
     function parseRecipientAddress(bytes memory _arbitraryData) internal pure returns (address parsedValue) {
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 3, 22);
         assembly {
@@ -37,6 +40,7 @@ library RequestHelper {
     /// @notice                     Returns percentage fee (from total minted TeleBTC)
     /// @dev                        This fee goes to Teleporter who submitted the request
     /// @param _arbitraryData       Data written in Bitcoin tx
+    /// @return parsedValue         The parsed value of percentage fee
     function parsePercentageFee(bytes memory _arbitraryData) internal pure returns (uint16 parsedValue) {
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 23, 24);
         assembly {
@@ -48,6 +52,7 @@ library RequestHelper {
     /// @dev                        0 for normal requests, 1 for instant requests
     ///                             Instant requests are used to pay back an instant loan
     /// @param _arbitraryData       Data written in Bitcoin tx
+    /// @return parsedValue         The parsed value of speed parameter
     function parseSpeed(bytes memory _arbitraryData) internal pure returns (uint8 parsedValue) {
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 25, 25);
         assembly {
@@ -58,6 +63,7 @@ library RequestHelper {
     /// @notice                     Returns address of exchange token
     /// @dev                        Minted TeleBTC will be exchanged to this token
     /// @param _arbitraryData       Data written in Bitcoin tx
+    /// @return parsedValue         The parsed value of exchange token
     function parseExchangeToken(bytes memory _arbitraryData) internal pure returns (address parsedValue){
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 26, 45);
         assembly {
@@ -69,6 +75,7 @@ library RequestHelper {
     /// @dev                        If input token is fixed, outputAmount means the min expected output amount
     ///                             If output token is fixed, outputAmount is desired output amount
     /// @param _arbitraryData       Data written in Bitcoin tx
+    /// @return parsedValue         The parsed value of exchange output amount
     function parseExchangeOutputAmount(bytes memory _arbitraryData) internal pure returns (uint224 parsedValue){
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 46, 73);
         assembly {
@@ -79,6 +86,7 @@ library RequestHelper {
     /// @notice                     Returns deadline of executing exchange request
     /// @dev                        This value is compared to block.timestamp
     /// @param _arbitraryData       Data written in Bitcoin tx
+    /// @return parsedValue         The parsed value of deadline
     function parseDeadline(bytes memory _arbitraryData) internal pure returns (uint32 parsedValue){
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 74, 77);
         assembly {
@@ -88,6 +96,7 @@ library RequestHelper {
 
     /// @notice                     Returns true if input token is fixed
     /// @param _arbitraryData       Data written in Bitcoin tx
+    /// @return parsedValue         The parsed value of is-fixed-token
     function parseIsFixedToken(bytes memory _arbitraryData) internal pure returns (uint8 parsedValue){
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 78, 78);
         assembly {
@@ -99,6 +108,7 @@ library RequestHelper {
     /// @param _data            Data that is sliced
     /// @param _start           Start index of slicing
     /// @param _end             End index of slicing
+    /// @return _result         The result of slicing
     function sliceBytes(
         bytes memory _data,
         uint _start,

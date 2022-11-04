@@ -43,9 +43,9 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     /// @param _teleBTC                     Address of teleBTC contract
     /// @param _relay                       Address of relay contract
     /// @param _priceOracle                 Address of price oracle contract
-    /// @param _collateralPoolFactory       Address of collateral pool factory contrac
+    /// @param _collateralPoolFactory       Address of collateral pool factory contract
     /// @param _slasherPercentageReward     Percentage of total collateral that goes to slasher
-    /// @param _paybackDeadline             Dealine of paying back the borrowed tokens
+    /// @param _paybackDeadline             Deadline of paying back the borrowed tokens
     /// @param _defaultExchangeConnector    Exchange connector that is used for exchanging user's collateral to teleBTC (in the case of slashing)
     constructor(
         address _teleBTC,
@@ -593,7 +593,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         );
 
         // Finds needed collateral token for getting loan
-        uint requiredCollateralToken = equivalentCollateralToken*collateralizationRatio/10000;
+        uint requiredCollateralToken = equivalentCollateralToken*collateralizationRatio/MAX_SLASHER_PERCENTAGE_REWARD;
 
         // Finds needed collateral pool token for getting loan
         uint requiredCollateralPoolToken = ICollateralPool(collateralPool).equivalentCollateralPoolToken(

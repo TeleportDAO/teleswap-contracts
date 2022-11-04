@@ -177,7 +177,6 @@ library TypedMemView {
      * @return      mask - The mask
      */
     function leftMask(uint8 _len) private pure returns (uint256 mask) {
-        // ugly. redo without assembly?
         assembly {
         // solium-disable-previous-line security/no-inline-assembly
             mask := sar(
@@ -361,7 +360,7 @@ library TypedMemView {
         assembly {
         // solium-disable-previous-line security/no-inline-assembly
         // 216 == 256 - 40
-            _type := shr(216, memView) // shift out lower 24 bytes
+            _type := shr(216, memView) // shift out lower (12 + 12 + 3) bytes
         }
     }
 
@@ -462,7 +461,7 @@ library TypedMemView {
     }
 
     /**
-     * @notice          Shortcut to `slice`. Gets a view representing the last `_len` byte.
+     * @notice          Shortcut to `slice`. Gets a view representing the last `_len` bytes.
      * @param memView   The view
      * @param _len      The length
      * @param newType   The new type
@@ -512,7 +511,7 @@ library TypedMemView {
      *                  To automatically cast to an integer, use `indexUint`.
      * @param memView   The view
      * @param _index    The index
-     * @param _bytes    The bytes
+     * @param _bytes    The bytes length
      * @return          result - The 32 byte result
      */
     function index(bytes29 memView, uint256 _index, uint8 _bytes) internal pure returns (bytes32 result) {
@@ -522,7 +521,6 @@ library TypedMemView {
         }
         require(_bytes <= 32, "TypedMemView/index - Attempted to index more than 32 bytes");
 
-        // FIXME: why the following lines need `unchecked`
         unchecked {
             uint8 bitLength = _bytes * 8;
             uint256 _loc = loc(memView);
@@ -537,10 +535,10 @@ library TypedMemView {
 
     /**
      * @notice          Parse an unsigned integer from the view at `_index`.
-     * @dev             Requires that the view have >= `_bytes` bytes following that index.
+     * @dev             Requires that the view has >= `_bytes` bytes following that index.
      * @param memView   The view
      * @param _index    The index
-     * @param _bytes    The bytes
+     * @param _bytes    The bytes length
      * @return          result - The unsigned integer
      */
     function indexUint(bytes29 memView, uint256 _index, uint8 _bytes) internal pure returns (uint256 result) {
@@ -551,7 +549,7 @@ library TypedMemView {
      * @notice          Parse an unsigned integer from LE bytes.
      * @param memView   The view
      * @param _index    The index
-     * @param _bytes    The bytes
+     * @param _bytes    The bytes length
      * @return          result - The unsigned integer
      */
     function indexLEUint(bytes29 memView, uint256 _index, uint8 _bytes) internal pure returns (uint256 result) {
