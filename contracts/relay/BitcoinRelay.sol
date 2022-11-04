@@ -75,7 +75,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         lastSubmittedHeight = _height;
         
         _setTeleportDAOToken(_TeleportDAOToken);
-        _setRelayerPercentageFee(5);
+        _setRelayerPercentageFee(500);
         _setEpochLength(BitcoinHelper.RETARGET_PERIOD_BLOCKS);
         _setBaseQueries(epochLength);
         lastEpochQueries = baseQueries;

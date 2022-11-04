@@ -340,7 +340,6 @@ library BitcoinHelper {
             _arbitraryData = opReturnPayloadSmall(_scriptPubkeyWithLength);
 
             // Checks whether the output is an arbitarary data or not
-            // if(_arbitraryData == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
             if(_arbitraryData == TypedMemView.NULL) {
                 // Output is not an arbitrary data
                 if (
