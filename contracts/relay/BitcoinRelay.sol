@@ -73,8 +73,8 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         _setFinalizationParameter(3);
         initialHeight = _height;
         lastSubmittedHeight = _height;
-        // TODO: add a setter function for tdt token
-        TeleportDAOToken = _TeleportDAOToken;
+        
+        _setTeleportDAOToken(_TeleportDAOToken);
         _setRelayerPercentageFee(5);
         _setEpochLength(BitcoinHelper.RETARGET_PERIOD_BLOCKS);
         _setBaseQueries(epochLength);
@@ -180,6 +180,13 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         _setRelayerPercentageFee(_relayerPercentageFee);
     }
 
+    /// @notice                             External setter for teleportDAO token
+    /// @dev                                This is updated when we want to change the teleportDAO token 
+    /// @param _TeleportDAOToken            The teleportDAO token address
+    function setTeleportDAOToken(address _TeleportDAOToken) external override onlyOwner {
+        _setTeleportDAOToken(_TeleportDAOToken);
+    }
+
     /// @notice                             External setter for epochLength
     /// @param _epochLength                 The length of epochs for estimating the user queries hence their fees
     function setEpochLength(uint _epochLength) external override onlyOwner {
@@ -234,6 +241,14 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         relayerPercentageFee = _relayerPercentageFee;
     }
 
+    /// @notice                             Internal setter for teleportDAO token
+    /// @dev                                This is updated when we want to change the teleportDAO token
+    /// @param _TeleportDAOToken            The teleportDAO token address
+    function _setTeleportDAOToken(address _TeleportDAOToken) private {
+        emit NewTeleportDAOToken(TeleportDAOToken, _TeleportDAOToken);
+        TeleportDAOToken = _TeleportDAOToken;
+    }
+
     /// @notice                             Internal setter for epochLength
     /// @param _epochLength                 The length of epochs for estimating the user queries hence their fees
     function _setEpochLength(uint _epochLength) private {
@@ -262,7 +277,6 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param _submissionGasUsed           The gas used for submitting one block header
     function _setSubmissionGasUsed(uint _submissionGasUsed) private {
         emit NewSubmissionGasUsed(submissionGasUsed, _submissionGasUsed);
-        // TODO: is there any scenario we want to set this to zero
         submissionGasUsed = _submissionGasUsed;
     }
 

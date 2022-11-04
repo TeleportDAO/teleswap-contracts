@@ -90,7 +90,7 @@ library LockersLib {
             libConstants,
             libParams
         );
-        uint neededTeleBTC = neededTeleBTCToBuyCollateral(
+        neededTeleBTC = neededTeleBTCToBuyCollateral(
             libConstants,
             libParams,
             _collateralAmount,
@@ -158,7 +158,7 @@ library LockersLib {
         );
 
         // Needed amount of TeleBTC to buy collateralAmount
-        uint neededTeleBTC = neededTeleBTCToBuyCollateral(
+        neededTeleBTC = neededTeleBTCToBuyCollateral(
             libConstants,
             libParams,
             _collateralAmount,
@@ -189,8 +189,8 @@ library LockersLib {
             libConstants.NativeToken // Output token
         );
 
-        uint rewardInNativeToken = equivalentNativeToken*_rewardAmount/_amount;
-        uint neededNativeTokenForSlash = equivalentNativeToken*libParams.liquidationRatio/libConstants.OneHundredPercent;
+        rewardInNativeToken = equivalentNativeToken*_rewardAmount/_amount;
+        neededNativeTokenForSlash = equivalentNativeToken*libParams.liquidationRatio/libConstants.OneHundredPercent;
 
         if ((rewardInNativeToken + neededNativeTokenForSlash) > theLocker.nativeTokenLockedAmount) {
             // Divides total locker's collateral proportional to reward amount and slash amount
@@ -228,7 +228,7 @@ library LockersLib {
             "Lockers: input address is not a valid locker"
         );
 
-        uint equivalentNativeToken = IPriceOracle(libParams.priceOracle).equivalentOutputAmount(
+        equivalentNativeToken = IPriceOracle(libParams.priceOracle).equivalentOutputAmount(
             _rewardAmount + _amount, // Total amount of TeleBTC that is slashed
             ITeleBTC(libParams.teleBTC).decimals(), // Decimal of teleBTC
             libConstants.NativeTokenDecimal, // Decimal of TNT

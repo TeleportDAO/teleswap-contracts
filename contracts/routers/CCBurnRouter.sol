@@ -24,8 +24,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     // Constants
     uint constant MAX_PROTOCOL_FEE = 10000;
-    // TODO: why only 100?!
-    uint constant MAX_SLASHER_REWARD = 100;
+    uint constant MAX_SLASHER_REWARD = 10000;
 
     // Public variables
     address public override relay;

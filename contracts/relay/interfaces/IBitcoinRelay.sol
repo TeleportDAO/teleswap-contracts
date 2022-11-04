@@ -67,6 +67,12 @@ interface IBitcoinRelay {
         uint newRelayerPercentageFee
     );
 
+    /// @notice                     Emits when changes made to teleportDAO token
+    event NewTeleportDAOToken (
+        address oldTeleportDAOToken, 
+        address newTeleportDAOToken
+    );
+
     /// @notice                     Emits when changes made to epoch length
     event NewEpochLength(
         uint oldEpochLength, 
@@ -138,6 +144,8 @@ interface IBitcoinRelay {
     function setFinalizationParameter(uint _finalizationParameter) external;
 
     function setRelayerPercentageFee(uint _relayerPercentageFee) external;
+
+    function setTeleportDAOToken(address _TeleportDAOToken) external;
 
     function setEpochLength(uint _epochLength) external;
 
