@@ -6,23 +6,23 @@ interface IPriceOracle {
     /// @notice                     Emits when new exchange router is added
     /// @param exchangeRouter       Address of new exchange router
     /// @param exchangeConnector    Address of exchange connector
-    event ExchangeConnectorAdded(address exchangeRouter, address exchangeConnector);
+    event ExchangeConnectorAdded(address indexed exchangeRouter, address indexed exchangeConnector);
 
     /// @notice                     Emits when an exchange router is removed
     /// @param exchangeRouter       Address of removed exchange router
-    event ExchangeConnectorRemoved(address exchangeRouter);
+    event ExchangeConnectorRemoved(address indexed exchangeRouter);
 
     /// @notice                     Emits when a price proxy is set
     /// @param _firstToken          Address of the first token
     /// @param _secondToken         Address of the second token
     /// @param _priceProxyAddress   Address of price proxy contract
-    event SetPriceProxy(address _firstToken, address _secondToken, address _priceProxyAddress);
+    event SetPriceProxy(address indexed _firstToken, address indexed _secondToken, address indexed _priceProxyAddress);
 
     /// @notice                     Emits when changes made to acceptable delay
 	event NewAcceptableDelay(uint oldAcceptableDelay, uint newAcceptableDelay);
 
     /// @notice                     Emits when changes made to oracle native token
-	event NewOracleNativeToken(address oldOracleNativeToken, address newOracleNativeToken);
+	event NewOracleNativeToken(address indexed oldOracleNativeToken, address indexed newOracleNativeToken);
 
     // Read-only functions
     

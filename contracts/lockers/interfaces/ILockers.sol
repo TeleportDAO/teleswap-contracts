@@ -47,9 +47,9 @@ interface ILockers is ILockersStorage {
     event LockerSlashed(
         address indexed lockerTargetAddress,
         uint rewardAmount,
-        address rewardRecipient,
+        address indexed rewardRecipient,
         uint amount,
-        address recipient,
+        address indexed recipient,
         uint slashedCollateralAmount,
         uint slashTime,
         bool isForCCBurn
@@ -57,7 +57,7 @@ interface ILockers is ILockersStorage {
 
     event LockerLiquidated(
         address indexed lockerTargetAddress,
-        address liquidatorAddress,
+        address indexed liquidatorAddress,
         uint collateralAmount,
         uint teleBTCAmount,
         uint liquidateTime
@@ -65,7 +65,7 @@ interface ILockers is ILockersStorage {
 
     event LockerSlashedCollateralSold(
         address indexed lockerTargetAddress,
-        address buyerAddress,
+        address indexed buyerAddress,
         uint slashingAmount,
         uint teleBTCAmount,
         uint slashingTime
@@ -87,7 +87,7 @@ interface ILockers is ILockersStorage {
 
     event MintByLocker(
         address indexed lockerTargetAddress,
-        address receiver,
+        address indexed receiver,
         uint mintedAmount,
         uint lockerFee,
         uint mintingTime

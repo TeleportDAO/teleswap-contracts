@@ -14,7 +14,7 @@ interface ICollateralPoolFactory {
         string name,
         address indexed collateralToken,
         uint collateralizationRatio,
-        address collateralPool
+        address indexed collateralPool
     );
 
     /// @notice                 Emits when a collateral pool is removed
@@ -22,7 +22,7 @@ interface ICollateralPoolFactory {
     /// @param collateralPool   Collateral pool contract address
     event RemoveCollateralPool(
         address indexed collateralToken,
-        address collateralPool
+        address indexed collateralPool
     );
 
     // Read-only functions

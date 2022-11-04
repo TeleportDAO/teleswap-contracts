@@ -43,7 +43,7 @@ interface ICCExchangeRouter {
         address[2] inputAndOutputToken,
         uint[2] inputAndOutputAmount,
         uint indexed speed,
-        address teleporter,
+        address indexed teleporter,
         uint teleporterFee,
         bytes32 bitcoinTxId,
         uint appId
@@ -64,7 +64,7 @@ interface ICCExchangeRouter {
         address[2] inputAndOutputToken,
         uint[2] inputAndOutputAmount,
         uint indexed speed,
-        address teleporter,
+        address indexed teleporter,
         uint teleporterFee,
         bytes32 bitcoinTxId,
         uint appId

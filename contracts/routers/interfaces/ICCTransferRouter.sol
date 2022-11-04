@@ -42,7 +42,7 @@ interface ICCTransferRouter {
 		uint inputAmount,
 		uint receivedAmount,
 		uint indexed speed,
-		address teleporter,
+		address indexed teleporter,
 		uint teleporterFee,
 		uint relayFee,
 		uint protocolFee,

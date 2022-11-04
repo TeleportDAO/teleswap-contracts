@@ -93,7 +93,7 @@ interface IInstantRouter {
 		address indexed collateralToken, 
 		uint slashedAmount, 
 		uint paybackAmount,
-        address slasher,
+        address indexed slasher,
         uint slasherReward,
         uint requestCounterOfUser
 	);
