@@ -511,7 +511,7 @@ library TypedMemView {
      *                  To automatically cast to an integer, use `indexUint`.
      * @param memView   The view
      * @param _index    The index
-     * @param _bytes    The bytes
+     * @param _bytes    The bytes length
      * @return          result - The 32 byte result
      */
     function index(bytes29 memView, uint256 _index, uint8 _bytes) internal pure returns (bytes32 result) {
@@ -538,7 +538,7 @@ library TypedMemView {
      * @dev             Requires that the view has >= `_bytes` bytes following that index.
      * @param memView   The view
      * @param _index    The index
-     * @param _bytes    The bytes
+     * @param _bytes    The bytes length
      * @return          result - The unsigned integer
      */
     function indexUint(bytes29 memView, uint256 _index, uint8 _bytes) internal pure returns (uint256 result) {
@@ -549,7 +549,7 @@ library TypedMemView {
      * @notice          Parse an unsigned integer from LE bytes.
      * @param memView   The view
      * @param _index    The index
-     * @param _bytes    The bytes
+     * @param _bytes    The bytes length
      * @return          result - The unsigned integer
      */
     function indexLEUint(bytes29 memView, uint256 _index, uint8 _bytes) internal pure returns (uint256 result) {

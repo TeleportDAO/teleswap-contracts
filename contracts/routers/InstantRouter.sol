@@ -593,7 +593,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         );
 
         // Finds needed collateral token for getting loan
-        uint requiredCollateralToken = equivalentCollateralToken*collateralizationRatio/10000;
+        uint requiredCollateralToken = equivalentCollateralToken*collateralizationRatio/MAX_SLASHER_PERCENTAGE_REWARD;
 
         // Finds needed collateral pool token for getting loan
         uint requiredCollateralPoolToken = ICollateralPool(collateralPool).equivalentCollateralPoolToken(

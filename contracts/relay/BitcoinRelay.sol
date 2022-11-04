@@ -19,11 +19,13 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
     // Public variables
+    uint constant ONE_HUNDRED_PERCENT = 10000;
+
     uint public override initialHeight;
     uint public override lastSubmittedHeight;
     uint public override finalizationParameter;
     uint public override rewardAmountInTDT;
-    uint public override relayerPercentageFee; // A number between [0, 100)
+    uint public override relayerPercentageFee; // A number between [0, 10000)
     uint public override submissionGasUsed; // Gas used for submitting a block header
     uint public override epochLength;
     uint public override baseQueries;
@@ -65,7 +67,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
             _periodStart & bytes32(0x0000000000000000000000000000000000000000000000000000000000ffffff) == bytes32(0),
             "Period start hash does not have work. Hint: wrong byte order?");
         blockHeight[_genesisHash] = _height;
-        blockHeight[_periodStart] = _height - (_height % 2016);
+        blockHeight[_periodStart] = _height - (_height % BitcoinHelper.RETARGET_PERIOD_BLOCKS);
 
         // Relay parameters
         _setFinalizationParameter(3);
@@ -74,7 +76,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         // TODO: add a setter function for tdt token
         TeleportDAOToken = _TeleportDAOToken;
         _setRelayerPercentageFee(5);
-        _setEpochLength(2016);
+        _setEpochLength(BitcoinHelper.RETARGET_PERIOD_BLOCKS);
         _setBaseQueries(epochLength);
         lastEpochQueries = baseQueries;
         currentEpochQueries = 0;
@@ -108,7 +110,8 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param  _index      The index of the desired block header in that height
     /// @return             Block header's fee price for a query
     function getBlockHeaderFee (uint _height, uint _index) external view override returns(uint) {
-        return (submissionGasUsed * chain[_height][_index].gasPrice * (100 + relayerPercentageFee) * epochLength) / lastEpochQueries / 100;
+        // TODO: check the first ONE_HUNDRED_PERCENT with others
+        return (submissionGasUsed * chain[_height][_index].gasPrice * (ONE_HUNDRED_PERCENT + relayerPercentageFee) * epochLength) / lastEpochQueries / ONE_HUNDRED_PERCENT;
     }
 
     /// @notice             Getter for the number of block headers in the same height
@@ -226,8 +229,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     function _setRelayerPercentageFee(uint _relayerPercentageFee) private {
         emit NewRelayerPercentageFee(relayerPercentageFee, _relayerPercentageFee);
         require(
-            // TODO: change all 100s to 10000 in this contract
-            _relayerPercentageFee <= 100,
+            _relayerPercentageFee <= ONE_HUNDRED_PERCENT,
             "BitcoinRelay: relay fee is above max"
         );
         relayerPercentageFee = _relayerPercentageFee;
@@ -462,7 +464,8 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @return                 True if the fee payment was successful
     function _getFee(uint gasPrice) internal returns (bool){
         uint feeAmount;
-        feeAmount = (submissionGasUsed * gasPrice * (100 + relayerPercentageFee) * epochLength) / lastEpochQueries / 100;
+        // TODO: check the first ONE_HUNDRED_PERCENT with others
+        feeAmount = (submissionGasUsed * gasPrice * (ONE_HUNDRED_PERCENT + relayerPercentageFee) * epochLength) / lastEpochQueries / ONE_HUNDRED_PERCENT;
         require(msg.value >= feeAmount, "BitcoinRelay: fee is not enough");
         Address.sendValue(payable(_msgSender()), msg.value - feeAmount);
         return true;
@@ -513,7 +516,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
 
             // Blocks that are multiplies of 2016 should be submitted using addHeadersWithRetarget
             require(
-                _internal || _height % 2016 != 0,
+                _internal || _height % BitcoinHelper.RETARGET_PERIOD_BLOCKS != 0,
                 "BitcoinRelay: headers should be submitted by calling addHeadersWithRetarget"
             );
 
@@ -543,7 +546,8 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     function _sendReward(address _relayer, uint _height) internal returns (uint, uint) {
 
         // Reward in TNT
-        uint rewardAmountInTNT = submissionGasUsed * chain[_height][0].gasPrice * (100 + relayerPercentageFee) / 100;
+        // TODO: check the first ONE_HUNDRED_PERCENT with others
+        uint rewardAmountInTNT = submissionGasUsed * chain[_height][0].gasPrice * (ONE_HUNDRED_PERCENT + relayerPercentageFee) / ONE_HUNDRED_PERCENT;
 
         // Reward in TDT
         uint contractTDTBalance = 0;
@@ -682,7 +686,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
 
         // retargets should happen at 2016 block intervals
         require(
-            _endHeight % 2016 == 2015,
+            _endHeight % BitcoinHelper.RETARGET_PERIOD_BLOCKS == 2015,
             "BitcoinRelay: must provide the last header of the closing difficulty period");
         require(
             _endHeight == _startHeight + 2015,
