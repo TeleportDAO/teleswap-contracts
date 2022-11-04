@@ -110,8 +110,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param  _index      The index of the desired block header in that height
     /// @return             Block header's fee price for a query
     function getBlockHeaderFee (uint _height, uint _index) external view override returns(uint) {
-        // TODO: check the first ONE_HUNDRED_PERCENT with others
-        return (submissionGasUsed * chain[_height][_index].gasPrice * (ONE_HUNDRED_PERCENT + relayerPercentageFee) * epochLength) / lastEpochQueries / ONE_HUNDRED_PERCENT;
+        return _calculateFee(chain[_height][_index].gasPrice);
     }
 
     /// @notice             Getter for the number of block headers in the same height
@@ -464,11 +463,19 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @return                 True if the fee payment was successful
     function _getFee(uint gasPrice) internal returns (bool){
         uint feeAmount;
-        // TODO: check the first ONE_HUNDRED_PERCENT with others
-        feeAmount = (submissionGasUsed * gasPrice * (ONE_HUNDRED_PERCENT + relayerPercentageFee) * epochLength) / lastEpochQueries / ONE_HUNDRED_PERCENT;
+        feeAmount = _calculateFee(gasPrice);
         require(msg.value >= feeAmount, "BitcoinRelay: fee is not enough");
         Address.sendValue(payable(_msgSender()), msg.value - feeAmount);
         return true;
+    }
+
+    /// @notice                 Calculates the fee amount
+    /// @dev                    Fee is paid in target blockchain native token
+    /// @param gasPrice         The gas price had been used for adding the bitcoin block header
+    /// @return                 The fee amount 
+    function _calculateFee(uint gasPrice) private view returns (uint) {
+        // TODO: check the first ONE_HUNDRED_PERCENT with others
+        return (submissionGasUsed * gasPrice * (ONE_HUNDRED_PERCENT + relayerPercentageFee) * epochLength) / lastEpochQueries / ONE_HUNDRED_PERCENT;
     }
 
     /// @notice             Adds headers to storage after validating
