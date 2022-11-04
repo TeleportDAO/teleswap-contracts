@@ -69,7 +69,6 @@ describe("TeleBTC", async () => {
 
         it("after an epoch, mint rate limit will be reset", async function () {
             await moveBlocks(epochLength)
-            // block 2004
 
             await teleBTC.connect(signer2).mint(ONE_ADDRESS, maxmimumMintLimit - 10)
             await expect(
@@ -78,9 +77,6 @@ describe("TeleBTC", async () => {
                 10
             )
 
-            await moveBlocks(epochLength - 6)
-            // block 3999
-
             await teleBTC.connect(signer2).mint(ONE_ADDRESS, 5)
             await expect(
                 await teleBTC.lastMintLimit()
@@ -88,7 +84,13 @@ describe("TeleBTC", async () => {
                 5
             )
 
-            await moveBlocks(1)
+            await expect(
+                teleBTC.connect(signer2).mint(ONE_ADDRESS, 10)
+            ).to.be.revertedWith(
+                "TeleBTC: reached maximum mint limit"
+            )
+
+            await moveBlocks(epochLength)
             await teleBTC.connect(signer2).mint(ONE_ADDRESS, 10)
             await expect(
                 await teleBTC.lastMintLimit()
