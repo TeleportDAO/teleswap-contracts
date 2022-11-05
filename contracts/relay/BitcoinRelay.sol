@@ -488,7 +488,6 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param gasPrice         The gas price had been used for adding the bitcoin block header
     /// @return                 The fee amount 
     function _calculateFee(uint gasPrice) private view returns (uint) {
-        // TODO: check the first ONE_HUNDRED_PERCENT with others
         return (submissionGasUsed * gasPrice * (ONE_HUNDRED_PERCENT + relayerPercentageFee) * epochLength) / lastEpochQueries / ONE_HUNDRED_PERCENT;
     }
 
@@ -567,7 +566,6 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     function _sendReward(address _relayer, uint _height) internal returns (uint, uint) {
 
         // Reward in TNT
-        // TODO: check the first ONE_HUNDRED_PERCENT with others
         uint rewardAmountInTNT = submissionGasUsed * chain[_height][0].gasPrice * (ONE_HUNDRED_PERCENT + relayerPercentageFee) / ONE_HUNDRED_PERCENT;
 
         // Reward in TDT
@@ -725,10 +723,9 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
             _oldEnd.time()
         );
         require(
-            // TODO: check it precisely
-            (_actualTarget & _expectedTarget) == _actualTarget, // is this correct?
-            // it was in the original code, and we are not sure why is it this way
-            "BitcoinRelay: invalid retarget provided");
+            (_actualTarget & _expectedTarget) == _actualTarget, 
+            "BitcoinRelay: invalid retarget provided"
+        );
 
         // Pass all but the first through to be added
         return _addHeaders(_oldEnd, _headers, true);
