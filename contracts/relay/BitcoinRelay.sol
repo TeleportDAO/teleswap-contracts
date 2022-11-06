@@ -510,8 +510,8 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         );
         // check the height on top of the anchor is not finalized
         require(
-                _anchorHeight + 1 + finalizationParameter > lastSubmittedHeight, 
-                "BitcoinRelay: block headers are too old"
+            _anchorHeight + 1 + finalizationParameter > lastSubmittedHeight, 
+            "BitcoinRelay: block headers are too old"
         );
 
         /*
@@ -531,8 +531,10 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
             _currentHash = _header.hash256();
 
             // The below check prevents adding a replicated block header
-            require(previousBlock[_currentHash] == bytes32(0),
-            "BitcoinRelay: the block header exists on the relay");
+            require(
+                previousBlock[_currentHash] == bytes32(0),
+                "BitcoinRelay: the block header exists on the relay"
+            );
 
             // Blocks that are multiplies of 2016 should be submitted using addHeadersWithRetarget
             require(

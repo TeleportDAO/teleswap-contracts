@@ -53,12 +53,12 @@ contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGua
         // Checks that collateral pool for the token doesn't exist
         require(
             getCollateralPoolByToken[_collateralToken] == address(0), 
-            'CollateralPoolFactory: collateral pool already exists'
+            "CollateralPoolFactory: collateral pool already exists"
         );
 
         require(
             _collateralizationRatio >= 10000, 
-            'CollateralPoolFactory: low amount'
+            "CollateralPoolFactory: low amount"
         );
         
         // Creates collateral pool
@@ -91,11 +91,11 @@ contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGua
     ) external nonReentrant nonZeroAddress(_collateralToken) onlyOwner override returns (bool) {
         // Checks that collateral pool exists
         address collateralPool = getCollateralPoolByToken[_collateralToken];
-        require(collateralPool != address(0), 'CollateralPoolFactory: collateral pool does not exist');
+        require(collateralPool != address(0), "CollateralPoolFactory: collateral pool does not exist");
 
         // Removes collateral pool address
-        require(_index < allCollateralPoolsLength(), 'CollateralPoolFactory: index is out of range');
-        require(collateralPool == allCollateralPools[_index], 'CollateralPoolFactory: index is not correct');
+        require(_index < allCollateralPoolsLength(), "CollateralPoolFactory: index is out of range");
+        require(collateralPool == allCollateralPools[_index], "CollateralPoolFactory: index is not correct");
         getCollateralPoolByToken[_collateralToken] = address(0);
         _removeElement(_index);
         emit RemoveCollateralPool(_collateralToken, collateralPool);
