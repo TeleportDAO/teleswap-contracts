@@ -282,13 +282,13 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
 
     /// @notice                         Checks if a tx is included and finalized on the source blockchain
     /// @dev                            Checks if the block is finalized, and Merkle proof is correct
-    /// @param  _txid                   Desired transaction's tx Id
+    /// @param  _txid                   Desired tx Id in LE form
     /// @param  _blockHeight            Block height of the desired tx
-    /// @param  _intermediateNodes      Part of the Merkle tree from the tx to the root using for proof
+    /// @param  _intermediateNodes      Part of the Merkle tree from the tx to the root (Merkle proof) in LE form
     /// @param  _index                  The index of the tx in Merkle tree
     /// @return                         True if the provided tx is confirmed on the source blockchain, False otherwise
     function checkTxProof (
-        bytes32 _txid, // In BE form
+        bytes32 _txid, // In LE form
         uint _blockHeight,
         bytes calldata _intermediateNodes, // In LE form
         uint _index
@@ -317,8 +317,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         // Check the inclusion of the transaction
         bytes32 _merkleRoot = chain[_blockHeight][0].merkleRoot;
         bytes29 intermediateNodes = _intermediateNodes.ref(0).tryAsMerkleArray(); // Check for errors if any
-        bytes32 txIdLE = _revertBytes32(_txid);
-        return BitcoinHelper.prove(txIdLE, _merkleRoot, intermediateNodes, _index);
+        return BitcoinHelper.prove(_txid, _merkleRoot, intermediateNodes, _index);
     }
 
     /// @notice             Adds headers to storage after validating
@@ -459,17 +458,17 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         return false;
     }
 
-    function _revertBytes32(bytes32 _input) internal pure returns(bytes32) {
-        bytes memory temp;
-        bytes32 result;
-        for (uint256 i = 0; i < 32; i++) {
-            temp = abi.encodePacked(temp, _input[31-i]);
-        }
-        assembly {
-            result := mload(add(temp, 32))
-        }
-        return result;
-    }
+    // function _revertBytes32(bytes32 _input) internal pure returns(bytes32) {
+    //     bytes memory temp;
+    //     bytes32 result;
+    //     for (uint256 i = 0; i < 32; i++) {
+    //         temp = abi.encodePacked(temp, _input[31-i]);
+    //     }
+    //     assembly {
+    //         result := mload(add(temp, 32))
+    //     }
+    //     return result;
+    // }
 
     /// @notice                 Gets fee from the user
     /// @dev                    Fee is paid in target blockchain native token
