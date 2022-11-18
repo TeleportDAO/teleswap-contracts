@@ -34,7 +34,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const minLeavinngIntervalTime = 1000;
 
     const lockersLogicFactory = await ethers.getContractFactory(
-        "LockersLogicTestnet",
+        "LockersLogic",
         {
             libraries: {
                 LockersLib: lockersLib.address
