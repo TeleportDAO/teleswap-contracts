@@ -34,7 +34,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await addMinterTeleBTCTx.wait(1)
     }
 
-    const mintTeleBTCTx = await teleBTCInstance.mint(deployer, one8Dec.mul(10))
+    const mintTeleBTCTx = await teleBTCInstance.mint(deployer, one8Dec.mul(1000))
     await mintTeleBTCTx.wait(1)
     console.log("mint telebtc: ", mintTeleBTCTx.hash)
 
