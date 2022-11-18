@@ -105,12 +105,12 @@ const config: HardhatUserConfig = {
 			5, 
 			6283185
 		),
-		matic: {
+		polygon: {
 			url: "https://rpc-mainnet.maticvigil.com/",
 			chainId: 137,
 			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
 		},
-		matic_testnet: {
+		mumbai: {
 			url: "https://rpc-mumbai.matic.today",
 			chainId: 80001,
 			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
@@ -142,7 +142,8 @@ const config: HardhatUserConfig = {
 		},
   	},
   	gasReporter: {
-		enabled: process.env.REPORT_GAS !== undefined,
+		// enabled: process.env.REPORT_GAS !== undefined,
+		enabled: true,
 		currency: "USD",
   	},
   	etherscan: {
