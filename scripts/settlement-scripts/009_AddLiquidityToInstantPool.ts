@@ -27,8 +27,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         instantPool.address
     );
 
-    const addMinterTeleBTCTx = await teleBTCInstance.addMinter(deployer)
-    await addMinterTeleBTCTx.wait(1)
+    const isMinterTeleBTCTx = await teleBTCInstance.minters(deployer)
+
+    if(!isMinterTeleBTCTx) {
+        const addMinterTeleBTCTx = await teleBTCInstance.addMinter(deployer)
+        await addMinterTeleBTCTx.wait(1)
+    }
 
     const mintTeleBTCTx = await teleBTCInstance.mint(deployer, one8Dec.mul(10))
     await mintTeleBTCTx.wait(1)

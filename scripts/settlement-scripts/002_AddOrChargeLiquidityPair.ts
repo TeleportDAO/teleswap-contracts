@@ -60,9 +60,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         const unixTimeNow = (timeNow - (timeNow % 1000))/1000 + 1000
 
 
-        const addMinterTeleBTCTx = await teleBTCInstance.addMinter(deployer)
-        await addMinterTeleBTCTx.wait(1)
+        const isMinterTeleBTCTx = await teleBTCInstance.minters(deployer)
 
+        if(!isMinterTeleBTCTx) {
+            const addMinterTeleBTCTx = await teleBTCInstance.addMinter(deployer)
+            await addMinterTeleBTCTx.wait(1)
+        }
+        
         const mintTeleBTCTx = await teleBTCInstance.mint(deployer, one8Dec.mul(10))
         await mintTeleBTCTx.wait(1)
 
@@ -106,10 +110,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         const timeNow = Date.now()
         const unixTimeNow = (timeNow - (timeNow % 1000))/1000 + 1000
-
-
-        const addMinterTeleBTCTx = await teleBTCInstance.addMinter(deployer)
-        await addMinterTeleBTCTx.wait(1)
 
         const mintTeleBTCTx = await teleBTCInstance.mint(deployer, one8Dec.mul(10))
         await mintTeleBTCTx.wait(1)
