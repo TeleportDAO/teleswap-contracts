@@ -32,7 +32,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             bitcoinRelay.address,
             lockersProxy.address,
             treasuryAddress,
-            teleBTC,
+            teleBTC.address,
             transferDeadLine,
             protocolPercentageFee,
             slasherPercentageReward,
