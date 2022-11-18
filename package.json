@@ -70,8 +70,8 @@
 		"deploy:local": "hardhat deploy --network hardhat --tags BitcoinMainnet --export export/abi/local.json",
 		"deploy:ropsten": "hardhat deploy --network ropsten --export export/abi/ropsten.json",
 		"deploy:bsc_testnet": "hardhat deploy --network bsc_testnet --export export/abi/bsc_testnet.json",
-		"deploy:polygon": "hardhat deploy --network polygon --export export/abi/bsc_testnet.json",
-		"deploy:mumbai": "hardhat deploy --network mumbai --export export/abi/bsc_testnet.json",
+		"deploy:polygon": "hardhat deploy --network polygon --export export/abi/polygon.json",
+		"deploy:mumbai": "hardhat deploy --network mumbai --export export/abi/mumbai.json",
 		"test": "hardhat test"
 	}
 }
