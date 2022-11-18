@@ -72,6 +72,10 @@
 		"deploy:bsc_testnet": "hardhat deploy --network bsc_testnet --export export/abi/bsc_testnet.json",
 		"deploy:polygon": "hardhat deploy --network polygon --export export/abi/polygon.json",
 		"deploy:mumbai": "hardhat deploy --network mumbai --export export/abi/mumbai.json",
+		"settlement:mumbai": "hardhat deploy --network mumbai --export export/abi/bitcoin_testnet_mumbai.json --deploy-scripts scripts/settlement-scripts-testnet",
+		"lockers_settlement:mumbai": "hardhat deploy --network mumbai --export export/abi/bitcoin_testnet_mumbai.json --deploy-scripts scripts/locker-settlement-script-testnet",
+		"global_variables_settlement:mumbai": "yarn hardhat deploy --network mumbai --export export/abi/bitcoin_testnet_mumbai.json --deploy-scripts scripts/set-global-variables",
+		"collateral_pool_scripts:mumbai": "yarn hardhat deploy --network mumbai --export export/abi/bitcoin_testnet_mumbai.json --deploy-scripts scripts/collateralPool-script",
 		"test": "hardhat test"
 	}
 }

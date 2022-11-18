@@ -11,7 +11,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const tokenSymbol = "TDT"
   const initialSupply = BigNumber.from(10).pow(18).mul(10000)
 
-  // TODO: deploy the correct contract
   await deploy("ERC20", {
     from: deployer,
     log: true,
