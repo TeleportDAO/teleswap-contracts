@@ -9,15 +9,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const tokenName = "TeleBitcoin"
     const tokenSymbol = "TBTC"
 
+    const theArgs = [
+        tokenName,
+        tokenSymbol
+    ]
+
     await deploy("TeleBTC", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
-        args: [
-            tokenName,
-            tokenSymbol
-        ],
+        args: theArgs
     });
+    
 };
 
 export default func;

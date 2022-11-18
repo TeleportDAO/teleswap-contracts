@@ -6,15 +6,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const zero_address = "0x0000000000000000000000000000000000000000";
-
     await deploy("CollateralPoolFactory", {
         from: deployer,
         log: true,
-        skipIfAlreadyDeployed: true,
-        args: [
-            zero_address
-        ],
+        skipIfAlreadyDeployed: true
     });
 };
 

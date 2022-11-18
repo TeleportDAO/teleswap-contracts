@@ -7,7 +7,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployer } = await getNamedAccounts();
 
     const connectorName = "TheConnector"
-    const weth = await deployments.get("WETH")
     const uniswapV2Router02 = await deployments.get("UniswapV2Router02")
 
     await deploy("UniswapV2Connector", {
@@ -16,8 +15,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         skipIfAlreadyDeployed: true,
         args: [
             connectorName,
-            uniswapV2Router02.address,
-            weth.address
+            uniswapV2Router02.address
         ],
     });
 };
