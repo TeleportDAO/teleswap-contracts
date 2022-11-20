@@ -19,12 +19,33 @@ You can join the discord channel [here](https://discord.com/invite/6RSsgfQgcb).
 
 To start, clone the codes and install the needed packages using:
 
-`yarn install`
+`yarn`
 
 If you only want to compile the codes enter the below command:
 
-`npx hardhat compile`
+`yarn clean`
+
+`yarn build`
 
 You can also run the full test suite with the following command:
 
-`npx hardhat test`
+`yarn test`
+
+
+You can deploy the contracts on specified networks in package.json with the following command:
+
+`yarn test`
+
+After deployments, the contracts need some settlements, do them by the following commands:
+
+`yarn settlement:mumbai`
+
+`yarn collateral_pool_scripts:mumbai`
+
+ (with a different private key than the deployer one)
+
+`yarn lockers_settlement:mumbai`
+
+If some contracts has changed, update their addresses in other contracts by the following command:
+
+`yarn global_variables_settlement:mumbai`
