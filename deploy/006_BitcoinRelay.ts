@@ -3,7 +3,6 @@ import {DeployFunction} from 'hardhat-deploy/types';
 var path = require('path');
 var fs = require('fs');
 
-// TODO: use another file instead of .env
 var tempFilePath = path.join(__dirname, '..', '.env');
 
 const {BitcoinRESTAPI} = require('bitcoin_rest_api');
@@ -29,7 +28,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         height = blockCount;
     }
 
-    // TODO: setting the following parameters
     let genesisHeader = await bitcoinRESTAPI.getHexBlockHeader(height);
 
     let periodStartHeight = height - height%2016;
