@@ -58,6 +58,7 @@
 		"js-sha256": "^0.9.0",
 		"merkle-patricia-tree": "2.3.2",
 		"merkletreejs": "^0.2.24",
+		"node-color-log": "^10.0.2",
 		"ripemd160-js": "^1.2.0",
 		"sinon": "^14.0.0",
 		"truffle-assertions": "^0.9.2",
@@ -67,8 +68,15 @@
 	"scripts": {
 		"build": "hardhat compile && tsc",
 		"clean": "rimraf artifacts && rimraf cache && rimraf deployments/localhost && rimraf src/types/*",
+		"deploy:local": "hardhat deploy --network hardhat --tags BitcoinMainnet --export export/abi/local.json",
 		"deploy:ropsten": "hardhat deploy --network ropsten --export export/abi/ropsten.json",
 		"deploy:bsc_testnet": "hardhat deploy --network bsc_testnet --export export/abi/bsc_testnet.json",
+		"deploy:polygon": "hardhat deploy --network polygon --export export/abi/polygon.json",
+		"deploy:mumbai": "hardhat deploy --network mumbai --export export/abi/mumbai.json",
+		"settlement:mumbai": "hardhat deploy --network mumbai --export export/abi/mumbai.json --deploy-scripts scripts/settlement-scripts",
+		"lockers_settlement:mumbai": "hardhat deploy --network mumbai --export export/abi/mumbai.json --deploy-scripts scripts/locker-settlement-script",
+		"global_variables_settlement:mumbai": "yarn hardhat deploy --network mumbai --export export/abi/mumbai.json --deploy-scripts scripts/set-global-variables",
+		"collateral_pool_scripts:mumbai": "yarn hardhat deploy --network mumbai --export export/abi/mumbai.json --deploy-scripts scripts/collateralPool-script",
 		"test": "hardhat test"
 	}
 }

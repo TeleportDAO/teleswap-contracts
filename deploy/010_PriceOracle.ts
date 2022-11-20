@@ -7,7 +7,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployer } = await getNamedAccounts();
 
     const acceptableDelay = 1000;
-    const tdtToken = await deployments.get("ERC20")
+    const tntToken = await deployments.get("WETH")
 
     await deploy("PriceOracle", {
         from: deployer,
@@ -15,7 +15,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         skipIfAlreadyDeployed: true,
         args: [
             acceptableDelay,
-            tdtToken.address
+            tntToken.address
         ],
     });
 };

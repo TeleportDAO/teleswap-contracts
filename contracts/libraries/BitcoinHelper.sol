@@ -112,7 +112,7 @@ library BitcoinHelper {
     /// @param _vin                  Inputs of the transaction
     /// @param _vout                 Outputs of the transaction
     /// @param _locktime             Lock time of the transaction
-    /// @return                      Transaction Id of the required transaction
+    /// @return                      Transaction Id of the transaction (in LE form)
     function calculateTxId(
         bytes4 _version,
         bytes memory _vin,
@@ -121,7 +121,7 @@ library BitcoinHelper {
     ) internal pure returns (bytes32) {
         bytes32 inputHash1 = sha256(abi.encodePacked(_version, _vin, _vout, _locktime));
         bytes32 inputHash2 = sha256(abi.encodePacked(inputHash1));
-        return reverseBytes32(inputHash2);
+        return inputHash2;
     }
 
     /// @notice                      Reverts a Bytes32 input
