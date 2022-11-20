@@ -21,7 +21,7 @@ interface IExchangeConnector {
         uint _outputAmount,
         address _inputToken,
         address _outputToken
-    ) external returns (bool, uint);
+    ) external view returns (bool, uint);
 
     function getOutputAmount(
         uint _inputAmount,
