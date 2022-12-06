@@ -554,7 +554,22 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         */
         paidOutputCounter = 0;
 
+        uint tempVoutIndex;
+
         for (uint i = 0; i < _burnReqIndexes.length; i++) {
+
+            // prevent from sending repeated vout indexes
+            if (i == 0) {
+                tempVoutIndex = _voutIndexes[i];
+            } else {
+                require(
+                    _voutIndexes[i] > tempVoutIndex,
+                    "CCBurnRouter: un-sorted vout indexes"
+                );
+
+                tempVoutIndex = _voutIndexes[i];
+            }
+
             uint _burnReqIndex = _burnReqIndexes[i];
             // Checks that the request has not been paid and its deadline has not passed
             if (
