@@ -326,6 +326,11 @@ library LockersLib {
             "Lockers: more than max removable collateral"
         );
 
+        require(
+            theLocker.nativeTokenLockedAmount - _removingNativeTokenAmount >= libParams.minRequiredTNTLockedAmount,
+            "Lockers: less than min collateral"
+        );
+
         theLocker.nativeTokenLockedAmount =
         theLocker.nativeTokenLockedAmount - _removingNativeTokenAmount;
     }
