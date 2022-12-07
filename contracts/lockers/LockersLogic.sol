@@ -949,6 +949,11 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             "Lockers: 0 net minted"
         );
 
+        require(
+            lockersMapping[_lockerTargetAddress].slashingTeleBTCAmount == 0,
+            "Lockers: 0 slashing TBTC"
+        );
+
         DataTypes.locker memory _removingLocker = lockersMapping[_lockerTargetAddress];
 
         // Removes locker from lockersMapping

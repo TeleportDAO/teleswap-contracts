@@ -2372,6 +2372,37 @@ describe("Lockers", async () => {
 
             let theLockerBalanceBefore = await teleBTC.provider.getBalance(signer1Address)
 
+            await expect(
+                lockerSigner1.removeCollateral(minRequiredNativeTokenLockedAmount.div(2))
+            ).to.be.revertedWith("Lockers: less than min collateral")
+        })
+
+        it("remove collateral successfully", async function () {
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // TELEPORTER1,
+                TELEPORTER1_PublicKeyHash,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount.mul(2),
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: minRequiredNativeTokenLockedAmount.mul(2)}
+            );
+
+            await lockers.addLocker(signer1Address);
+
+            let theLockerBalanceBefore = await teleBTC.provider.getBalance(signer1Address)
+
             await lockerSigner1.removeCollateral(
                 minRequiredNativeTokenLockedAmount.div(2)
             )
