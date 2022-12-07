@@ -117,7 +117,7 @@ interface IBitcoinRelay {
 
     function getBlockHeaderHash(uint height, uint index) external view returns(bytes32);
 
-    function getBlockHeaderFee (uint _height, uint _index) external view returns(uint);
+    function getBlockHeaderFee(uint _height, uint _index) external view returns(uint);
 
     function getNumberOfSubmittedHeaders(uint height) external view returns (uint);
 
