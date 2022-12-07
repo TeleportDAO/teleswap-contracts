@@ -1181,6 +1181,15 @@ describe("CCBurnRouter", async () => {
 
         })
 
+        it("Reverts since transfer deadline is smaller than relay finalizatio parameter multiply 2 plus 1", async function () {
+            await mockBitcoinRelay.mock.finalizationParameter.returns(10);
+
+            expect(
+                ccBurnRouter.setTransferDeadline(20)
+            ).to.revertedWith("CCBurnRouter: transfer deadline is too low");
+
+        })
+
         it("Sets slasher reward", async function () {
             await expect(
                 ccBurnRouter.setSlasherPercentageReward(100)
