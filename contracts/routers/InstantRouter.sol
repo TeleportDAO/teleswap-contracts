@@ -181,7 +181,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     function _setPaybackDeadline(uint _paybackDeadline) private {
         uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
         // Gives users enough time to pay back loans
-        require(_paybackDeadline > _finalizationParameter, "InstantRouter: wrong payback deadline");
+        require(_paybackDeadline > 2 * _finalizationParameter + 1, "InstantRouter: wrong payback deadline");
         emit NewPaybackDeadline(paybackDeadline, _paybackDeadline);
         paybackDeadline = _paybackDeadline;
     }
