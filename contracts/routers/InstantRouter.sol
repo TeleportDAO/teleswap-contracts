@@ -248,7 +248,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     function _setDefaultExchangeConnector(
         address _defaultExchangeConnector
     ) private nonZeroAddress(_defaultExchangeConnector) {
-        emit NewDeafultExchangeConnector(defaultExchangeConnector, _defaultExchangeConnector);
+        emit NewDefaultExchangeConnector(defaultExchangeConnector, _defaultExchangeConnector);
         defaultExchangeConnector = _defaultExchangeConnector;
     }
 
