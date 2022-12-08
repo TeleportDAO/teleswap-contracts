@@ -75,10 +75,19 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
             return (false, 0);
         }
 
+
         // Gets reserve of output token and checks that enough output token exists
-        (/*reserveIn*/, uint reserveOut, /*timestamp*/) = IUniswapV2Pair(liquidityPool).getReserves();
-        if (_outputAmount >= reserveOut) {
-            return (false, 0);
+        address token0 = IUniswapV2Pair(liquidityPool).token0();
+        (uint reserveIn, uint reserveOut, /*timestamp*/) = IUniswapV2Pair(liquidityPool).getReserves();
+        if (token0 == _inputToken) {
+            if (_outputAmount >= reserveOut) {
+                return (false, 0);
+            }
+        }
+        else {
+            if (_outputAmount >= reserveIn) {
+                return (false, 0);
+            }
         }
 
         address[] memory path = new address[](2);
