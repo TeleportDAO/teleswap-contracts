@@ -324,7 +324,7 @@ describe("Lockers", async () => {
                     PRICE_WITH_DISCOUNT_RATIO,
                     MIN_LEAVING_INTERVAL_TIMESTAMP
                 )
-            ).to.be.revertedWith("Lockers: CR must be greater than LR")
+            ).to.be.revertedWith("Lockers: must CR >= LR")
         })
 
         it("initialize cant be called with Price discount greater than 100%", async function () {
@@ -950,14 +950,14 @@ describe("Lockers", async () => {
         it("only owner can call setLiquidationRatio", async function () {
 
             await expect(await lockers.setLiquidationRatio(
-                21000
+                19000
             )).to.emit(
                 lockers, "NewLiquidationRatio"
-            ).withArgs(liquidationRatio, 21000);
+            ).withArgs(liquidationRatio, 19000);
 
             expect(
                 await lockers.liquidationRatio()
-            ).to.equal(21000)
+            ).to.equal(19000)
         })
     })
 
