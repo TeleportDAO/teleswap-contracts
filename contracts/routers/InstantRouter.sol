@@ -24,6 +24,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
     // Constants
     uint constant MAX_SLASHER_PERCENTAGE_REWARD = 10000;
+    uint constant ONE_HUNDRED_PERCENT = 10000;
     uint constant MAX_INSTANT_LOAN_NUMBER = 15;
 
     // Public variables
@@ -593,7 +594,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         );
 
         // Finds needed collateral token for getting loan
-        uint requiredCollateralToken = equivalentCollateralToken*collateralizationRatio/MAX_SLASHER_PERCENTAGE_REWARD;
+        uint requiredCollateralToken = equivalentCollateralToken*collateralizationRatio/ONE_HUNDRED_PERCENT;
 
         // Finds needed collateral pool token for getting loan
         uint requiredCollateralPoolToken = ICollateralPool(collateralPool).equivalentCollateralPoolToken(
