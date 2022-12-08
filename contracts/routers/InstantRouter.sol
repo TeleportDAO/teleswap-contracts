@@ -118,8 +118,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     function fixPaybackDeadline() external {
         uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
         uint _paybackDeadline = 2 * _finalizationParameter + 1;
-        emit NewPaybackDeadline(paybackDeadline, _paybackDeadline);
-        paybackDeadline = _paybackDeadline;
+        _setPaybackDeadline(_paybackDeadline);
     }
 
     /// @notice                             Setter for slasher percentage reward
