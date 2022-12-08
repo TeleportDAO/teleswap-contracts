@@ -18,20 +18,14 @@ const {networkTestnet} = require('bitcoin_rest_api');
 const fs = require('fs');
 var path = require('path');
 var jsonPath = path.join(__dirname, './test_fixtures', 'testBlockHeaders.json');
-// require('chai').use(require('chai-as-promised')).should();
 require('dotenv').config({path:"../../.env"});
 
 import { deployments, ethers } from "hardhat";
-import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
-import { solidity } from "ethereum-waffle";
-
-import { Bytes, isBytesLike } from "ethers/lib/utils";
+import { Signer, BigNumber } from "ethers";
 import { BitcoinRelay } from "../src/types/BitcoinRelay";
 import {BitcoinRelay__factory } from "../src/types/factories/BitcoinRelay__factory";
-import { couldStartTrivia } from "typescript";
-import { boolean } from "hardhat/internal/core/params/argumentTypes";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
-import sinon from 'sinon';
+import { takeSnapshot, revertProvider } from "./block_utils";
 
 function revertBytes32(input: any) {
     let output = input.match(/[a-fA-F0-9]{2}/g).reverse().join('')
@@ -284,6 +278,7 @@ describe("Bitcoin Relay", async () => {
         let bitcoinRelayTest: any;
 
         beforeEach(async () => {
+
             bitcoinRelayTest = await deployBitcoinRelayWithGenesis(
                 bitcoinCash[0].blockNumber,
                 bitcoinCash[0].blockHeader,
@@ -405,6 +400,85 @@ describe("Bitcoin Relay", async () => {
                 )
             ).to.emit(bitcoinRelayTest, "BlockFinalized")
         });
+    });
+
+    describe('Unfinalizing a finalized block header', async () => {
+        // default fanalization parameter is 3
+        // oldChain = [478558, 478559, 478560, 478561, 478562, 478563]
+        // newChain = [478558, 478559", 478560", 478561", 478562", 478563"]
+        const periodStart = FORKEDCHAIN.bitcoinPeriodStart;
+        const oldChain = FORKEDCHAIN.bitcoinCash;
+        const newChain = FORKEDCHAIN.bitcoin;
+
+        let bitcoinRelayTest: any;
+        let snapshotId: any;
+
+        beforeEach(async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+
+            // deploy bitcoin relay contract with block 478558 (index 0 is 478555)
+            bitcoinRelayTest = await deployBitcoinRelayWithGenesis(
+                oldChain[3].blockNumber,
+                oldChain[3].blockHeader,
+                periodStart.blockHash
+            );
+
+            // finalize blocks 478558 and 478559
+            await expect(
+                bitcoinRelayTest.addHeaders(
+                    "0x" + oldChain[3].blockHeader,
+                    "0x" + oldChain[4].blockHeader + oldChain[5].blockHeader + 
+                        oldChain[6].blockHeader + oldChain[7].blockHeader
+                )
+            ).to.emit(bitcoinRelayTest, "BlockFinalized").withArgs(
+                478559,
+                '0x' + revertBytes32(oldChain[4].blockHash),
+                '0x' + revertBytes32(oldChain[3].blockHash),
+                await deployer.getAddress(),
+                0,
+                0
+            );
+
+        });
+        
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+        
+        it('unfinalize block 478559 and finalize block 478559"', async function () {
+            // pause relay
+            await bitcoinRelayTest.pauseRelay();
+            
+            // increase finalization parameter from 3 to 4
+            await bitcoinRelayTest.setFinalizationParameter(4);
+
+            // submit new blocks [478559", 478560", 478561", 478562", 478563"] and finalize 478559"
+            await expect(
+                bitcoinRelayTest.ownerAddHeaders(
+                    "0x" + oldChain[3].blockHeader,
+                    "0x" + newChain[4].blockHeader + newChain[5].blockHeader + 
+                        newChain[6].blockHeader + newChain[7].blockHeader + newChain[8].blockHeader,
+                )
+            ).to.emit(bitcoinRelayTest, "BlockFinalized").withArgs(
+                478559,
+                '0x' + revertBytes32(newChain[4].blockHash),
+                '0x' + revertBytes32(newChain[3].blockHash),
+                await deployer.getAddress(),
+                0,
+                0
+            );
+            
+            // check that 478559 is removed and 478559" is added
+            expect(
+                bitcoinRelayTest.findHeight('0x' + revertBytes32(oldChain[4].blockHash))
+            ).to.be.reverted;
+
+            expect(
+                await bitcoinRelayTest.findHeight('0x' + revertBytes32(newChain[4].blockHash))
+            ).to.be.equal(478559);
+
+        });
+
     });
 
     describe('Check tx inclusion', async () => {
