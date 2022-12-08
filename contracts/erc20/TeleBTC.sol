@@ -132,7 +132,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     /// @param _amount         Amount of minted tokens
     function mint(address _receiver, uint _amount) external nonReentrant onlyMinter override returns (bool) {
         require(_amount <= maxmimumMintLimit, "TeleBTC: mint amount is more than maximum mint limit");
-        require(checkAndReduceMintLimit(_amount) == true, "TeleBTC: reached maximum mint limit");
+        require(checkAndReduceMintLimit(_amount), "TeleBTC: reached maximum mint limit");
 
         _mint(_receiver, _amount);
         emit Mint(_msgSender(), _receiver, _amount);
