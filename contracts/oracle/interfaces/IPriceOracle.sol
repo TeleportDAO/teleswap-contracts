@@ -48,6 +48,14 @@ interface IPriceOracle {
 
     function oracleNativeToken() external view returns (address);
 
+    function equivalentOutputAmountByAverage(
+        uint _inputAmount,
+        uint _inputDecimals,
+        uint _outputDecimals,
+        address _inputToken,
+        address _outputToken
+    ) external view returns (uint);
+
     function equivalentOutputAmount(
         uint _inputAmount,
         uint _inputDecimals,

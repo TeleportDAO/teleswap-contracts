@@ -50,7 +50,7 @@ contract PriceOracle is IPriceOracle, Ownable {
     /// @param _inputToken              Address of the input token
     /// @param _outputToken             Address of output token
     /// @return                         Amount of the output token
-    function equivalentOutputAmount(
+    function equivalentOutputAmountByAverage(
         uint _inputAmount,
         uint _inputDecimals,
         uint _outputDecimals,
@@ -100,6 +100,33 @@ contract PriceOracle is IPriceOracle, Ownable {
             // Returns average of results from different sources
             return _totalAmount/_totalNumber;
         }
+    }
+
+    /// @notice                         Finds amount of output token that has equal value
+    ///                                 as the input amount of the input token
+    /// @dev                            The oracle is ChainLink
+    /// @param _inputAmount             Amount of the input token
+    /// @param _inputDecimals           Number of input token decimals
+    /// @param _outputDecimals          Number of output token decimals
+    /// @param _inputToken              Address of the input token
+    /// @param _outputToken             Address of output token
+    /// @return _outputAmount           Amount of the output token
+    function equivalentOutputAmount(
+        uint _inputAmount,
+        uint _inputDecimals,
+        uint _outputDecimals,
+        address _inputToken,
+        address _outputToken
+    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint _outputAmount) {
+        bool result;
+        (result, _outputAmount, /*timestamp*/) = _equivalentOutputAmountFromOracle(
+            _inputAmount,
+            _inputDecimals,
+            _outputDecimals,
+            _inputToken,
+            _outputToken
+        );
+        require(result == true, "PriceOracle: Price proxy does not exist");
     }
 
     /// @notice                         Finds amount of output token that has equal value
