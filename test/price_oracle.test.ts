@@ -645,7 +645,7 @@ describe("PriceOracle", async () => {
                     erc20.address,
                     _erc20.address
                 )
-            ).to.equal(Math.floor((amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals)+100)/2));
+            ).to.equal(Math.floor((amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals))));
         })
 
         it("Gets equal amount of output token when delay is not acceptable and input token is native token (oracle and router)", async function () {
@@ -664,7 +664,7 @@ describe("PriceOracle", async () => {
                     ONE_ADDRESS,
                     _erc20.address
                 )
-            ).to.equal(Math.floor((amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals)+100)/2));
+            ).to.equal(Math.floor((amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals))));
         })
 
         it("Gets equal amount of output token when delay is not acceptable and output token is native token (oracle and router)", async function () {
@@ -682,7 +682,7 @@ describe("PriceOracle", async () => {
                     erc20.address,
                     ONE_ADDRESS
                 )
-            ).to.equal(Math.floor((amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals)+100)/2));
+            ).to.equal(Math.floor((amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals))));
         })
 
         it("Gets equal amount of output token when price proxy doesn't exist (only router)", async function () {
@@ -691,15 +691,16 @@ describe("PriceOracle", async () => {
             await mockFunctionsExchangeConnector(true, 100);
             await priceOracle.setPriceProxy(erc20.address, _erc20.address, ZERO_ADDRESS);
             await setNextBlockTimestamp(240);
-        expect(
-            await priceOracle.equivalentOutputAmount(
+
+            await expect(
+            priceOracle.equivalentOutputAmount(
                     amountIn,
                     erc20Decimals,
                     _erc20Decimals,
                     erc20.address,
                     _erc20.address
                 )
-            ).to.equal(Math.floor(100));
+            ).to.be.revertedWith("PriceOracle: Price proxy does not exist");
         })
 
         it("Gets equal amount of output token when delay is not acceptable, but no other exchange exists (only oracle)", async function () {
