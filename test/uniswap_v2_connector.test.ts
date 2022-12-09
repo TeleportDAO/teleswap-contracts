@@ -90,20 +90,20 @@ describe("UniswapV2Connector", async () => {
         erc20 = await erc20Factory.deploy(
             "TestToken",
             "TT",
-            100000
+            200000
         );
         _erc20 = await erc20Factory.deploy(
             "AnotherTestToken",
             "ATT",
-            100000
+            200000
         );
 
         // Adding liquidity to pools
 
         // Adds liquidity to liquidity pool
-        let addedLiquidityA = 10000; // erc20
+        let addedLiquidityA = 20000; // erc20
         let addedLiquidityB = 10000; // _erc20
-        let addedLiquidityC = 10000; // erc20
+        let addedLiquidityC = 20000; // erc20
         let addedLiquidityD = 10000; // WETH
 
         // Adds liquidity for non-WETH/non-WETH pool
@@ -202,17 +202,26 @@ describe("UniswapV2Connector", async () => {
         })
 
         it("Returns false since output amount is greater than output reserve", async function () {
-            let outputAmount = 10000000;
+            let outputAmount = 15000;
 
             let result = await uniswapV2Connector.getInputAmount(
                 outputAmount,
                 erc20.address,
-                _erc20.address
+                _erc20.address,
             );
 
             expect(result[0]).to.equal(false);
             expect(result[1]).to.equal(0);
+
+            result = await uniswapV2Connector.getInputAmount(
+                outputAmount,
+                _erc20.address,
+                erc20.address,
+            );
+
+            expect(result[0]).to.equal(true);
         })
+
 
         it("Reverts since one of token's addresses is zero", async function () {
             let outputAmount = 1000;
