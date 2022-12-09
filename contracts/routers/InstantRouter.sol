@@ -460,7 +460,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             teleBTC // Output token
         );
 
-        require(result == true, "InstantRouter: liquidity pool doesn't exist");
+        require(result == true, "InstantRouter: liquidity pool doesn't exist or liquidity is not sufficient");
 
         uint totalCollateralToken = ICollateralPool(theRequest.collateralPool).equivalentCollateralToken(
             theRequest.lockedCollateralPoolTokenAmount

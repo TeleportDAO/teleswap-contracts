@@ -1225,12 +1225,12 @@ describe("Instant Router", async () => {
             await mockFunctionsBitcoinRelay(lastSubmittedHeight*2);
             await mockFunctionsExchangeConnector(false, [], requiredCollateralToken);
 
-            expect(
+            await expect(
                 instantRouter.slashUser(
                     deployerAddress,
                     0
                 )
-            ).to.revertedWith("InstantRouter: liquidity pool doesn't exist");
+            ).to.revertedWith("InstantRouter: liquidity pool doesn't exist or liquidity is not sufficient");
         });
 
     });
