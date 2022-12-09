@@ -13,9 +13,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
      using SafeERC20 for IERC20;
+     using SafeCast for uint;
      
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "InstantRouter: zero address");
@@ -461,6 +464,21 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
         require(result == true, "InstantRouter: liquidity pool doesn't exist");
 
+        // Gets the equivalent amount of collateral token
+        uint requiredCollateralTokenFromOracle = IPriceOracle(priceOracle).equivalentOutputAmount(
+            theRequest.paybackAmount, // input amount
+            IERC20Metadata(teleBTC).decimals(),
+            IERC20Metadata(theRequest.collateralToken).decimals(),
+            teleBTC, // input token
+            theRequest.collateralToken // output token
+        );
+
+        // TODO: change the comparing amount
+        require(
+            _abs(requiredCollateralTokenFromOracle.toInt256() - requiredCollateralToken.toInt256()) <= requiredCollateralTokenFromOracle/10,
+            "InstantRouter: big gap between oracle and AMM price"
+        );
+
         uint totalCollateralToken = ICollateralPool(theRequest.collateralPool).equivalentCollateralToken(
             theRequest.lockedCollateralPoolTokenAmount
         );
@@ -586,8 +604,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         // Gets the equivalent amount of collateral token
         uint equivalentCollateralToken = IPriceOracle(priceOracle).equivalentOutputAmount(
             _paybackAmount, // input amount
-            ITeleBTC(teleBTC).decimals(),
-            ITeleBTC(_collateralToken).decimals(),
+            IERC20Metadata(teleBTC).decimals(),
+            IERC20Metadata(_collateralToken).decimals(),
             teleBTC, // input token
             _collateralToken // output token
         );
@@ -615,5 +633,10 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         instantRequestCounter[_user] = instantRequestCounter[_user] + 1;
         instantRequests[_user].push(request);
 
+    }
+
+    /// @notice             Returns absolute value
+    function _abs(int _value) private pure returns (uint) {
+        return _value >= 0 ? uint(_value) : uint(-_value);
     }
 }

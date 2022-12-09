@@ -142,8 +142,8 @@ const config: HardhatUserConfig = {
 		},
   	},
   	gasReporter: {
-		enabled: process.env.REPORT_GAS !== undefined,
-		// enabled: true,
+		// enabled: process.env.REPORT_GAS !== undefined,
+		enabled: true,
 		currency: "USD",
   	},
   	etherscan: {
