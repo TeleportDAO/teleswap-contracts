@@ -27,6 +27,9 @@ describe("Instant Router", async () => {
     let instantPercentageFee = 5; // Means 0.05%
     let collateralizationRatio = 200; // Means 200%
 
+    let maxPriceDifferencePercent = 1000; // Means 10%
+    let treasuaryOverheadPercent = 1250; // Means 12.5%
+
     // Accounts
     let deployer: Signer;
     let signer1: Signer;
@@ -122,7 +125,9 @@ describe("Instant Router", async () => {
             mockCollateralPoolFactory.address,
             slasherPercentageReward,
             paybackDeadline,
-            mockExchangeConnector.address
+            mockExchangeConnector.address,
+            maxPriceDifferencePercent,
+            treasuaryOverheadPercent
         );
 
         // Deploys bitcoin instant pool
@@ -1052,6 +1057,52 @@ describe("Instant Router", async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
+        it("Slash user reverted because big gap between dex and oracle", async function () {
+
+            // Gets last block timestamp
+            let lastBlockTimestamp = await getTimestamp();
+
+            await collateralToken.transfer(instantRouter.address, totalCollateralToken);
+
+            // Creates a debt for deployer
+            await instantRouter.instantCCTransfer(
+                signer1Address,
+                loanAmount,
+                lastBlockTimestamp*2,
+                collateralToken.address
+            );
+
+            let instantFee = Math.floor(loanAmount*instantPercentageFee/10000);
+
+            expect(
+                await instantRouter.getUserRequestsLength(
+                    deployerAddress
+                )
+            ).to.equal(1);
+
+            expect(
+                await teleBTCInstantPool.totalUnpaidLoan()
+            ).to.equal(loanAmount + instantFee);
+
+            // Passes payback deadline
+            await mockFunctionsBitcoinRelay(lastSubmittedHeight*2);
+
+            await mockFunctionsPriceOracle(requiredCollateralToken * 12 / 100);
+
+            await expect(
+                instantRouter.slashUser(
+                    deployerAddress,
+                    0
+                )
+            ).to.be.revertedWith("InstantRouter: big gap between oracle and AMM price")
+
+            expect(
+                await instantRouter.getUserRequestsLength(
+                    deployerAddress
+                )
+            ).to.equal(1);
+        });
+
         it("Slashes user and pays instant loan fully", async function () {
 
             // Gets last block timestamp
@@ -1081,6 +1132,8 @@ describe("Instant Router", async () => {
 
             // Passes payback deadline
             await mockFunctionsBitcoinRelay(lastSubmittedHeight*2);
+
+            await mockFunctionsPriceOracle(requiredCollateralToken);
 
             expect(
                 await instantRouter.slashUser(
@@ -1138,6 +1191,8 @@ describe("Instant Router", async () => {
                 true,
                 totalCollateralToken + 1
             );
+
+            await mockFunctionsPriceOracle(totalCollateralToken);
 
             expect(
                 await instantRouter.slashUser(

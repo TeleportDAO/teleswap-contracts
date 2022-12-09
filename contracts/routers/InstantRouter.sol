@@ -27,6 +27,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
     // Constants
     uint constant MAX_SLASHER_PERCENTAGE_REWARD = 10000;
+    uint constant ONE_HUNDRED_PERCENT = 10000;
     uint constant MAX_INSTANT_LOAN_NUMBER = 15;
 
     // Public variables
@@ -34,6 +35,9 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     mapping(address => uint256) public instantRequestCounter;
     uint public override slasherPercentageReward;
     uint public override paybackDeadline;
+    uint public override maxPriceDifferencePercent;
+    uint public override treasuaryOverheadPercent;
+
     address public override teleBTC;
     address public override teleBTCInstantPool;
     address public override relay;
@@ -57,7 +61,9 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         address _collateralPoolFactory,
         uint _slasherPercentageReward,
         uint _paybackDeadline,
-        address _defaultExchangeConnector
+        address _defaultExchangeConnector,
+        uint _maxPriceDifferencePercent,
+        uint _treasuaryOverheadPercent
     ) {
         _setTeleBTC(_teleBTC);
         _setRelay(_relay);
@@ -66,6 +72,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         _setSlasherPercentageReward(_slasherPercentageReward);
         _setPaybackDeadline(_paybackDeadline);
         _setDefaultExchangeConnector(_defaultExchangeConnector);
+        _setTreasuaryOverheadPercent(_treasuaryOverheadPercent);
+        _setMaxPriceDifferencePercent(_maxPriceDifferencePercent);
     }
 
     receive() external payable {}
@@ -253,6 +261,32 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     ) private nonZeroAddress(_defaultExchangeConnector) {
         emit NewDeafultExchangeConnector(defaultExchangeConnector, _defaultExchangeConnector);
         defaultExchangeConnector = _defaultExchangeConnector;
+    }
+
+    /// @notice                                 Internal setter for treasury overhead percent 
+    /// @param _treasuaryOverheadPercent        The new treasuaryOverheadPercent 
+    function _setTreasuaryOverheadPercent(
+        uint _treasuaryOverheadPercent
+    ) private {
+        require(
+            _treasuaryOverheadPercent >= maxPriceDifferencePercent,
+            "InstantRouter: must treasurayOverhead >= maxPriceDiff"
+        );
+        emit NewTreasuaryOverheadPercent(treasuaryOverheadPercent, _treasuaryOverheadPercent);
+        treasuaryOverheadPercent = _treasuaryOverheadPercent;
+    }
+
+    /// @notice                                 Internal setter for max price differnce in percent  
+    /// @param _maxPriceDifferencePercent        The new maxPriceDifferencePercent 
+    function _setMaxPriceDifferencePercent(
+        uint _maxPriceDifferencePercent
+    ) private {
+        require(
+            treasuaryOverheadPercent >= _maxPriceDifferencePercent,
+            "InstantRouter: must treasurayOverhead >= maxPriceDiff"
+        );
+        emit NewMaxPriceDifferencePercent(maxPriceDifferencePercent, _maxPriceDifferencePercent);
+        maxPriceDifferencePercent = _maxPriceDifferencePercent;
     }
 
     /// @notice                   Transfers the loan amount (in teleBTC) to the user
@@ -455,6 +489,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         // Gets loan information
         instantRequest memory theRequest = instantRequests[_user][_requestIndex];
 
+        uint modifiedPayBackAmount = theRequest.paybackAmount * (ONE_HUNDRED_PERCENT + treasuaryOverheadPercent) / ONE_HUNDRED_PERCENT;
+
         // Finds needed collateral token to pay back loan
         (bool result, uint requiredCollateralToken) = IExchangeConnector(defaultExchangeConnector).getInputAmount(
             theRequest.paybackAmount, // Output amount
@@ -475,7 +511,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
         // TODO: change the comparing amount
         require(
-            _abs(requiredCollateralTokenFromOracle.toInt256() - requiredCollateralToken.toInt256()) <= requiredCollateralTokenFromOracle/10,
+            _abs(requiredCollateralTokenFromOracle.toInt256() - requiredCollateralToken.toInt256()) <= (requiredCollateralTokenFromOracle * maxPriceDifferencePercent)/ONE_HUNDRED_PERCENT,
             "InstantRouter: big gap between oracle and AMM price"
         );
 

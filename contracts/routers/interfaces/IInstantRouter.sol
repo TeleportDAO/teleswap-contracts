@@ -110,6 +110,18 @@ interface IInstantRouter {
         uint newSlasherPercentageReward
     );
 
+    /// @notice                     	Emits when changes made to treasuray overhead percnet
+    event NewTreasuaryOverheadPercent(
+        uint oldTreasuaryOverheadPercent, 
+        uint newTreasuaryOverheadPercent
+    );
+
+    /// @notice                     	Emits when changes made to max price difference percent
+    event NewMaxPriceDifferencePercent(
+        uint oldMaxPriceDifferencePercent, 
+        uint newMaxPriceDifferencePercent
+    );
+
     /// @notice                     	Emits when changes made to TeleBTC address
     event NewTeleBTC(
         address oldTeleBTC, 
@@ -174,6 +186,10 @@ interface IInstantRouter {
     function getUserRequestsLength(address _user) external view returns (uint);
 
     function getUserRequestDeadline(address _user, uint _index) external view returns (uint);
+
+    function maxPriceDifferencePercent() external view returns (uint);
+
+    function treasuaryOverheadPercent() external view returns (uint);
 
     // State-changing functions
 
