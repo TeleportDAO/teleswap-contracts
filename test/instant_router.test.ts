@@ -1337,7 +1337,7 @@ describe("Instant Router", async () => {
             await expect(
                 instantRouter.setDefaultExchangeConnector(ONE_ADDRESS)
             ).to.emit(
-                instantRouter, "NewDeafultExchangeConnector"
+                instantRouter, "NewDefaultExchangeConnector"
             ).withArgs(mockExchangeConnector.address, ONE_ADDRESS);
 
             expect(

@@ -24,6 +24,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
     // Constants
     uint constant MAX_SLASHER_PERCENTAGE_REWARD = 10000;
+    uint constant ONE_HUNDRED_PERCENT = 10000;
     uint constant MAX_INSTANT_LOAN_NUMBER = 15;
 
     // Public variables
@@ -248,12 +249,12 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     function _setDefaultExchangeConnector(
         address _defaultExchangeConnector
     ) private nonZeroAddress(_defaultExchangeConnector) {
-        emit NewDeafultExchangeConnector(defaultExchangeConnector, _defaultExchangeConnector);
+        emit NewDefaultExchangeConnector(defaultExchangeConnector, _defaultExchangeConnector);
         defaultExchangeConnector = _defaultExchangeConnector;
     }
 
     /// @notice                   Transfers the loan amount (in teleBTC) to the user
-    /// @dev                      Transfes required collateral pool token of user to itself. Only works when contract is not paused.
+    /// @dev                      Transfers required collateral pool token of user to itself. Only works when contract is not paused.
     /// @param _receiver          Address of the loan receiver
     /// @param _loanAmount        Amount of the loan
     /// @param _deadline          Deadline for getting the loan
@@ -593,7 +594,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         );
 
         // Finds needed collateral token for getting loan
-        uint requiredCollateralToken = equivalentCollateralToken*collateralizationRatio/MAX_SLASHER_PERCENTAGE_REWARD;
+        uint requiredCollateralToken = equivalentCollateralToken*collateralizationRatio/ONE_HUNDRED_PERCENT;
 
         // Finds needed collateral pool token for getting loan
         uint requiredCollateralPoolToken = ICollateralPool(collateralPool).equivalentCollateralPoolToken(

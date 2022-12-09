@@ -141,9 +141,9 @@ interface IInstantRouter {
     );
 
     /// @notice                     	Emits when changes made to default exchange connector address
-    event NewDeafultExchangeConnector(
-        address oldDeafultExchangeConnector, 
-        address newDeafultExchangeConnector
+    event NewDefaultExchangeConnector(
+        address oldDefaultExchangeConnector, 
+        address newDefaultExchangeConnector
     );
 
 

@@ -173,7 +173,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         return lockersMapping[_lockerTargetAddress].isActive;
     }
 
-    /// @notice                             Get how much net this locker has minted
+    /// @notice                             Get how much the locker can mint
     /// @dev                                Net minted amount is total minted minus total burnt for the locker
     /// @param _lockerTargetAddress         Address of locker on the target chain
     /// @return                             The net minted of the locker
