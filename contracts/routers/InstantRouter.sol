@@ -254,7 +254,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     }
 
     /// @notice                   Transfers the loan amount (in teleBTC) to the user
-    /// @dev                      Transfes required collateral pool token of user to itself. Only works when contract is not paused.
+    /// @dev                      Transfers required collateral pool token of user to itself. Only works when contract is not paused.
     /// @param _receiver          Address of the loan receiver
     /// @param _loanAmount        Amount of the loan
     /// @param _deadline          Deadline for getting the loan
