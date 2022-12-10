@@ -18,7 +18,7 @@ contract PriceOracle is IPriceOracle, Ownable {
     }
 
     // Public variables
-    mapping(address => mapping (address => address)) public override ChainlinkPriceProxy; // Given two token addresses returns related Chainlink price proxy
+    mapping (address => address) public override ChainlinkPriceProxy; // Given two token addresses returns related Chainlink price proxy
     mapping(address => address) public override exchangeConnector; // Mapping from exchange router to exchange connector
     address[] public override exchangeRoutersList; // List of available exchange routers
     uint public override acceptableDelay;
@@ -50,7 +50,7 @@ contract PriceOracle is IPriceOracle, Ownable {
     /// @param _inputToken              Address of the input token
     /// @param _outputToken             Address of output token
     /// @return                         Amount of the output token
-    function equivalentOutputAmount(
+    function equivalentOutputAmountByAverage(
         uint _inputAmount,
         uint _inputDecimals,
         uint _outputDecimals,
@@ -100,6 +100,33 @@ contract PriceOracle is IPriceOracle, Ownable {
             // Returns average of results from different sources
             return _totalAmount/_totalNumber;
         }
+    }
+
+    /// @notice                         Finds amount of output token that has equal value
+    ///                                 as the input amount of the input token
+    /// @dev                            The oracle is ChainLink
+    /// @param _inputAmount             Amount of the input token
+    /// @param _inputDecimals           Number of input token decimals
+    /// @param _outputDecimals          Number of output token decimals
+    /// @param _inputToken              Address of the input token
+    /// @param _outputToken             Address of output token
+    /// @return _outputAmount           Amount of the output token
+    function equivalentOutputAmount(
+        uint _inputAmount,
+        uint _inputDecimals,
+        uint _outputDecimals,
+        address _inputToken,
+        address _outputToken
+    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint _outputAmount) {
+        bool result;
+        (result, _outputAmount, /*timestamp*/) = _equivalentOutputAmountFromOracle(
+            _inputAmount,
+            _inputDecimals,
+            _outputDecimals,
+            _inputToken,
+            _outputToken
+        );
+        require(result == true, "PriceOracle: Price proxy does not exist");
     }
 
     /// @notice                         Finds amount of output token that has equal value
@@ -179,20 +206,18 @@ contract PriceOracle is IPriceOracle, Ownable {
         emit ExchangeConnectorRemoved(exchangeRouterAddress);
     }
 
-    /// @notice                     Sets a price proxy for a pair of tokens
+    /// @notice                     Sets a USD price proxy for a token
     /// @dev                        Only owner can call this
-    ///                             This price proxy gives exchange rate of _firstToken/_secondToken
+    ///                             This price proxy gives exchange rate of _token/USD
     ///                             Setting price proxy address to zero means that we remove it
-    /// @param _firstToken          Address of the first token
-    /// @param _secondToken         Address of the second token
+    /// @param _token               Address of the token
     /// @param _priceProxyAddress   The address of the proxy price
     function setPriceProxy(
-        address _firstToken, 
-        address _secondToken, 
+        address _token, 
         address _priceProxyAddress
-    ) external nonZeroAddress(_firstToken) nonZeroAddress(_secondToken) override onlyOwner {
-        ChainlinkPriceProxy[_firstToken][_secondToken] = _priceProxyAddress;
-        emit SetPriceProxy(_firstToken, _secondToken, _priceProxyAddress);
+    ) external nonZeroAddress(_token) override onlyOwner {
+        ChainlinkPriceProxy[_token] = _priceProxyAddress;
+        emit SetPriceProxy(_token, _priceProxyAddress);
     }
 
     /// @notice                     Sets acceptable delay for oracle responses
@@ -312,6 +337,7 @@ contract PriceOracle is IPriceOracle, Ownable {
 
             require(price != 0, "PriceOracle: zero price");
 
+            // price = (p1 * decimal 2) / (p2 * decimal 1) 
             // note: to make inside of power parentheses greater than zero, we add them with one
             _outputAmount = uint(price)*_inputAmount*(10**(_outputDecimals + 1))/(10**(decimals + _inputDecimals + 1));
 
