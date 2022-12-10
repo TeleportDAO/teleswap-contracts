@@ -538,19 +538,18 @@ describe("PriceOracle", async () => {
                 )
             ).to.revertedWith("PriceOracle: zero price for output");
 
-            //TODO?
-            // await priceOracle.setPriceProxy(erc20.address, ZERO_ADDRESS);
-            // await priceOracle.setPriceProxy(_erc20.address, mockPriceProxy.address);
+            await priceOracle.setPriceProxy(erc20.address, ONE_ADDRESS);
+            await priceOracle.setPriceProxy(_erc20.address, mockPriceProxy.address);
 
-            // await expect(
-            //     priceOracle.equivalentOutputAmountFromOracle(
-            //         amountIn,
-            //         erc20Decimals,
-            //         _erc20Decimals, 
-            //         erc20.address, 
-            //         _erc20.address
-            //     )
-            // ).to.revertedWith("PriceOracle: zero price for input token");
+            await expect(
+                priceOracle.equivalentOutputAmountFromOracle(
+                    amountIn,
+                    erc20Decimals,
+                    _erc20Decimals, 
+                    erc20.address, 
+                    _erc20.address
+                )
+            ).to.be.reverted;
 
         })
 
