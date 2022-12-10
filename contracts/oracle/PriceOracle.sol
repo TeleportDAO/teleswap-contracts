@@ -56,7 +56,7 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) returns (uint) {
+    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint) {
         // Gets output amount from oracle
         (bool result, uint outputAmount, uint timestamp) = _equivalentOutputAmountFromOracle(
             _inputAmount,
