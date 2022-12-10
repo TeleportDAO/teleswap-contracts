@@ -322,44 +322,39 @@ contract PriceOracle is IPriceOracle, Ownable {
             _outputToken = oracleNativeToken;
         }
 
-        if (ChainlinkPriceProxy[_inputToken][_outputToken] != address(0)) {
-            // Gets price of _inputToken/_outputToken
+        if (ChainlinkPriceProxy[_inputToken] != address(0) && ChainlinkPriceProxy[_outputToken] != address(0)) {
+            // Gets price of _inputToken/USD
             (
             /*uint80 roundID*/,
-            price,
+            price0,
             /*uint startedAt*/,
             _timestamp,
             /*uint80 answeredInRound*/
-            ) = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken][_outputToken]).latestRoundData();
+            ) = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken]).latestRoundData();
 
             // Gets number of decimals
-            decimals = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken][_outputToken]).decimals();
+            decimals0 = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken]).decimals();
 
-            require(price != 0, "PriceOracle: zero price");
+            require(price0 != 0, "PriceOracle: zero price for input token");
 
-            // price = (p1 * decimal 2) / (p2 * decimal 1) 
+            // Gets price of _outputToken/USD
+            (
+            /*uint80 roundID*/,
+            price1,
+            /*uint startedAt*/,
+            _timestamp,
+            /*uint80 answeredInRound*/
+            ) = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken]).latestRoundData();
+
+            // Gets number of decimals
+            decimals1 = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken]).decimals();
+
+            require(price1 != 0, "PriceOracle: zero price for output token");
+
+            uint price = (price0 * decimals1) / (price1 * decimals0);
             // note: to make inside of power parentheses greater than zero, we add them with one
             _outputAmount = uint(price)*_inputAmount*(10**(_outputDecimals + 1))/(10**(decimals + _inputDecimals + 1));
 
-            _result = true;
-        } else if (ChainlinkPriceProxy[_outputToken][_inputToken] != address(0)) {
-            // Gets price of _outputToken/_inputToken
-            (
-            /*uint80 roundID*/,
-            price,
-            /*uint startedAt*/,
-            _timestamp,
-            /*uint80 answeredInRound*/
-            ) = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken][_inputToken]).latestRoundData();
-
-            // Gets number of decimals
-            decimals = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken][_inputToken]).decimals();
-            
-            require(price != 0, "PriceOracle: zero price");
-
-            // note: to make inside of power parentheses greater than zero, we add them with one
-            _outputAmount = (10**(decimals + _outputDecimals + 1))*_inputAmount/(10**(_inputDecimals + 1)*uint(price));
-            
             _result = true;
         } else {
             return (false, 0, 0);
