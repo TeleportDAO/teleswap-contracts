@@ -15,6 +15,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "hardhat/console.sol";
 
 contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
      using SafeERC20 for IERC20;
@@ -72,6 +73,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         _setSlasherPercentageReward(_slasherPercentageReward);
         _setPaybackDeadline(_paybackDeadline);
         _setDefaultExchangeConnector(_defaultExchangeConnector);
+
+        // TODO: write public setter as well
         _setTreasuaryOverheadPercent(_treasuaryOverheadPercent);
         _setMaxPriceDifferencePercent(_maxPriceDifferencePercent);
     }
@@ -493,16 +496,18 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
         // Finds needed collateral token to pay back loan
         (bool result, uint requiredCollateralToken) = IExchangeConnector(defaultExchangeConnector).getInputAmount(
-            theRequest.paybackAmount, // Output amount
+            modifiedPayBackAmount, // Output amount
+            // theRequest.paybackAmount, // Output amount
             theRequest.collateralToken, // Input token
             teleBTC // Output token
         );
 
-        require(result == true, "InstantRouter: liquidity pool doesn't exist");
+        require(result == true, "InstantRouter: liquidity pool doesn't exist or doesn't have liquidity");
 
         // Gets the equivalent amount of collateral token
         uint requiredCollateralTokenFromOracle = IPriceOracle(priceOracle).equivalentOutputAmount(
-            theRequest.paybackAmount, // input amount
+            modifiedPayBackAmount, // input amount
+            // theRequest.paybackAmount, // input amount
             IERC20Metadata(teleBTC).decimals(),
             IERC20Metadata(theRequest.collateralToken).decimals(),
             teleBTC, // input token
@@ -510,10 +515,20 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         );
 
         // TODO: change the comparing amount
+        uint absPriceDiff = _abs(requiredCollateralTokenFromOracle.toInt256() - requiredCollateralToken.toInt256());
         require(
-            _abs(requiredCollateralTokenFromOracle.toInt256() - requiredCollateralToken.toInt256()) <= (requiredCollateralTokenFromOracle * maxPriceDifferencePercent)/ONE_HUNDRED_PERCENT,
+            absPriceDiff <= (requiredCollateralToken * maxPriceDifferencePercent)/ONE_HUNDRED_PERCENT,
             "InstantRouter: big gap between oracle and AMM price"
         );
+
+        if (requiredCollateralToken >= requiredCollateralTokenFromOracle) {
+            modifiedPayBackAmount = theRequest.paybackAmount;
+        } else {
+            // update the modifiedPayBackAmount again
+            modifiedPayBackAmount = theRequest.paybackAmount + theRequest.paybackAmount * absPriceDiff / requiredCollateralToken;
+        }
+
+        
 
         uint totalCollateralToken = ICollateralPool(theRequest.collateralPool).equivalentCollateralToken(
             theRequest.lockedCollateralPoolTokenAmount
@@ -535,19 +550,33 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             // Exchanges collateral token for teleBTC
             IExchangeConnector(defaultExchangeConnector).swap(
                 requiredCollateralToken,
-                theRequest.paybackAmount, // Output amount
+                modifiedPayBackAmount, // Output amount
+                // theRequest.paybackAmount, // Output amount
+
                 path,
-                teleBTCInstantPool,
+
+                // teleBTCInstantPool,
+                address(this),
+
                 block.timestamp + 1,
                 false // Output amount is fixed
             );
+
+            IERC20(teleBTC).safeTransfer(teleBTCInstantPool, theRequest.paybackAmount);
+
+            console.log("we are here");
+
+            // TODO: send the rest to a treasury
+            // IERC20(teleBTC).safeTransfer(teleBTCInstantPool, theRequest.paybackAmount);
 
             // Sends reward to slasher
             uint slasherReward = (totalCollateralToken - requiredCollateralToken)
             *slasherPercentageReward/MAX_SLASHER_PERCENTAGE_REWARD;
             IERC20(theRequest.collateralToken).safeTransfer(_msgSender(), slasherReward);
 
-            IERC20(teleBTC).approve(theRequest.collateralPool, totalCollateralToken - requiredCollateralToken - slasherReward);
+            // TODO: check wether it should be teleBTC or collateralToken
+            IERC20(theRequest.collateralToken).approve(theRequest.collateralPool, totalCollateralToken - requiredCollateralToken - slasherReward);
+            // IERC20(teleBTC).approve(theRequest.collateralPool, totalCollateralToken - requiredCollateralToken - slasherReward);
 
             // Deposits rest of the tokens to collateral pool on behalf of the user
             ICollateralPool(theRequest.collateralPool).addCollateral(
@@ -559,31 +588,50 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
                 _user,
                 theRequest.collateralToken,
                 requiredCollateralToken,
-                theRequest.paybackAmount,
+                modifiedPayBackAmount,
+                // theRequest.paybackAmount,
                 _msgSender(),
                 slasherReward,
                 theRequest.requestCounterOfUser
             );
         } else { // Handles situations where locked collateral is not enough to pay back the loan
 
+            uint[] memory resultAmounts = new uint[](2);
+
             // Approves exchange connector to use collateral token
             IERC20(theRequest.collateralToken).approve(defaultExchangeConnector, totalCollateralToken);
 
             // Buys teleBTC as much as possible and sends it to instant pool
-            IExchangeConnector(defaultExchangeConnector).swap(
+            (, resultAmounts) = IExchangeConnector(defaultExchangeConnector).swap(
                 totalCollateralToken,
                 0,
                 path,
-                teleBTCInstantPool,
+
+                // teleBTCInstantPool,
+                address(this),
+
                 block.timestamp + 1,
                 true // Input amount is fixed
             );
+
+            console.log("The resultAmounts length");
+            console.log(resultAmounts.length);
+
+            if (resultAmounts[1] > theRequest.paybackAmount) {
+                IERC20(teleBTC).safeTransfer(teleBTCInstantPool, theRequest.paybackAmount);
+
+                // TODO: send the rest to a treasury
+                // IERC20(teleBTC).safeTransfer(teleBTCInstantPool, theRequest.paybackAmount);
+            } else {
+                IERC20(teleBTC).safeTransfer(teleBTCInstantPool, resultAmounts[1]);
+            }
 
             emit SlashUser(
                 _user,
                 theRequest.collateralToken,
                 totalCollateralToken,
-                theRequest.paybackAmount,
+                resultAmounts[1],
+                // theRequest.paybackAmount,
                 _msgSender(),
                 0, // Slasher reward is zero,
                 theRequest.requestCounterOfUser

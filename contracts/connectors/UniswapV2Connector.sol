@@ -8,6 +8,7 @@ import "../uniswap/v2-core/interfaces/IUniswapV2Factory.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "hardhat/console.sol";
 
 contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
 
@@ -142,6 +143,9 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
             _deadline,
             _isFixedToken
         );
+
+        console.log("the result");
+        console.log(_result);
         
         if (_result) {
             // Gets tokens from user
