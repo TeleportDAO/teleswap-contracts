@@ -26,7 +26,7 @@ interface IPriceOracle {
     // Read-only functions
     
     /// @notice                     Gives USD price proxy address for a token
-    /// @param _firstToken          Address of the token
+    /// @param _token          Address of the token
     /// @return                     Address of price proxy contract
     function ChainlinkPriceProxy(address _token) external view returns (address);
 

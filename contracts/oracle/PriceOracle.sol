@@ -56,7 +56,7 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint) {
+    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) returns (uint) {
         // Gets output amount from oracle
         (bool result, uint outputAmount, uint timestamp) = _equivalentOutputAmountFromOracle(
             _inputAmount,
@@ -311,8 +311,10 @@ contract PriceOracle is IPriceOracle, Ownable {
         address _inputToken,
         address _outputToken
     ) private view returns (bool _result, uint _outputAmount, uint _timestamp) {
-        uint decimals;
-        int price;
+        uint decimals0;
+        uint decimals1;
+        int price0;
+        int price1;
 
         if (_inputToken == NATIVE_TOKEN) {
             _inputToken = oracleNativeToken;
@@ -351,9 +353,9 @@ contract PriceOracle is IPriceOracle, Ownable {
 
             require(price1 != 0, "PriceOracle: zero price for output token");
 
-            uint price = (price0 * decimals1) / (price1 * decimals0);
+            uint price = (uint(price0) * 10**(decimals1)) / (uint(price1) * 10**(decimals0));
             // note: to make inside of power parentheses greater than zero, we add them with one
-            _outputAmount = uint(price)*_inputAmount*(10**(_outputDecimals + 1))/(10**(decimals + _inputDecimals + 1));
+            _outputAmount = price*_inputAmount*(10**(_outputDecimals + 1))/(10**(_inputDecimals + 1));
 
             _result = true;
         } else {
