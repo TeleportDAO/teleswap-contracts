@@ -120,6 +120,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     /// @notice                   Fixing payback deadline after changing finalization parameter
     function fixTransferDeadline() external {
+        require(_finalizationParameter <= transferDeadline, "CCBurnRouter: finalization parameter is not greater than transfer deadline");
         uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
         uint _transferDeadline = 2 * _finalizationParameter + 1;
         _setTransferDeadline(_transferDeadline);
@@ -180,7 +181,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     function _setTransferDeadline(uint _transferDeadline) private {
         uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
         // Gives lockers enough time to pay cc burn requests
-        require(_transferDeadline >= 2 * _finalizationParameter + 1, "CCBurnRouter: transfer deadline is too low");
+        require(_transferDeadline > _finalizationParameter, "CCBurnRouter: transfer deadline is too low");
         emit NewTransferDeadline(transferDeadline, _transferDeadline);
         transferDeadline = _transferDeadline;
     }
