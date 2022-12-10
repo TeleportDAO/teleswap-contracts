@@ -120,8 +120,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     /// @notice                   Fixing payback deadline after changing finalization parameter
     function fixTransferDeadline() external {
-        require(_finalizationParameter <= transferDeadline, "CCBurnRouter: finalization parameter is not greater than transfer deadline");
         uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
+        require(_finalizationParameter <= transferDeadline, "CCBurnRouter: finalization parameter is not greater than transfer deadline");
         uint _transferDeadline = 2 * _finalizationParameter + 1;
         _setTransferDeadline(_transferDeadline);
     }
