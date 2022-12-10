@@ -51,8 +51,8 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         _setPriceOracle(_priceOracle);
         _setMinRequiredTDTLockedAmount(_minRequiredTDTLockedAmount);
         _setMinRequiredTNTLockedAmount(_minRequiredTNTLockedAmount);
-        _setLiquidationRatio(_liquidationRatio);
         _setCollateralRatio(_collateralRatio);
+        _setLiquidationRatio(_liquidationRatio);
         _setLockerPercentageFee(_lockerPercentageFee);
         _setPriceWithDiscountRatio(_priceWithDiscountRatio);
         _setMinLeavingIntervalTime(_minLeavingIntervalTime);
@@ -307,6 +307,10 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @notice         Internal setter for the required bond amount to become locker
     /// @param _minRequiredTDTLockedAmount   The new required bond amount
     function _setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) private {
+        require(
+            _minRequiredTDTLockedAmount != 0 || minRequiredTNTLockedAmount != 0,
+            "Lockers: amount is zero"
+        );
         emit NewMinRequiredTDTLockedAmount(minRequiredTDTLockedAmount, _minRequiredTDTLockedAmount);
         minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
         libParams.minRequiredTDTLockedAmount = minRequiredTDTLockedAmount;
@@ -315,6 +319,10 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @notice         Internal setter for the required bond amount to become locker
     /// @param _minRequiredTNTLockedAmount   The new required bond amount
     function _setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) private {
+        require(
+            minRequiredTDTLockedAmount != 0 || _minRequiredTNTLockedAmount != 0,
+            "Lockers: amount is zero"
+        );
         emit NewMinRequiredTNTLockedAmount(minRequiredTNTLockedAmount, _minRequiredTNTLockedAmount);
         minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
         libParams.minRequiredTNTLockedAmount = minRequiredTNTLockedAmount;
@@ -359,7 +367,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @notice                     Internal setter for collateral ratio
     /// @param _collateralRatio     The new collateral ratio
     function _setCollateralRatio(uint _collateralRatio) private {
-        require(_collateralRatio >= liquidationRatio, "Lockers: CR must be greater than LR");
+        require(_collateralRatio > liquidationRatio, "Lockers: must CR >= LR");
         emit NewCollateralRatio(collateralRatio, _collateralRatio);
         collateralRatio = _collateralRatio;
         libParams.collateralRatio = collateralRatio;
@@ -371,6 +379,10 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         require(
             _liquidationRatio >= ONE_HUNDRED_PERCENT,
             "Lockers: problem in CR and LR"
+        );
+        require(
+            collateralRatio > _liquidationRatio,
+            "Lockers: must CR >= LR"
         );
         emit NewLiquidationRatio(liquidationRatio, _liquidationRatio);
         liquidationRatio = _liquidationRatio;

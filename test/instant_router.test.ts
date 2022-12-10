@@ -1277,6 +1277,20 @@ describe("Instant Router", async () => {
             ).to.equal(4);
         })
 
+        it("Fixes payback deadline", async function () {
+            await mockBitcoinRelay.mock.finalizationParameter.returns(10);
+
+            await expect(
+                instantRouter.fixPaybackDeadline()
+            ).to.emit(
+                instantRouter, "NewPaybackDeadline"
+            ).withArgs(paybackDeadline, 21);
+
+            expect(
+                await instantRouter.paybackDeadline()
+            ).to.equal(21);
+        })
+
         it("Reverts since payback deadline is lower than relay finalization parameter", async function () {
             await mockBitcoinRelay.mock.finalizationParameter.returns(2);
 

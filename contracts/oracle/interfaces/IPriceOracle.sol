@@ -13,10 +13,9 @@ interface IPriceOracle {
     event ExchangeConnectorRemoved(address indexed exchangeRouter);
 
     /// @notice                     Emits when a price proxy is set
-    /// @param _firstToken          Address of the first token
-    /// @param _secondToken         Address of the second token
+    /// @param _token               Address of the token
     /// @param _priceProxyAddress   Address of price proxy contract
-    event SetPriceProxy(address indexed _firstToken, address indexed _secondToken, address indexed _priceProxyAddress);
+    event SetPriceProxy(address indexed _token, address indexed _priceProxyAddress);
 
     /// @notice                     Emits when changes made to acceptable delay
 	event NewAcceptableDelay(uint oldAcceptableDelay, uint newAcceptableDelay);
@@ -26,11 +25,10 @@ interface IPriceOracle {
 
     // Read-only functions
     
-    /// @notice                     Gives price proxy address for a pair of tokens
-    /// @param _firstToken          Address of the first token
-    /// @param _secondToken         Address of the second token
+    /// @notice                     Gives USD price proxy address for a token
+    /// @param _token          Address of the token
     /// @return                     Address of price proxy contract
-    function ChainlinkPriceProxy(address _firstToken, address _secondToken) external view returns (address);
+    function ChainlinkPriceProxy(address _token) external view returns (address);
 
     /// @notice                     Gives exchange connector address for an exchange router
     /// @param _exchangeRouter      Address of exchange router
@@ -85,7 +83,7 @@ interface IPriceOracle {
 
     function removeExchangeConnector(uint _exchangeRouterIndex) external;
 
-    function setPriceProxy(address _firstToken, address _secondToken, address _priceProxyAddress) external;
+    function setPriceProxy(address _token, address _priceProxyAddress) external;
 
     function setAcceptableDelay(uint _acceptableDelay) external;
 

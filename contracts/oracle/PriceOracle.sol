@@ -18,7 +18,7 @@ contract PriceOracle is IPriceOracle, Ownable {
     }
 
     // Public variables
-    mapping(address => mapping (address => address)) public override ChainlinkPriceProxy; // Given two token addresses returns related Chainlink price proxy
+    mapping (address => address) public override ChainlinkPriceProxy; // Given two token addresses returns related Chainlink price proxy
     mapping(address => address) public override exchangeConnector; // Mapping from exchange router to exchange connector
     address[] public override exchangeRoutersList; // List of available exchange routers
     uint public override acceptableDelay;
@@ -56,7 +56,7 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint) {
+    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) returns (uint) {
         // Gets output amount from oracle
         (bool result, uint outputAmount, uint timestamp) = _equivalentOutputAmountFromOracle(
             _inputAmount,
@@ -206,20 +206,18 @@ contract PriceOracle is IPriceOracle, Ownable {
         emit ExchangeConnectorRemoved(exchangeRouterAddress);
     }
 
-    /// @notice                     Sets a price proxy for a pair of tokens
+    /// @notice                     Sets a USD price proxy for a token
     /// @dev                        Only owner can call this
-    ///                             This price proxy gives exchange rate of _firstToken/_secondToken
+    ///                             This price proxy gives exchange rate of _token/USD
     ///                             Setting price proxy address to zero means that we remove it
-    /// @param _firstToken          Address of the first token
-    /// @param _secondToken         Address of the second token
+    /// @param _token               Address of the token
     /// @param _priceProxyAddress   The address of the proxy price
     function setPriceProxy(
-        address _firstToken, 
-        address _secondToken, 
+        address _token, 
         address _priceProxyAddress
-    ) external nonZeroAddress(_firstToken) nonZeroAddress(_secondToken) override onlyOwner {
-        ChainlinkPriceProxy[_firstToken][_secondToken] = _priceProxyAddress;
-        emit SetPriceProxy(_firstToken, _secondToken, _priceProxyAddress);
+    ) external nonZeroAddress(_token) override onlyOwner {
+        ChainlinkPriceProxy[_token] = _priceProxyAddress;
+        emit SetPriceProxy(_token, _priceProxyAddress);
     }
 
     /// @notice                     Sets acceptable delay for oracle responses
@@ -313,8 +311,10 @@ contract PriceOracle is IPriceOracle, Ownable {
         address _inputToken,
         address _outputToken
     ) private view returns (bool _result, uint _outputAmount, uint _timestamp) {
-        uint decimals;
-        int price;
+        uint decimals0;
+        uint decimals1;
+        int price0;
+        int price1;
 
         if (_inputToken == NATIVE_TOKEN) {
             _inputToken = oracleNativeToken;
@@ -324,43 +324,39 @@ contract PriceOracle is IPriceOracle, Ownable {
             _outputToken = oracleNativeToken;
         }
 
-        if (ChainlinkPriceProxy[_inputToken][_outputToken] != address(0)) {
-            // Gets price of _inputToken/_outputToken
+        if (ChainlinkPriceProxy[_inputToken] != address(0) && ChainlinkPriceProxy[_outputToken] != address(0)) {
+            // Gets price of _inputToken/USD
             (
             /*uint80 roundID*/,
-            price,
+            price0,
             /*uint startedAt*/,
             _timestamp,
             /*uint80 answeredInRound*/
-            ) = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken][_outputToken]).latestRoundData();
+            ) = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken]).latestRoundData();
 
             // Gets number of decimals
-            decimals = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken][_outputToken]).decimals();
+            decimals0 = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken]).decimals();
 
-            require(price != 0, "PriceOracle: zero price");
+            require(price0 != 0, "PriceOracle: zero price for input token");
 
-            // note: to make inside of power parentheses greater than zero, we add them with one
-            _outputAmount = uint(price)*_inputAmount*(10**(_outputDecimals + 1))/(10**(decimals + _inputDecimals + 1));
-
-            _result = true;
-        } else if (ChainlinkPriceProxy[_outputToken][_inputToken] != address(0)) {
-            // Gets price of _outputToken/_inputToken
+            // Gets price of _outputToken/USD
             (
             /*uint80 roundID*/,
-            price,
+            price1,
             /*uint startedAt*/,
             _timestamp,
             /*uint80 answeredInRound*/
-            ) = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken][_inputToken]).latestRoundData();
+            ) = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken]).latestRoundData();
 
             // Gets number of decimals
-            decimals = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken][_inputToken]).decimals();
-            
-            require(price != 0, "PriceOracle: zero price");
+            decimals1 = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken]).decimals();
 
+            require(price1 != 0, "PriceOracle: zero price for output token");
+
+            uint price = (uint(price0) * 10**(decimals1)) / (uint(price1) * 10**(decimals0));
             // note: to make inside of power parentheses greater than zero, we add them with one
-            _outputAmount = (10**(decimals + _outputDecimals + 1))*_inputAmount/(10**(_inputDecimals + 1)*uint(price));
-            
+            _outputAmount = price*_inputAmount*(10**(_outputDecimals + 1))/(10**(_inputDecimals + 1));
+
             _result = true;
         } else {
             return (false, 0, 0);

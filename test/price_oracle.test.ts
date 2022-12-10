@@ -33,6 +33,7 @@ describe("PriceOracle", async () => {
 
     // Mock contracts
     let mockPriceProxy: MockContract;
+    let _mockPriceProxy: MockContract;
     let mockExchangeConnector: MockContract;
 
     // Values
@@ -72,6 +73,10 @@ describe("PriceOracle", async () => {
             deployer,
             AggregatorV3InterfaceContract.abi
         );
+        _mockPriceProxy = await deployMockContract(
+            deployer,
+            AggregatorV3InterfaceContract.abi
+        );
 
         // Mocks exchange connector contract
         const ExchangeConnectorContract = await deployments.getArtifact(
@@ -100,6 +105,24 @@ describe("PriceOracle", async () => {
             answeredInRound
         );
         await mockPriceProxy.mock.decimals.returns(decimals);
+    }
+
+    async function _mockFunctionsPriceProxy(        
+        roundID: number,
+        price: number,
+        startedAt: number,
+        timeStamp: number,
+        answeredInRound: number,
+        decimals: number
+    ): Promise<void> {
+        await _mockPriceProxy.mock.latestRoundData.returns(
+            roundID,
+            price,
+            startedAt,
+            timeStamp,
+            answeredInRound
+        );
+        await _mockPriceProxy.mock.decimals.returns(decimals);
     }
 
     async function setNextBlockTimestamp(        
@@ -203,7 +226,7 @@ describe("PriceOracle", async () => {
         })
 
         it("Reverts since exchange router doesn't exist", async function () {
-            expect(
+            await expect(
                 priceOracle.removeExchangeConnector(0)
             ).to.revertedWith("PriceOracle: Index is out of bound");
         })
@@ -222,39 +245,33 @@ describe("PriceOracle", async () => {
 
         it("Sets a price proxy", async function () {
             expect(
-                await priceOracle.setPriceProxy(erc20.address, _erc20.address, mockPriceProxy.address)
+                await priceOracle.setPriceProxy(erc20.address, mockPriceProxy.address)
             ).to.emit(priceOracle, 'SetPriceProxy').withArgs(
                 erc20.address,
-                _erc20.address,
                 mockPriceProxy.address
             );
 
             expect(
-                await priceOracle.ChainlinkPriceProxy(erc20.address, _erc20.address)
+                await priceOracle.ChainlinkPriceProxy(erc20.address)
             ).to.equal(mockPriceProxy.address);
         })
 
         it("Removes a price proxy", async function () {
             expect(
-                await priceOracle.setPriceProxy(erc20.address, _erc20.address, ZERO_ADDRESS)
+                await priceOracle.setPriceProxy(erc20.address, ZERO_ADDRESS)
             ).to.emit(priceOracle, 'SetPriceProxy').withArgs(
                 erc20.address,
-                _erc20.address,
                 ZERO_ADDRESS
             );
 
             expect(
-                await priceOracle.ChainlinkPriceProxy(erc20.address, _erc20.address)
+                await priceOracle.ChainlinkPriceProxy(erc20.address)
             ).to.equal(ZERO_ADDRESS);
         })
 
         it("Reverts since one of tokens is zero", async function () {
-            expect(
-                priceOracle.setPriceProxy(ZERO_ADDRESS, _erc20.address, mockPriceProxy.address)
-            ).to.revertedWith("PriceOracle: zero address");
-
-            expect(
-                priceOracle.setPriceProxy(erc20.address, ZERO_ADDRESS, mockPriceProxy.address)
+            await expect(
+                priceOracle.setPriceProxy(ZERO_ADDRESS, mockPriceProxy.address)
             ).to.revertedWith("PriceOracle: zero address");
         })
 
@@ -282,16 +299,22 @@ describe("PriceOracle", async () => {
         it("Gets equal amount of output token when TT/ATT proxy has been set", async function () {
             let amountIn = 1000; // TT token
             roundID = 1;
-            price = 123;
+            let price0 = 24;
+            let price1 = 2;
+            price = price0/price1;
             startedAt = 1;
             timeStamp = 1;
             answeredInRound = 1;
-            decimals = 2;
+            let decimals0 = 1;
+            let decimals1 = 2;
+            decimals = decimals0 - decimals1;
             erc20Decimals = 8;
             _erc20Decimals = 18;
-            await priceOracle.setPriceProxy(erc20.address, _erc20.address, mockPriceProxy.address);
-            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
-
+            await priceOracle.setPriceProxy(erc20.address, mockPriceProxy.address);
+            await priceOracle.setPriceProxy(_erc20.address, _mockPriceProxy.address);
+            await mockFunctionsPriceProxy(roundID, price0, startedAt, timeStamp, answeredInRound, decimals0);
+            await _mockFunctionsPriceProxy(roundID, price1, startedAt, timeStamp, answeredInRound, decimals1);
+            
             expect(
                 await priceOracle.equivalentOutputAmountFromOracle(
                     amountIn,
@@ -306,15 +329,22 @@ describe("PriceOracle", async () => {
         it("Gets equal amount of output token when ATT/TT proxy has been set", async function () {
             let amountIn = 1000; // TT token
             roundID = 1;
-            price = 12345; // ATT/TT
+            let price0 = 12345; // ATT/TT
+            let price1 = 1;
+            price = price0/price1;
             startedAt = 1;
             timeStamp = 1;
             answeredInRound = 1;
-            decimals = 2;
+            let decimals0 = 1;
+            let decimals1 = 2;
+            decimals = decimals0 - decimals1;
             erc20Decimals = 18;
             _erc20Decimals = 8;
-            await priceOracle.setPriceProxy(_erc20.address, erc20.address, mockPriceProxy.address);
-            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await priceOracle.setPriceProxy(erc20.address, mockPriceProxy.address);
+            await priceOracle.setPriceProxy(_erc20.address, _mockPriceProxy.address);
+            await mockFunctionsPriceProxy(roundID, price0, startedAt, timeStamp, answeredInRound, decimals0);
+            await _mockFunctionsPriceProxy(roundID, price1, startedAt, timeStamp, answeredInRound, decimals1);
+
             expect(
                 await priceOracle.equivalentOutputAmountFromOracle(
                     amountIn, 
@@ -323,21 +353,27 @@ describe("PriceOracle", async () => {
                     erc20.address, 
                     _erc20.address
                 )
-            ).to.equal(Math.floor((amountIn*Math.pow(10, _erc20Decimals - erc20Decimals + decimals)/price)))
+            ).to.equal(Math.floor((amountIn*Math.pow(10, _erc20Decimals - erc20Decimals - decimals)/price)))
         })
 
         it("Gets equal amount of output token when input token is native token", async function () {
-            let amountIn = 1000; // Native token
+            let amountIn = 100; // Native token
             roundID = 1;
-            price = 123;
+            let price0 = 123;
+            let price1 = 1;
+            price = price0/price1;
             startedAt = 1;
             timeStamp = 1;
             answeredInRound = 1;
-            decimals = 2;
+            let decimals0 = 1;
+            let decimals1 = 2;
+            decimals = decimals0 - decimals1;
             let nativeTokenDecimals = 8;
             _erc20Decimals = 18;
-            await priceOracle.setPriceProxy(TWO_ADDRESS, _erc20.address, mockPriceProxy.address);
-            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await priceOracle.setPriceProxy(TWO_ADDRESS, mockPriceProxy.address);
+            await priceOracle.setPriceProxy(_erc20.address, _mockPriceProxy.address);
+            await mockFunctionsPriceProxy(roundID, price0, startedAt, timeStamp, answeredInRound, decimals0);
+            await _mockFunctionsPriceProxy(roundID, price1, startedAt, timeStamp, answeredInRound, decimals1);
 
             expect(
                 await priceOracle.equivalentOutputAmountFromOracle(
@@ -353,16 +389,22 @@ describe("PriceOracle", async () => {
         it("Gets equal amount of output token when output token is native token", async function () {
             let amountIn = 1000; // TT token
             roundID = 1;
-            price = 123;
+            let price0 = 123;
+            let price1 = 1;
+            price = price0/price1;
             startedAt = 1;
             timeStamp = 1;
             answeredInRound = 1;
-            decimals = 2;
+            let decimals0 = 1;
+            let decimals1 = 2;
+            decimals = decimals0 - decimals1;
             erc20Decimals = 18;
             let nativeTokenDecimals = 8;
             
-            await priceOracle.setPriceProxy(erc20.address, TWO_ADDRESS, mockPriceProxy.address);
-            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await priceOracle.setPriceProxy(erc20.address, mockPriceProxy.address);
+            await priceOracle.setPriceProxy(TWO_ADDRESS, _mockPriceProxy.address);
+            await mockFunctionsPriceProxy(roundID, price0, startedAt, timeStamp, answeredInRound, decimals0);
+            await _mockFunctionsPriceProxy(roundID, price1, startedAt, timeStamp, answeredInRound, decimals1);
 
             expect(
                 await priceOracle.equivalentOutputAmountFromOracle(
@@ -378,15 +420,20 @@ describe("PriceOracle", async () => {
         it("Gets equal amount of output token when price decimal is zero", async function () {
             let amountIn = 1000;
             roundID = 1;
-            price = 1234;
+            let price0 = 1234;
+            let price1 = 2;
             startedAt = 1;
             timeStamp = 1;
             answeredInRound = 1;
             decimals = 0;
             erc20Decimals = 18;
             _erc20Decimals = 8;
-            await priceOracle.setPriceProxy(erc20.address, _erc20.address, mockPriceProxy.address);
-            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await priceOracle.setPriceProxy(erc20.address, mockPriceProxy.address);
+            await priceOracle.setPriceProxy(_erc20.address, _mockPriceProxy.address);
+
+            await mockFunctionsPriceProxy(roundID, price0, startedAt, timeStamp, answeredInRound, decimals);
+            await _mockFunctionsPriceProxy(roundID, price1, startedAt, timeStamp, answeredInRound, decimals);
+
             expect(
                 await priceOracle.equivalentOutputAmountFromOracle(
                     amountIn, 
@@ -401,15 +448,19 @@ describe("PriceOracle", async () => {
         it("Gets equal amount of output token when all decimals are zero", async function () {
             let amountIn = 1000;
             roundID = 1;
-            price = 1234;
+            let price0 = 123;
+            let price1 = 1;
+            price = price0/price1;
             startedAt = 1;
             timeStamp = 1;
             answeredInRound = 1;
             decimals = 0;
             erc20Decimals = 0;
             _erc20Decimals = 0;
-            await priceOracle.setPriceProxy(erc20.address, _erc20.address, mockPriceProxy.address);
-            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await priceOracle.setPriceProxy(erc20.address, mockPriceProxy.address);
+            await priceOracle.setPriceProxy(_erc20.address, _mockPriceProxy.address);
+            await mockFunctionsPriceProxy(roundID, price0, startedAt, timeStamp, answeredInRound, decimals);
+            await _mockFunctionsPriceProxy(roundID, price1, startedAt, timeStamp, answeredInRound, decimals);
             expect(
                 await priceOracle.equivalentOutputAmountFromOracle(
                     amountIn, 
@@ -423,7 +474,7 @@ describe("PriceOracle", async () => {
 
         it("Reverts since one of the tokens is zero", async function () {
             let amountIn = 1000;
-            expect(
+            await expect(
                 priceOracle.equivalentOutputAmountFromOracle(
                     amountIn, 
                     18, 
@@ -433,7 +484,7 @@ describe("PriceOracle", async () => {
                 )
             ).to.revertedWith("PriceOracle: zero address");
 
-            expect(
+            await expect(
                 priceOracle.equivalentOutputAmountFromOracle(
                     amountIn, 
                     18, 
@@ -447,17 +498,24 @@ describe("PriceOracle", async () => {
         it("Reverts since returned price is zero", async function () {
             let amountIn = 1000; // TT token
             roundID = 1;
-            price = 0;
+            let price0 = 123;
+            let price1 = 1;
+            price = price0/price1;
             startedAt = 1;
             timeStamp = 1;
             answeredInRound = 1;
-            decimals = 2;
-            erc20Decimals = 8;
-            _erc20Decimals = 18;
-            await priceOracle.setPriceProxy(erc20.address, _erc20.address, mockPriceProxy.address);
-            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            let decimals0 = 1;
+            let decimals1 = 2;
+            decimals = decimals0 - decimals1;
+            erc20Decimals = 18;
+            _erc20Decimals = 8;
 
-            expect(
+            await priceOracle.setPriceProxy(erc20.address, mockPriceProxy.address);
+            await priceOracle.setPriceProxy(_erc20.address, _mockPriceProxy.address);
+            await mockFunctionsPriceProxy(roundID, 0, startedAt, timeStamp, answeredInRound, decimals0);
+            await _mockFunctionsPriceProxy(roundID, price1, startedAt, timeStamp, answeredInRound, decimals1);
+
+            await expect(
                 priceOracle.equivalentOutputAmountFromOracle(
                     amountIn,
                     erc20Decimals,
@@ -465,12 +523,12 @@ describe("PriceOracle", async () => {
                     erc20.address, 
                     _erc20.address
                 )
-            ).to.revertedWith("PriceOracle: zero price");
+            ).to.revertedWith("PriceOracle: zero price for input");
 
-            await priceOracle.setPriceProxy(erc20.address, _erc20.address, ZERO_ADDRESS);
-            await priceOracle.setPriceProxy(_erc20.address, erc20.address, mockPriceProxy.address);
+            await mockFunctionsPriceProxy(roundID, price0, startedAt, timeStamp, answeredInRound, decimals0);
+            await _mockFunctionsPriceProxy(roundID, 0, startedAt, timeStamp, answeredInRound, decimals1);
 
-            expect(
+            await expect(
                 priceOracle.equivalentOutputAmountFromOracle(
                     amountIn,
                     erc20Decimals,
@@ -478,13 +536,26 @@ describe("PriceOracle", async () => {
                     erc20.address, 
                     _erc20.address
                 )
-            ).to.revertedWith("PriceOracle: zero price");
+            ).to.revertedWith("PriceOracle: zero price for output");
+
+            await priceOracle.setPriceProxy(erc20.address, ONE_ADDRESS);
+            await priceOracle.setPriceProxy(_erc20.address, mockPriceProxy.address);
+
+            await expect(
+                priceOracle.equivalentOutputAmountFromOracle(
+                    amountIn,
+                    erc20Decimals,
+                    _erc20Decimals, 
+                    erc20.address, 
+                    _erc20.address
+                )
+            ).to.be.reverted;
 
         })
 
         it("Reverts since one of the tokens doesn't exist", async function () {
             let amountIn = 1000;
-            expect(
+            await expect(
                 priceOracle.equivalentOutputAmountFromOracle(
                     amountIn, 
                     18, 
@@ -551,7 +622,7 @@ describe("PriceOracle", async () => {
 
         it("Reverts since one of the tokens is zero", async function () {
             let inputAmount = 1000;
-            expect(
+            await expect(
                 priceOracle.equivalentOutputAmountFromExchange(
                     deployerAddress,
                     inputAmount,
@@ -560,7 +631,7 @@ describe("PriceOracle", async () => {
                 )
             ).to.revertedWith("PriceOracle: zero address");
 
-            expect(
+            await expect(
                 priceOracle.equivalentOutputAmountFromExchange(
                     deployerAddress,
                     inputAmount,
@@ -600,16 +671,21 @@ describe("PriceOracle", async () => {
         // Sets inputs values
         let amountIn = 1000; // TT token
         roundID = 1;
-        price = 123;
+        let price0 = 123;
+        let price1 = 2;
+        price = price0/price1;
         startedAt = 1;
         answeredInRound = 1;
-        decimals = 2;
+        let decimals0 = 1;
+        let decimals1 = 2;
+        decimals = decimals0 - decimals1;
         erc20Decimals = 8;
         _erc20Decimals = 18;
         
         beforeEach(async() => {
             snapshotId = await takeSnapshot(signer1.provider);
-            await priceOracle.setPriceProxy(erc20.address, _erc20.address, mockPriceProxy.address);
+            await priceOracle.setPriceProxy(erc20.address, mockPriceProxy.address);
+            await priceOracle.setPriceProxy(_erc20.address, _mockPriceProxy.address);
         });
 
         afterEach(async() => {
@@ -618,7 +694,8 @@ describe("PriceOracle", async () => {
 
         it("Gets equal amount of output token when delay is acceptable (only oracle)", async function () {
             timeStamp = await getLastBlockTimestamp();
-            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await mockFunctionsPriceProxy(roundID, price0, startedAt, timeStamp, answeredInRound, decimals0);
+            await _mockFunctionsPriceProxy(roundID, price1, startedAt, timeStamp, answeredInRound, decimals1);
             await setNextBlockTimestamp(1);
             expect(
                 await priceOracle.equivalentOutputAmount(
@@ -635,77 +712,80 @@ describe("PriceOracle", async () => {
             timeStamp = await getLastBlockTimestamp();
             await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
             await mockFunctionsExchangeConnector(true, 100);
-            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await mockFunctionsPriceProxy(roundID, price0, startedAt, timeStamp, answeredInRound, decimals0);
+            await _mockFunctionsPriceProxy(roundID, price1, startedAt, timeStamp, answeredInRound, decimals1);
             await setNextBlockTimestamp(240);
         expect(
-            await priceOracle.equivalentOutputAmount(
+            await priceOracle.equivalentOutputAmountByAverage(
                     amountIn,
                     erc20Decimals,
                     _erc20Decimals,
                     erc20.address,
                     _erc20.address
                 )
-            ).to.equal(Math.floor((amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals))));
+            ).to.equal(Math.floor((amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals)+100)/2));
         })
 
         it("Gets equal amount of output token when delay is not acceptable and input token is native token (oracle and router)", async function () {
             timeStamp = await getLastBlockTimestamp();
             await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
-            await priceOracle.setPriceProxy(ONE_ADDRESS, _erc20.address, mockPriceProxy.address);
+            await priceOracle.setPriceProxy(ONE_ADDRESS, mockPriceProxy.address);
             await mockFunctionsExchangeConnector(true, 100);
-            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await mockFunctionsPriceProxy(roundID, price0, startedAt, timeStamp, answeredInRound, decimals0);
+            await _mockFunctionsPriceProxy(roundID, price1, startedAt, timeStamp, answeredInRound, decimals1);
             await setNextBlockTimestamp(240);
             
         expect(
-            await priceOracle.equivalentOutputAmount(
+            await priceOracle.equivalentOutputAmountByAverage(
                     amountIn,
                     erc20Decimals, // Native token decimal
                     _erc20Decimals,
                     ONE_ADDRESS,
                     _erc20.address
                 )
-            ).to.equal(Math.floor((amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals))));
+            ).to.equal(Math.floor((amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals)+100)/2));
         })
 
         it("Gets equal amount of output token when delay is not acceptable and output token is native token (oracle and router)", async function () {
             timeStamp = await getLastBlockTimestamp();
             await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
             await mockFunctionsExchangeConnector(true, 100);
-            await priceOracle.setPriceProxy(erc20.address, ONE_ADDRESS, mockPriceProxy.address);
-            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await priceOracle.setPriceProxy(ONE_ADDRESS, _mockPriceProxy.address);
+            await mockFunctionsPriceProxy(roundID, price0, startedAt, timeStamp, answeredInRound, decimals0);
+            await _mockFunctionsPriceProxy(roundID, price1, startedAt, timeStamp, answeredInRound, decimals1);
             await setNextBlockTimestamp(240);
         expect(
-            await priceOracle.equivalentOutputAmount(
+            await priceOracle.equivalentOutputAmountByAverage(
                     amountIn,
                     erc20Decimals,
                     _erc20Decimals, // Native token decimal
                     erc20.address,
                     ONE_ADDRESS
                 )
-            ).to.equal(Math.floor((amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals))));
+            ).to.equal(Math.floor((amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals)+100)/2));
         })
 
         it("Gets equal amount of output token when price proxy doesn't exist (only router)", async function () {
             timeStamp = await getLastBlockTimestamp();
             await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
             await mockFunctionsExchangeConnector(true, 100);
-            await priceOracle.setPriceProxy(erc20.address, _erc20.address, ZERO_ADDRESS);
+            await priceOracle.setPriceProxy(erc20.address, ZERO_ADDRESS);
             await setNextBlockTimestamp(240);
-
-            await expect(
-            priceOracle.equivalentOutputAmount(
+            expect(
+                await priceOracle.equivalentOutputAmountByAverage(
                     amountIn,
                     erc20Decimals,
                     _erc20Decimals,
                     erc20.address,
                     _erc20.address
                 )
-            ).to.be.revertedWith("PriceOracle: Price proxy does not exist");
+            ).to.equal(Math.floor(100));
         })
 
         it("Gets equal amount of output token when delay is not acceptable, but no other exchange exists (only oracle)", async function () {
             timeStamp = await getLastBlockTimestamp();
-            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await mockFunctionsPriceProxy(roundID, price0, startedAt, timeStamp, answeredInRound, decimals0);
+            await _mockFunctionsPriceProxy(roundID, price1, startedAt, timeStamp, answeredInRound, decimals1);
             await setNextBlockTimestamp(240);
             expect(
                 await priceOracle.equivalentOutputAmount(
@@ -722,7 +802,8 @@ describe("PriceOracle", async () => {
             timeStamp = await getLastBlockTimestamp();
             await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
             await mockFunctionsExchangeConnector(false, 0);
-            await mockFunctionsPriceProxy(roundID, price, startedAt, timeStamp, answeredInRound, decimals);
+            await mockFunctionsPriceProxy(roundID, price0, startedAt, timeStamp, answeredInRound, decimals0);
+            await _mockFunctionsPriceProxy(roundID, price1, startedAt, timeStamp, answeredInRound, decimals1);
             await setNextBlockTimestamp(240);
             expect(
                 await priceOracle.equivalentOutputAmount(
@@ -738,10 +819,10 @@ describe("PriceOracle", async () => {
         it("Reverts since no price feed was found (no oracle no router)", async function () {
             timeStamp = await getLastBlockTimestamp();;
             await mockFunctionsExchangeConnector(false, 0);
-            await priceOracle.setPriceProxy(erc20.address, _erc20.address, ZERO_ADDRESS);
+            await priceOracle.setPriceProxy(erc20.address, ZERO_ADDRESS);
             await setNextBlockTimestamp(240);
-            expect(
-                priceOracle.equivalentOutputAmount(
+            await expect(
+                priceOracle.equivalentOutputAmountByAverage(
                     amountIn,
                     erc20Decimals,
                     _erc20Decimals,
