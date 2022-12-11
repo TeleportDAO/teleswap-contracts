@@ -542,7 +542,7 @@ describe("CCTransferRouter", async () => {
         })
 
         it("Reverts since request belongs to an old block header", async function () {
-            expect(
+            await expect(
                 ccTransferRouter.ccTransfer(
                     CC_REQUESTS.normalCCTransfer.version,
                     CC_REQUESTS.normalCCTransfer.vin,
@@ -570,7 +570,7 @@ describe("CCTransferRouter", async () => {
                 LOCKER1_LOCKING_SCRIPT,
             );
 
-            expect(
+            await expect(
                 ccTransferRouter.ccTransfer(
                     CC_REQUESTS.normalCCTransfer.version,
                     CC_REQUESTS.normalCCTransfer.vin,
@@ -589,7 +589,7 @@ describe("CCTransferRouter", async () => {
             // Sets relay to return false after checking tx proof
             await setRelayReturn(false);
 
-            expect(
+            await expect(
                 ccTransferRouter.ccTransfer(
                     CC_REQUESTS.normalCCTransfer.version,
                     CC_REQUESTS.normalCCTransfer.vin,
@@ -606,7 +606,7 @@ describe("CCTransferRouter", async () => {
         it("Reverts if the percentage fee is out of range [0,10000)", async function () {
             await setRelayReturn(true);
 
-            expect(
+            await expect(
                 ccTransferRouter.ccTransfer(
                     CC_REQUESTS.normalCCTransfer_invalidFee.version,
                     CC_REQUESTS.normalCCTransfer_invalidFee.vin,
@@ -623,7 +623,7 @@ describe("CCTransferRouter", async () => {
         it("Reverts if chain id is invalid", async function () {
             await setRelayReturn(true);
 
-            expect(
+            await expect(
                 ccTransferRouter.ccTransfer(
                     CC_REQUESTS.normalCCTransfer_invalidChainId.version,
                     CC_REQUESTS.normalCCTransfer_invalidChainId.vin,
@@ -640,7 +640,7 @@ describe("CCTransferRouter", async () => {
         it("Reverts if app id is invalid", async function () {
             await setRelayReturn(true);
 
-            expect(
+            await expect(
                 ccTransferRouter.ccTransfer(
                     CC_REQUESTS.normalCCTransfer_invalidAppId.version,
                     CC_REQUESTS.normalCCTransfer_invalidAppId.vin,
@@ -657,7 +657,7 @@ describe("CCTransferRouter", async () => {
         it("Reverts if user sent BTC to invalid locker", async function () {
             await setRelayReturn(true);
 
-            expect(
+            await expect(
                 ccTransferRouter.ccTransfer(
                     CC_REQUESTS.normalCCTransfer_invalidLocker.version,
                     CC_REQUESTS.normalCCTransfer_invalidLocker.vin,
@@ -674,7 +674,7 @@ describe("CCTransferRouter", async () => {
         it("Reverts if no BTC has been sent to locker", async function () {
             await setRelayReturn(true);
 
-            expect(
+            await expect(
                 ccTransferRouter.ccTransfer(
                     CC_REQUESTS.normalCCTransfer_invalidLocker.version,
                     CC_REQUESTS.normalCCTransfer_invalidLocker.vin,
@@ -691,7 +691,7 @@ describe("CCTransferRouter", async () => {
         it("Reverts if speed is wrong", async function () {
             await setRelayReturn(true);
 
-            expect(
+            await expect(
                 ccTransferRouter.ccTransfer(
                     CC_REQUESTS.normalCCTransfer_invalidSpeed.version,
                     CC_REQUESTS.normalCCTransfer_invalidSpeed.vin,
@@ -709,7 +709,7 @@ describe("CCTransferRouter", async () => {
             await setRelayReturn(true);
             await mockBitcoinRelay.mock.getBlockHeaderFee.returns(1); // Sets fee of using relay
 
-            expect(
+            await expect(
                 ccTransferRouter.ccTransfer(
                     CC_REQUESTS.normalCCTransfer.version,
                     CC_REQUESTS.normalCCTransfer.vin,
@@ -823,7 +823,7 @@ describe("CCTransferRouter", async () => {
                 await ccTransferRouter.isRequestUsed(CC_REQUESTS.normalCCTransfer.txId)
             ).to.equal(true);
 
-            expect(
+            await expect(
                 ccTransferRouter.ccTransfer(
                     CC_REQUESTS.normalCCTransfer.version,
                     CC_REQUESTS.normalCCTransfer.vin,
@@ -862,7 +862,7 @@ describe("CCTransferRouter", async () => {
         })
 
         it("Reverts since protocol percentage fee is greater than 10000", async function () {
-            expect(
+            await expect(
                 ccTransferRouter.setProtocolPercentageFee(10001)
             ).to.revertedWith("CCTransferRouter: protocol fee is out of range");
         })
@@ -926,23 +926,23 @@ describe("CCTransferRouter", async () => {
         })
 
         it("Reverts since given address is zero", async function () {
-            expect(
+            await expect(
                 ccTransferRouter.setRelay(ZERO_ADDRESS)
             ).to.revertedWith("CCTransferRouter: address is zero");
 
-            expect(
+            await expect(
                 ccTransferRouter.setLockers(ZERO_ADDRESS)
             ).to.revertedWith("CCTransferRouter: address is zero");
 
-            expect(
+            await expect(
                 ccTransferRouter.setInstantRouter(ZERO_ADDRESS)
             ).to.revertedWith("CCTransferRouter: address is zero");
 
-            expect(
+            await expect(
                 ccTransferRouter.setTeleBTC(ZERO_ADDRESS)
             ).to.revertedWith("CCTransferRouter: address is zero");
 
-            expect(
+            await expect(
                 ccTransferRouter.setTreasury(ZERO_ADDRESS)
             ).to.revertedWith("CCTransferRouter: address is zero");
         })

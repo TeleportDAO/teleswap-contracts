@@ -137,19 +137,19 @@ describe("CollateralPool", async () => {
         })
 
         it("Reverts since user hasn't given allowance to collateral pool", async function () {
-            expect(
+            await expect(
                 collateralPool.addCollateral(deployerAddress, 100)
             ).to.reverted; 
         })
 
         it("Reverts since user address is zero", async function () {
-            expect(
+            await expect(
                 collateralPool.addCollateral(ZERO_ADDRESS, 100)
             ).to.revertedWith("CollateralPool: zero address"); 
         })
 
         it("Reverts since amount is zero", async function () {
-            expect(
+            await expect(
                 collateralPool.addCollateral(deployerAddress, 0)
             ).to.revertedWith("CollateralPool: zero value"); 
         })
@@ -209,14 +209,14 @@ describe("CollateralPool", async () => {
 
         it("Reverts since amount is zero", async function () {
             // Removes collateral from collateral pool
-            expect(
+            await expect(
                 collateralPool.removeCollateral(0)
             ).to.revertedWith("CollateralPool: zero value"); 
         })
 
         it("Reverts since balance is not enough", async function () {
             // Removes collateral from collateral pool
-            expect(
+            await expect(
                 collateralPool.removeCollateral(addedCollateral*2)
             ).to.revertedWith("CollateralPool: balance is not enough"); 
         })
@@ -252,14 +252,14 @@ describe("CollateralPool", async () => {
         })
 
         it("Reverts since liquidity is not enough", async function () {
-            expect(
+            await expect(
                 collateralPool.equivalentCollateralToken(200)
             ).to.revertedWith("CollateralPool: liquidity is not sufficient"); 
         })
 
         it("Reverts since collateral pool is empty", async function () {
             await collateralPool.removeCollateral(addedCollateral);
-            expect(
+            await expect(
                 collateralPool.equivalentCollateralToken(100)
             ).to.revertedWith("CollateralPool: collateral pool is empty"); 
         })
@@ -294,14 +294,14 @@ describe("CollateralPool", async () => {
         })
 
         it("Reverts since liquidity is not enough", async function () {
-            expect(
+            await expect(
                 collateralPool.equivalentCollateralPoolToken(200)
             ).to.revertedWith("CollateralPool: liquidity is not sufficient"); 
         })
 
         it("Reverts since collateral pool is empty", async function () {
             await collateralPool.removeCollateral(addedCollateral);
-            expect(
+            await expect(
                 collateralPool.equivalentCollateralPoolToken(100)
             ).to.revertedWith("CollateralPool: collateral pool is empty"); 
         })
@@ -330,7 +330,7 @@ describe("CollateralPool", async () => {
         })
 
         it("Reverts since given ratio is zero", async function () {
-            expect(
+            await expect(
                 collateralPool.setCollateralizationRatio(0)
             ).to.revertedWith("CollateralPool: zero value")
         })
