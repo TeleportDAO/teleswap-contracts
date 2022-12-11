@@ -226,7 +226,7 @@ describe("UniswapV2Connector", async () => {
         it("Reverts since one of token's addresses is zero", async function () {
             let outputAmount = 1000;
 
-            expect(
+            await expect(
                 uniswapV2Connector.getInputAmount(
                     outputAmount,
                     ZERO_ADDRESS,
@@ -234,7 +234,7 @@ describe("UniswapV2Connector", async () => {
                 )
             ).to.revertedWith("UniswapV2Connector: zero address");
 
-            expect(
+            await expect(
                 uniswapV2Connector.getInputAmount(
                     outputAmount,
                     erc20.address,
@@ -282,7 +282,7 @@ describe("UniswapV2Connector", async () => {
         it("Reverts since one of token's addresses is zero", async function () {
             let inputAmount = 1000;
 
-            expect(
+            await expect(
                 uniswapV2Connector.getOutputAmount(
                     inputAmount,
                     ZERO_ADDRESS,
@@ -290,7 +290,7 @@ describe("UniswapV2Connector", async () => {
                 )
             ).to.revertedWith("UniswapV2Connector: zero address");
 
-            expect(
+            await expect(
                 uniswapV2Connector.getOutputAmount(
                     inputAmount,
                     erc20.address,
@@ -668,7 +668,7 @@ describe("UniswapV2Connector", async () => {
         })
 
         it("Reverts since exchange router address is zero", async function () {
-            expect(
+            await expect(
                 uniswapV2Connector.setExchangeRouter(ZERO_ADDRESS)
             ).to.revertedWith("UniswapV2Connector: zero address");
         })
