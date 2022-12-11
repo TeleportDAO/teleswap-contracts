@@ -137,7 +137,7 @@ describe("CollateralPool", async () => {
         })
 
         it("Reverts since user hasn't given allowance to collateral pool", async function () {
-            expect(
+            await expect(
                 collateralPool.addCollateral(deployerAddress, 100)
             ).to.reverted; 
         })
