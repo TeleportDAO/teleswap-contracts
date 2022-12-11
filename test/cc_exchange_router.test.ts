@@ -918,7 +918,7 @@ describe("CCExchangeRouter", async () => {
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            expect(
+            await expect(
                 ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_invalidAppId.vin,
@@ -937,7 +937,7 @@ describe("CCExchangeRouter", async () => {
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            expect(
+            await expect(
                 ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.vin,
@@ -956,7 +956,7 @@ describe("CCExchangeRouter", async () => {
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            expect(
+            await expect(
                 ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_wrongLocker.vin,
@@ -975,7 +975,7 @@ describe("CCExchangeRouter", async () => {
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            expect(
+            await expect(
                 ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_invalidFee.vin,
@@ -994,7 +994,7 @@ describe("CCExchangeRouter", async () => {
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            expect(
+            await expect(
                 ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_invalidChainId.vin,
@@ -1013,7 +1013,7 @@ describe("CCExchangeRouter", async () => {
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            expect(
+            await expect(
                 ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_wrongSpeed.vin,
@@ -1046,7 +1046,7 @@ describe("CCExchangeRouter", async () => {
             );
 
             // Reverts since the request has been used before
-            expect(
+            await expect(
                 ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
@@ -1066,7 +1066,7 @@ describe("CCExchangeRouter", async () => {
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            expect(
+            await expect(
                 ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
@@ -1085,7 +1085,7 @@ describe("CCExchangeRouter", async () => {
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
 
-            expect(
+            await expect(
                 ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
@@ -1106,7 +1106,7 @@ describe("CCExchangeRouter", async () => {
 
             await mockBitcoinRelay.mock.checkTxProof.returns(false);
 
-            expect(
+            await expect(
                 ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
@@ -1127,7 +1127,7 @@ describe("CCExchangeRouter", async () => {
 
             await mockBitcoinRelay.mock.getBlockHeaderFee.returns(1);
 
-            expect(
+            await expect(
                 ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
@@ -1224,7 +1224,7 @@ describe("CCExchangeRouter", async () => {
                 LOCKER1_LOCKING_SCRIPT
             );
 
-            expect(
+            await expect(
                 ccExchangeRouter.ccExchange(
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
                     CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
@@ -1267,7 +1267,7 @@ describe("CCExchangeRouter", async () => {
         })
 
         it("Reverts since protocol percentage fee is greater than 10000", async function () {
-            expect(
+            await expect(
                 ccExchangeRouter.setProtocolPercentageFee(10001)
             ).to.revertedWith("CCExchangeRouter: fee is out of range");
         })
@@ -1329,23 +1329,23 @@ describe("CCExchangeRouter", async () => {
         })
 
         it("Reverts since given address is zero", async function () {
-            expect(
+            await expect(
                 ccExchangeRouter.setRelay(ZERO_ADDRESS)
             ).to.revertedWith("CCExchangeRouter: address is zero");
 
-            expect(
+            await expect(
                 ccExchangeRouter.setLockers(ZERO_ADDRESS)
             ).to.revertedWith("CCExchangeRouter: address is zero");
 
-            expect(
+            await expect(
                 ccExchangeRouter.setInstantRouter(ZERO_ADDRESS)
             ).to.revertedWith("CCExchangeRouter: address is zero");
 
-            expect(
+            await expect(
                 ccExchangeRouter.setTeleBTC(ZERO_ADDRESS)
             ).to.revertedWith("CCExchangeRouter: address is zero");
 
-            expect(
+            await expect(
                 ccExchangeRouter.setTreasury(ZERO_ADDRESS)
             ).to.revertedWith("CCExchangeRouter: address is zero");
         })
