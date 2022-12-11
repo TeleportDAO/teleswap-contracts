@@ -321,7 +321,7 @@ describe("CCBurnRouter", async () => {
 
         it("Reverts since user requested amount is zero", async function () {
 
-            expect(
+            await expect(
                 ccBurnRouterSigner1.ccBurn(
                     0,
                     USER_SCRIPT_P2PKH,
@@ -347,7 +347,7 @@ describe("CCBurnRouter", async () => {
             await setLockersGetLockerTargetAddress();
 
             // Burns teleBTC
-            expect(
+            await expect(
                 ccBurnRouterSigner1.ccBurn(
                     BITCOIN_FEE - 1,
                     USER_SCRIPT_P2PKH,
@@ -365,7 +365,7 @@ describe("CCBurnRouter", async () => {
 
             await setLockersGetLockerTargetAddress();
 
-            expect(
+            await expect(
                 ccBurnRouterSigner1.ccBurn(
                     userRequestedAmount,
                     USER_SCRIPT_P2PKH,
@@ -379,7 +379,7 @@ describe("CCBurnRouter", async () => {
 
             await setLockersIsLocker(false);
 
-            expect(
+            await expect(
                 ccBurnRouterSigner1.ccBurn(
                     userRequestedAmount,
                     USER_SCRIPT_P2PKH,
@@ -529,7 +529,7 @@ describe("CCBurnRouter", async () => {
         })
 
         it("Reverts since locktime is non-zero", async function () {
-            expect(
+            await expect(
                 ccBurnRouterSigner2.burnProof(
                     CC_BURN_REQUESTS.burnProof_valid.version,
                     CC_BURN_REQUESTS.burnProof_valid.vin,
@@ -549,7 +549,7 @@ describe("CCBurnRouter", async () => {
             // Sets mock contracts outputs
             await setLockersIsLocker(false);
 
-            expect(
+            await expect(
                 ccBurnRouterSigner2.burnProof(
                     CC_BURN_REQUESTS.burnProof_valid.version,
                     CC_BURN_REQUESTS.burnProof_valid.vin,
@@ -573,7 +573,7 @@ describe("CCBurnRouter", async () => {
             await setLockersGetLockerTargetAddress();
 
             // Should revert when start index is bigger than end index
-            expect(
+            await expect(
                 ccBurnRouterSigner2.burnProof(
                     CC_BURN_REQUESTS.burnProof_valid.version,
                     CC_BURN_REQUESTS.burnProof_valid.vin,
@@ -589,7 +589,7 @@ describe("CCBurnRouter", async () => {
             ).to.revertedWith("CCBurnRouter: wrong indexes")
 
             // Should revert when end index is bigger than total number of burn requests
-            expect(
+            await expect(
                 ccBurnRouterSigner2.burnProof(
                     CC_BURN_REQUESTS.burnProof_valid.version,
                     CC_BURN_REQUESTS.burnProof_valid.vin,
@@ -611,7 +611,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLocker(true);
             await setLockersGetLockerTargetAddress();
 
-            expect(
+            await expect(
                 ccBurnRouterSigner2.burnProof(
                     CC_BURN_REQUESTS.burnProof_valid.version,
                     CC_BURN_REQUESTS.burnProof_valid.vin,
@@ -633,7 +633,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLocker(true);
             await setLockersGetLockerTargetAddress();
 
-            expect(
+            await expect(
                 ccBurnRouterSigner2.burnProof(
                     CC_BURN_REQUESTS.burnProof_valid.version,
                     CC_BURN_REQUESTS.burnProof_valid.vin,
@@ -659,7 +659,7 @@ describe("CCBurnRouter", async () => {
             await setLockersGetLockerTargetAddress();
 
             // Should revert with a wrong start index
-            expect(
+            await expect(
                 ccBurnRouterSigner2.burnProof(
                     CC_BURN_REQUESTS.burnProof_valid.version,
                     CC_BURN_REQUESTS.burnProof_valid.vin,
@@ -849,7 +849,7 @@ describe("CCBurnRouter", async () => {
                 [0]
             );
 
-            expect(
+            await expect(
                 ccBurnRouterSigner2.disputeBurn(
                     LOCKER_TARGET_ADDRESS,
                     [0]
@@ -862,7 +862,7 @@ describe("CCBurnRouter", async () => {
             // Sets mock contracts outputs
             await setLockersIsLocker(false);
 
-            expect(
+            await expect(
                 ccBurnRouterSigner2.disputeBurn(
                     LOCKER_TARGET_ADDRESS,
                     [0]
@@ -879,7 +879,7 @@ describe("CCBurnRouter", async () => {
             // Pays the burnt amount and provides proof
             await provideProof(burnReqBlockNumber + 5);
 
-            expect(
+            await expect(
                 ccBurnRouterSigner2.disputeBurn(
                     LOCKER_TARGET_ADDRESS,
                     [0]
@@ -893,7 +893,7 @@ describe("CCBurnRouter", async () => {
             await setRelayLastSubmittedHeight(100);
 
             // Locker will not get slashed because the deadline of transfer has not reached
-            expect(
+            await expect(
                 ccBurnRouterSigner2.disputeBurn(
                     LOCKER_TARGET_ADDRESS,
                     [0]
@@ -946,7 +946,7 @@ describe("CCBurnRouter", async () => {
 
         it("Reverts since inputs are not valid", async function () {
 
-            expect(
+            await expect(
                 ccBurnRouterSigner2.disputeLocker(
                     LOCKER1_LOCKING_SCRIPT,
                     [CC_BURN_REQUESTS.disputeLocker_input.version],
@@ -960,7 +960,7 @@ describe("CCBurnRouter", async () => {
                 )
             ).to.revertedWith("CCBurnRouter: wrong inputs");
 
-            expect(
+            await expect(
                 ccBurnRouterSigner2.disputeLocker(
                     LOCKER1_LOCKING_SCRIPT,
                     [CC_BURN_REQUESTS.disputeLocker_input.version, CC_BURN_REQUESTS.disputeLocker_output.version],
@@ -974,7 +974,7 @@ describe("CCBurnRouter", async () => {
                 )
             ).to.revertedWith("CCBurnRouter: wrong inputs");
 
-            expect(
+            await expect(
                 ccBurnRouterSigner2.disputeLocker(
                     LOCKER1_LOCKING_SCRIPT,
                     [CC_BURN_REQUESTS.disputeLocker_input.version, CC_BURN_REQUESTS.disputeLocker_output.version],
@@ -994,7 +994,7 @@ describe("CCBurnRouter", async () => {
             // Sets mock contracts outputs
             await setLockersIsLocker(false);
 
-            expect(
+            await expect(
                 ccBurnRouterSigner2.disputeLocker(
                     LOCKER1_LOCKING_SCRIPT,
                     [CC_BURN_REQUESTS.disputeLocker_input.version, CC_BURN_REQUESTS.disputeLocker_output.version],
@@ -1015,7 +1015,7 @@ describe("CCBurnRouter", async () => {
             await setRelayCheckTxProofReturn(false);
             await setLockersIsLocker(true);
 
-            expect(
+            await expect(
                 ccBurnRouterSigner2.disputeLocker(
                     LOCKER1_LOCKING_SCRIPT,
                     [CC_BURN_REQUESTS.disputeLocker_input.version, CC_BURN_REQUESTS.disputeLocker_output.version],
@@ -1036,7 +1036,7 @@ describe("CCBurnRouter", async () => {
             await setRelayCheckTxProofReturn(false);
             await setLockersIsLocker(true);
 
-            expect(
+            await expect(
                 ccBurnRouterSigner2.disputeLocker(
                     LOCKER1_LOCKING_SCRIPT,
                     [CC_BURN_REQUESTS.disputeLocker_input.version, CC_BURN_REQUESTS.disputeLocker_output.version],
@@ -1060,7 +1060,7 @@ describe("CCBurnRouter", async () => {
             await setLockersGetLockerTargetAddress();
             await setLockersSlashIdleLockerReturn();
 
-            expect(
+            await expect(
                 ccBurnRouterSigner2.disputeLocker(
                     LOCKER1_LOCKING_SCRIPT,
                     [CC_BURN_REQUESTS.disputeLocker_input.version, CC_BURN_REQUESTS.disputeLocker_invalidOutput.version],
@@ -1084,7 +1084,7 @@ describe("CCBurnRouter", async () => {
             await setLockersGetLockerTargetAddress();
             await setLockersSlashIdleLockerReturn();
 
-            expect(
+            await expect(
                 ccBurnRouterSigner2.disputeLocker(
                     "0x76a914748284390f9e263a4b766a75d0633c50426eb87587ab",
                     [CC_BURN_REQUESTS.disputeLocker_input.version, CC_BURN_REQUESTS.disputeLocker_output.version],
@@ -1112,7 +1112,7 @@ describe("CCBurnRouter", async () => {
             await sendBurnRequest(100, userRequestedAmount, USER_SCRIPT_P2PKH, USER_SCRIPT_P2PKH_TYPE);
             await provideProof(burnReqBlockNumber + 5);
 
-            expect(
+            await expect(
                 ccBurnRouterSigner2.disputeLocker(
                     LOCKER1_LOCKING_SCRIPT,
                     [CC_BURN_REQUESTS.burnProof_valid.version, CC_BURN_REQUESTS.disputeLocker_output.version],
@@ -1151,7 +1151,7 @@ describe("CCBurnRouter", async () => {
         })
 
         it("Reverts since protocol percentage fee is greater than 10000", async function () {
-            expect(
+            await expect(
                 ccBurnRouter.setProtocolPercentageFee(10001)
             ).to.revertedWith("CCBurnRouter: protocol fee is out of range");
         })
@@ -1175,7 +1175,7 @@ describe("CCBurnRouter", async () => {
         it("Reverts since transfer deadline is smaller than relay finalizatio parameter", async function () {
             await mockBitcoinRelay.mock.finalizationParameter.returns(10);
 
-            expect(
+            await expect(
                 ccBurnRouter.setTransferDeadline(9)
             ).to.revertedWith("CCBurnRouter: transfer deadline is too low");
 
@@ -1184,7 +1184,7 @@ describe("CCBurnRouter", async () => {
         it("Reverts since transfer deadline is smaller than relay finalizatio parameter multiply 2 plus 1", async function () {
             await mockBitcoinRelay.mock.finalizationParameter.returns(10);
 
-            expect(
+            await expect(
                 ccBurnRouter.setTransferDeadline(20)
             ).to.revertedWith("CCBurnRouter: transfer deadline is too low");
 
@@ -1203,8 +1203,8 @@ describe("CCBurnRouter", async () => {
         })
 
         it("Reverts since slasher reward is greater than 100", async function () {
-            expect(
-                ccBurnRouter.setSlasherPercentageReward(101)
+            await expect(
+                ccBurnRouter.setSlasherPercentageReward(10001)
             ).to.revertedWith("CCBurnRouter: slasher percentage reward is out of range");
         })
 
@@ -1266,19 +1266,19 @@ describe("CCBurnRouter", async () => {
         })
 
         it("Reverts since given address is zero", async function () {
-            expect(
+            await expect(
                 ccBurnRouter.setRelay(ZERO_ADDRESS)
             ).to.revertedWith("CCBurnRouter: address is zero");
 
-            expect(
+            await expect(
                 ccBurnRouter.setLockers(ZERO_ADDRESS)
             ).to.revertedWith("CCBurnRouter: address is zero");
 
-            expect(
+            await expect(
                 ccBurnRouter.setTeleBTC(ZERO_ADDRESS)
             ).to.revertedWith("CCBurnRouter: address is zero");
 
-            expect(
+            await expect(
                 ccBurnRouter.setTreasury(ZERO_ADDRESS)
             ).to.revertedWith("CCBurnRouter: address is zero");
         })
