@@ -55,6 +55,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     /// @param _slasherPercentageReward     Percentage of total collateral that goes to slasher
     /// @param _paybackDeadline             Deadline of paying back the borrowed tokens
     /// @param _defaultExchangeConnector    Exchange connector that is used for exchanging user's collateral to teleBTC (in the case of slashing)
+    /// @param _maxPriceDifferencePercent   Maximum acceptable price different between chainlink price oracle and dex price
+    /// @param _treasuaryAddress            Treasury address to which the extra TeleBTCs will go 
     constructor(
         address _teleBTC,
         address _relay,
@@ -73,8 +75,6 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         _setSlasherPercentageReward(_slasherPercentageReward);
         _setPaybackDeadline(_paybackDeadline);
         _setDefaultExchangeConnector(_defaultExchangeConnector);
-
-        // TODO: write public setter as well
         _setMaxPriceDifferencePercent(_maxPriceDifferencePercent);
         _setTreasuaryAddress(_treasuaryAddress);
     }

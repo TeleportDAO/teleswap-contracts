@@ -1475,48 +1475,48 @@ describe("Instant Router", async () => {
 
         it("Reverted because non-owner account is calling ", async function () {
 
-            let instantRouterSigner1 = instantRouter.connect(signer1);
+            let instantRouterSigner1 = await instantRouter.connect(signer1);
 
             await expect(
                 instantRouterSigner1.setRelay(ONE_ADDRESS)
-            ).to.be.revertedWith("");
+            ).to.be.revertedWith("Ownable: caller is not the owner");
 
             await expect(
                 instantRouterSigner1.setTeleBTC(ONE_ADDRESS)
-            ).to.be.revertedWith("")
+            ).to.be.revertedWith("Ownable: caller is not the owner")
 
             await expect(
                 instantRouterSigner1.setCollateralPoolFactory(ONE_ADDRESS)
-            ).to.be.revertedWith("")
+            ).to.be.revertedWith("Ownable: caller is not the owner")
 
             await expect(
                 instantRouterSigner1.setPriceOracle(ONE_ADDRESS)
-            ).to.be.revertedWith("")
+            ).to.be.revertedWith("Ownable: caller is not the owner")
 
             await expect(
                 instantRouterSigner1.setDefaultExchangeConnector(ONE_ADDRESS)
-            ).to.be.revertedWith("")
+            ).to.be.revertedWith("Ownable: caller is not the owner")
 
             await expect(
                 instantRouterSigner1.setTeleBTCInstantPool(ONE_ADDRESS)
-            ).to.be.revertedWith("")
+            ).to.be.revertedWith("Ownable: caller is not the owner")
 
             await expect(
                 instantRouterSigner1.setTreasuaryAddress(TWO_ADDRESS)
-            ).to.be.revertedWith("")
+            ).to.be.revertedWith("Ownable: caller is not the owner")
 
 
             await expect(
                 instantRouterSigner1.setMaxPriceDifferencePercent(2 * maxPriceDifferencePercent)
-            ).to.be.revertedWith("")
+            ).to.be.revertedWith("Ownable: caller is not the owner")
 
             await expect(
                 instantRouterSigner1.setPaybackDeadline(2 * maxPriceDifferencePercent)
-            ).to.be.revertedWith("")
+            ).to.be.revertedWith("Ownable: caller is not the owner")
 
             await expect(
                 instantRouterSigner1.setSlasherPercentageReward(2 * maxPriceDifferencePercent)
-            ).to.be.revertedWith("")
+            ).to.be.revertedWith("Ownable: caller is not the owner")
 
         })
 
