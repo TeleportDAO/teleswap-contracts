@@ -189,6 +189,24 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         _setDefaultExchangeConnector(_defaultExchangeConnector);
     }
 
+    /// @notice                                 Setter for treasury address
+    /// @dev                                    Only owner can call this
+    /// @param _treasuaryAddress                The new treasury address
+    function setTreasuaryAddress(
+        address _treasuaryAddress
+    ) external override onlyOwner {
+        _setTreasuaryAddress(_treasuaryAddress);
+    }
+
+    /// @notice                                 Setter for max price differnce in percent 
+    /// @dev                                    Only owner can call this
+    /// @param _maxPriceDifferencePercent       The new maxPriceDifferencePercent 
+    function setMaxPriceDifferencePercent(
+        uint _maxPriceDifferencePercent
+    ) external override onlyOwner {
+        _setMaxPriceDifferencePercent(_maxPriceDifferencePercent);
+    }
+
     /// @notice                   Internal setter for payback deadline
     /// @dev                      Only owner can call this. It should be greater than relay finalization parameter so user has enough time to payback loan
     /// @param _paybackDeadline   The new payback deadline

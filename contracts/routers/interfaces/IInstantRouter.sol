@@ -209,6 +209,10 @@ interface IInstantRouter {
 
     function setDefaultExchangeConnector(address _defaultExchangeConnector) external;
 
+    function setTreasuaryAddress(address _treasuaryAddres) external;
+    
+    function setMaxPriceDifferencePercent(uint _maxPriceDifferencePercent) external;
+
     function instantCCTransfer(
         address _receiver,
         uint _loanAmount,
