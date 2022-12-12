@@ -22,10 +22,14 @@ describe("Instant Router", async () => {
     // Constants
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     let ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
+    let TWO_ADDRESS = "0x0000000000000000000000000000000000000022";
     let slasherPercentageReward = 5;
     let paybackDeadline = 10; // Means 10 Bitcoin blocks
     let instantPercentageFee = 5; // Means 0.05%
     let collateralizationRatio = 200; // Means 200%
+
+    let maxPriceDifferencePercent = 1000; // Means 10%
+    let treasuaryAddress = ONE_ADDRESS;
 
     // Accounts
     let deployer: Signer;
@@ -122,7 +126,9 @@ describe("Instant Router", async () => {
             mockCollateralPoolFactory.address,
             slasherPercentageReward,
             paybackDeadline,
-            mockExchangeConnector.address
+            mockExchangeConnector.address,
+            maxPriceDifferencePercent,
+            treasuaryAddress
         );
 
         // Deploys bitcoin instant pool
@@ -1019,8 +1025,10 @@ describe("Instant Router", async () => {
     describe("#slashUser", async () => {
         // Parameters
         let loanAmount: number;
+        let loanAmount2: number | undefined;
         let equivalentCollateralToken: number;
         let requiredCollateralPoolToken: number;
+        let requiredCollateralPoolToken2: number | undefined;
         let requiredCollateralToken: number;
         let totalCollateralToken: number;
         let lastSubmittedHeight: number;
@@ -1032,10 +1040,12 @@ describe("Instant Router", async () => {
 
             // Set parameters
             loanAmount = 100;
+            loanAmount2 = loanAmount;
             equivalentCollateralToken = 50; // Assumes that: 1 collateralToken = 2 teleBTC
             requiredCollateralToken = 25;
             totalCollateralToken = 100;
             requiredCollateralPoolToken = equivalentCollateralToken*collateralizationRatio; // Assumes that: 1 collateralToken = 1 collateralPoolToken
+            requiredCollateralPoolToken2 = requiredCollateralPoolToken;
             lastSubmittedHeight = 100;
             isCollateral = true;
             swapResult = true;
@@ -1045,11 +1055,58 @@ describe("Instant Router", async () => {
             await mockFunctionsCollateralPool(collateralizationRatio, requiredCollateralPoolToken, totalCollateralToken);
             await mockFunctionsPriceOracle(equivalentCollateralToken);
             await mockFunctionsBitcoinRelay(lastSubmittedHeight);
-            await mockFunctionsExchangeConnector(swapResult, [], requiredCollateralToken);
+            await mockFunctionsExchangeConnector(swapResult, [loanAmount2 , requiredCollateralPoolToken2], requiredCollateralToken);
+            await teleBTC.transfer(instantRouter.address, requiredCollateralPoolToken);
         });
 
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("Slash user reverted because big gap between dex and oracle", async function () {
+
+            // Gets last block timestamp
+            let lastBlockTimestamp = await getTimestamp();
+
+            await collateralToken.transfer(instantRouter.address, totalCollateralToken);
+
+            // Creates a debt for deployer
+            await instantRouter.instantCCTransfer(
+                signer1Address,
+                loanAmount,
+                lastBlockTimestamp*2,
+                collateralToken.address
+            );
+
+            let instantFee = Math.floor(loanAmount*instantPercentageFee/10000);
+
+            expect(
+                await instantRouter.getUserRequestsLength(
+                    deployerAddress
+                )
+            ).to.equal(1);
+
+            expect(
+                await teleBTCInstantPool.totalUnpaidLoan()
+            ).to.equal(loanAmount + instantFee);
+
+            // Passes payback deadline
+            await mockFunctionsBitcoinRelay(lastSubmittedHeight*2);
+
+            await mockFunctionsPriceOracle(requiredCollateralToken * 12 / 100);
+
+            await expect(
+                instantRouter.slashUser(
+                    deployerAddress,
+                    0
+                )
+            ).to.be.revertedWith("InstantRouter: big gap between oracle and AMM price")
+
+            expect(
+                await instantRouter.getUserRequestsLength(
+                    deployerAddress
+                )
+            ).to.equal(1);
         });
 
         it("Slashes user and pays instant loan fully", async function () {
@@ -1081,6 +1138,8 @@ describe("Instant Router", async () => {
 
             // Passes payback deadline
             await mockFunctionsBitcoinRelay(lastSubmittedHeight*2);
+
+            await mockFunctionsPriceOracle(requiredCollateralToken);
 
             expect(
                 await instantRouter.slashUser(
@@ -1138,6 +1197,8 @@ describe("Instant Router", async () => {
                 true,
                 totalCollateralToken + 1
             );
+
+            await mockFunctionsPriceOracle(totalCollateralToken);
 
             expect(
                 await instantRouter.slashUser(
@@ -1377,6 +1438,28 @@ describe("Instant Router", async () => {
                 await instantRouter.teleBTCInstantPool()
             ).to.equal(ONE_ADDRESS);
 
+
+            await expect(
+                instantRouter.setTreasuaryAddress(TWO_ADDRESS)
+            ).to.emit(
+                instantRouter, "NewTreasuaryAddress"
+            ).withArgs(ONE_ADDRESS, TWO_ADDRESS);
+
+            expect(
+                await instantRouter.treasuaryAddress()
+            ).to.equal(TWO_ADDRESS);
+
+
+            await expect(
+                instantRouter.setMaxPriceDifferencePercent(2 * maxPriceDifferencePercent)
+            ).to.emit(
+                instantRouter, "NewMaxPriceDifferencePercent"
+            ).withArgs(maxPriceDifferencePercent, 2 * maxPriceDifferencePercent);
+
+            expect(
+                await instantRouter.maxPriceDifferencePercent()
+            ).to.equal(2 * maxPriceDifferencePercent);
+
         })
 
         it("Reverts since given address is zero", async function () {
@@ -1408,6 +1491,57 @@ describe("Instant Router", async () => {
             expect(
                 instantRouter.setCollateralPoolFactory(ZERO_ADDRESS)
             ).to.revertedWith("InstantRouter: zero address");
+
+            expect(
+                instantRouter.setTreasuaryAddress(ZERO_ADDRESS)
+            ).to.revertedWith("InstantRouter: zero address");
+        })
+
+        it("Reverted because non-owner account is calling ", async function () {
+
+            let instantRouterSigner1 = await instantRouter.connect(signer1);
+
+            await expect(
+                instantRouterSigner1.setRelay(ONE_ADDRESS)
+            ).to.be.revertedWith("Ownable: caller is not the owner");
+
+            await expect(
+                instantRouterSigner1.setTeleBTC(ONE_ADDRESS)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+            await expect(
+                instantRouterSigner1.setCollateralPoolFactory(ONE_ADDRESS)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+            await expect(
+                instantRouterSigner1.setPriceOracle(ONE_ADDRESS)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+            await expect(
+                instantRouterSigner1.setDefaultExchangeConnector(ONE_ADDRESS)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+            await expect(
+                instantRouterSigner1.setTeleBTCInstantPool(ONE_ADDRESS)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+            await expect(
+                instantRouterSigner1.setTreasuaryAddress(TWO_ADDRESS)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+
+            await expect(
+                instantRouterSigner1.setMaxPriceDifferencePercent(2 * maxPriceDifferencePercent)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+            await expect(
+                instantRouterSigner1.setPaybackDeadline(2 * maxPriceDifferencePercent)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+            await expect(
+                instantRouterSigner1.setSlasherPercentageReward(2 * maxPriceDifferencePercent)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
         })
 
     });

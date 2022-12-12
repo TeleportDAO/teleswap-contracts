@@ -110,6 +110,18 @@ interface IInstantRouter {
         uint newSlasherPercentageReward
     );
 
+    /// @notice                     	Emits when changes made to treasuray overhead percnet
+    event NewTreasuaryAddress(
+        address oldTreasuaryAddress, 
+        address newTreasuaryAddress
+    );
+
+    /// @notice                     	Emits when changes made to max price difference percent
+    event NewMaxPriceDifferencePercent(
+        uint oldMaxPriceDifferencePercent, 
+        uint newMaxPriceDifferencePercent
+    );
+
     /// @notice                     	Emits when changes made to TeleBTC address
     event NewTeleBTC(
         address oldTeleBTC, 
@@ -175,6 +187,10 @@ interface IInstantRouter {
 
     function getUserRequestDeadline(address _user, uint _index) external view returns (uint);
 
+    function maxPriceDifferencePercent() external view returns (uint);
+
+    function treasuaryAddress() external view returns (address);
+
     // State-changing functions
 
     function setPaybackDeadline(uint _paybackDeadline) external;
@@ -192,6 +208,10 @@ interface IInstantRouter {
     function setTeleBTCInstantPool(address _teleBTCInstantPool) external;
 
     function setDefaultExchangeConnector(address _defaultExchangeConnector) external;
+
+    function setTreasuaryAddress(address _treasuaryAddres) external;
+    
+    function setMaxPriceDifferencePercent(uint _maxPriceDifferencePercent) external;
 
     function instantCCTransfer(
         address _receiver,
