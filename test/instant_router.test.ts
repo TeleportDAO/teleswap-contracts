@@ -1056,6 +1056,7 @@ describe("Instant Router", async () => {
             await mockFunctionsPriceOracle(equivalentCollateralToken);
             await mockFunctionsBitcoinRelay(lastSubmittedHeight);
             await mockFunctionsExchangeConnector(swapResult, [loanAmount2 , requiredCollateralPoolToken2], requiredCollateralToken);
+            await teleBTC.transfer(instantRouter.address, requiredCollateralPoolToken);
         });
 
         afterEach(async () => {
