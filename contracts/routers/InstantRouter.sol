@@ -37,7 +37,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     uint public override slasherPercentageReward;
     uint public override paybackDeadline;
     uint public override maxPriceDifferencePercent;
-    uint public override treasuaryOverheadPercent;
+    address public override treasuaryAddress;
 
     address public override teleBTC;
     address public override teleBTCInstantPool;
@@ -64,7 +64,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         uint _paybackDeadline,
         address _defaultExchangeConnector,
         uint _maxPriceDifferencePercent,
-        uint _treasuaryOverheadPercent
+        address _treasuaryAddress
     ) {
         _setTeleBTC(_teleBTC);
         _setRelay(_relay);
@@ -75,8 +75,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         _setDefaultExchangeConnector(_defaultExchangeConnector);
 
         // TODO: write public setter as well
-        _setTreasuaryOverheadPercent(_treasuaryOverheadPercent);
         _setMaxPriceDifferencePercent(_maxPriceDifferencePercent);
+        _setTreasuaryAddress(_treasuaryAddress);
     }
 
     receive() external payable {}
@@ -266,17 +266,13 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         defaultExchangeConnector = _defaultExchangeConnector;
     }
 
-    /// @notice                                 Internal setter for treasury overhead percent 
-    /// @param _treasuaryOverheadPercent        The new treasuaryOverheadPercent 
-    function _setTreasuaryOverheadPercent(
-        uint _treasuaryOverheadPercent
-    ) private {
-        require(
-            _treasuaryOverheadPercent >= maxPriceDifferencePercent,
-            "InstantRouter: must treasurayOverhead >= maxPriceDiff"
-        );
-        emit NewTreasuaryOverheadPercent(treasuaryOverheadPercent, _treasuaryOverheadPercent);
-        treasuaryOverheadPercent = _treasuaryOverheadPercent;
+    /// @notice                                 Internal setter for treasury address
+    /// @param _treasuaryAddress                The new treasuaryAddress 
+    function _setTreasuaryAddress(
+        address _treasuaryAddress
+    ) private nonZeroAddress(_treasuaryAddress) {
+        emit NewTreasuaryAddress(treasuaryAddress, _treasuaryAddress);
+        treasuaryAddress = _treasuaryAddress;
     }
 
     /// @notice                                 Internal setter for max price differnce in percent  
@@ -284,10 +280,6 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     function _setMaxPriceDifferencePercent(
         uint _maxPriceDifferencePercent
     ) private {
-        require(
-            treasuaryOverheadPercent >= _maxPriceDifferencePercent,
-            "InstantRouter: must treasurayOverhead >= maxPriceDiff"
-        );
         emit NewMaxPriceDifferencePercent(maxPriceDifferencePercent, _maxPriceDifferencePercent);
         maxPriceDifferencePercent = _maxPriceDifferencePercent;
     }
@@ -492,7 +484,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         // Gets loan information
         instantRequest memory theRequest = instantRequests[_user][_requestIndex];
 
-        uint modifiedPayBackAmount = theRequest.paybackAmount * (ONE_HUNDRED_PERCENT + treasuaryOverheadPercent) / ONE_HUNDRED_PERCENT;
+        uint modifiedPayBackAmount = theRequest.paybackAmount * (ONE_HUNDRED_PERCENT + maxPriceDifferencePercent) / ONE_HUNDRED_PERCENT;
 
         // Finds needed collateral token to pay back loan
         (bool result, uint requiredCollateralToken) = IExchangeConnector(defaultExchangeConnector).getInputAmount(
@@ -514,7 +506,6 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             theRequest.collateralToken // output token
         );
 
-        // TODO: change the comparing amount
         uint absPriceDiff = _abs(requiredCollateralTokenFromOracle.toInt256() - requiredCollateralToken.toInt256());
         require(
             absPriceDiff <= (requiredCollateralToken * maxPriceDifferencePercent)/ONE_HUNDRED_PERCENT,
@@ -527,7 +518,6 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             // update the modifiedPayBackAmount again
             modifiedPayBackAmount = theRequest.paybackAmount + theRequest.paybackAmount * absPriceDiff / requiredCollateralToken;
         }
-
         
 
         uint totalCollateralToken = ICollateralPool(theRequest.collateralPool).equivalentCollateralToken(
@@ -563,11 +553,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             );
 
             IERC20(teleBTC).safeTransfer(teleBTCInstantPool, theRequest.paybackAmount);
-
-            console.log("we are here");
-
-            // TODO: send the rest to a treasury
-            // IERC20(teleBTC).safeTransfer(teleBTCInstantPool, theRequest.paybackAmount);
+            IERC20(teleBTC).safeTransfer(treasuaryAddress, modifiedPayBackAmount - theRequest.paybackAmount);
 
             // Sends reward to slasher
             uint slasherReward = (totalCollateralToken - requiredCollateralToken)
@@ -619,9 +605,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
             if (resultAmounts[1] > theRequest.paybackAmount) {
                 IERC20(teleBTC).safeTransfer(teleBTCInstantPool, theRequest.paybackAmount);
-
-                // TODO: send the rest to a treasury
-                // IERC20(teleBTC).safeTransfer(teleBTCInstantPool, theRequest.paybackAmount);
+                IERC20(teleBTC).safeTransfer(treasuaryAddress, resultAmounts[1] - theRequest.paybackAmount);
             } else {
                 IERC20(teleBTC).safeTransfer(teleBTCInstantPool, resultAmounts[1]);
             }

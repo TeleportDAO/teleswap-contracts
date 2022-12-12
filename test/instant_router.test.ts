@@ -28,7 +28,7 @@ describe("Instant Router", async () => {
     let collateralizationRatio = 200; // Means 200%
 
     let maxPriceDifferencePercent = 1000; // Means 10%
-    let treasuaryOverheadPercent = 1250; // Means 12.5%
+    let treasuaryAddress = ONE_ADDRESS;
 
     // Accounts
     let deployer: Signer;
@@ -127,7 +127,7 @@ describe("Instant Router", async () => {
             paybackDeadline,
             mockExchangeConnector.address,
             maxPriceDifferencePercent,
-            treasuaryOverheadPercent
+            treasuaryAddress
         );
 
         // Deploys bitcoin instant pool
@@ -1024,8 +1024,10 @@ describe("Instant Router", async () => {
     describe("#slashUser", async () => {
         // Parameters
         let loanAmount: number;
+        let loanAmount2: number | undefined;
         let equivalentCollateralToken: number;
         let requiredCollateralPoolToken: number;
+        let requiredCollateralPoolToken2: number | undefined;
         let requiredCollateralToken: number;
         let totalCollateralToken: number;
         let lastSubmittedHeight: number;
@@ -1037,10 +1039,12 @@ describe("Instant Router", async () => {
 
             // Set parameters
             loanAmount = 100;
+            loanAmount2 = loanAmount;
             equivalentCollateralToken = 50; // Assumes that: 1 collateralToken = 2 teleBTC
             requiredCollateralToken = 25;
             totalCollateralToken = 100;
             requiredCollateralPoolToken = equivalentCollateralToken*collateralizationRatio; // Assumes that: 1 collateralToken = 1 collateralPoolToken
+            requiredCollateralPoolToken2 = requiredCollateralPoolToken;
             lastSubmittedHeight = 100;
             isCollateral = true;
             swapResult = true;
@@ -1050,7 +1054,7 @@ describe("Instant Router", async () => {
             await mockFunctionsCollateralPool(collateralizationRatio, requiredCollateralPoolToken, totalCollateralToken);
             await mockFunctionsPriceOracle(equivalentCollateralToken);
             await mockFunctionsBitcoinRelay(lastSubmittedHeight);
-            await mockFunctionsExchangeConnector(swapResult, [], requiredCollateralToken);
+            await mockFunctionsExchangeConnector(swapResult, [loanAmount2 , requiredCollateralPoolToken2], requiredCollateralToken);
         });
 
         afterEach(async () => {

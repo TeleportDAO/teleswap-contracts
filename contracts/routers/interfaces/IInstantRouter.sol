@@ -111,9 +111,9 @@ interface IInstantRouter {
     );
 
     /// @notice                     	Emits when changes made to treasuray overhead percnet
-    event NewTreasuaryOverheadPercent(
-        uint oldTreasuaryOverheadPercent, 
-        uint newTreasuaryOverheadPercent
+    event NewTreasuaryAddress(
+        address oldTreasuaryAddress, 
+        address newTreasuaryAddress
     );
 
     /// @notice                     	Emits when changes made to max price difference percent
@@ -189,7 +189,7 @@ interface IInstantRouter {
 
     function maxPriceDifferencePercent() external view returns (uint);
 
-    function treasuaryOverheadPercent() external view returns (uint);
+    function treasuaryAddress() external view returns (address);
 
     // State-changing functions
 
