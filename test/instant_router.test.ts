@@ -1291,6 +1291,15 @@ describe("Instant Router", async () => {
             ).to.equal(21);
         })
 
+        it("can't Fix payback deadline if finalizationParameter is greater than current payback deadline", async function () {
+            await instantRouter.setPaybackDeadline(9);
+            await mockBitcoinRelay.mock.finalizationParameter.returns(10);
+
+            await expect(
+                instantRouter.fixPaybackDeadline()
+            ).to.revertedWith("InstantRouter: finalization parameter is not greater than payback deadline");
+        })
+
         it("Reverts since payback deadline is lower than relay finalization parameter", async function () {
             await mockBitcoinRelay.mock.finalizationParameter.returns(2);
 
