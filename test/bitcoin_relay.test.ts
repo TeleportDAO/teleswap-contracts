@@ -186,7 +186,7 @@ describe("Bitcoin Relay", async () => {
             // below = blockheader[2014] with a different nonce
             let blockHeaderNew = '0x' + '02000000b9985b54b29f5244d2884e497a68523a6f8a3874dadc1db26804000000000000f3689bc987a63f3d9db84913a4521691b6292d46be11166412a1bb561159098f238e6b508bdb051a6ffb0278';
             
-            expect(
+            await expect(
                 bitcoinRelay.addHeaders(
                     blockHeaderOld, // anchor header
                     blockHeaderNew // new header;
@@ -201,7 +201,7 @@ describe("Bitcoin Relay", async () => {
             // below = blockheader[2014] with a different previous hash (equal to its own hash)
             let blockHeaderNew = '0x' + '0200000090750e6782a6a91bf18823869519802e76ee462f462e8fb2cc00000000000000f3689bc987a63f3d9db84913a4521691b6292d46be11166412a1bb561159098f238e6b508bdb051a6ffb0277';
             
-            expect(
+            await expect(
                 bitcoinRelay.addHeaders(
                     blockHeaderOld, // anchor header
                     blockHeaderNew // new header;
@@ -215,7 +215,7 @@ describe("Bitcoin Relay", async () => {
             // block header new has the same target as block header old
             let blockHeaderNew = "0x010000009d6f4e09d579c93015a83e9081fee83a5c8b1ba3c86516b61f0400000000000025399317bb5c7c4daefe8fe2c4dfac0cea7e4e85913cd667030377240cadfe93a4906b508bdb051a84297df7"
 
-            expect(
+            await expect(
                 bitcoinRelay.addHeaders(
                     blockHeaderOld, // anchor header
                     blockHeaderNew // new header;
@@ -229,7 +229,7 @@ describe("Bitcoin Relay", async () => {
             blockHeaderOld = '0x' + blockHeaderOld;
             blockHeaderNew = '0x' + blockHeaderNew;
 
-            expect(
+            await expect(
                 bitcoinRelay.addHeaders(
                     blockHeaderOld, // anchor header
                     blockHeaderNew // new header;
@@ -317,7 +317,7 @@ describe("Bitcoin Relay", async () => {
             }
             // submit the second fork
             // note: confirmation number = 3
-            expect(
+            await expect(
                 bitcoinRelayTest.addHeaders(
                     '0x' + bitcoin[3].blockHeader,
                     '0x' + bitcoin[4].blockHeader
@@ -494,7 +494,7 @@ describe("Bitcoin Relay", async () => {
             // pause the relay
             await bitcoinRelayDeployer.pauseRelay();
 
-            expect(
+            await expect(
                 bitcoinRelayDeployer.checkTxProof(
                     transaction.tx_id,
                     block.height,
@@ -515,7 +515,7 @@ describe("Bitcoin Relay", async () => {
             let fee = await bitcoinRelay.getBlockHeaderFee(_height, 0);
 
             // See if the transaction check goes through successfully
-            expect(
+            await expect(
                 bitcoinRelaySigner1.checkTxProof(
                     "0x0000000000000000000000000000000000000000000000000000000000000000",
                     block.height,
@@ -533,7 +533,7 @@ describe("Bitcoin Relay", async () => {
             // Get the fee amount needed for the query
             let fee = await bitcoinRelay.getBlockHeaderFee(_height, 0);
 
-            expect(
+            await expect(
                 bitcoinRelayDeployer.checkTxProof(
                     transaction.tx_id,
                     block.height - 100,
@@ -592,7 +592,7 @@ describe("Bitcoin Relay", async () => {
             let fee = await bitcoinRelay.getBlockHeaderFee(_height, 0);
 
             // See if the transaction check fails
-            expect(
+            await expect(
                 bitcoinRelaySigner1.checkTxProof(
                     transaction.tx_id,
                     _height,
@@ -658,7 +658,7 @@ describe("Bitcoin Relay", async () => {
             let fee = await bitcoinRelay.getBlockHeaderFee(_height, 0);
 
             // See if the transaction check returns false
-            expect(
+            await expect(
                 bitcoinRelaySigner1.checkTxProof(
                     transaction.tx_id,
                     _height + 1,
@@ -698,7 +698,7 @@ describe("Bitcoin Relay", async () => {
 
         it('errors if the caller is being an idiot', async () => {
 
-            expect(
+            await expect(
                 bitcoinRelayFactory.deploy(
                     '0x00',
                     genesis.height,
@@ -710,7 +710,7 @@ describe("Bitcoin Relay", async () => {
 
         it('errors if the period start is in wrong byte order', async () => {
 
-            expect(
+            await expect(
                 bitcoinRelayFactory.deploy(
                     genesis.hex,
                     genesis.height,
@@ -755,7 +755,7 @@ describe("Bitcoin Relay", async () => {
         it('errors if the caller is not owner', async () => {
 
             let bitcoinRelaySigner1 = await instance.connect(signer1);
-            expect(
+            await expect(
                 bitcoinRelaySigner1.pauseRelay()
             ).to.revertedWith("Ownable: caller is not the owner")
         });
@@ -781,7 +781,7 @@ describe("Bitcoin Relay", async () => {
             // owner pauses the relay
             await bitcoinRelayDeployer.pauseRelay();
 
-            expect(
+            await expect(
                 bitcoinRelaySigner1.unpauseRelay()
             ).to.revertedWith("Ownable: caller is not the owner")
         });
@@ -840,7 +840,7 @@ describe("Bitcoin Relay", async () => {
         });
 
         it('setRewardAmountInTDT owner check', async () => {
-            expect(
+            await expect(
                 bitcoinRelaySigner2.setRewardAmountInTDT(5)
             ).to.revertedWith("Ownable: caller is not the owner")
         });
@@ -858,7 +858,7 @@ describe("Bitcoin Relay", async () => {
         });
 
         it('setFinalizationParameter owner check', async () => {
-            expect(
+            await expect(
                 bitcoinRelaySigner2.setFinalizationParameter(6)
             ).to.revertedWith("Ownable: caller is not the owner")
         });
@@ -876,7 +876,7 @@ describe("Bitcoin Relay", async () => {
         });
 
         it('setRelayerPercentageFee owner check', async () => {
-            expect(
+            await expect(
                 bitcoinRelaySigner2.setRelayerPercentageFee(5)
             ).to.revertedWith("Ownable: caller is not the owner")
         });
@@ -894,7 +894,7 @@ describe("Bitcoin Relay", async () => {
         });
 
         it('setEpochLength owner check', async () => {
-            expect(
+            await expect(
                 bitcoinRelaySigner2.setEpochLength(10)
             ).to.revertedWith("Ownable: caller is not the owner")
         });
@@ -912,7 +912,7 @@ describe("Bitcoin Relay", async () => {
         });
 
         it('setBaseQueries owner check', async () => {
-            expect(
+            await expect(
                 bitcoinRelaySigner2.setBaseQueries(100)
             ).to.revertedWith("Ownable: caller is not the owner")
         });
@@ -930,7 +930,7 @@ describe("Bitcoin Relay", async () => {
         });
 
         it('setSubmissionGasUsed owner check', async () => {
-            expect(
+            await expect(
                 bitcoinRelaySigner2.setSubmissionGasUsed(100)
             ).to.revertedWith("Ownable: caller is not the owner")
         });
@@ -964,7 +964,7 @@ describe("Bitcoin Relay", async () => {
             // pause the relay
             await instance.pauseRelay();
 
-            expect(
+            await expect(
                 instance.addHeaders(
                     '0x00',
                     headers
@@ -977,7 +977,7 @@ describe("Bitcoin Relay", async () => {
             await setTDTbalanceOf(0);
             await setTDTtransfer(true);
 
-            expect(
+            await expect(
                 instance.addHeaders(
                     '0x00',
                     headers
@@ -992,7 +992,7 @@ describe("Bitcoin Relay", async () => {
 
             let badHeaders = '0x0000002073bd2184edd9c4fc76642ea6754ee40136970efc10c4190000000000000000000296ef123ea96da5cf695f22bf7d94be87d49db1ad7ac371ac43c4da4161c8c216349c5ba11928170d38782b0000002073bd2184edd9c4fc76642ea6754ee40136970efc10c4190000000000000000005af53b865c27c6e9b5e5db4c3ea8e024f8329178a79ddb39f7727ea2fe6e6825d1349c5ba1192817e2d951590000002073bd2184edd9c4fc76642ea6754ee40136970efc10c419000000000000000000c63a8848a448a43c9e4402bd893f701cd11856e14cbbe026699e8fdc445b35a8d93c9c5ba1192817b945dc6c00000020f402c0b551b944665332466753f1eebb846a64ef24c71700000000000000000033fc68e070964e908d961cd11033896fa6c9b8b76f64a2db7ea928afa7e304257d3f9c5ba11928176164145d0000ff3f63d40efa46403afd71a254b54f2b495b7b0164991c2d22000000000000000000f046dc1b71560b7d0786cfbdb25ae320bd9644c98d5c7c77bf9df05cbe96212758419c5ba1192817a2bb2caa00000020e2d4f0edd5edd80bdcb880535443747c6b22b48fb6200d0000000000000000001d3799aa3eb8d18916f46bf2cf807cb89a9b1b4c56c3f2693711bf1064d9a32435429c5ba1192817752e49ae0000002022dba41dff28b337ee3463bf1ab1acf0e57443e0f7ab1d000000000000000000c3aadcc8def003ecbd1ba514592a18baddddcd3a287ccf74f584b04c5c10044e97479c5ba1192817c341f595';
 
-            expect(
+            await expect(
                 instance.addHeaders(
                     genesis.hex,
                     badHeaders
@@ -1007,7 +1007,7 @@ describe("Bitcoin Relay", async () => {
 
             let badHeaders = headers.substring(0, 8 + 5 * 160)
 
-            expect(
+            await expect(
                 instance.addHeaders(
                     genesis.hex,
                     badHeaders
@@ -1022,7 +1022,7 @@ describe("Bitcoin Relay", async () => {
 
             let badHeaders = `${headers}${'00'.repeat(80)}`
 
-            expect(
+            await expect(
                 instance.addHeaders(
                     genesis.hex,
                     badHeaders
@@ -1040,7 +1040,7 @@ describe("Bitcoin Relay", async () => {
 
             let badHeaders = utils.concatenateHexStrings([headers, REGULAR_CHAIN.badHeader.hex]);
 
-            expect(
+            await expect(
                 instance.addHeaders(
                     genesis.hex,
                     badHeaders
@@ -1056,7 +1056,7 @@ describe("Bitcoin Relay", async () => {
 
             let badHeaders = utils.concatenateHexStrings([headers, chain[15].hex]);
 
-            expect(
+            await expect(
                 instance.addHeaders(
                     genesis.hex,
                     badHeaders
@@ -1249,7 +1249,7 @@ describe("Bitcoin Relay", async () => {
             // pause the relay
             await instance.pauseRelay();
 
-            expect(
+            await expect(
                 instance.addHeadersWithRetarget(
                     '0x00',
                     lastHeader.hex,
@@ -1260,7 +1260,7 @@ describe("Bitcoin Relay", async () => {
 
         it('errors if the old period start header is unknown', async () => {
 
-            expect(
+            await expect(
                 instance.addHeadersWithRetarget(
                     '0x00',
                     lastHeader.hex,
@@ -1272,7 +1272,7 @@ describe("Bitcoin Relay", async () => {
 
         it('errors if the old period end header is unknown', async () => {
 
-            expect(
+            await expect(
                 instance.addHeadersWithRetarget(
                     firstHeader.hex,
                     chain[15].hex,
@@ -1284,7 +1284,7 @@ describe("Bitcoin Relay", async () => {
 
         it('errors if the provided last header does not match records', async () => {
 
-            expect(
+            await expect(
                 instance.addHeadersWithRetarget(
                     firstHeader.hex,
                     firstHeader.hex,
@@ -1295,7 +1295,7 @@ describe("Bitcoin Relay", async () => {
 
         it('errors if the start and end headers are not exactly 2015 blocks apart', async () => {
 
-            expect(
+            await expect(
                 instance.addHeadersWithRetarget(
                     lastHeader.hex,
                     lastHeader.hex,
@@ -1317,7 +1317,7 @@ describe("Bitcoin Relay", async () => {
                 ZERO_ADDRESS
             );
 
-            expect(
+            await expect(
                 tmpInstance.addHeadersWithRetarget(
                     firstHeader.hex,
                     genesis.hex,
@@ -1360,7 +1360,7 @@ describe("Bitcoin Relay", async () => {
 
         it('errors on unknown blocks', async () => {
 
-            expect(
+            await expect(
                 instance2.findHeight(`0x${'00'.repeat(32)}`)
             ).to.revertedWith("BitcoinRelay: unknown block")
 
@@ -1401,7 +1401,7 @@ describe("Bitcoin Relay", async () => {
 
         it('errors on unknown blocks', async () => {
 
-            expect(
+            await expect(
                 instance2.findAncestor(`0x${'00'.repeat(32)}`, 3)
             ).to.revertedWith("BitcoinRelay: unknown ancestor")
 
@@ -1514,7 +1514,7 @@ describe("Bitcoin Relay", async () => {
             // signer1 is not the owner
             let bitcoinRelaySigner1 = await instance.connect(signer1);
 
-            expect(
+            await expect(
                 bitcoinRelaySigner1.ownerAddHeaders(
                     genesis.hex,
                     headers
@@ -1584,7 +1584,7 @@ describe("Bitcoin Relay", async () => {
             // signer1 is not the owner
             let bitcoinRelaySigner1 = await instance.connect(signer1);
 
-            expect(
+            await expect(
                 bitcoinRelaySigner1.ownerAddHeadersWithRetarget(
                     firstHeader.hex,
                     lastHeader.hex,
