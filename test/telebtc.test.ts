@@ -10,7 +10,7 @@ import { network } from "hardhat"
 describe("TeleBTC", async () => {
     // Constants
     const ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
-    const maxmimumMintLimit = 200 * 10 ** 8;
+    const maxMintLimit = 200 * 10 ** 8;
     const epochLength = 2000;
 
     // Accounts
@@ -47,14 +47,14 @@ describe("TeleBTC", async () => {
 
         it("can't mint more than maximum mint limit in one transaction", async function () {
             await expect(
-                teleBTC.connect(signer2).mint(ONE_ADDRESS, maxmimumMintLimit * 2)
+                teleBTC.connect(signer2).mint(ONE_ADDRESS, maxMintLimit * 2)
             ).to.be.revertedWith(
                 "TeleBTC: mint amount is more than maximum mint limit"
             )
         })  
         
         it("can't mint more than maximum mint limit in one epoch", async function () {
-            await teleBTC.connect(signer2).mint(ONE_ADDRESS, maxmimumMintLimit - 10)
+            await teleBTC.connect(signer2).mint(ONE_ADDRESS, maxMintLimit - 10)
             await expect(
                 await teleBTC.lastMintLimit()
             ).to.be.equal(
@@ -70,7 +70,7 @@ describe("TeleBTC", async () => {
         it("after an epoch, mint rate limit will be reset", async function () {
             await moveBlocks(epochLength)
 
-            await teleBTC.connect(signer2).mint(ONE_ADDRESS, maxmimumMintLimit - 10)
+            await teleBTC.connect(signer2).mint(ONE_ADDRESS, maxMintLimit - 10)
             await expect(
                 await teleBTC.lastMintLimit()
             ).to.be.equal(
@@ -95,7 +95,7 @@ describe("TeleBTC", async () => {
             await expect(
                 await teleBTC.lastMintLimit()
             ).to.be.equal(
-                maxmimumMintLimit - 10
+                maxMintLimit - 10
             )
         })  
 
@@ -154,7 +154,7 @@ describe("TeleBTC", async () => {
 
         it("none owner accounts can't change maximum mint limit", async function () {
             await expect(
-                teleBTC.connect(signer1).setMaxmimumMintLimit(10)
+                teleBTC.connect(signer1).setMaxMintLimit(10)
             ).to.be.revertedWith(
                 "Ownable: caller is not the owner"
             )
@@ -162,15 +162,15 @@ describe("TeleBTC", async () => {
 
         it("owner account can change maximum mint limit", async function () {
             await expect(
-                await teleBTC.setMaxmimumMintLimit(10)
+                await teleBTC.setMaxMintLimit(10)
             ).to.emit(
                 teleBTC, "NewMintLimit"
             ).withArgs(
-                maxmimumMintLimit, 10
+                maxMintLimit, 10
             )
 
             await expect(
-                await teleBTC.maxmimumMintLimit()
+                await teleBTC.maxMintLimit()
             ).to.equal(10)
 
         })

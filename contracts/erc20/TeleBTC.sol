@@ -27,7 +27,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     mapping(address => bool) public minters;
     mapping(address => bool) public burners;
 
-    uint public maxmimumMintLimit;      // Maximum mint limit per epoch
+    uint public maxMintLimit;      // Maximum mint limit per epoch
     uint public lastMintLimit;          // Current mint limit in last epoch, decrease by minting in an epoch
     uint public epochLength;            // Number of blocks in every epoch
     uint public lastEpoch;              // Epoch number of last mint transaction
@@ -37,7 +37,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
         string memory _name,
         string memory _symbol
     ) ERC20(_name, _symbol) {
-        maxmimumMintLimit = 200 * 10 ** 8;
+        maxMintLimit = 200 * 10 ** 8;
         lastMintLimit = 200 * 10 ** 8;
         epochLength = 2000;
     }
@@ -51,9 +51,9 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     /**
      * @dev change maximum mint limit per epoch.
      */
-    function setMaxmimumMintLimit(uint _mintLimit) public override onlyOwner {
-        emit NewMintLimit(maxmimumMintLimit, _mintLimit);
-        maxmimumMintLimit = _mintLimit;
+    function setMaxMintLimit(uint _mintLimit) public override onlyOwner {
+        emit NewMintLimit(maxMintLimit, _mintLimit);
+        maxMintLimit = _mintLimit;
     }
 
     /**
@@ -131,7 +131,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     /// @param _receiver       Address of token's receiver
     /// @param _amount         Amount of minted tokens
     function mint(address _receiver, uint _amount) external nonReentrant onlyMinter override returns (bool) {
-        require(_amount <= maxmimumMintLimit, "TeleBTC: mint amount is more than maximum mint limit");
+        require(_amount <= maxMintLimit, "TeleBTC: mint amount is more than maximum mint limit");
         require(checkAndReduceMintLimit(_amount), "TeleBTC: reached maximum mint limit");
 
         _mint(_receiver, _amount);
@@ -150,7 +150,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
             lastMintLimit -= _amount;
         } else {
             lastEpoch = currentEpoch;
-            lastMintLimit = maxmimumMintLimit - _amount;
+            lastMintLimit = maxMintLimit - _amount;
         }
         return true;
     }
