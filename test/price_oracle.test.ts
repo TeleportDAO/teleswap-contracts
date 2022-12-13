@@ -833,6 +833,23 @@ describe("PriceOracle", async () => {
             ).to.revertedWith("PriceOracle: no price feed is available");
         })
 
+        it("Reverts since no price feed was found (no oracle)", async function () {
+            timeStamp = await getLastBlockTimestamp();;
+            await mockFunctionsExchangeConnector(false, 0);
+            await priceOracle.setPriceProxy(erc20.address, ZERO_ADDRESS);
+            await setNextBlockTimestamp(240);
+
+            await expect(
+                priceOracle.equivalentOutputAmount(
+                    amountIn,
+                    erc20Decimals,
+                    _erc20Decimals,
+                    erc20.address,
+                    _erc20.address
+                )
+            ).to.revertedWith("PriceOracle: Price proxy does not exist");
+        })
+
     });
 
     describe("#setters", async () => {

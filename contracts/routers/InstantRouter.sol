@@ -509,6 +509,8 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         // Gets loan information
         instantRequest memory theRequest = instantRequests[_user][_requestIndex];
 
+        // modifiedPayBackAmount is the maximum payback amount that can be get from the user 
+        // it's used to calculate maximum equivalent collateral amount
         uint modifiedPayBackAmount = theRequest.paybackAmount * (ONE_HUNDRED_PERCENT + maxPriceDifferencePercent) / ONE_HUNDRED_PERCENT;
 
         // Finds needed collateral token to pay back loan
@@ -531,6 +533,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             theRequest.collateralToken // output token
         );
 
+        // check the price diferences between two sources and compare with the maximum acceptable price difference
         uint absPriceDiff = _abs(requiredCollateralTokenFromOracle.toInt256() - requiredCollateralToken.toInt256());
         require(
             absPriceDiff <= (requiredCollateralToken * maxPriceDifferencePercent)/ONE_HUNDRED_PERCENT,
@@ -541,7 +544,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         if (requiredCollateralToken >= requiredCollateralTokenFromOracle) {
             modifiedPayBackAmount = theRequest.paybackAmount;
         } else {
-            modifiedPayBackAmount = theRequest.paybackAmount + theRequest.paybackAmount * absPriceDiff / requiredCollateralToken;
+            modifiedPayBackAmount = theRequest.paybackAmount * requiredCollateralTokenFromOracle / requiredCollateralToken;
         }
 
         uint totalCollateralToken = ICollateralPool(theRequest.collateralPool).equivalentCollateralToken(
@@ -571,6 +574,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
                 false // Output amount is fixed
             );
 
+            // send the laon amount to the instant pool and the excess amount to the treasury
             IERC20(teleBTC).safeTransfer(teleBTCInstantPool, theRequest.paybackAmount);
             IERC20(teleBTC).safeTransfer(treasuaryAddress, modifiedPayBackAmount - theRequest.paybackAmount);
 
@@ -614,6 +618,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             );
 
             if (resultAmounts[1] > theRequest.paybackAmount) {
+                // send the laon amount to the instant pool and the excess amount to the treasury
                 IERC20(teleBTC).safeTransfer(teleBTCInstantPool, theRequest.paybackAmount);
                 IERC20(teleBTC).safeTransfer(treasuaryAddress, resultAmounts[1] - theRequest.paybackAmount);
             } else {
