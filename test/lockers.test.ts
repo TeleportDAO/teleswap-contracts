@@ -324,7 +324,7 @@ describe("Lockers", async () => {
                     PRICE_WITH_DISCOUNT_RATIO,
                     MIN_LEAVING_INTERVAL_TIMESTAMP
                 )
-            ).to.be.revertedWith("Lockers: must CR >= LR")
+            ).to.be.revertedWith("Lockers: must CR > LR")
         })
 
         it("initialize cant be called with Price discount greater than 100%", async function () {

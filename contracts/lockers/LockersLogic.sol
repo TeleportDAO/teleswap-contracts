@@ -367,7 +367,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @notice                     Internal setter for collateral ratio
     /// @param _collateralRatio     The new collateral ratio
     function _setCollateralRatio(uint _collateralRatio) private {
-        require(_collateralRatio > liquidationRatio, "Lockers: must CR >= LR");
+        require(_collateralRatio > liquidationRatio, "Lockers: must CR > LR");
         emit NewCollateralRatio(collateralRatio, _collateralRatio);
         collateralRatio = _collateralRatio;
         libParams.collateralRatio = collateralRatio;
@@ -382,7 +382,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         );
         require(
             collateralRatio > _liquidationRatio,
-            "Lockers: must CR >= LR"
+            "Lockers: must CR > LR"
         );
         emit NewLiquidationRatio(liquidationRatio, _liquidationRatio);
         liquidationRatio = _liquidationRatio;
