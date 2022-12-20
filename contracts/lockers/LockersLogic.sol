@@ -527,10 +527,12 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             "Lockers: input address is not a valid locker"
         );
 
-        lockersMapping[_msgSender()].isActive = false;
+        // lockersMapping[_msgSender()].isActive = false;
 
-        lockerLeavingRequests[_msgSender()] = true;
-        lockerLeavingRequestsTimestamp[_msgSender()] = block.timestamp;
+        // lockerLeavingRequests[_msgSender()] = true;
+        lockerBecomingInactiveRequests[_msgSender()] = true;
+        // lockerLeavingRequestsTimestamp[_msgSender()] = block.timestamp;
+        lockerInactiveRequestsTimestamp[_msgSender()] = block.timestamp;
 
         emit RequestRemoveLocker(
             _msgSender(),
@@ -541,6 +543,15 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         );
 
         return true;
+    }
+
+    // 
+    function _updateLockerIsActive(address _lockerTargetAddress) private {
+        if(lockerBecomingInactiveRequests[_lockerTargetAddress]) {
+            if(lockerInactiveRequestsTimestamp[_lockerTargetAddress] + minLeavingIntervalTime < block.timestamp) {
+                lockersMapping[_msgSender()].isActive = false;
+            }
+        }
     }
 
     /// @notice                       Removes a locker from lockers list
@@ -791,6 +802,17 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         uint _removingNativeTokenAmount
     ) external override payable nonReentrant returns (bool) {
 
+        require(
+            lockerBecomingInactiveRequests[_msgSender()],
+            "Lockers: first request to become inactive"
+        );
+
+        _updateLockerIsActive(_msgSender());
+        require(
+            !lockersMapping[_msgSender()].isActive,
+            "Lockers: still active"
+        );
+
         uint priceOfOnUnitOfCollateral = LockersLib.priceOfOneUnitOfCollateralInBTC(
             libConstants,
             libParams
@@ -851,6 +873,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             "Lockers: insufficient capacity"
         );
 
+        _updateLockerIsActive(_lockerTargetAddress);
         require(
             lockersMapping[_lockerTargetAddress].isActive,
             "Lockers: not active"
@@ -947,12 +970,14 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         );
 
         require(
-            lockerLeavingRequests[_lockerTargetAddress],
+            // lockerLeavingRequests[_lockerTargetAddress],
+            lockerBecomingInactiveRequests[_lockerTargetAddress],
             "Lockers: no remove req"
         );
 
         require(
-            lockerLeavingRequestsTimestamp[_lockerTargetAddress] + minLeavingIntervalTime < block.timestamp,
+            // lockerLeavingRequestsTimestamp[_lockerTargetAddress] + minLeavingIntervalTime < block.timestamp,
+            lockerInactiveRequestsTimestamp[_lockerTargetAddress] + minLeavingIntervalTime < block.timestamp,
             "Lockers: wait more"
         );
 

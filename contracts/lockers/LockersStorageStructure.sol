@@ -31,8 +31,8 @@ contract LockersStorageStructure is ILockersStorage {
     uint public override minLeavingIntervalTime;
 
     mapping(address => DataTypes.locker) public lockersMapping; // locker's target address -> locker structure
-    mapping(address => bool) public lockerLeavingRequests;
-    mapping(address => uint) public lockerLeavingRequestsTimestamp;
+    mapping(address => bool) public lockerBecomingInactiveRequests;
+    mapping(address => uint) public lockerInactiveRequestsTimestamp;
     mapping(address => bool) public lockerLeavingAcceptance;
     mapping(bytes => address) public lockerTargetAddress; // locker's locking script -> locker's target address
     mapping(address => bool) minters;
