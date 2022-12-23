@@ -13,7 +13,6 @@ library LockersLib {
 
     function requestToBecomeLockerValidation(
         mapping(address => DataTypes.locker) storage lockersMapping,
-        DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
         address theLockerTargetAddress,
         uint _lockedTDTAmount,
@@ -117,7 +116,7 @@ library LockersLib {
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
         uint _collateralAmount
-    ) external returns (uint neededTeleBTC) {
+    ) external view returns (uint neededTeleBTC) {
 
         require(
             theLocker.isLocker,
@@ -172,7 +171,6 @@ library LockersLib {
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
         uint _rewardAmount,
-        address _rewardRecipient,
         uint _amount
     ) external returns (uint rewardInNativeToken, uint neededNativeTokenForSlash) {
 
@@ -218,9 +216,7 @@ library LockersLib {
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
         uint _rewardAmount,
-        address _rewardRecipient,
-        uint _amount,
-        address _recipient
+        uint _amount
     ) external returns (uint equivalentNativeToken) {
 
         require(

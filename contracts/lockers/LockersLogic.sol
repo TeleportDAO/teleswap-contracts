@@ -263,7 +263,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
         LockersLib.requestToBecomeLockerValidation(
                 lockersMapping,
-                libConstants,
                 libParams,
                 lockerTargetAddress[_candidateLockingScript],
                 _lockedTDTAmount,
@@ -460,9 +459,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             libConstants,
             libParams,
             _rewardAmount,
-            _rewardRecipient,
-            _amount,
-            _recipient
+            _amount
         );
 
         // Transfers TNT to user
@@ -512,7 +509,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             libConstants,
             libParams,
             _rewardAmount,
-            _rewardRecipient,
             _amount
         );
 
