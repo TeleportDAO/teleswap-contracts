@@ -19,7 +19,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
     using LockersLib for *;
     using SafeERC20 for IERC20;
-
    
     function initialize(
         address _teleBTC,
@@ -409,22 +408,9 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     }
 
     /// @notice                       Removes a locker from lockers list
-    /// @dev                          Only owner can call this function
-    ///                               Removing conditions should be satisfied
-    /// @param _lockerTargetAddress   Target address of locker to be removed
-    /// @return                       True if locker is removed successfully
-    function ownerRemoveLocker(
-        address _lockerTargetAddress
-    ) external override nonZeroAddress(_lockerTargetAddress) nonReentrant onlyOwner returns (bool) {
-        _removeLocker(_lockerTargetAddress);
-        return true;
-    }
-
-    /// @notice                       Removes a locker from lockers list
     /// @dev                          Only locker can call this function
-    ///                               Removing conditions should be satisfied
     /// @return                       True if locker is removed successfully
-    function selfRemoveLocker() external override nonReentrant whenNotPaused returns (bool) {
+    function selfRemoveLocker() external override nonReentrant returns (bool) {
         _removeLocker(_msgSender());
         return true;
     }

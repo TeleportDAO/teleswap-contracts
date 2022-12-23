@@ -270,8 +270,6 @@ interface ILockers is ILockersStorage {
 
     function requestActivation() external returns (bool);
 
-    function ownerRemoveLocker(address _lockerTargetAddress) external returns(bool);
-
     function selfRemoveLocker() external returns (bool);
 
     function slashIdleLocker(

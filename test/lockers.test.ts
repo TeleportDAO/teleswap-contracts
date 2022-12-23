@@ -541,9 +541,9 @@ describe("Lockers", async () => {
 
             await lockers.pauseLocker()
 
-            await expect(
-                lockerSigner1.selfRemoveLocker()
-            ).to.be.revertedWith("Pausable: paused")
+            // await expect(
+            //     lockerSigner1.selfRemoveLocker()
+            // ).to.be.revertedWith("Pausable: paused")
 
             await expect(
                 lockerSigner1.slashIdleLocker(
@@ -1239,139 +1239,7 @@ describe("Lockers", async () => {
 
     });
 
-    describe("#ownerRemoveLocker", async () => {
-
-        it("only admin can call remove locker function", async function () {
-            let lockerSigner1 = lockers.connect(signer1)
-
-            await expect(
-                lockerSigner1.ownerRemoveLocker(signer1Address)
-            ).to.be.revertedWith("Ownable: caller is not the owner")
-        })
-
-        it("a non-existing locker can't be removed", async function () {
-            await expect(
-                lockers.ownerRemoveLocker(signer1Address)
-            ).to.be.revertedWith("Lockers: no locker")
-        })
-
-        it("can't remove the locker since it is still active", async function () {
-
-            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
-
-            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
-
-            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
-
-            let lockerSigner1 = lockers.connect(signer1)
-
-            await lockerSigner1.requestToBecomeLocker(
-                // LOCKER1,
-                LOCKER1_PUBKEY__HASH,
-                minRequiredTDTLockedAmount,
-                minRequiredNativeTokenLockedAmount,
-                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
-                LOCKER_RESCUE_SCRIPT_P2PKH,
-                {value: minRequiredNativeTokenLockedAmount}
-            )
-
-            await lockers.addLocker(signer1Address)
-
-            await expect(
-                lockers.ownerRemoveLocker(signer1Address)
-            ).to.be.revertedWith("Lockers: still active")
-        })
-
-
-        it("the locker can't be removed because netMinted is not zero", async function () {
-
-            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
-
-            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
-
-            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
-
-            let lockerSigner1 = lockers.connect(signer1)
-
-            await lockerSigner1.requestToBecomeLocker(
-                // LOCKER1,
-                LOCKER1_PUBKEY__HASH,
-                minRequiredTDTLockedAmount,
-                minRequiredNativeTokenLockedAmount,
-                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
-                LOCKER_RESCUE_SCRIPT_P2PKH,
-                {value: minRequiredNativeTokenLockedAmount}
-            )
-
-            await lockers.addLocker(signer1Address)
-
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
-            await lockers.addMinter(signer2Address);
-            let lockerSigner2 = lockers.connect(signer2)
-
-            await lockerSigner2.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, 1000);
-
-            await lockerSigner1.requestInactivation();
-
-            // Forwards block.timestamp to inactivate locker
-            let lastBlockTimestamp = await getTimestamp();
-            await advanceBlockWithTime(deployer.provider, lastBlockTimestamp + INACTIVATION_DELAY);
-
-            await expect(
-                lockers.ownerRemoveLocker(signer1Address)
-            ).to.be.revertedWith("Lockers: 0 net minted")
-        })
-
-        it("the locker is removed successfully", async function () {
-
-            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
-
-            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
-
-            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
-
-            let lockerSigner1 = lockers.connect(signer1)
-
-            await lockerSigner1.requestToBecomeLocker(
-                // LOCKER1,
-                LOCKER1_PUBKEY__HASH,
-                minRequiredTDTLockedAmount,
-                minRequiredNativeTokenLockedAmount,
-                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
-                LOCKER_RESCUE_SCRIPT_P2PKH,
-                {value: minRequiredNativeTokenLockedAmount}
-            )
-
-            await lockers.addLocker(signer1Address)
-
-            await lockerSigner1.requestInactivation();
-
-            // Forwards block.timestamp to inactivate locker
-            let lastBlockTimestamp = await getTimestamp();
-            await advanceBlockWithTime(deployer.provider, lastBlockTimestamp + INACTIVATION_DELAY);
-
-            expect(
-                await lockers.ownerRemoveLocker(signer1Address)
-            ).to.emit(lockers, "LockerRemoved")
-
-            expect(
-                await lockers.totalNumberOfLockers()
-            ).to.equal(0)
-        })
-
-    });
-
     describe("#selfRemoveLocker", async () => {
-
-        it("a locker can't remove itself when the contract is paused", async function () {
-            await lockers.pauseLocker()
-
-            let lockerSigner1 = await lockers.connect(signer1)
-
-            await expect(
-                lockerSigner1.selfRemoveLocker()
-            ).to.be.revertedWith("Pausable: paused")
-        })
 
         it("a non-existing locker can't be removed", async function () {
 
