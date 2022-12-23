@@ -21,12 +21,21 @@ interface ILockers is ILockersStorage {
         uint nativeTokenLockedAmount
     );
 
-    event RequestRemoveLocker(
+    event RequestInactivateLocker(
+        address indexed lockerTargetAddress,
+        uint indexed inactivationTimestamp,
+        bytes lockerLockingScript,
+        uint TDTLockedAmount,
+        uint nativeTokenLockedAmount,
+        uint netMinted
+    );
+
+    event ActivateLocker(
         address indexed lockerTargetAddress,
         bytes lockerLockingScript,
-        uint TDTUnlockedAmount,
-        uint nativeTokenUnlockedAmount,
-        uint netMinted        //   = totalMinted  - totalBurnt which needs to be burnt
+        uint TDTLockedAmount,
+        uint nativeTokenLockedAmount,
+        uint netMinted
     );
 
     event LockerAdded(
@@ -171,13 +180,14 @@ interface ILockers is ILockersStorage {
         uint newLiquidationRatio
     );   
 
-    event NewMinLeavingIntervalTime(
-        uint oldMinLeavingIntervalTime,
-        uint newMinLeavingIntervalTime
+    event NewInactivationDelay(
+        uint oldInactivationDelay,
+        uint newInactivationDelay
     );   
 
 
     // Read-only functions
+    
     function getLockerTargetAddress(bytes calldata _lockerLockingScript) external view returns (address);
 
     function isLocker(bytes calldata _lockerLockingScript) external view returns (bool);
@@ -186,7 +196,7 @@ interface ILockers is ILockersStorage {
 
     function getLockerLockingScript(address _lockerTargetAddress) external view returns (bytes memory);
 
-    function isActive(address _lockerTargetAddress) external view returns (bool);
+    function isLockerActive(address _lockerTargetAddress) external view returns (bool);
 
     function getLockerCapacity(address _lockerTargetAddress) external view returns (uint);
 
@@ -236,7 +246,7 @@ interface ILockers is ILockersStorage {
 
     function setLiquidationRatio(uint _liquidationRatio) external;
 
-    function setMinLeavingIntervalTime(uint _minLeavingIntervalTime) external;
+    function setInactivationDelay(uint _inactivationDelay) external;
 
     function liquidateLocker(
         address _lockerTargetAddress,
@@ -264,7 +274,9 @@ interface ILockers is ILockersStorage {
 
     function addLocker(address _lockerTargetAddress) external returns (bool);
 
-    function requestToRemoveLocker() external returns (bool);
+    function requestInactivation() external returns (bool);
+
+    function requestActivation() external returns (bool);
 
     function ownerRemoveLocker(address _lockerTargetAddress) external returns(bool);
 

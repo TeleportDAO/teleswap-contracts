@@ -32,7 +32,7 @@ interface ILockersStorage {
 
     function totalNumberOfLockers() external view returns(uint);
 
-    function minLeavingIntervalTime() external view returns(uint);
+    function inactivationDelay() external view returns(uint);
   
 }
 

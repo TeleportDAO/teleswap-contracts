@@ -294,7 +294,7 @@ library LockersLib {
 
         require(
             theLocker.isLocker,
-            "Lockers: account is not a locker"
+            "Lockers: no locker"
         );
 
         theLocker.nativeTokenLockedAmount =

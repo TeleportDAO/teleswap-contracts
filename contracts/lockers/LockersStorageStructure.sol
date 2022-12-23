@@ -10,6 +10,7 @@ contract LockersStorageStructure is ILockersStorage {
     uint public constant HEALTH_FACTOR = 10000;
     uint public constant UPPER_HEALTH_FACTOR = 12000;
     uint public constant MAX_LOCKER_FEE = 10000;
+    uint public constant MAX_INACTIVATION_DELAY = 100000;
     uint public constant NATIVE_TOKEN_DECIMAL = 18;
     address public constant NATIVE_TOKEN = address(1);
 
@@ -28,11 +29,10 @@ contract LockersStorageStructure is ILockersStorage {
     uint public override priceWithDiscountRatio;
     uint public override totalNumberOfCandidates;
     uint public override totalNumberOfLockers;
-    uint public override minLeavingIntervalTime;
+    uint public override inactivationDelay;
 
     mapping(address => DataTypes.locker) public lockersMapping; // locker's target address -> locker structure
-    mapping(address => bool) public lockerBecomingInactiveRequests;
-    mapping(address => uint) public lockerInactiveRequestsTimestamp;
+    mapping(address => uint) public lockerInactivationTimestamp;
     mapping(address => bool) public lockerLeavingAcceptance;
     mapping(bytes => address) public lockerTargetAddress; // locker's locking script -> locker's target address
     mapping(address => bool) minters;

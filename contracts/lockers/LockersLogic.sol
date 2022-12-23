@@ -13,6 +13,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/ILockers.sol";
 import "../libraries/LockersLib.sol";
 import "./LockersStorageStructure.sol";
+import "hardhat/console.sol";
 
 contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
 
@@ -32,7 +33,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         uint _liquidationRatio,
         uint _lockerPercentageFee,
         uint _priceWithDiscountRatio,
-        uint _minLeavingIntervalTime
+        uint _inactivationDelay
     ) public initializer {
 
         OwnableUpgradeable.__Ownable_init();
@@ -55,7 +56,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         _setLiquidationRatio(_liquidationRatio);
         _setLockerPercentageFee(_lockerPercentageFee);
         _setPriceWithDiscountRatio(_priceWithDiscountRatio);
-        _setMinLeavingIntervalTime(_minLeavingIntervalTime);
+        _setInactivationDelay(_inactivationDelay);
 
         libConstants.OneHundredPercent = ONE_HUNDRED_PERCENT;
         libConstants.HealthFactor = HEALTH_FACTOR;
@@ -66,7 +67,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
     }
 
-    function renounceOwnership() public virtual override onlyOwner {}
+    // *************** Modifiers ***************
 
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "Lockers: address is zero");
@@ -82,6 +83,8 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         require(isMinter(_msgSender()), "Lockers: only minters can mint");
         _;
     }
+
+    // *************** External functions ***************
 
     /**
      * @dev Give an account access to mint.
@@ -162,42 +165,12 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         return lockersMapping[_lockerTargetAddress].lockerLockingScript;
     }
 
-    /// @notice                             Tells if a locker is active or not
-    /// @dev                                An active locker is not in the process of being removed and has enough
-    /// capacity to mint more tokens (minted - burnt << their collateral)
-    /// @param _lockerTargetAddress         Address of locker on the target chain
-    /// @return                             True if the locker is active and accepts mint requests
-    function isActive(
-        address _lockerTargetAddress
-    ) external override view nonZeroAddress(_lockerTargetAddress) returns (bool) {
-        return lockersMapping[_lockerTargetAddress].isActive;
-    }
-
-    /// @notice                             Get how much the locker can mint
-    /// @dev                                Net minted amount is total minted minus total burnt for the locker
-    /// @param _lockerTargetAddress         Address of locker on the target chain
-    /// @return                             The net minted of the locker
-    function getLockerCapacity(
-        address _lockerTargetAddress
-    ) public override view nonZeroAddress(_lockerTargetAddress) returns (uint) {
-        
-        return ((
-            LockersLib.lockerCollateralInTeleBTC(
-                lockersMapping[_lockerTargetAddress],
-                libConstants,
-                libParams
-            )*ONE_HUNDRED_PERCENT/collateralRatio) - 
-            lockersMapping[_lockerTargetAddress].netMinted
-        );
-    }
-
     /// @notice                       Changes teleportDAO token in lockers 
     /// @dev                          Only current owner can call this
     /// @param _tdtTokenAddress       The new teleportDAO token address
     function setTeleportDAOToken(address _tdtTokenAddress) external override onlyOwner {
         _setTeleportDAOToken(_tdtTokenAddress);
     }
-
 
     /// @notice                       Changes percentage fee of locker
     /// @dev                          Only current owner can call this
@@ -267,134 +240,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @param _liquidationRatio    The new liquidation ratio
     function setLiquidationRatio(uint _liquidationRatio) external override onlyOwner { 
         _setLiquidationRatio(_liquidationRatio);
-    }
-
-    /// @notice                             Changes minimum leaving interval
-    /// @dev                                Only owner can call this
-    /// @param _minLeavingIntervalTime      The new minimum leaving interval
-    function setMinLeavingIntervalTime(uint _minLeavingIntervalTime) external override onlyOwner {
-        _setMinLeavingIntervalTime(_minLeavingIntervalTime);
-    }
-
-    /// @notice                     Internal setter for teleportDAO token of lockers
-    /// @param _tdtTokenAddress     The new teleportDAO token address
-    function _setTeleportDAOToken(address _tdtTokenAddress) private nonZeroAddress(_tdtTokenAddress) {
-        emit NewTeleportDAOToken(TeleportDAOToken, _tdtTokenAddress);
-        TeleportDAOToken = _tdtTokenAddress;
-        libParams.teleportDAOToken = TeleportDAOToken;
-    }
-
-    /// @notice                       Internal setter for percentage fee of locker
-    /// @param _lockerPercentageFee   The new locker percentage fee
-    function _setLockerPercentageFee(uint _lockerPercentageFee) private {
-        require(_lockerPercentageFee <= MAX_LOCKER_FEE, "Lockers: invalid locker fee");
-        emit NewLockerPercentageFee(lockerPercentageFee, _lockerPercentageFee);
-        lockerPercentageFee = _lockerPercentageFee;
-        libParams.lockerPercentageFee = lockerPercentageFee;
-    }
-
-    function _setPriceWithDiscountRatio(uint _priceWithDiscountRatio) private {
-        require(
-            _priceWithDiscountRatio <= ONE_HUNDRED_PERCENT,
-            "Lockers: less than 100%"
-        );
-        emit NewPriceWithDiscountRatio(priceWithDiscountRatio, _priceWithDiscountRatio);
-        
-        priceWithDiscountRatio= _priceWithDiscountRatio;
-        libParams.priceWithDiscountRatio = priceWithDiscountRatio;
-    }
-
-    /// @notice         Internal setter for the required bond amount to become locker
-    /// @param _minRequiredTDTLockedAmount   The new required bond amount
-    function _setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) private {
-        require(
-            _minRequiredTDTLockedAmount != 0 || minRequiredTNTLockedAmount != 0,
-            "Lockers: amount is zero"
-        );
-        emit NewMinRequiredTDTLockedAmount(minRequiredTDTLockedAmount, _minRequiredTDTLockedAmount);
-        minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
-        libParams.minRequiredTDTLockedAmount = minRequiredTDTLockedAmount;
-    }
-
-    /// @notice         Internal setter for the required bond amount to become locker
-    /// @param _minRequiredTNTLockedAmount   The new required bond amount
-    function _setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) private {
-        require(
-            minRequiredTDTLockedAmount != 0 || _minRequiredTNTLockedAmount != 0,
-            "Lockers: amount is zero"
-        );
-        emit NewMinRequiredTNTLockedAmount(minRequiredTNTLockedAmount, _minRequiredTNTLockedAmount);
-        minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
-        libParams.minRequiredTNTLockedAmount = minRequiredTNTLockedAmount;
-    }
-
-    /// @notice                 Internal setter for the price oracle
-    /// @param _priceOracle     The new price oracle
-    function _setPriceOracle(address _priceOracle) private nonZeroAddress(_priceOracle) {
-        emit NewPriceOracle(priceOracle, _priceOracle);
-        priceOracle = _priceOracle;
-        libParams.priceOracle = priceOracle;
-    }
-
-    /// @notice                Internal setter for cc burn router contract
-    /// @param _ccBurnRouter   The new cc burn router contract address
-    function _setCCBurnRouter(address _ccBurnRouter) private nonZeroAddress(_ccBurnRouter) {
-        emit NewCCBurnRouter(ccBurnRouter, _ccBurnRouter);
-        emit BurnerRemoved(ccBurnRouter);
-        burners[ccBurnRouter] = false;
-        ccBurnRouter = _ccBurnRouter;
-        libParams.ccBurnRouter = ccBurnRouter;
-        emit BurnerAdded(ccBurnRouter);
-        burners[ccBurnRouter] = true;
-    }
-
-    /// @notice                 Internal setter for exchange router contract address and updates wrapped avax addresses
-    /// @param _exchangeConnector  The new exchange router contract address
-    function _setExchangeConnector(address _exchangeConnector) private nonZeroAddress(_exchangeConnector) {
-        emit NewExchangeConnector(exchangeConnector, _exchangeConnector);
-        exchangeConnector = _exchangeConnector;
-        libParams.exchangeConnector = exchangeConnector;
-    }
-
-    /// @notice                 Internal setter for wrapped token contract address
-    /// @param _teleBTC         The new wrapped token contract address
-    function _setTeleBTC(address _teleBTC) private nonZeroAddress(_teleBTC) {
-        emit NewTeleBTC(teleBTC, _teleBTC);
-        teleBTC = _teleBTC;
-        libParams.teleBTC = teleBTC;
-    }
-
-    /// @notice                     Internal setter for collateral ratio
-    /// @param _collateralRatio     The new collateral ratio
-    function _setCollateralRatio(uint _collateralRatio) private {
-        require(_collateralRatio > liquidationRatio, "Lockers: must CR > LR");
-        emit NewCollateralRatio(collateralRatio, _collateralRatio);
-        collateralRatio = _collateralRatio;
-        libParams.collateralRatio = collateralRatio;
-    }
-
-    /// @notice                     Internal setter for liquidation ratio
-    /// @param _liquidationRatio    The new liquidation ratio
-    function _setLiquidationRatio(uint _liquidationRatio) private {
-        require(
-            _liquidationRatio >= ONE_HUNDRED_PERCENT,
-            "Lockers: problem in CR and LR"
-        );
-        require(
-            collateralRatio > _liquidationRatio,
-            "Lockers: must CR > LR"
-        );
-        emit NewLiquidationRatio(liquidationRatio, _liquidationRatio);
-        liquidationRatio = _liquidationRatio;
-        libParams.liquidationRatio = liquidationRatio;
-    }
-
-    /// @notice                             Internal setter for minimum leaving interval
-    /// @param _minLeavingIntervalTime      The new minimum leaving interval
-    function _setMinLeavingIntervalTime(uint _minLeavingIntervalTime) private {
-        emit NewMinLeavingIntervalTime(minLeavingIntervalTime, _minLeavingIntervalTime);
-        minLeavingIntervalTime = _minLeavingIntervalTime;
-        libParams.minLeavingIntervalTime = minLeavingIntervalTime;
     }
 
     /// @notice                                 Adds user to candidates list
@@ -496,7 +341,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         // Updates locker's status
         lockersMapping[_lockerTargetAddress].isCandidate = false;
         lockersMapping[_lockerTargetAddress].isLocker = true;
-        lockersMapping[_lockerTargetAddress].isActive = true;
 
         // Updates number of candidates and lockers
         totalNumberOfCandidates = totalNumberOfCandidates -1;
@@ -514,28 +358,27 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         return true;
     }
 
-    /// @notice                Requests to remove a locker from lockers list
-    /// @dev                   Deactivates the status of the locker so that no
-    ///                        one is allowed to send mint requests to this locker.
-    ///                        It gives time to the locker to burn the required amount
-    ///                        of teleBTC to make itself eligible to be removed.
-    ///                        Sets isActive of locker to false
+    /// @notice                Requests to inactivate a locker
+    /// @dev                   Deactivates the locker so that no one can mint by this locker:
+    ///                        1. Locker can be removed after inactivation
+    ///                        2. Locker can withdraw extra collateral after inactivation
     /// @return                True if deactivated successfully
-    function requestToRemoveLocker() external override nonReentrant returns (bool) {
+    function requestInactivation() external override nonReentrant returns (bool) {
         require(
             lockersMapping[_msgSender()].isLocker,
             "Lockers: input address is not a valid locker"
         );
 
-        // lockersMapping[_msgSender()].isActive = false;
+        require(
+            lockerInactivationTimestamp[_msgSender()] == 0,
+            "Lockers: locker has already requested"
+        );
 
-        // lockerLeavingRequests[_msgSender()] = true;
-        lockerBecomingInactiveRequests[_msgSender()] = true;
-        // lockerLeavingRequestsTimestamp[_msgSender()] = block.timestamp;
-        lockerInactiveRequestsTimestamp[_msgSender()] = block.timestamp;
+        lockerInactivationTimestamp[_msgSender()] = block.timestamp + inactivationDelay;
 
-        emit RequestRemoveLocker(
+        emit RequestInactivateLocker(
             _msgSender(),
+            lockerInactivationTimestamp[_msgSender()],
             lockersMapping[_msgSender()].lockerLockingScript,
             lockersMapping[_msgSender()].TDTLockedAmount,
             lockersMapping[_msgSender()].nativeTokenLockedAmount,
@@ -545,13 +388,27 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         return true;
     }
 
-    // 
-    function _updateLockerIsActive(address _lockerTargetAddress) private {
-        if(lockerBecomingInactiveRequests[_lockerTargetAddress]) {
-            if(lockerInactiveRequestsTimestamp[_lockerTargetAddress] + minLeavingIntervalTime < block.timestamp) {
-                lockersMapping[_msgSender()].isActive = false;
-            }
-        }
+    /// @notice                Requests to activate a locker
+    /// @dev                   Activates the locker so users can mint by this locker
+    ///                        note: lockerInactivationTimestamp == 0 means that the locker is active
+    /// @return                True if activated successfully
+    function requestActivation() external override nonReentrant returns (bool) {
+        require(
+            lockersMapping[_msgSender()].isLocker,
+            "Lockers: input address is not a valid locker"
+        );
+
+        lockerInactivationTimestamp[_msgSender()] = 0;
+
+        emit ActivateLocker(
+            _msgSender(),
+            lockersMapping[_msgSender()].lockerLockingScript,
+            lockersMapping[_msgSender()].TDTLockedAmount,
+            lockersMapping[_msgSender()].nativeTokenLockedAmount,
+            lockersMapping[_msgSender()].netMinted
+        );
+
+        return true;
     }
 
     /// @notice                       Removes a locker from lockers list
@@ -675,7 +532,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         return true;
     }
 
-
     /// @notice                           Liquidates the locker whose collateral is unhealthy
     /// @dev                              Anyone can liquidate a locker whose health factor
     ///                                   is less than 10000 (100%) by providing a sufficient amount of teleBTC
@@ -722,7 +578,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
         return true;
     }
-
 
     /// @notice                           Sells lockers slashed collateral
     /// @dev                              Users buy the slashed collateral using TeleBTC with discount
@@ -793,8 +648,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         return true;
     }
 
-
-
     /// @notice                                 Decreases TNT collateral of the locker
     /// @param _removingNativeTokenAmount       Amount of removed collateral
     /// @return                                 True if collateral is removed successfully
@@ -803,13 +656,12 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     ) external override payable nonReentrant returns (bool) {
 
         require(
-            lockerBecomingInactiveRequests[_msgSender()],
-            "Lockers: first request to become inactive"
+            lockersMapping[_msgSender()].isLocker,
+            "Lockers: no locker"
         );
 
-        _updateLockerIsActive(_msgSender());
         require(
-            !lockersMapping[_msgSender()].isActive,
+            !isLockerActive(_msgSender()),
             "Lockers: still active"
         );
 
@@ -838,19 +690,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         return true;
     }
 
-    /**
-     * @dev         Returns the price of one native token (1*10^18) in teleBTC
-     * @return uint The price of one unit of collateral token (native token in teleBTC)
-     */
-    function priceOfOneUnitOfCollateralInBTC() public override view returns (uint) {
-
-        return LockersLib.priceOfOneUnitOfCollateralInBTC(
-            libConstants,
-            libParams
-        );
-
-    }
-
     /// @notice                       Mint teleBTC for an account
     /// @dev                          Mint teleBTC for an account and the locker fee as well
     /// @param _lockerLockingScript   Locking script of a locker
@@ -873,14 +712,13 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             "Lockers: insufficient capacity"
         );
 
-        _updateLockerIsActive(_lockerTargetAddress);
         require(
-            lockersMapping[_lockerTargetAddress].isActive,
+            isLockerActive(_lockerTargetAddress),
             "Lockers: not active"
         );
 
-        lockersMapping[_lockerTargetAddress].netMinted =
-        lockersMapping[_lockerTargetAddress].netMinted + _amount;
+        lockersMapping[_lockerTargetAddress].netMinted = 
+            lockersMapping[_lockerTargetAddress].netMinted + _amount;
 
         // Mints locker fee
         uint lockerFee = _amount*lockerPercentageFee/MAX_LOCKER_FEE;
@@ -943,6 +781,67 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         return remainedAmount;
     }
 
+    /// @notice                         Changes delay of inactivation
+    /// @dev                            Only owner can call this
+    /// @param _inactivationDelay       The new inactivation delay
+    function setInactivationDelay(uint _inactivationDelay) external override onlyOwner {
+        _setInactivationDelay(_inactivationDelay);
+    }
+
+    // *************** Public functions ***************
+    
+    function renounceOwnership() public virtual override onlyOwner {}
+
+    /// @notice                             Returns the Locker status
+    /// @dev                                We check a locker status in below cases:
+    ///                                     1. Minting TeleBTC
+    ///                                     2. Removing locker's collateral
+    ///                                     3. Removing locker 
+    /// @param _lockerTargetAddress         Address of locker on the target chain
+    /// @return                             True if the locker is active
+    function isLockerActive(
+        address _lockerTargetAddress
+    ) public override view nonZeroAddress(_lockerTargetAddress) returns (bool) {
+        if (lockerInactivationTimestamp[_lockerTargetAddress] == 0) {
+            return true;
+        } else if (lockerInactivationTimestamp[_lockerTargetAddress] > block.timestamp) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /// @notice                             Get how much the locker can mint
+    /// @dev                                Net minted amount is total minted minus total burnt for the locker
+    /// @param _lockerTargetAddress         Address of locker on the target chain
+    /// @return                             The net minted of the locker
+    function getLockerCapacity(
+        address _lockerTargetAddress
+    ) public override view nonZeroAddress(_lockerTargetAddress) returns (uint) {
+        
+        return ((
+            LockersLib.lockerCollateralInTeleBTC(
+                lockersMapping[_lockerTargetAddress],
+                libConstants,
+                libParams
+            )*ONE_HUNDRED_PERCENT/collateralRatio) - 
+            lockersMapping[_lockerTargetAddress].netMinted
+        );
+    }
+
+    /**
+     * @dev         Returns the price of one native token (1*10^18) in teleBTC
+     * @return uint The price of one unit of collateral token (native token in teleBTC)
+     */
+    function priceOfOneUnitOfCollateralInBTC() public override view returns (uint) {
+
+        return LockersLib.priceOfOneUnitOfCollateralInBTC(
+            libConstants,
+            libParams
+        );
+
+    }
+
     /// @notice                Check if an account is minter    
     /// @param  account        The account which intended to be checked
     /// @return bool
@@ -957,6 +856,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         return burners[account];
     }
 
+    // *************** Private functions ***************
 
     /// @notice                       Removes a locker from lockers list
     /// @dev                          Checks that net minted TeleBTC of locker is zero
@@ -970,15 +870,8 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         );
 
         require(
-            // lockerLeavingRequests[_lockerTargetAddress],
-            lockerBecomingInactiveRequests[_lockerTargetAddress],
-            "Lockers: no remove req"
-        );
-
-        require(
-            // lockerLeavingRequestsTimestamp[_lockerTargetAddress] + minLeavingIntervalTime < block.timestamp,
-            lockerInactiveRequestsTimestamp[_lockerTargetAddress] + minLeavingIntervalTime < block.timestamp,
-            "Lockers: wait more"
+            !isLockerActive(_lockerTargetAddress),
+            "Lockers: still active"
         );
 
         require(
@@ -1010,5 +903,128 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             _removingLocker.nativeTokenLockedAmount
         );
 
+    }
+
+    /// @notice                     Internal setter for teleportDAO token of lockers
+    /// @param _tdtTokenAddress     The new teleportDAO token address
+    function _setTeleportDAOToken(address _tdtTokenAddress) private nonZeroAddress(_tdtTokenAddress) {
+        emit NewTeleportDAOToken(TeleportDAOToken, _tdtTokenAddress);
+        TeleportDAOToken = _tdtTokenAddress;
+        libParams.teleportDAOToken = TeleportDAOToken;
+    }
+
+    /// @notice                       Internal setter for percentage fee of locker
+    /// @param _lockerPercentageFee   The new locker percentage fee
+    function _setLockerPercentageFee(uint _lockerPercentageFee) private {
+        require(_lockerPercentageFee <= MAX_LOCKER_FEE, "Lockers: invalid locker fee");
+        emit NewLockerPercentageFee(lockerPercentageFee, _lockerPercentageFee);
+        lockerPercentageFee = _lockerPercentageFee;
+        libParams.lockerPercentageFee = lockerPercentageFee;
+    }
+
+    function _setPriceWithDiscountRatio(uint _priceWithDiscountRatio) private {
+        require(
+            _priceWithDiscountRatio <= ONE_HUNDRED_PERCENT,
+            "Lockers: less than 100%"
+        );
+        emit NewPriceWithDiscountRatio(priceWithDiscountRatio, _priceWithDiscountRatio);
+        
+        priceWithDiscountRatio= _priceWithDiscountRatio;
+        libParams.priceWithDiscountRatio = priceWithDiscountRatio;
+    }
+
+    /// @notice         Internal setter for the required bond amount to become locker
+    /// @param _minRequiredTDTLockedAmount   The new required bond amount
+    function _setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) private {
+        require(
+            _minRequiredTDTLockedAmount != 0 || minRequiredTNTLockedAmount != 0,
+            "Lockers: amount is zero"
+        );
+        emit NewMinRequiredTDTLockedAmount(minRequiredTDTLockedAmount, _minRequiredTDTLockedAmount);
+        minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
+        libParams.minRequiredTDTLockedAmount = minRequiredTDTLockedAmount;
+    }
+
+    /// @notice         Internal setter for the required bond amount to become locker
+    /// @param _minRequiredTNTLockedAmount   The new required bond amount
+    function _setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) private {
+        require(
+            minRequiredTDTLockedAmount != 0 || _minRequiredTNTLockedAmount != 0,
+            "Lockers: amount is zero"
+        );
+        emit NewMinRequiredTNTLockedAmount(minRequiredTNTLockedAmount, _minRequiredTNTLockedAmount);
+        minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
+        libParams.minRequiredTNTLockedAmount = minRequiredTNTLockedAmount;
+    }
+
+    /// @notice                 Internal setter for the price oracle
+    /// @param _priceOracle     The new price oracle
+    function _setPriceOracle(address _priceOracle) private nonZeroAddress(_priceOracle) {
+        emit NewPriceOracle(priceOracle, _priceOracle);
+        priceOracle = _priceOracle;
+        libParams.priceOracle = priceOracle;
+    }
+
+    /// @notice                Internal setter for cc burn router contract
+    /// @param _ccBurnRouter   The new cc burn router contract address
+    function _setCCBurnRouter(address _ccBurnRouter) private nonZeroAddress(_ccBurnRouter) {
+        emit NewCCBurnRouter(ccBurnRouter, _ccBurnRouter);
+        emit BurnerRemoved(ccBurnRouter);
+        burners[ccBurnRouter] = false;
+        ccBurnRouter = _ccBurnRouter;
+        libParams.ccBurnRouter = ccBurnRouter;
+        emit BurnerAdded(ccBurnRouter);
+        burners[ccBurnRouter] = true;
+    }
+
+    /// @notice                 Internal setter for exchange router contract address and updates wrapped avax addresses
+    /// @param _exchangeConnector  The new exchange router contract address
+    function _setExchangeConnector(address _exchangeConnector) private nonZeroAddress(_exchangeConnector) {
+        emit NewExchangeConnector(exchangeConnector, _exchangeConnector);
+        exchangeConnector = _exchangeConnector;
+        libParams.exchangeConnector = exchangeConnector;
+    }
+
+    /// @notice                 Internal setter for wrapped token contract address
+    /// @param _teleBTC         The new wrapped token contract address
+    function _setTeleBTC(address _teleBTC) private nonZeroAddress(_teleBTC) {
+        emit NewTeleBTC(teleBTC, _teleBTC);
+        teleBTC = _teleBTC;
+        libParams.teleBTC = teleBTC;
+    }
+
+    /// @notice                     Internal setter for collateral ratio
+    /// @param _collateralRatio     The new collateral ratio
+    function _setCollateralRatio(uint _collateralRatio) private {
+        require(_collateralRatio > liquidationRatio, "Lockers: must CR > LR");
+        emit NewCollateralRatio(collateralRatio, _collateralRatio);
+        collateralRatio = _collateralRatio;
+        libParams.collateralRatio = collateralRatio;
+    }
+
+    /// @notice                     Internal setter for liquidation ratio
+    /// @param _liquidationRatio    The new liquidation ratio
+    function _setLiquidationRatio(uint _liquidationRatio) private {
+        require(
+            _liquidationRatio >= ONE_HUNDRED_PERCENT,
+            "Lockers: problem in CR and LR"
+        );
+        require(
+            collateralRatio > _liquidationRatio,
+            "Lockers: must CR > LR"
+        );
+        emit NewLiquidationRatio(liquidationRatio, _liquidationRatio);
+        liquidationRatio = _liquidationRatio;
+        libParams.liquidationRatio = liquidationRatio;
+    }
+
+    /// @notice                        Internal setter for inactivation delay
+    /// @param _inactivationDelay      The new inactivation delay
+    function _setInactivationDelay(uint _inactivationDelay) private {
+        // inactivation delay should be greater than relay finalization parameter
+        require(_inactivationDelay <= MAX_INACTIVATION_DELAY, "Lockers: invalid value");
+        emit NewInactivationDelay(inactivationDelay, _inactivationDelay);
+        inactivationDelay = _inactivationDelay;
+        libParams.inactivationDelay = inactivationDelay;
     }
 }

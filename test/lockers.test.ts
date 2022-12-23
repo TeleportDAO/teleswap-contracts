@@ -42,17 +42,16 @@ describe("Lockers", async () => {
     let liquidationRatio = 15000;
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
     const PRICE_WITH_DISCOUNT_RATIO = 9500; // Means %95
-    const MIN_LEAVING_INTERVAL_TIMESTAMP = 0
+    const INACTIVATION_DELAY = 0
+    const MAX_INACTIVATION_DELAY = 100000;
 
     // Bitcoin public key (32 bytes)
-    let TELEPORTER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
-    let TELEPORTER1_PublicKeyHash = '0x4062c8aeed4f81c2d73ff854a2957021191e20b6';
+    let LOCKER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
+    let LOCKER1_PUBKEY__HASH = '0x4062c8aeed4f81c2d73ff854a2957021191e20b6';
 
     let LOCKER_RESCUE_SCRIPT_P2PKH = "0x12ab8dc588ca9d5787dde7eb29569da63c3a238c";
     let LOCKER_RESCUE_SCRIPT_P2PKH_TYPE = 1; // P2PKH
 
-    // let TELEPORTER2 = '0x03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626';
-    // let TELEPORTER2_PublicKeyHash = '0x41fb108446d66d1c049e30cc7c3044e7374e9856';
     let REQUIRED_LOCKED_AMOUNT =  1000; // amount of required TDT
 
     // Accounts
@@ -135,7 +134,7 @@ describe("Lockers", async () => {
             liquidationRatio,
             LOCKER_PERCENTAGE_FEE,
             PRICE_WITH_DISCOUNT_RATIO,
-            MIN_LEAVING_INTERVAL_TIMESTAMP
+            INACTIVATION_DELAY
         )
 
         // Sets ccBurnRouter address
@@ -162,6 +161,11 @@ describe("Lockers", async () => {
         await revertProvider(deployer.provider, snapshotId);
     });
 
+    async function getTimestamp(): Promise<number> {
+        let lastBlockNumber = await ethers.provider.getBlockNumber();
+        let lastBlock = await ethers.provider.getBlock(lastBlockNumber);
+        return lastBlock.timestamp;
+    }
 
     const deployTelePortDaoToken = async (
         _signer?: Signer
@@ -264,7 +268,7 @@ describe("Lockers", async () => {
                     liquidationRatio,
                     LOCKER_PERCENTAGE_FEE,
                     PRICE_WITH_DISCOUNT_RATIO,
-                    MIN_LEAVING_INTERVAL_TIMESTAMP
+                    INACTIVATION_DELAY
                 )
             ).to.be.revertedWith("Initializable: contract is already initialized")
         })
@@ -283,7 +287,7 @@ describe("Lockers", async () => {
                     liquidationRatio,
                     LOCKER_PERCENTAGE_FEE,
                     PRICE_WITH_DISCOUNT_RATIO,
-                    MIN_LEAVING_INTERVAL_TIMESTAMP
+                    INACTIVATION_DELAY
                 )
             ).to.be.revertedWith("Lockers: address is zero")
         })
@@ -302,7 +306,7 @@ describe("Lockers", async () => {
                     liquidationRatio,
                     LOCKER_PERCENTAGE_FEE,
                     PRICE_WITH_DISCOUNT_RATIO,
-                    MIN_LEAVING_INTERVAL_TIMESTAMP
+                    INACTIVATION_DELAY
                 )
             ).to.be.revertedWith("Lockers: amount is zero")
         })
@@ -322,7 +326,7 @@ describe("Lockers", async () => {
                     collateralRatio,
                     LOCKER_PERCENTAGE_FEE,
                     PRICE_WITH_DISCOUNT_RATIO,
-                    MIN_LEAVING_INTERVAL_TIMESTAMP
+                    INACTIVATION_DELAY
                 )
             ).to.be.revertedWith("Lockers: must CR > LR")
         })
@@ -341,7 +345,7 @@ describe("Lockers", async () => {
                     liquidationRatio,
                     LOCKER_PERCENTAGE_FEE,
                     PRICE_WITH_DISCOUNT_RATIO + 10000,
-                    MIN_LEAVING_INTERVAL_TIMESTAMP
+                    INACTIVATION_DELAY
                 )
             ).to.be.revertedWith("Lockers: less than 100%")
         })
@@ -961,28 +965,28 @@ describe("Lockers", async () => {
         })
     })
 
-    describe("#setMinLeavingIntervalTime",async () => {
+    describe("#setInactivationDelay",async () => {
 
-        it("non owners can't call setMinLeavingIntervalTime", async function () {
+        it("non owners can't call setInactivationDelay", async function () {
             let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
-                lockerSigner1.setMinLeavingIntervalTime(
+                lockerSigner1.setInactivationDelay(
                     1234
                 )
             ).to.be.revertedWith("Ownable: caller is not the owner")
         })
 
-        it("only owner can call setMinLeavingIntervalTime", async function () {
+        it("only owner can call setInactivationDelay", async function () {
 
-            await expect(await lockers.setMinLeavingIntervalTime(
+            await expect(await lockers.setInactivationDelay(
                 21000
             )).to.emit(
-                lockers, "NewMinLeavingIntervalTime"
-            ).withArgs(MIN_LEAVING_INTERVAL_TIMESTAMP, 21000);
+                lockers, "NewInactivationDelay"
+            ).withArgs(INACTIVATION_DELAY, 21000);
 
             expect(
-                await lockers.minLeavingIntervalTime()
+                await lockers.inactivationDelay()
             ).to.equal(21000)
         })
     })
@@ -994,8 +998,8 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.requestToBecomeLocker(
-                    // TELEPORTER1,
-                    TELEPORTER1_PublicKeyHash,
+                    // LOCKER1,
+                    LOCKER1_PUBKEY__HASH,
                     minRequiredTDTLockedAmount.sub(1),
                     minRequiredNativeTokenLockedAmount,
                     LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1010,8 +1014,8 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.requestToBecomeLocker(
-                    // TELEPORTER1,
-                    TELEPORTER1_PublicKeyHash,
+                    // LOCKER1,
+                    LOCKER1_PUBKEY__HASH,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
                     LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1026,8 +1030,8 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.requestToBecomeLocker(
-                    // TELEPORTER1,
-                    TELEPORTER1_PublicKeyHash,
+                    // LOCKER1,
+                    LOCKER1_PUBKEY__HASH,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
                     LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1049,8 +1053,8 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.requestToBecomeLocker(
-                    // TELEPORTER1,
-                    TELEPORTER1_PublicKeyHash,
+                    // LOCKER1,
+                    LOCKER1_PUBKEY__HASH,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
                     LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1076,8 +1080,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1087,8 +1091,8 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.requestToBecomeLocker(
-                    // TELEPORTER1,
-                    TELEPORTER1_PublicKeyHash,
+                    // LOCKER1,
+                    LOCKER1_PUBKEY__HASH,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
                     LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1111,8 +1115,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1126,8 +1130,8 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner2.requestToBecomeLocker(
-                    // TELEPORTER1,
-                    TELEPORTER1_PublicKeyHash,
+                    // LOCKER1,
+                    LOCKER1_PUBKEY__HASH,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
                     LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1161,8 +1165,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1200,8 +1204,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1224,18 +1228,18 @@ describe("Lockers", async () => {
             let theLockerMapping = await lockers.lockersMapping(signer1Address)
             expect(
                 theLockerMapping[0]
-            ).to.equal(TELEPORTER1_PublicKeyHash)
+            ).to.equal(LOCKER1_PUBKEY__HASH)
         })
 
     });
 
-    describe("#requestToRemoveLocker", async () => {
+    describe("#requestInactivation", async () => {
 
         it("trying to request to remove a non existing locker", async function () {
             let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
-                lockerSigner1.requestToRemoveLocker()
+                lockerSigner1.requestInactivation()
             ).to.be.revertedWith("Lockers: input address is not a valid locker")
         })
 
@@ -1250,8 +1254,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1262,8 +1266,8 @@ describe("Lockers", async () => {
             await lockers.addLocker(signer1Address)
 
             expect(
-                await lockerSigner1.requestToRemoveLocker()
-            ).to.emit(lockers, "RequestRemoveLocker")
+                await lockerSigner1.requestInactivation()
+            ).to.emit(lockers, "RequestInactivateLocker")
         })
 
     });
@@ -1284,7 +1288,7 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("Lockers: no locker")
         })
 
-        it("can't remove a locker if it doesn't request to be removed", async function () {
+        it("can't remove the locker since it is still active", async function () {
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
@@ -1295,8 +1299,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1308,7 +1312,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockers.ownerRemoveLocker(signer1Address)
-            ).to.be.revertedWith("Lockers: no remove req")
+            ).to.be.revertedWith("Lockers: still active")
         })
 
 
@@ -1323,8 +1327,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1338,9 +1342,13 @@ describe("Lockers", async () => {
             await lockers.addMinter(signer2Address);
             let lockerSigner2 = lockers.connect(signer2)
 
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 1000);
+            await lockerSigner2.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, 1000);
 
-            await lockerSigner1.requestToRemoveLocker()
+            await lockerSigner1.requestInactivation();
+
+            // Forwards block.timestamp to inactivate locker
+            let lastBlockTimestamp = await getTimestamp();
+            await advanceBlockWithTime(deployer.provider, lastBlockTimestamp + INACTIVATION_DELAY);
 
             await expect(
                 lockers.ownerRemoveLocker(signer1Address)
@@ -1358,8 +1366,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1369,7 +1377,11 @@ describe("Lockers", async () => {
 
             await lockers.addLocker(signer1Address)
 
-            await lockerSigner1.requestToRemoveLocker()
+            await lockerSigner1.requestInactivation();
+
+            // Forwards block.timestamp to inactivate locker
+            let lastBlockTimestamp = await getTimestamp();
+            await advanceBlockWithTime(deployer.provider, lastBlockTimestamp + INACTIVATION_DELAY);
 
             expect(
                 await lockers.ownerRemoveLocker(signer1Address)
@@ -1414,8 +1426,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1427,7 +1439,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.selfRemoveLocker()
-            ).to.be.revertedWith("Lockers: no remove req")
+            ).to.be.revertedWith("Lockers: still active")
         })
 
         it("the locker can't be removed because netMinted is not zero", async function () {
@@ -1441,8 +1453,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1456,9 +1468,13 @@ describe("Lockers", async () => {
             await lockers.addMinter(signer2Address);
             let lockerSigner2 = lockers.connect(signer2)
 
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 1000);
+            await lockerSigner2.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, 1000);
 
-            await lockerSigner1.requestToRemoveLocker()
+            await lockerSigner1.requestInactivation();
+
+            // Forwards block.timestamp to inactivate locker
+            let lastBlockTimestamp = await getTimestamp();
+            await advanceBlockWithTime(deployer.provider, lastBlockTimestamp + INACTIVATION_DELAY);
 
             await expect(
                 lockerSigner1.selfRemoveLocker()
@@ -1476,8 +1492,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1487,7 +1503,11 @@ describe("Lockers", async () => {
 
             await lockers.addLocker(signer1Address)
 
-            await lockerSigner1.requestToRemoveLocker()
+            await lockerSigner1.requestInactivation()
+
+            // Forwards block.timestamp to inactivate locker
+            let lastBlockTimestamp = await getTimestamp();
+            await advanceBlockWithTime(deployer.provider, lastBlockTimestamp + INACTIVATION_DELAY);
 
             expect(
                 await lockerSigner1.selfRemoveLocker()
@@ -1548,8 +1568,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1589,8 +1609,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1659,8 +1679,8 @@ describe("Lockers", async () => {
             await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
             let lockerSigner1 = lockers.connect(signer1)
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1673,7 +1693,7 @@ describe("Lockers", async () => {
 
             // Locker mints some TeleBTC and gets BTC on Bitcoin
             await lockers.addMinter(signer1Address);
-            await lockerSigner1.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, TeleBTCAmount);
+            await lockerSigner1.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, TeleBTCAmount);
 
             // ccBurn calls to slash the locker
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
@@ -1716,8 +1736,8 @@ describe("Lockers", async () => {
             await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
             let lockerSigner1 = lockers.connect(signer1)
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1730,7 +1750,7 @@ describe("Lockers", async () => {
 
             // Locker mints some TeleBTC and gets BTC on Bitcoin
             await lockers.addMinter(signer1Address);
-            await lockerSigner1.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, TeleBTCAmount);
+            await lockerSigner1.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, TeleBTCAmount);
 
             // ccBurn calls to slash the locker
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
@@ -1766,8 +1786,8 @@ describe("Lockers", async () => {
             await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
             let lockerSigner1 = lockers.connect(signer1)
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1780,7 +1800,7 @@ describe("Lockers", async () => {
 
             // Locker mints some TeleBTC and gets BTC on Bitcoin
             await lockers.addMinter(signer1Address);
-            await lockerSigner1.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, TeleBTCAmount);
+            await lockerSigner1.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, TeleBTCAmount);
 
             // ccBurn calls to slash the locker
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
@@ -1818,8 +1838,8 @@ describe("Lockers", async () => {
             await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
             let lockerSigner1 = lockers.connect(signer1)
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1832,7 +1852,7 @@ describe("Lockers", async () => {
 
             // Locker mints some TeleBTC and gets BTC on Bitcoin
             await lockers.addMinter(signer1Address);
-            await lockerSigner1.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, TeleBTCAmount);
+            await lockerSigner1.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, TeleBTCAmount);
 
             // ccBurn calls to slash the locker
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
@@ -1896,8 +1916,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1914,7 +1934,7 @@ describe("Lockers", async () => {
             amount = 1000;
             let lockerFee = Math.floor(amount*LOCKER_PERCENTAGE_FEE/10000);
 
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, amount);
+            await lockerSigner2.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, amount);
 
             let theLockerMapping = await lockers.lockersMapping(signer1Address);
 
@@ -1945,8 +1965,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1961,7 +1981,7 @@ describe("Lockers", async () => {
             let lockerSigner2 = lockers.connect(signer2)
 
             await expect(
-                lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5001)
+                lockerSigner2.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, 5001)
             ).to.be.revertedWith("Lockers: insufficient capacity")
 
         })
@@ -1992,8 +2012,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2008,7 +2028,7 @@ describe("Lockers", async () => {
 
             let lockerSigner2 = lockers.connect(signer2)
 
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, signer2Address, 1000)
+            await lockerSigner2.mint(LOCKER1_PUBKEY__HASH, signer2Address, 1000)
 
             let theLockerMapping = await lockers.lockersMapping(signer1Address);
 
@@ -2025,7 +2045,7 @@ describe("Lockers", async () => {
 
             await teleBTCSigner2.approve(lockers.address, amount);
 
-            await lockerSigner2.burn(TELEPORTER1_PublicKeyHash, amount);
+            await lockerSigner2.burn(LOCKER1_PUBKEY__HASH, amount);
 
             theLockerMapping = await lockers.lockersMapping(signer1Address);
 
@@ -2072,8 +2092,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2087,7 +2107,7 @@ describe("Lockers", async () => {
 
             let lockerSigner2 = lockers.connect(signer2)
 
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 5000000);
+            await lockerSigner2.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, 5000000);
 
             await expect(
                 lockerSigner2.liquidateLocker(signer1Address, 5000)
@@ -2108,8 +2128,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2124,7 +2144,7 @@ describe("Lockers", async () => {
             let lockerSigner2 = lockers.connect(signer2)
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(50000000);
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, ONE_ADDRESS, 25000000);
+            await lockerSigner2.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, 25000000);
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(7000000);
 
@@ -2153,8 +2173,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2169,7 +2189,7 @@ describe("Lockers", async () => {
             let lockerSigner2 = lockers.connect(signer2)
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(50000000);
-            await lockerSigner2.mint(TELEPORTER1_PublicKeyHash, signer2Address, 25000000);
+            await lockerSigner2.mint(LOCKER1_PUBKEY__HASH, signer2Address, 25000000);
 
 
             let teleBTCSigner2 = await teleBTC.connect(signer2);
@@ -2206,7 +2226,7 @@ describe("Lockers", async () => {
                     10000,
                     {value: 10000}
                 )
-            ).to.be.revertedWith("Lockers: account is not a locker")
+            ).to.be.revertedWith("Lockers: no locker");
         })
 
 
@@ -2221,8 +2241,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2255,8 +2275,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2309,7 +2329,7 @@ describe("Lockers", async () => {
                 lockerSigner1.removeCollateral(
                     1000
                 )
-            ).to.be.revertedWith("Lockers: account is not a locker")
+            ).to.be.revertedWith("Lockers: no locker")
         })
 
 
@@ -2326,8 +2346,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2337,6 +2357,12 @@ describe("Lockers", async () => {
 
             await lockers.addLocker(signer1Address);
 
+            // inactivate the locker
+            await lockerSigner1.requestInactivation();
+
+            // Forwards block.timestamp to inactivate locker
+            let lastBlockTimestamp = await getTimestamp();
+            await advanceBlockWithTime(deployer.provider, lastBlockTimestamp + INACTIVATION_DELAY);
 
             await expect(
                 lockerSigner1.removeCollateral(
@@ -2346,7 +2372,7 @@ describe("Lockers", async () => {
 
         })
 
-        it("remove collateral successfully", async function () {
+        it("reverts because it becomes below the min required collateral", async function () {
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
 
@@ -2359,8 +2385,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2370,7 +2396,12 @@ describe("Lockers", async () => {
 
             await lockers.addLocker(signer1Address);
 
-            let theLockerBalanceBefore = await teleBTC.provider.getBalance(signer1Address)
+            // inactivate the locker
+            await lockerSigner1.requestInactivation();
+            
+            // Forwards block.timestamp to inactivate locker
+            let lastBlockTimestamp = await getTimestamp();
+            await advanceBlockWithTime(deployer.provider, lastBlockTimestamp + INACTIVATION_DELAY);
 
             await expect(
                 lockerSigner1.removeCollateral(minRequiredNativeTokenLockedAmount.div(2))
@@ -2390,8 +2421,8 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await lockerSigner1.requestToBecomeLocker(
-                // TELEPORTER1,
-                TELEPORTER1_PublicKeyHash,
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount.mul(2),
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2401,7 +2432,14 @@ describe("Lockers", async () => {
 
             await lockers.addLocker(signer1Address);
 
-            let theLockerBalanceBefore = await teleBTC.provider.getBalance(signer1Address)
+            let theLockerBalanceBefore = await teleBTC.provider.getBalance(signer1Address);
+
+            // inactivate the locker
+            await lockerSigner1.requestInactivation();
+            
+            // Forwards block.timestamp to inactivate locker
+            let lastBlockTimestamp = await getTimestamp();
+            await advanceBlockWithTime(deployer.provider, lastBlockTimestamp + INACTIVATION_DELAY);
 
             await lockerSigner1.removeCollateral(
                 minRequiredNativeTokenLockedAmount.div(2)
