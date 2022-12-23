@@ -18,7 +18,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: [
       tokenName,
       tokenSymbol,
-      initialSupply
+      // initialSupply
     ],
   });
 };

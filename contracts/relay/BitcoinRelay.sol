@@ -20,6 +20,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
 
     // Public variables
     uint constant ONE_HUNDRED_PERCENT = 10000;
+    uint constant MAX_FINALIZATION_PARAMETER = 432; // roughly 3 days
 
     uint public override initialHeight;
     uint public override lastSubmittedHeight;
@@ -222,8 +223,8 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     function _setFinalizationParameter(uint _finalizationParameter) private {
         emit NewFinalizationParameter(finalizationParameter, _finalizationParameter);
         require(
-            _finalizationParameter > 0,
-            "BitcoinRelay: zero finalization param"
+            _finalizationParameter > 0 && _finalizationParameter <= MAX_FINALIZATION_PARAMETER,
+            "BitcoinRelay: invalid finalization param"
         );
 
         finalizationParameter = _finalizationParameter;
