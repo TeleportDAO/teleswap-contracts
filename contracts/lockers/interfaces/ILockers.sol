@@ -180,14 +180,8 @@ interface ILockers is ILockersStorage {
         uint newLiquidationRatio
     );   
 
-    event NewInactivationDelay(
-        uint oldInactivationDelay,
-        uint newInactivationDelay
-    );   
-
-
     // Read-only functions
-    
+
     function getLockerTargetAddress(bytes calldata _lockerLockingScript) external view returns (address);
 
     function isLocker(bytes calldata _lockerLockingScript) external view returns (bool);
@@ -245,8 +239,6 @@ interface ILockers is ILockersStorage {
     function setCollateralRatio(uint _collateralRatio) external;
 
     function setLiquidationRatio(uint _liquidationRatio) external;
-
-    function setInactivationDelay(uint _inactivationDelay) external;
 
     function liquidateLocker(
         address _lockerTargetAddress,

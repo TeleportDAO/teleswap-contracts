@@ -210,8 +210,7 @@ describe("CCTransferRouter", async () => {
             collateralRatio,
             liquidationRatio,
             LOCKER_PERCENTAGE_FEE,
-            PRICE_WITH_DISCOUNT_RATIO,
-            INACTIVATION_DELAY
+            PRICE_WITH_DISCOUNT_RATIO
         )
 
         return lockers;

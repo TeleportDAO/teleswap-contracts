@@ -31,8 +31,6 @@ interface ILockersStorage {
     function totalNumberOfCandidates() external view returns(uint);
 
     function totalNumberOfLockers() external view returns(uint);
-
-    function inactivationDelay() external view returns(uint);
   
 }
 

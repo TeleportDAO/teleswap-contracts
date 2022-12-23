@@ -42,8 +42,7 @@ describe("Lockers", async () => {
     let liquidationRatio = 15000;
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
     const PRICE_WITH_DISCOUNT_RATIO = 9500; // Means %95
-    const INACTIVATION_DELAY = 0
-    const MAX_INACTIVATION_DELAY = 100000;
+    const INACTIVATION_DELAY = 10000;
 
     // Bitcoin public key (32 bytes)
     let LOCKER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
@@ -133,8 +132,7 @@ describe("Lockers", async () => {
             collateralRatio,
             liquidationRatio,
             LOCKER_PERCENTAGE_FEE,
-            PRICE_WITH_DISCOUNT_RATIO,
-            INACTIVATION_DELAY
+            PRICE_WITH_DISCOUNT_RATIO
         )
 
         // Sets ccBurnRouter address
@@ -267,8 +265,7 @@ describe("Lockers", async () => {
                     collateralRatio,
                     liquidationRatio,
                     LOCKER_PERCENTAGE_FEE,
-                    PRICE_WITH_DISCOUNT_RATIO,
-                    INACTIVATION_DELAY
+                    PRICE_WITH_DISCOUNT_RATIO
                 )
             ).to.be.revertedWith("Initializable: contract is already initialized")
         })
@@ -286,8 +283,7 @@ describe("Lockers", async () => {
                     collateralRatio,
                     liquidationRatio,
                     LOCKER_PERCENTAGE_FEE,
-                    PRICE_WITH_DISCOUNT_RATIO,
-                    INACTIVATION_DELAY
+                    PRICE_WITH_DISCOUNT_RATIO
                 )
             ).to.be.revertedWith("Lockers: address is zero")
         })
@@ -305,8 +301,7 @@ describe("Lockers", async () => {
                     collateralRatio,
                     liquidationRatio,
                     LOCKER_PERCENTAGE_FEE,
-                    PRICE_WITH_DISCOUNT_RATIO,
-                    INACTIVATION_DELAY
+                    PRICE_WITH_DISCOUNT_RATIO
                 )
             ).to.be.revertedWith("Lockers: amount is zero")
         })
@@ -325,8 +320,7 @@ describe("Lockers", async () => {
                     liquidationRatio,
                     collateralRatio,
                     LOCKER_PERCENTAGE_FEE,
-                    PRICE_WITH_DISCOUNT_RATIO,
-                    INACTIVATION_DELAY
+                    PRICE_WITH_DISCOUNT_RATIO
                 )
             ).to.be.revertedWith("Lockers: must CR > LR")
         })
@@ -344,8 +338,7 @@ describe("Lockers", async () => {
                     collateralRatio,
                     liquidationRatio,
                     LOCKER_PERCENTAGE_FEE,
-                    PRICE_WITH_DISCOUNT_RATIO + 10000,
-                    INACTIVATION_DELAY
+                    PRICE_WITH_DISCOUNT_RATIO + 10000
                 )
             ).to.be.revertedWith("Lockers: less than 100%")
         })
@@ -962,32 +955,6 @@ describe("Lockers", async () => {
             expect(
                 await lockers.liquidationRatio()
             ).to.equal(19000)
-        })
-    })
-
-    describe("#setInactivationDelay",async () => {
-
-        it("non owners can't call setInactivationDelay", async function () {
-            let lockerSigner1 = lockers.connect(signer1)
-
-            await expect(
-                lockerSigner1.setInactivationDelay(
-                    1234
-                )
-            ).to.be.revertedWith("Ownable: caller is not the owner")
-        })
-
-        it("only owner can call setInactivationDelay", async function () {
-
-            await expect(await lockers.setInactivationDelay(
-                21000
-            )).to.emit(
-                lockers, "NewInactivationDelay"
-            ).withArgs(INACTIVATION_DELAY, 21000);
-
-            expect(
-                await lockers.inactivationDelay()
-            ).to.equal(21000)
         })
     })
 

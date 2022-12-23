@@ -32,8 +32,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         uint _collateralRatio,
         uint _liquidationRatio,
         uint _lockerPercentageFee,
-        uint _priceWithDiscountRatio,
-        uint _inactivationDelay
+        uint _priceWithDiscountRatio
     ) public initializer {
 
         OwnableUpgradeable.__Ownable_init();
@@ -56,7 +55,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         _setLiquidationRatio(_liquidationRatio);
         _setLockerPercentageFee(_lockerPercentageFee);
         _setPriceWithDiscountRatio(_priceWithDiscountRatio);
-        _setInactivationDelay(_inactivationDelay);
 
         libConstants.OneHundredPercent = ONE_HUNDRED_PERCENT;
         libConstants.HealthFactor = HEALTH_FACTOR;
@@ -373,7 +371,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
             "Lockers: locker has already requested"
         );
 
-        lockerInactivationTimestamp[_msgSender()] = block.timestamp + inactivationDelay;
+        lockerInactivationTimestamp[_msgSender()] = block.timestamp + INACTIVATION_DELAY;
 
         emit RequestInactivateLocker(
             _msgSender(),
@@ -777,13 +775,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         return remainedAmount;
     }
 
-    /// @notice                         Changes delay of inactivation
-    /// @dev                            Only owner can call this
-    /// @param _inactivationDelay       The new inactivation delay
-    function setInactivationDelay(uint _inactivationDelay) external override onlyOwner {
-        _setInactivationDelay(_inactivationDelay);
-    }
-
     // *************** Public functions ***************
     
     function renounceOwnership() public virtual override onlyOwner {}
@@ -1014,13 +1005,4 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         libParams.liquidationRatio = liquidationRatio;
     }
 
-    /// @notice                        Internal setter for inactivation delay
-    /// @param _inactivationDelay      The new inactivation delay
-    function _setInactivationDelay(uint _inactivationDelay) private {
-        // inactivation delay should be greater than relay finalization parameter
-        require(_inactivationDelay <= MAX_INACTIVATION_DELAY, "Lockers: invalid value");
-        emit NewInactivationDelay(inactivationDelay, _inactivationDelay);
-        inactivationDelay = _inactivationDelay;
-        libParams.inactivationDelay = inactivationDelay;
-    }
 }
