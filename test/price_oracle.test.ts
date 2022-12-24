@@ -537,7 +537,7 @@ describe("PriceOracle", async () => {
                     erc20.address, 
                     _erc20.address
                 )
-            ).to.revertedWith("PriceOracle: zero price for output");
+            ).to.revertedWith("PriceOracle: Price proxy does not exist or price is out of date");
 
             await priceOracle.setPriceProxy(erc20.address, ONE_ADDRESS);
             await priceOracle.setPriceProxy(_erc20.address, mockPriceProxy.address);

@@ -329,7 +329,6 @@ contract PriceOracle is IPriceOracle, Ownable {
         }
 
         if (ChainlinkPriceProxy[_inputToken] != address(0) && ChainlinkPriceProxy[_outputToken] != address(0)) {
-            _result = true; 
 
             // Gets price of _inputToken/USD
             (
@@ -346,7 +345,8 @@ contract PriceOracle is IPriceOracle, Ownable {
             require(price0 != 0, "PriceOracle: zero price for input token");
 
             if (_abs(block.timestamp.toInt256() - _timestamp.toInt256()) > acceptableDelay) {
-                _result = false;
+                // _result = false;
+                return (false, 0, 0);
             }
 
             // Gets price of _outputToken/USD
@@ -364,14 +364,15 @@ contract PriceOracle is IPriceOracle, Ownable {
             require(price1 != 0, "PriceOracle: zero price for output token");
 
             if (_abs(block.timestamp.toInt256() - _timestamp.toInt256()) > acceptableDelay) {
-                _result = false;
+                // _result = false;
+                return (false, 0, 0);
             }
 
             uint price = (uint(price0) * 10**(decimals1)) / (uint(price1) * 10**(decimals0));
             // note: to make inside of power parentheses greater than zero, we add them with one
             _outputAmount = price*_inputAmount*(10**(_outputDecimals + 1))/(10**(_inputDecimals + 1));
 
-            
+            _result = true; 
             
         } else {
             return (false, 0, 0);
