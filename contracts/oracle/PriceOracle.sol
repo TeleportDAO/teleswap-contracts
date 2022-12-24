@@ -339,6 +339,11 @@ contract PriceOracle is IPriceOracle, Ownable {
 
             require(price0 != 0, "PriceOracle: zero price for input token");
 
+            require(
+                _abs(block.timestamp.toInt256() - _timestamp.toInt256()) < acceptableDelay,
+                "PriceOracle: stale price for input token"
+            );
+
             // Gets price of _outputToken/USD
             (
             /*uint80 roundID*/,
@@ -352,6 +357,10 @@ contract PriceOracle is IPriceOracle, Ownable {
             decimals1 = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken]).decimals();
 
             require(price1 != 0, "PriceOracle: zero price for output token");
+            require(
+                _abs(block.timestamp.toInt256() - _timestamp.toInt256()) < acceptableDelay,
+                "PriceOracle: stale price for output token"
+            );
 
             uint price = (uint(price0) * 10**(decimals1)) / (uint(price1) * 10**(decimals0));
             // note: to make inside of power parentheses greater than zero, we add them with one
