@@ -117,8 +117,9 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint _outputAmount) {
+    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint) {
         bool result;
+        uint _outputAmount;
         (result, _outputAmount, /*timestamp*/) = _equivalentOutputAmountFromOracle(
             _inputAmount,
             _inputDecimals,
@@ -126,7 +127,8 @@ contract PriceOracle is IPriceOracle, Ownable {
             _inputToken,
             _outputToken
         );
-        require(result == true, "PriceOracle: Price proxy does not exist");
+        require(result == true, "PriceOracle: Price proxy does not exist or price is out of date");
+        return _outputAmount;
     }
 
     /// @notice                         Finds amount of output token that has equal value
@@ -144,8 +146,9 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint _outputAmount) {
+    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint) {
         bool result;
+        uint _outputAmount;
         (result, _outputAmount, /*timestamp*/) = _equivalentOutputAmountFromOracle(
             _inputAmount,
             _inputDecimals,
@@ -153,7 +156,8 @@ contract PriceOracle is IPriceOracle, Ownable {
             _inputToken,
             _outputToken
         );
-        require(result == true, "PriceOracle: Price proxy does not exist");
+        require(result == true, "PriceOracle: Price proxy does not exist or price is out of date");
+        return _outputAmount;
     }
 
     /// @notice                         Finds amount of output token that has same value 
@@ -325,6 +329,8 @@ contract PriceOracle is IPriceOracle, Ownable {
         }
 
         if (ChainlinkPriceProxy[_inputToken] != address(0) && ChainlinkPriceProxy[_outputToken] != address(0)) {
+            _result = true; 
+
             // Gets price of _inputToken/USD
             (
             /*uint80 roundID*/,
@@ -339,10 +345,9 @@ contract PriceOracle is IPriceOracle, Ownable {
 
             require(price0 != 0, "PriceOracle: zero price for input token");
 
-            require(
-                _abs(block.timestamp.toInt256() - _timestamp.toInt256()) < acceptableDelay,
-                "PriceOracle: stale price for input token"
-            );
+            if (_abs(block.timestamp.toInt256() - _timestamp.toInt256()) > acceptableDelay) {
+                _result = false;
+            }
 
             // Gets price of _outputToken/USD
             (
@@ -357,16 +362,17 @@ contract PriceOracle is IPriceOracle, Ownable {
             decimals1 = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken]).decimals();
 
             require(price1 != 0, "PriceOracle: zero price for output token");
-            require(
-                _abs(block.timestamp.toInt256() - _timestamp.toInt256()) < acceptableDelay,
-                "PriceOracle: stale price for output token"
-            );
+
+            if (_abs(block.timestamp.toInt256() - _timestamp.toInt256()) > acceptableDelay) {
+                _result = false;
+            }
 
             uint price = (uint(price0) * 10**(decimals1)) / (uint(price1) * 10**(decimals0));
             // note: to make inside of power parentheses greater than zero, we add them with one
             _outputAmount = price*_inputAmount*(10**(_outputDecimals + 1))/(10**(_inputDecimals + 1));
 
-            _result = true;
+            
+            
         } else {
             return (false, 0, 0);
         }
