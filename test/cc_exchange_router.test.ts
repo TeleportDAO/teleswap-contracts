@@ -60,8 +60,7 @@ describe("CCExchangeRouter", async () => {
     let LOCKER_RESCUE_SCRIPT_P2PKH_TYPE = 1; // P2PKH
 
     let telePortTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000);
-    let minRequiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
-    let minRequiredNativeTokenLockedAmount = BigNumber.from(10).pow(18).mul(5);
+    let minRequiredTNTLockedAmount = BigNumber.from(10).pow(18).mul(5);
     let collateralRatio = 20000;
     let liquidationRatio = 15000;
 
@@ -291,8 +290,8 @@ describe("CCExchangeRouter", async () => {
             ONE_ADDRESS,
             mockPriceOracle.address,
             ONE_ADDRESS,
-            minRequiredTDTLockedAmount,
             0,
+            minRequiredTNTLockedAmount,
             collateralRatio,
             liquidationRatio,
             LOCKER_PERCENTAGE_FEE,
@@ -304,21 +303,15 @@ describe("CCExchangeRouter", async () => {
 
     async function addLockerToLockers(): Promise<void> {
 
-        await teleportDAOToken.transfer(lockerAddress, minRequiredTDTLockedAmount)
-
-        let teleportDAOTokenlocker = teleportDAOToken.connect(locker)
-
-        await teleportDAOTokenlocker.approve(lockers.address, minRequiredTDTLockedAmount)
-
         let lockerlocker = lockers.connect(locker)
 
         await lockerlocker.requestToBecomeLocker(
             LOCKER1_LOCKING_SCRIPT,
-            minRequiredTDTLockedAmount,
-            minRequiredNativeTokenLockedAmount,
+            0,
+            minRequiredTNTLockedAmount,
             LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
             LOCKER_RESCUE_SCRIPT_P2PKH,
-            {value: minRequiredNativeTokenLockedAmount}
+            {value: minRequiredTNTLockedAmount}
         )
 
         await lockers.addLocker(lockerAddress)

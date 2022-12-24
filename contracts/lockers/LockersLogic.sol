@@ -39,7 +39,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         PausableUpgradeable.__Pausable_init();
 
         require(
-            _minRequiredTDTLockedAmount != 0 || _minRequiredTNTLockedAmount != 0,
+            _minRequiredTNTLockedAmount != 0,
             "Lockers: amount is zero"
         );
 
@@ -192,6 +192,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
     /// @notice         Changes the required native token bond amount to become locker
     /// @dev            Only current owner can call this
+    ///                 It should be a non-zero value
     /// @param _minRequiredTNTLockedAmount   The new required native token bond amount
     function setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) external override onlyOwner {
         _setMinRequiredTNTLockedAmount(_minRequiredTNTLockedAmount);
@@ -909,10 +910,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @notice         Internal setter for the required bond amount to become locker
     /// @param _minRequiredTDTLockedAmount   The new required bond amount
     function _setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) private {
-        require(
-            _minRequiredTDTLockedAmount != 0 || minRequiredTNTLockedAmount != 0,
-            "Lockers: amount is zero"
-        );
         emit NewMinRequiredTDTLockedAmount(minRequiredTDTLockedAmount, _minRequiredTDTLockedAmount);
         minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
         libParams.minRequiredTDTLockedAmount = minRequiredTDTLockedAmount;
@@ -922,7 +919,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @param _minRequiredTNTLockedAmount   The new required bond amount
     function _setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) private {
         require(
-            minRequiredTDTLockedAmount != 0 || _minRequiredTNTLockedAmount != 0,
+            _minRequiredTNTLockedAmount != 0,
             "Lockers: amount is zero"
         );
         emit NewMinRequiredTNTLockedAmount(minRequiredTNTLockedAmount, _minRequiredTNTLockedAmount);
