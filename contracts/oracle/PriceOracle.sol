@@ -6,7 +6,6 @@ import "../connectors/interfaces/IExchangeConnector.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "hardhat/console.sol";
 
 
 contract PriceOracle is IPriceOracle, Ownable {
@@ -68,7 +67,7 @@ contract PriceOracle is IPriceOracle, Ownable {
         );
 
         // Checks timestamp of the oracle result
-        if (result == true && _abs(timestamp.toInt256() - block.timestamp.toInt256()) < acceptableDelay) {
+        if (result == true && _abs(timestamp.toInt256() - block.timestamp.toInt256()) <= acceptableDelay) {
             return outputAmount;
         } else {
             uint _totalAmount;
@@ -118,9 +117,8 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint) {
+    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint _outputAmount) {
         bool result;
-        uint _outputAmount;
         (result, _outputAmount, /*timestamp*/) = _equivalentOutputAmountFromOracle(
             _inputAmount,
             _inputDecimals,
@@ -128,9 +126,7 @@ contract PriceOracle is IPriceOracle, Ownable {
             _inputToken,
             _outputToken
         );
-
         require(result == true, "PriceOracle: oracle not exist or up to date");
-        return _outputAmount;
     }
 
     /// @notice                         Finds amount of output token that has equal value
@@ -148,9 +144,8 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint) {
+    ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (uint _outputAmount) {
         bool result;
-        uint _outputAmount;
         (result, _outputAmount, /*timestamp*/) = _equivalentOutputAmountFromOracle(
             _inputAmount,
             _inputDecimals,
@@ -159,7 +154,6 @@ contract PriceOracle is IPriceOracle, Ownable {
             _outputToken
         );
         require(result == true, "PriceOracle: oracle not exist or up to date");
-        return _outputAmount;
     }
 
     /// @notice                         Finds amount of output token that has same value 
@@ -331,55 +325,57 @@ contract PriceOracle is IPriceOracle, Ownable {
         }
 
         if (ChainlinkPriceProxy[_inputToken] != address(0) && ChainlinkPriceProxy[_outputToken] != address(0)) {
+            uint[2] memory _timestamps;
 
             // Gets price of _inputToken/USD
             (
             /*uint80 roundID*/,
             price0,
             /*uint startedAt*/,
-            _timestamp,
+            _timestamps[0],
             /*uint80 answeredInRound*/
             ) = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken]).latestRoundData();
 
             require(price0 != 0, "PriceOracle: zero price for input token");
 
-            if (_abs(block.timestamp.toInt256() - _timestamp.toInt256()) > acceptableDelay) {
-                return (false, 0, _timestamp);
-            }
-
             // Gets number of decimals
             decimals0 = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken]).decimals();
-            
+
 
             // Gets price of _outputToken/USD
             (
             /*uint80 roundID*/,
             price1,
             /*uint startedAt*/,
-            _timestamp,
+            _timestamps[1],
             /*uint80 answeredInRound*/
             ) = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken]).latestRoundData();
 
             require(price1 != 0, "PriceOracle: zero price for output token");
 
-            if (_abs(block.timestamp.toInt256() - _timestamp.toInt256()) > acceptableDelay) {
-                return (false, 0, _timestamp);
-            }
-
             // Gets number of decimals
             decimals1 = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken]).decimals();
 
-
             uint price = (uint(price0) * 10**(decimals1)) / (uint(price1) * 10**(decimals0));
+
             // note: to make inside of power parentheses greater than zero, we add them with one
             _outputAmount = price*_inputAmount*(10**(_outputDecimals + 1))/(10**(_inputDecimals + 1));
+
+            if (_abs(block.timestamp.toInt256() - _timestamps[0].toInt256()) > acceptableDelay) {
+                return (false, _outputAmount, _timestamps[0]);
+            }
+
+            if (_abs(block.timestamp.toInt256() - _timestamps[1].toInt256()) > acceptableDelay) {
+                return (false, _outputAmount, _timestamps[1]);
+            }
+
+            _timestamp = _timestamps[0] > _timestamps[1] ? _timestamps[1] : _timestamps[0];
 
             return (true, _outputAmount, _timestamp);
             
         } else {
             return (false, 0, 0);
         }
-
     }
 
     /// @notice             Removes an element of excahngeRouterList
