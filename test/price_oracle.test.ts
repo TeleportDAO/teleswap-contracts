@@ -503,7 +503,7 @@ describe("PriceOracle", async () => {
             let price1 = 1;
             price = price0/price1;
             startedAt = 1;
-            timeStamp = 1;
+            timeStamp = await getLastBlockTimestamp();
             answeredInRound = 1;
             let decimals0 = 1;
             let decimals1 = 2;
@@ -537,7 +537,7 @@ describe("PriceOracle", async () => {
                     erc20.address, 
                     _erc20.address
                 )
-            ).to.revertedWith("PriceOracle: Price proxy does not exist or price is out of date");
+            ).to.revertedWith("PriceOracle: zero price for output token");
 
             await priceOracle.setPriceProxy(erc20.address, ONE_ADDRESS);
             await priceOracle.setPriceProxy(_erc20.address, mockPriceProxy.address);
@@ -550,7 +550,7 @@ describe("PriceOracle", async () => {
                     erc20.address, 
                     _erc20.address
                 )
-            ).to.be.reverted;
+            ).to.be.revertedWith("PriceOracle: Price proxy does not exist or price is out of date");
 
         })
 

@@ -6,6 +6,7 @@ import "../connectors/interfaces/IExchangeConnector.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "hardhat/console.sol";
 
 
 contract PriceOracle is IPriceOracle, Ownable {
@@ -127,6 +128,13 @@ contract PriceOracle is IPriceOracle, Ownable {
             _inputToken,
             _outputToken
         );
+
+        console.log("equivalentOutputAmount");
+        console.log("result");
+        console.logBool(result);
+        console.log("_outputAmount");
+        console.log(_outputAmount);
+
         require(result == true, "PriceOracle: Price proxy does not exist or price is out of date");
         return _outputAmount;
     }
@@ -314,7 +322,7 @@ contract PriceOracle is IPriceOracle, Ownable {
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) private view returns (bool _result, uint _outputAmount, uint _timestamp) {
+    ) private view returns (bool, uint _outputAmount, uint _timestamp) {
         uint decimals0;
         uint decimals1;
         int price0;
@@ -339,15 +347,15 @@ contract PriceOracle is IPriceOracle, Ownable {
             /*uint80 answeredInRound*/
             ) = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken]).latestRoundData();
 
-            // Gets number of decimals
-            decimals0 = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken]).decimals();
-
             require(price0 != 0, "PriceOracle: zero price for input token");
 
             if (_abs(block.timestamp.toInt256() - _timestamp.toInt256()) > acceptableDelay) {
-                // _result = false;
-                return (false, 0, 0);
+                return (false, 0, _timestamp);
             }
+
+            // Gets number of decimals
+            decimals0 = AggregatorV3Interface(ChainlinkPriceProxy[_inputToken]).decimals();
+            
 
             // Gets price of _outputToken/USD
             (
@@ -358,21 +366,21 @@ contract PriceOracle is IPriceOracle, Ownable {
             /*uint80 answeredInRound*/
             ) = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken]).latestRoundData();
 
-            // Gets number of decimals
-            decimals1 = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken]).decimals();
-
             require(price1 != 0, "PriceOracle: zero price for output token");
 
             if (_abs(block.timestamp.toInt256() - _timestamp.toInt256()) > acceptableDelay) {
-                // _result = false;
-                return (false, 0, 0);
+                return (false, 0, _timestamp);
             }
+
+            // Gets number of decimals
+            decimals1 = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken]).decimals();
+
 
             uint price = (uint(price0) * 10**(decimals1)) / (uint(price1) * 10**(decimals0));
             // note: to make inside of power parentheses greater than zero, we add them with one
             _outputAmount = price*_inputAmount*(10**(_outputDecimals + 1))/(10**(_inputDecimals + 1));
 
-            _result = true; 
+            return (true, _outputAmount, _timestamp);
             
         } else {
             return (false, 0, 0);
