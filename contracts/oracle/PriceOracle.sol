@@ -129,13 +129,7 @@ contract PriceOracle is IPriceOracle, Ownable {
             _outputToken
         );
 
-        console.log("equivalentOutputAmount");
-        console.log("result");
-        console.logBool(result);
-        console.log("_outputAmount");
-        console.log(_outputAmount);
-
-        require(result == true, "PriceOracle: Price proxy does not exist or price is out of date");
+        require(result == true, "PriceOracle: oracle not exist or up to date");
         return _outputAmount;
     }
 
@@ -164,7 +158,7 @@ contract PriceOracle is IPriceOracle, Ownable {
             _inputToken,
             _outputToken
         );
-        require(result == true, "PriceOracle: Price proxy does not exist or price is out of date");
+        require(result == true, "PriceOracle: oracle not exist or up to date");
         return _outputAmount;
     }
 

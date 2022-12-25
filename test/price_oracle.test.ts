@@ -539,7 +539,7 @@ describe("PriceOracle", async () => {
                 )
             ).to.revertedWith("PriceOracle: zero price for output token");
 
-            await priceOracle.setPriceProxy(erc20.address, ONE_ADDRESS);
+            await priceOracle.setPriceProxy(erc20.address, ZERO_ADDRESS);
             await priceOracle.setPriceProxy(_erc20.address, mockPriceProxy.address);
 
             await expect(
@@ -550,7 +550,7 @@ describe("PriceOracle", async () => {
                     erc20.address, 
                     _erc20.address
                 )
-            ).to.be.revertedWith("PriceOracle: Price proxy does not exist or price is out of date");
+            ).to.be.revertedWith("PriceOracle: oracle not exist or up to date");
 
         })
 
@@ -564,7 +564,7 @@ describe("PriceOracle", async () => {
                     erc20.address, 
                     deployerAddress
                 )
-            ).to.revertedWith("PriceOracle: Price proxy does not exist");
+            ).to.revertedWith("PriceOracle: oracle not exist or up to date");
         })
 
     });
@@ -865,7 +865,7 @@ describe("PriceOracle", async () => {
                     erc20.address,
                     _erc20.address
                 )
-            ).to.be.revertedWith("PriceOracle: Price proxy does not exist or price is out of date");
+            ).to.be.revertedWith("PriceOracle: oracle not exist or up to date");
         })
 
         it("Gets equal amount of output token when delay is acceptable, but no other exchange exists (only oracle)", async function () {
@@ -915,7 +915,7 @@ describe("PriceOracle", async () => {
                     erc20.address,
                     _erc20.address
                 )
-            ).to.be.revertedWith("PriceOracle: Price proxy does not exist or price is out of date")
+            ).to.be.revertedWith("PriceOracle: oracle not exist or up to date")
         })
 
         it("Gets equal amount of output token when delay is acceptable, but exchange does not have the pair (only oracle)", async function () {
@@ -965,7 +965,7 @@ describe("PriceOracle", async () => {
                     erc20.address,
                     _erc20.address
                 )
-            ).to.revertedWith("PriceOracle: Price proxy does not exist");
+            ).to.revertedWith("PriceOracle: oracle not exist or up to date");
         })
 
     });
