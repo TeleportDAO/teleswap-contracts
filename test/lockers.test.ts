@@ -1180,7 +1180,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            expect(
+            await expect(
                 await lockers.addLocker(signer1Address)
             ).to.emit(lockers, "LockerAdded")
 
@@ -1232,7 +1232,7 @@ describe("Lockers", async () => {
 
             await lockers.addLocker(signer1Address)
 
-            expect(
+            await expect(
                 await lockerSigner1.requestInactivation()
             ).to.emit(lockers, "RequestInactivateLocker")
         })
@@ -1344,7 +1344,7 @@ describe("Lockers", async () => {
             let lastBlockTimestamp = await getTimestamp();
             await advanceBlockWithTime(deployer.provider, lastBlockTimestamp + INACTIVATION_DELAY);
 
-            expect(
+            await expect(
                 await lockerSigner1.selfRemoveLocker()
             ).to.emit(lockers, "LockerRemoved")
 
@@ -1412,7 +1412,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            expect(
+            await expect(
                 await lockers.addLocker(signer1Address)
             ).to.emit(lockers, "LockerAdded")
 
@@ -1453,13 +1453,13 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            expect(
+            await expect(
                 await lockers.addLocker(signer1Address)
             ).to.emit(lockers, "LockerAdded")
 
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
 
-            expect(
+            await expect(
                 await lockerCCBurnSigner.slashIdleLocker(
                     signer1Address,
                     0,
@@ -1522,7 +1522,7 @@ describe("Lockers", async () => {
                 LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
-            expect(
+            await expect(
                 await lockers.addLocker(signer1Address)
             ).to.emit(lockers, "LockerAdded")
 
@@ -1533,7 +1533,7 @@ describe("Lockers", async () => {
             // ccBurn calls to slash the locker
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
 
-            expect(
+            await expect(
                 await lockerCCBurnSigner.slashThiefLocker(
                     signer1Address,
                     0,
@@ -1579,7 +1579,7 @@ describe("Lockers", async () => {
                 LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
-            expect(
+            await expect(
                 await lockers.addLocker(signer1Address)
             ).to.emit(lockers, "LockerAdded")
 
@@ -1629,7 +1629,7 @@ describe("Lockers", async () => {
                 LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
-            expect(
+            await expect(
                 await lockers.addLocker(signer1Address)
             ).to.emit(lockers, "LockerAdded")
 
@@ -1681,7 +1681,7 @@ describe("Lockers", async () => {
                 LOCKER_RESCUE_SCRIPT_P2PKH,
                 {value: minRequiredNativeTokenLockedAmount}
             )
-            expect(
+            await expect(
                 await lockers.addLocker(signer1Address)
             ).to.emit(lockers, "LockerAdded")
 
@@ -1717,7 +1717,7 @@ describe("Lockers", async () => {
 
             // Someone buys slashed collateral with discount
             let lockerSigner2 = lockers.connect(signer2)
-            expect(
+            await expect(
                 await lockerSigner2.buySlashedCollateralOfLocker(
                     signer1Address,
                     BigNumber.from(10).pow(18).mul(1)

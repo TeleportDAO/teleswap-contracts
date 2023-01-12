@@ -181,7 +181,7 @@ describe("Instant pool", async () => {
                 addedLiquidity
             );
 
-            expect(
+            await expect(
                 await instantPoolSigner1.addLiquidity(
                     signer1Address,
                     addedLiquidity
@@ -216,7 +216,7 @@ describe("Instant pool", async () => {
                 addedLiquidity
             );
 
-            expect(
+            await expect(
                 await instantPoolSigner1.addLiquidity(
                     signer1Address,
                     addedLiquidity
@@ -246,7 +246,7 @@ describe("Instant pool", async () => {
                 addedLiquidity
             );
 
-            expect(
+            await expect(
                 await instantPoolSigner1.addLiquidity(
                     signer1Address,
                     addedLiquidity
@@ -274,7 +274,7 @@ describe("Instant pool", async () => {
                 addedLiquidity
             );
 
-            expect(
+            await expect(
                 await instantPoolSigner1.addLiquidity(
                     signer1Address,
                     addedLiquidity
@@ -336,7 +336,7 @@ describe("Instant pool", async () => {
                 addedLiquidity
             );
 
-            expect(
+            await expect(
                 await instantPoolSigner1.removeLiquidity(
                     signer1Address,
                     addedLiquidity
@@ -372,7 +372,7 @@ describe("Instant pool", async () => {
                 addedLiquidity
             );
 
-            expect(
+            await expect(
                 await instantPoolSigner1.removeLiquidity(
                     signer1Address,
                     addedLiquidity
@@ -409,7 +409,7 @@ describe("Instant pool", async () => {
                 addedLiquidity
             );
 
-            expect(
+            await expect(
                 await instantPoolSigner1.removeLiquidity(
                     signer1Address,
                     addedLiquidity
@@ -447,7 +447,7 @@ describe("Instant pool", async () => {
             await teleBTC.approve(instantPool.address, addedLiquidity);
             await instantPool.addLiquidityWithoutMint(addedLiquidity);
 
-            expect(
+            await expect(
                 await instantPoolSigner1.removeLiquidity(
                     signer1Address,
                     addedLiquidity

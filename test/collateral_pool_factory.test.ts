@@ -64,7 +64,7 @@ describe("CollateralPoolFactory", async () => {
             ).to.equal(ZERO_ADDRESS);
 
             // Creates a collateral pool
-            expect(
+            await expect(
                 await collateralPoolFactory.createCollateralPool(
                     erc20.address,
                     10000
@@ -170,7 +170,7 @@ describe("CollateralPoolFactory", async () => {
             await collateralPoolFactory.createCollateralPool(_erc20.address, 20000);
             
             // Removes collateral pool
-            expect(
+            await expect(
                 await collateralPoolFactory.removeCollateralPool(erc20.address, 0)
             ).to.emit(collateralPoolFactory, "RemoveCollateralPool");
 

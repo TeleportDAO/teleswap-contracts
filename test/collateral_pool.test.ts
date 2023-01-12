@@ -70,7 +70,7 @@ describe("CollateralPool", async () => {
             await erc20.approve(collateralPool.address, addedCollateral);
 
             // Adds collateral to collateral pool
-            expect(
+            await expect(
                 await collateralPool.addCollateral(deployerAddress, addedCollateral)
             ).to.emit(collateralPool, "AddCollateral");
 
@@ -92,7 +92,7 @@ describe("CollateralPool", async () => {
 
             // Adds collateral to collateral pool
             await erc20.approve(collateralPool.address, addedCollateral);
-            expect(
+            await expect(
                 await collateralPool.addCollateral(deployerAddress, addedCollateral)
             ).to.emit(collateralPool, "AddCollateral"); 
 
@@ -120,7 +120,7 @@ describe("CollateralPool", async () => {
 
             // Adds collateral to collateral pool
             await erc20.approve(collateralPool.address, addedCollateral);
-            expect(
+            await expect(
                 await collateralPool.addCollateral(deployerAddress, addedCollateral)
             ).to.emit(collateralPool, "AddCollateral");
 
@@ -174,7 +174,7 @@ describe("CollateralPool", async () => {
 
         it("Removes collateral", async function () {
             // Removes collateral from collateral pool
-            expect(
+            await expect(
                 await collateralPool.removeCollateral(addedCollateral)
             ).to.emit(collateralPool, "RemoveCollateral"); 
             
@@ -190,7 +190,7 @@ describe("CollateralPool", async () => {
             let prevBalance = await erc20.balanceOf(deployerAddress);
 
             // Removes collateral from collateral pool
-            expect(
+            await expect(
                 await collateralPool.removeCollateral(addedCollateral)
             ).to.emit(collateralPool, "RemoveCollateral");
 

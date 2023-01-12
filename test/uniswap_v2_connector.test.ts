@@ -326,7 +326,7 @@ describe("UniswapV2Connector", async () => {
             let isFixedToken = true;
 
             await erc20.approve(uniswapV2Connector.address, inputAmount);
-            expect(
+            await expect(
                 await uniswapV2Connector.swap(
                     inputAmount,
                     outputAmount,
@@ -364,7 +364,7 @@ describe("UniswapV2Connector", async () => {
             let isFixedToken = false;
 
             await erc20.approve(uniswapV2Connector.address, inputAmount);
-            expect(
+            await expect(
                 await uniswapV2Connector.swap(
                     inputAmount,
                     outputAmount,
@@ -401,7 +401,7 @@ describe("UniswapV2Connector", async () => {
             let deadline = 10000000000000;
             let isFixedToken = true;
             await erc20.approve(uniswapV2Connector.address, inputAmount);
-            expect(
+            await expect(
                 await uniswapV2Connector.swap(
                     inputAmount,
                     outputAmount,
@@ -439,7 +439,7 @@ describe("UniswapV2Connector", async () => {
             let isFixedToken = false;
 
             await erc20.approve(uniswapV2Connector.address, inputAmount);
-            expect(
+            await expect(
                 await uniswapV2Connector.swap(
                     inputAmount,
                     outputAmount,

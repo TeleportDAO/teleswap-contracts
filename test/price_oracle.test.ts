@@ -166,7 +166,7 @@ describe("PriceOracle", async () => {
         });
 
         it("Adds an exchange router", async function () {
-            expect(
+            await expect(
                 await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address)
             ).to.emit(priceOracle, "ExchangeConnectorAdded").withArgs(
                 deployerAddress,
@@ -211,7 +211,7 @@ describe("PriceOracle", async () => {
             // await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
             await priceOracle.addExchangeConnector(TWO_ADDRESS, mockExchangeConnector.address);
 
-            expect(
+            await expect(
                 await priceOracle.removeExchangeConnector(0)
             ).to.emit(priceOracle, "ExchangeConnectorRemoved").withArgs(
                 deployerAddress
@@ -245,7 +245,7 @@ describe("PriceOracle", async () => {
         });
 
         it("Sets a price proxy", async function () {
-            expect(
+            await expect(
                 await priceOracle.setPriceProxy(erc20.address, mockPriceProxy.address)
             ).to.emit(priceOracle, 'SetPriceProxy').withArgs(
                 erc20.address,
@@ -258,7 +258,7 @@ describe("PriceOracle", async () => {
         })
 
         it("Removes a price proxy", async function () {
-            expect(
+            await expect(
                 await priceOracle.setPriceProxy(erc20.address, ZERO_ADDRESS)
             ).to.emit(priceOracle, 'SetPriceProxy').withArgs(
                 erc20.address,
