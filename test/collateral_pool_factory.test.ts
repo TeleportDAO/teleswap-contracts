@@ -17,6 +17,7 @@ describe("CollateralPoolFactory", async () => {
     // Accounts
     let deployer: Signer;
     let signer1: Signer;
+    let deployerAddress: string;
 
     // Contracts
     let collateralPoolFactory: CollateralPoolFactory;
@@ -28,7 +29,7 @@ describe("CollateralPoolFactory", async () => {
     before(async () => {
         // Sets accounts
         [deployer, signer1] = await ethers.getSigners();
-
+        deployerAddress = await deployer.getAddress();
         // Deploys collateralPoolFactory contract
         const collateralPoolFactoryFactory = new CollateralPoolFactory__factory(deployer);
         collateralPoolFactory = await collateralPoolFactoryFactory.deploy();
@@ -87,6 +88,22 @@ describe("CollateralPoolFactory", async () => {
             expect(
                 await collateralPoolFactory.isCollateral(erc20.address)
             ).to.equal(true);
+        })
+
+        //TODO hard code number
+        it("Reverts since _collateralizationRatio is less than 10000", async function () {
+            // Checks thta address is equal to zero
+            expect(
+                await collateralPoolFactory.getCollateralPoolByToken(erc20.address)
+            ).to.equal(ZERO_ADDRESS);
+
+            // Creates a collateral pool
+            await expect(
+                collateralPoolFactory.createCollateralPool(
+                    erc20.address,
+                    9999
+                )
+            ).to.be.revertedWith("CollateralPoolFactory: low amount")
         })
 
         it("Reverts since collateral pool has been already created", async function () {
@@ -210,6 +227,15 @@ describe("CollateralPoolFactory", async () => {
             ).to.reverted;
         })
 
+    });
+
+    describe("#renounce ownership", async () => {
+        it("owner can't renounce ownership", async function () {
+            await collateralPoolFactory.renounceOwnership()
+            await expect(
+                await collateralPoolFactory.owner()
+            ).to.equal(deployerAddress);
+        })
     });
 
 });
