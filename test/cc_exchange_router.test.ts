@@ -1343,4 +1343,13 @@ describe("CCExchangeRouter", async () => {
         })
 
     });
+
+    describe("#renounce ownership", async () => {
+        it("owner can't renounce ownership", async function () {
+            await ccExchangeRouter.renounceOwnership()
+            await expect(
+                await ccExchangeRouter.owner()
+            ).to.equal(deployerAddress);
+        })
+    });
 });
