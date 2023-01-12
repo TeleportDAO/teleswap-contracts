@@ -8,7 +8,9 @@ import { network } from "hardhat"
 
 
 describe("TeleBTC", async () => {
+
     // Constants
+    const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     const ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
     const maxMintLimit = 200 * 10 ** 8;
     const epochLength = 2000;
@@ -110,6 +112,36 @@ describe("TeleBTC", async () => {
 
     });
 
+    describe("#burn and mint", async () => {
+
+        it("non burner account can't burn tokens", async function () {
+            await expect(
+                teleBTC.connect(signer2).burn(10)
+            ).to.be.revertedWith(
+                "TeleBTC: only burners can burn"
+            )
+        })  
+
+        it("non minter account can't mint tokens", async function () {
+            await expect(
+                teleBTC.connect(deployer).mint(deployerAddress, 10)
+            ).to.be.revertedWith(
+                "TeleBTC: only minters can mint"
+            )
+        })  
+
+        it("minters can mint tokens and burner can burn tokens", async function () {
+            await teleBTC.addBurner(signer2Address)
+            await teleBTC.connect(signer2).mint(signer2Address, 10)
+            await expect(
+                teleBTC.connect(signer2).burn(10)
+            ).to.emit(
+                teleBTC, "Burn"
+            ).withArgs(signer2Address, signer2Address, 10);
+        })  
+        
+    });
+
     describe("#minter", async () => {
 
         it("add minter", async function () {
@@ -118,6 +150,22 @@ describe("TeleBTC", async () => {
             ).to.emit(
                 teleBTC, "MinterAdded"
             ).withArgs(ONE_ADDRESS);
+        })
+
+        it("can't add zero address as minter", async function () {
+            await expect(
+                teleBTC.addMinter(ZERO_ADDRESS)
+            ).to.be.revertedWith(
+                "TeleBTC: account is the zero address"
+            )
+        })
+
+        it("can't add minter twice", async function () {
+            await expect(
+                teleBTC.addMinter(ONE_ADDRESS)
+            ).to.be.revertedWith(
+                "TeleBTC: account already has role"
+            )
         })
 
         it("remove minter", async function () {
@@ -140,6 +188,22 @@ describe("TeleBTC", async () => {
             ).withArgs(ONE_ADDRESS);
         })
 
+        it("can't add zero address as burner", async function () {
+            await expect(
+                teleBTC.addBurner(ZERO_ADDRESS)
+            ).to.be.revertedWith(
+                "TeleBTC: account is the zero address"
+            )
+        })
+
+        it("can't add burner twice", async function () {
+            await expect(
+                teleBTC.addBurner(ONE_ADDRESS)
+            ).to.be.revertedWith(
+                "TeleBTC: account already has role"
+            )
+        })
+
         it("remove burner", async function () {
             await expect(
                 await teleBTC.removeBurner(ONE_ADDRESS)
@@ -149,6 +213,15 @@ describe("TeleBTC", async () => {
         })
 
     });
+
+    describe("Renounce ownership", async () => {
+        it("owner can't renounce his ownership", async function () {
+            await teleBTC.renounceOwnership()
+            await expect(
+                await teleBTC.owner()
+            ).to.be.equal(deployerAddress)
+        })
+    })
 
     describe("Setters", async () => {
 
@@ -183,6 +256,14 @@ describe("TeleBTC", async () => {
             )
         })
 
+        it("can't change epoch length to zero", async function () {
+            await expect(
+                teleBTC.connect(deployer).setEpochLength(0)
+            ).to.be.revertedWith (
+                "TeleBTC: value is zero"
+            )
+        })
+
         it("owner account can change epoch length", async function () {
             await expect(
                 await teleBTC.setEpochLength(10)
@@ -204,6 +285,14 @@ describe("TeleBTC", async () => {
             ).to.be.revertedWith(
                 "TeleBTC: value is zero"
             )
+        })
+    })
+
+    describe("Getters", async () => {
+        it("decimal is correct", async function () {
+            await expect(
+                await teleBTC.decimals()
+            ).to.be.equal(8)
         })
     })
     
