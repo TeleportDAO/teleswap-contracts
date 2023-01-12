@@ -335,6 +335,22 @@ describe("CollateralPool", async () => {
             ).to.revertedWith("CollateralPool: zero value")
         })
 
+        //TODO hard code number
+        it("Reverts since given ratio is less than 10000", async function () {
+            await expect(
+                collateralPool.setCollateralizationRatio(999)
+            ).to.revertedWith("CollateralPool: CR is low")
+        })
+
+    });
+
+    describe("#renounce ownership", async () => {
+        it("owner can't renounce ownership", async function () {
+            await collateralPool.renounceOwnership()
+            await expect(
+                await collateralPool.owner()
+            ).to.equal(deployerAddress);
+        })
     });
 
 });
