@@ -22,6 +22,7 @@ describe("CCBurnRouter", async () => {
     let signer1: Signer;
     let signer2: Signer;
     let signer1Address: Address;
+    let deployerAddress: Address;
 
     // Contracts
     let teleBTC: TeleBTC;
@@ -65,6 +66,7 @@ describe("CCBurnRouter", async () => {
 
         [deployer, signer1, signer2] = await ethers.getSigners();
         signer1Address = await signer1.getAddress();
+        deployerAddress = await deployer.getAddress();
 
         // Mocks contracts
     
@@ -251,6 +253,32 @@ describe("CCBurnRouter", async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
+        it("Reverts since user script length is incorrect", async function () {
+            // Sets mock contracts outputs
+            await setLockersIsLocker(true);
+
+            await expect(
+                ccBurnRouterSigner1.ccBurn(
+                    userRequestedAmount,
+                    USER_SCRIPT_P2PKH + "00",
+                    USER_SCRIPT_P2PKH_TYPE,
+                    LOCKER1_LOCKING_SCRIPT
+                )
+            ).to.revertedWith("CCBurnRouter: invalid user script")
+
+            await expect(
+                ccBurnRouterSigner1.ccBurn(
+                    userRequestedAmount,
+                    USER_SCRIPT_P2PKH,
+                    4,
+                    LOCKER1_LOCKING_SCRIPT
+                )
+            ).to.revertedWith("CCBurnRouter: invalid user script")
+
+
+        })
+        
+
         it("Burns teleBTC for user", async function () {
             let lastSubmittedHeight = 100;
 
@@ -275,7 +303,8 @@ describe("CCBurnRouter", async () => {
             let prevBalanceSigner1 = await teleBTC.balanceOf(signer1Address);
 
             // Burns teleBTC
-            expect(
+
+            await expect(
                 await ccBurnRouterSigner1.ccBurn(
                     userRequestedAmount,
                     USER_SCRIPT_P2PKH,
@@ -289,6 +318,7 @@ describe("CCBurnRouter", async () => {
                 userRequestedAmount,
                 burntAmount,
                 ONE_ADDRESS,
+                LOCKER1_LOCKING_SCRIPT,
                 0,
                 lastSubmittedHeight + TRANSFER_DEADLINE
             );
@@ -422,7 +452,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLocker(true);
             await setLockersGetLockerTargetAddress();
 
-            expect(
+            await expect(
                 await ccBurnRouterSigner2.burnProof(
                     CC_BURN_REQUESTS.burnProof_valid.version,
                     CC_BURN_REQUESTS.burnProof_valid.vin,
@@ -436,10 +466,9 @@ describe("CCBurnRouter", async () => {
                     [0]
                 )
             ).to.emit(ccBurnRouter, "PaidCCBurn").withArgs(
-                signer1Address,
-                USER_SCRIPT_P2PKH,
-                burntAmount,
                 LOCKER_TARGET_ADDRESS,
+                0,
+                CC_BURN_REQUESTS.burnProof_valid.txId,
                 0
             );
 
@@ -448,6 +477,29 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.burnProof_valid.txId
                 )
             ).to.equal(true);
+        })
+
+        it("Reverts since _burnReqIndexes is not sorted", async function () {
+
+            // Sets mock contracts outputs
+            await setRelayCheckTxProofReturn(true);
+            await setLockersIsLocker(true);
+            await setLockersGetLockerTargetAddress();
+
+            await expect(
+                ccBurnRouterSigner2.burnProof(
+                    CC_BURN_REQUESTS.burnProof_valid.version,
+                    CC_BURN_REQUESTS.burnProof_valid.vin,
+                    CC_BURN_REQUESTS.burnProof_valid.vout,
+                    CC_BURN_REQUESTS.burnProof_valid.locktime,
+                    burnReqBlockNumber + 5,
+                    CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
+                    1,
+                    LOCKER1_LOCKING_SCRIPT,
+                    [0, 1],
+                    [1, 0]
+                )
+            ).to.be.revertedWith("CCBurnRouter: un-sorted vout indexes")
         })
 
         it("Submits a valid burn proof (for P2WPKH)", async function () {
@@ -465,7 +517,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLocker(true);
             await setLockersGetLockerTargetAddress();
 
-            expect(
+            await expect(
                 await ccBurnRouterSigner2.burnProof(
                     CC_BURN_REQUESTS.burnProof_validP2WPKH.version,
                     CC_BURN_REQUESTS.burnProof_validP2WPKH.vin,
@@ -479,11 +531,10 @@ describe("CCBurnRouter", async () => {
                     [0]
                 )
             ).to.emit(ccBurnRouter, "PaidCCBurn").withArgs(
-                signer1Address,
-                USER_SCRIPT_P2WPKH,
-                burntAmount,
                 LOCKER_TARGET_ADDRESS,
-                1
+                1,
+                CC_BURN_REQUESTS.burnProof_validP2WPKH.txId,
+                0
             );
 
             expect(
@@ -500,7 +551,7 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLocker(true);
             await setLockersGetLockerTargetAddress();
 
-            expect(
+            await expect(
                 await ccBurnRouterSigner2.burnProof(
                     CC_BURN_REQUESTS.burnProof_validWithoutChange.version,
                     CC_BURN_REQUESTS.burnProof_validWithoutChange.vin,
@@ -514,10 +565,9 @@ describe("CCBurnRouter", async () => {
                     [0]
                 )
             ).to.emit(ccBurnRouter, "PaidCCBurn").withArgs(
-                signer1Address,
-                USER_SCRIPT_P2PKH,
-                burntAmount,
                 LOCKER_TARGET_ADDRESS,
+                0,
+                CC_BURN_REQUESTS.burnProof_validWithoutChange.txId,
                 0
             );
 
@@ -923,7 +973,8 @@ describe("CCBurnRouter", async () => {
             await setLockersGetLockerTargetAddress();
             await setLockersSlashThiefLockerReturn();
 
-            expect(
+            // TODO wrong txid
+            await expect(
                 await ccBurnRouterSigner2.disputeLocker(
                     LOCKER1_LOCKING_SCRIPT,
                     [CC_BURN_REQUESTS.disputeLocker_input.version, CC_BURN_REQUESTS.disputeLocker_output.version],
@@ -937,6 +988,7 @@ describe("CCBurnRouter", async () => {
                 )
             ).to.emit(ccBurnRouter, "LockerDispute").withArgs(
                 LOCKER_TARGET_ADDRESS,
+                LOCKER1_LOCKING_SCRIPT,
                 burnReqBlockNumber,
                 CC_BURN_REQUESTS.disputeLocker_input.txId,
                 CC_BURN_REQUESTS.disputeLocker_input.OutputValue +
@@ -1308,5 +1360,14 @@ describe("CCBurnRouter", async () => {
             ).to.revertedWith("CCBurnRouter: address is zero");
         })
 
+    });
+
+    describe("#renounce ownership", async () => {
+        it("owner can't renounce ownership", async function () {
+            await ccBurnRouter.renounceOwnership()
+            await expect(
+                await ccBurnRouter.owner()
+            ).to.equal(deployerAddress);
+        })
     });
 });
