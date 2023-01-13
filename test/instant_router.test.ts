@@ -312,7 +312,7 @@ describe("Instant Router", async () => {
             
         });
 
-        it("Reverts since contract is paused", async function () {
+        it("Reverts instant transfer since contract is paused", async function () {
 
             await instantRouter.pause();
 
@@ -324,6 +324,31 @@ describe("Instant Router", async () => {
                     collateralToken.address
                 )
             ).to.revertedWith("Pausable: paused")
+        });
+
+        it("Check unpause for instant transfer", async function () {
+
+            await instantRouter.pause();
+
+            await expect(
+                instantRouter.instantCCTransfer(
+                    signer1Address,
+                    loanAmount,
+                    0,
+                    collateralToken.address
+                )
+            ).to.revertedWith("Pausable: paused")
+
+            await instantRouter.unpause();
+
+            await expect(
+                instantRouter.instantCCTransfer(
+                    signer1Address,
+                    loanAmount,
+                    0,
+                    collateralToken.address
+                )
+            ).to.revertedWith("InstantRouter: deadline has passed")
         });
 
         it("Reverts since deadline has paased", async function () {
@@ -501,7 +526,7 @@ describe("Instant Router", async () => {
             );
         });
 
-        it("Reverts since contract is paused", async function () {
+        it("Reverts instant exchange since contract is paused", async function () {
 
             await instantRouter.pause();
 
@@ -517,6 +542,39 @@ describe("Instant Router", async () => {
                     isFixedToken
                 )
             ).to.revertedWith("Pausable: paused")
+        });
+
+        it("Check unpause in instant exchange", async function () {
+
+            await instantRouter.pause();
+
+            await expect(
+                instantRouter.instantCCExchange(
+                    mockExchangeConnector.address,
+                    signer1Address,
+                    loanAmount,
+                    amountOut,
+                    path,
+                    0,
+                    collateralToken.address,
+                    isFixedToken
+                )
+            ).to.revertedWith("Pausable: paused")
+
+            await instantRouter.unpause();
+
+            await expect(
+                instantRouter.instantCCExchange(
+                    mockExchangeConnector.address,
+                    signer1Address,
+                    loanAmount,
+                    amountOut,
+                    path,
+                    0,
+                    collateralToken.address,
+                    isFixedToken
+                )
+            ).to.revertedWith("InstantRouter: deadline has passed")
         });
 
         it("Reverts since deadline has paased", async function () {
@@ -1231,6 +1289,111 @@ describe("Instant Router", async () => {
             ).to.equal(0);
         });
 
+        it("Slashes user and pays instant loan partially (amount from oracle is bigger)", async function () {
+
+            // Gets last block timestamp
+            let lastBlockTimestamp = await getTimestamp();
+
+            await collateralToken.transfer(instantRouter.address, totalCollateralToken);
+
+            // Creates a debt for deployer
+            await instantRouter.instantCCTransfer(
+                signer1Address,
+                loanAmount,
+                lastBlockTimestamp*2,
+                collateralToken.address
+            );
+
+            let instantFee = Math.floor(loanAmount*instantPercentageFee/10000);
+
+            expect(
+                await instantRouter.getUserRequestsLength(
+                    deployerAddress
+                )
+            ).to.equal(1);
+
+            expect(
+                await teleBTCInstantPool.totalUnpaidLoan()
+            ).to.equal(loanAmount + instantFee);
+
+            // Passes payback deadline
+            await mockFunctionsBitcoinRelay(lastSubmittedHeight*2);
+
+            await mockFunctionsExchangeConnector(
+                true,
+                [totalCollateralToken, totalCollateralToken],
+                totalCollateralToken
+            )
+
+            await mockFunctionsPriceOracle(totalCollateralToken + 1);
+
+            await expect(
+                await instantRouter.slashUser(
+                    deployerAddress,
+                    0
+                )
+            ).to.emit(instantRouter, "SlashUser")
+
+            expect(
+                await instantRouter.getUserRequestsLength(
+                    deployerAddress
+                )
+            ).to.equal(0);
+        });
+
+
+        it("Slashes user and pays instant loan partially (high swap result)", async function () {
+
+            // Gets last block timestamp
+            let lastBlockTimestamp = await getTimestamp();
+
+            await collateralToken.transfer(instantRouter.address, totalCollateralToken);
+
+            // Creates a debt for deployer
+            await instantRouter.instantCCTransfer(
+                signer1Address,
+                loanAmount,
+                lastBlockTimestamp*2,
+                collateralToken.address
+            );
+
+            let instantFee = Math.floor(loanAmount*instantPercentageFee/10000);
+
+            expect(
+                await instantRouter.getUserRequestsLength(
+                    deployerAddress
+                )
+            ).to.equal(1);
+
+            expect(
+                await teleBTCInstantPool.totalUnpaidLoan()
+            ).to.equal(loanAmount + instantFee);
+
+            // Passes payback deadline
+            await mockFunctionsBitcoinRelay(lastSubmittedHeight*2);
+
+            await mockFunctionsExchangeConnector(
+                true,
+                [totalCollateralToken, 20*totalCollateralToken],
+                totalCollateralToken
+            )
+
+            await mockFunctionsPriceOracle(totalCollateralToken + 1);
+
+            await expect(
+                await instantRouter.slashUser(
+                    deployerAddress,
+                    0
+                )
+            ).to.emit(instantRouter, "SlashUser")
+
+            expect(
+                await instantRouter.getUserRequestsLength(
+                    deployerAddress
+                )
+            ).to.equal(0);
+        });
+
         it("Reverts since request index is out of range", async function () {
             await expect(
                 instantRouter.slashUser(
@@ -1543,6 +1706,20 @@ describe("Instant Router", async () => {
             await expect(
                 instantRouterSigner1.setSlasherPercentageReward(2 * maxPriceDifferencePercent)
             ).to.be.revertedWith("Ownable: caller is not the owner")
+
+            await expect(
+                instantRouterSigner1.pause()
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+            await expect(
+                instantRouterSigner1.unpause()
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+            await expect(
+                instantRouterSigner1.renounceOwnership()
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+            await instantRouter.renounceOwnership()
 
         })
 

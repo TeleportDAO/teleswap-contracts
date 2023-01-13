@@ -885,6 +885,13 @@ describe("CCTransferRouter", async () => {
             ).to.equal(100);
         })
 
+        it("Sets protocol percentage fee", async function () {
+            await expect(
+                ccTransferRouter.setProtocolPercentageFee(20000)
+            ).to.be.revertedWith("CCTransferRouter: protocol fee is out of range");
+            // CCTransferRouter: protocol fee is out of range
+        })
+
         it("Reverts since protocol percentage fee is greater than 10000", async function () {
             await expect(
                 ccTransferRouter.setProtocolPercentageFee(10001)
@@ -909,10 +916,13 @@ describe("CCTransferRouter", async () => {
                 ccTransferRouter, "NewLockers"
             ).withArgs(lockers.address, ONE_ADDRESS);
 
-
             expect(
                 await ccTransferRouter.lockers()
             ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                ccTransferRouter.connect(signer1).setLockers(ONE_ADDRESS)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
 
             await expect(
                 await ccTransferRouter.setInstantRouter(ONE_ADDRESS)
@@ -920,10 +930,13 @@ describe("CCTransferRouter", async () => {
                 ccTransferRouter, "NewInstantRouter"
             ).withArgs(mockInstantRouter.address, ONE_ADDRESS);
 
-
             expect(
                 await ccTransferRouter.instantRouter()
             ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                ccTransferRouter.connect(signer1).setInstantRouter(ONE_ADDRESS)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
 
             await expect(
                 await ccTransferRouter.setTeleBTC(ONE_ADDRESS)
@@ -931,10 +944,13 @@ describe("CCTransferRouter", async () => {
                 ccTransferRouter, "NewTeleBTC"
             ).withArgs(teleBTC.address, ONE_ADDRESS);
 
-
             expect(
                 await ccTransferRouter.teleBTC()
             ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                ccTransferRouter.connect(signer1).setTeleBTC(ONE_ADDRESS)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
 
             await expect(
                 await ccTransferRouter.setTreasury(ONE_ADDRESS)
@@ -946,6 +962,16 @@ describe("CCTransferRouter", async () => {
             expect(
                 await ccTransferRouter.treasury()
             ).to.equal(ONE_ADDRESS);
+
+            await expect(
+                ccTransferRouter.connect(signer1).setTreasury(ONE_ADDRESS)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+            await expect(
+                ccTransferRouter.connect(signer1).renounceOwnership()
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+            await ccTransferRouter.renounceOwnership()
 
         })
 
