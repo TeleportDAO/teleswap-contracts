@@ -59,6 +59,7 @@ describe("CCTransferRouter", async () => {
     let locker: Signer;
     let proxyAdminAddress: Address;
     let lockerAddress: Address;
+    let deployerAddress: Address;
 
     // Contracts
     let ccTransferRouter: CCTransferRouter;
@@ -80,6 +81,7 @@ describe("CCTransferRouter", async () => {
 
         proxyAdminAddress = await proxyAdmin.getAddress();
         lockerAddress = await locker.getAddress();
+        deployerAddress = await deployer.getAddress();
 
         teleportDAOToken = await deployTeleportDAOToken();
 
@@ -320,7 +322,7 @@ describe("CCTransferRouter", async () => {
             let receivedAmount = CC_REQUESTS.normalCCTransfer.bitcoinAmount - lockerFee - teleporterFee - protocolFee;
 
             // Checks that ccTransfer is executed successfully
-            expect(
+            await expect(
                 await ccTransferRouter.ccTransfer(
                     CC_REQUESTS.normalCCTransfer.version,
                     CC_REQUESTS.normalCCTransfer.vin,
@@ -331,13 +333,19 @@ describe("CCTransferRouter", async () => {
                     CC_REQUESTS.normalCCTransfer.index,
                     LOCKER1_LOCKING_SCRIPT,
                 )
-            ).to.emit(ccTransferRouter, 'CCTransfer').withArgs(
+            ).to.emit(ccTransferRouter, "CCTransfer").withArgs(
+                LOCKER1_LOCKING_SCRIPT,
+                0,
+                lockerAddress,
                 CC_REQUESTS.normalCCTransfer.recipientAddress,
-                CC_REQUESTS.normalCCTransfer.value,
+                CC_REQUESTS.normalCCTransfer.bitcoinAmount,
                 receivedAmount,
                 CC_REQUESTS.normalCCTransfer.speed,
-                await deployer.getAddress(),
-                teleporterFee
+                deployerAddress,
+                teleporterFee,
+                0,
+                protocolFee,
+                CC_REQUESTS.normalCCTransfer.txId
             );
 
             await checkFees(
@@ -393,15 +401,21 @@ describe("CCTransferRouter", async () => {
                 {value: msgValue}
             );
 
-            expect(
+            await expect(
                 tx
             ).to.emit(ccTransferRouter, 'CCTransfer').withArgs(
+                LOCKER1_LOCKING_SCRIPT,
+                0,
+                lockerAddress,
                 CC_REQUESTS.normalCCTransfer.recipientAddress,
-                CC_REQUESTS.normalCCTransfer.value,
+                CC_REQUESTS.normalCCTransfer.bitcoinAmount,
                 receivedAmount,
                 CC_REQUESTS.normalCCTransfer.speed,
-                await deployer.getAddress(),
-                teleporterFee
+                deployerAddress,
+                teleporterFee,
+                0,
+                protocolFee,
+                CC_REQUESTS.normalCCTransfer.txId
             );
 
             // Finds tx cost
@@ -449,7 +463,7 @@ describe("CCTransferRouter", async () => {
             let receivedAmount = CC_REQUESTS.normalCCTransfer_zeroFee.bitcoinAmount - lockerFee - teleporterFee - protocolFee;
 
             // Checks that ccTransfer is executed successfully
-            expect(
+            await expect(
                 await ccTransferRouter.ccTransfer(
                     CC_REQUESTS.normalCCTransfer_zeroFee.version,
                     CC_REQUESTS.normalCCTransfer_zeroFee.vin,
@@ -461,12 +475,18 @@ describe("CCTransferRouter", async () => {
                     LOCKER1_LOCKING_SCRIPT,
                 )
             ).to.emit(ccTransferRouter, 'CCTransfer').withArgs(
+                LOCKER1_LOCKING_SCRIPT,
+                0,
+                lockerAddress,
                 CC_REQUESTS.normalCCTransfer_zeroFee.recipientAddress,
-                CC_REQUESTS.normalCCTransfer_zeroFee.value,
+                CC_REQUESTS.normalCCTransfer_zeroFee.bitcoinAmount,
                 receivedAmount,
                 CC_REQUESTS.normalCCTransfer_zeroFee.speed,
-                await deployer.getAddress(),
-                teleporterFee
+                deployerAddress,
+                teleporterFee,
+                0,
+                protocolFee,
+                CC_REQUESTS.normalCCTransfer_zeroFee.txId
             );
 
             await checkFees(
@@ -502,7 +522,7 @@ describe("CCTransferRouter", async () => {
             let receivedAmount = CC_REQUESTS.normalCCTransfer.bitcoinAmount - lockerFee - teleporterFee - protocolFee;
 
             // Checks that ccTransfer is executed successfully
-            expect(
+            await expect(
                 await ccTransferRouter.ccTransfer(
                     CC_REQUESTS.normalCCTransfer.version,
                     CC_REQUESTS.normalCCTransfer.vin,
@@ -514,12 +534,18 @@ describe("CCTransferRouter", async () => {
                     LOCKER1_LOCKING_SCRIPT,
                 )
             ).to.emit(ccTransferRouter, 'CCTransfer').withArgs(
+                LOCKER1_LOCKING_SCRIPT,
+                0,
+                lockerAddress,
                 CC_REQUESTS.normalCCTransfer.recipientAddress,
-                CC_REQUESTS.normalCCTransfer.value,
+                CC_REQUESTS.normalCCTransfer.bitcoinAmount,
                 receivedAmount,
                 CC_REQUESTS.normalCCTransfer.speed,
-                await deployer.getAddress(),
-                teleporterFee
+                deployerAddress,
+                teleporterFee,
+                0,
+                protocolFee,
+                CC_REQUESTS.normalCCTransfer.txId
             );
 
             await checkFees(
@@ -733,7 +759,7 @@ describe("CCTransferRouter", async () => {
 
             let receivedAmount = CC_REQUESTS.instantCCTransfer.bitcoinAmount - lockerFee - teleporterFee - protocolFee;
 
-            expect(
+            await expect(
                 await ccTransferRouter.ccTransfer(
                     CC_REQUESTS.instantCCTransfer.version,
                     CC_REQUESTS.instantCCTransfer.vin,
@@ -745,12 +771,18 @@ describe("CCTransferRouter", async () => {
                     LOCKER1_LOCKING_SCRIPT
                 )
             ).to.emit(ccTransferRouter, 'CCTransfer').withArgs(
+                LOCKER1_LOCKING_SCRIPT,
+                0,
+                lockerAddress,
                 CC_REQUESTS.instantCCTransfer.recipientAddress,
-                CC_REQUESTS.instantCCTransfer.value,
+                CC_REQUESTS.instantCCTransfer.bitcoinAmount,
                 receivedAmount,
                 CC_REQUESTS.instantCCTransfer.speed,
-                await deployer.getAddress(),
-                teleporterFee
+                deployerAddress,
+                teleporterFee,
+                0,
+                protocolFee,
+                CC_REQUESTS.instantCCTransfer.txId
             );
 
             // Checks that enough teleBTC allowance has been given to instant router
@@ -861,7 +893,7 @@ describe("CCTransferRouter", async () => {
 
         it("Sets relay, lockers, instant router, teleBTC and treasury", async function () {
             await expect(
-                ccTransferRouter.setRelay(ONE_ADDRESS)
+                await ccTransferRouter.setRelay(ONE_ADDRESS)
             ).to.emit(
                 ccTransferRouter, "NewRelay"
             ).withArgs(mockBitcoinRelay.address, ONE_ADDRESS);
@@ -872,7 +904,7 @@ describe("CCTransferRouter", async () => {
             ).to.equal(ONE_ADDRESS);
 
             await expect(
-                ccTransferRouter.setLockers(ONE_ADDRESS)
+                await ccTransferRouter.setLockers(ONE_ADDRESS)
             ).to.emit(
                 ccTransferRouter, "NewLockers"
             ).withArgs(lockers.address, ONE_ADDRESS);
@@ -883,7 +915,7 @@ describe("CCTransferRouter", async () => {
             ).to.equal(ONE_ADDRESS);
 
             await expect(
-                ccTransferRouter.setInstantRouter(ONE_ADDRESS)
+                await ccTransferRouter.setInstantRouter(ONE_ADDRESS)
             ).to.emit(
                 ccTransferRouter, "NewInstantRouter"
             ).withArgs(mockInstantRouter.address, ONE_ADDRESS);
@@ -894,7 +926,7 @@ describe("CCTransferRouter", async () => {
             ).to.equal(ONE_ADDRESS);
 
             await expect(
-                ccTransferRouter.setTeleBTC(ONE_ADDRESS)
+                await ccTransferRouter.setTeleBTC(ONE_ADDRESS)
             ).to.emit(
                 ccTransferRouter, "NewTeleBTC"
             ).withArgs(teleBTC.address, ONE_ADDRESS);
@@ -905,7 +937,7 @@ describe("CCTransferRouter", async () => {
             ).to.equal(ONE_ADDRESS);
 
             await expect(
-                ccTransferRouter.setTreasury(ONE_ADDRESS)
+                await ccTransferRouter.setTreasury(ONE_ADDRESS)
             ).to.emit(
                 ccTransferRouter, "NewTreasury"
             ).withArgs(TREASURY, ONE_ADDRESS);
