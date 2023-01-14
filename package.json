@@ -77,6 +77,7 @@
 		"lockers_settlement:mumbai": "hardhat deploy --network mumbai --export export/abi/mumbai.json --deploy-scripts scripts/locker-settlement-script",
 		"global_variables_settlement:mumbai": "yarn hardhat deploy --network mumbai --export export/abi/mumbai.json --deploy-scripts scripts/set-global-variables",
 		"collateral_pool_scripts:mumbai": "yarn hardhat deploy --network mumbai --export export/abi/mumbai.json --deploy-scripts scripts/collateralPool-script",
-		"test": "hardhat test"
+		"test": "hardhat test",
+		"integration_test_mumbai": " hardhat test test/integration_tests/*.ts --network mumbai"
 	}
 }
