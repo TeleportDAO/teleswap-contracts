@@ -858,6 +858,24 @@ describe("PriceOracle", async () => {
             ).to.equal(Math.floor(amountIn*price*Math.pow(10, _erc20Decimals - erc20Decimals - decimals)));
         })
 
+        it("Gets equal amount of output token when delay is not acceptable and output token is native token (oracle and router)", async function () {
+            timeStamp = await getLastBlockTimestamp();
+            await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
+            await mockFunctionsExchangeConnector(true, 100);
+            await priceOracle.setPriceProxy(ONE_ADDRESS, _mockPriceProxy.address);
+            await mockFunctionsPriceProxy(roundID, price0, startedAt, (timeStamp + 10000), answeredInRound, decimals0);
+            await _mockFunctionsPriceProxy(roundID, price1, startedAt, (timeStamp + 10000), answeredInRound, decimals1);
+        expect(
+            await priceOracle.equivalentOutputAmountByAverage(
+                    amountIn,
+                    erc20Decimals,
+                    _erc20Decimals, // Native token decimal
+                    erc20.address,
+                    ONE_ADDRESS
+                )
+            ).to.equal(Math.floor(100));
+        })
+
         it("Gets equal amount of output token when price proxy doesn't exist (only router)", async function () {
             timeStamp = await getLastBlockTimestamp();
             await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
@@ -972,6 +990,8 @@ describe("PriceOracle", async () => {
             ).to.revertedWith("PriceOracle: oracle not exist or up to date");
         })
 
+        
+
     });
 
     describe("#setters", async () => {
@@ -994,6 +1014,11 @@ describe("PriceOracle", async () => {
             expect(
                 await priceOracle.acceptableDelay()
             ).to.equal(100);
+
+            await expect(
+                priceOracle.connect(signer1).setAcceptableDelay(100)
+            ).to.be.revertedWith("Ownable: caller is not the owner");
+
         })
 
         it("Sets oracle native token", async function () {
@@ -1007,12 +1032,24 @@ describe("PriceOracle", async () => {
                 await priceOracle.oracleNativeToken()
             ).to.equal(ONE_ADDRESS);
 
+            await expect(
+                priceOracle.connect(signer1).setOracleNativeToken(ONE_ADDRESS)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
         })
 
         it("Reverts since given address is zero", async function () {
             expect(
                 priceOracle.setOracleNativeToken(ZERO_ADDRESS)
             ).to.revertedWith("PriceOracle: zero address");
+        })
+
+        it("renounceOwnership", async function () {
+            await expect(
+                priceOracle.connect(signer1).renounceOwnership()
+            ).to.revertedWith("Ownable: caller is not the owner");
+                
+            await priceOracle.renounceOwnership()
         })
 
     });

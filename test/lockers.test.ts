@@ -368,9 +368,11 @@ describe("Lockers", async () => {
 
         it("owner successfully adds a minter", async function () {
 
-            await expect(await lockers.addMinter(
-                ONE_ADDRESS
-            )).to.emit(
+            await expect(
+                await lockers.addMinter(
+                    ONE_ADDRESS
+                )
+            ).to.emit(
                 lockers, "MinterAdded"
             ).withArgs(ONE_ADDRESS);
         })
@@ -426,9 +428,11 @@ describe("Lockers", async () => {
                 ONE_ADDRESS
             )
 
-            await expect(await lockers.removeMinter(
-                ONE_ADDRESS
-            )).to.emit(
+            await expect(
+                await lockers.removeMinter(
+                    ONE_ADDRESS
+                )
+            ).to.emit(
                 lockers, "MinterRemoved"
             ).withArgs(ONE_ADDRESS);
         })
@@ -458,9 +462,11 @@ describe("Lockers", async () => {
 
         it("owner successfully adds a burner", async function () {
 
-            await expect(await lockers.addBurner(
-                ONE_ADDRESS
-            )).to.emit(
+            await expect(
+                await lockers.addBurner(
+                    ONE_ADDRESS
+                )
+            ).to.emit(
                 lockers, "BurnerAdded"
             ).withArgs(ONE_ADDRESS);
         })
@@ -516,9 +522,11 @@ describe("Lockers", async () => {
                 ONE_ADDRESS
             )
 
-            await expect(await lockers.removeBurner(
-                ONE_ADDRESS
-            )).to.emit(
+            await expect(
+                await lockers.removeBurner(
+                    ONE_ADDRESS
+                )
+            ).to.emit(
                 lockers, "BurnerRemoved"
             ).withArgs(ONE_ADDRESS);
         })
@@ -649,9 +657,11 @@ describe("Lockers", async () => {
 
         it("only owner can call setTeleportDAOToken", async function () {
 
-            await expect(await lockers.setTeleportDAOToken(
-                ONE_ADDRESS
-            )).to.emit(
+            await expect(
+                await lockers.setTeleportDAOToken(
+                    ONE_ADDRESS
+                )
+            ).to.emit(
                 lockers, "NewTeleportDAOToken"
             ).withArgs(teleportDAOToken.address, ONE_ADDRESS);
 
@@ -675,9 +685,11 @@ describe("Lockers", async () => {
 
         it("only owner can call setLockerPercentageFee", async function () {
 
-            await expect(await lockers.setLockerPercentageFee(
-                2100
-            )).to.emit(
+            await expect(
+                await lockers.setLockerPercentageFee(
+                    2100
+                )
+            ).to.emit(
                 lockers, "NewLockerPercentageFee"
             ).withArgs(LOCKER_PERCENTAGE_FEE, 2100);
 
@@ -701,9 +713,11 @@ describe("Lockers", async () => {
 
         it("only owner can call setPriceWithDiscountRatio", async function () {
 
-            await expect(await lockers.setPriceWithDiscountRatio(
-                2100
-            )).to.emit(
+            await expect(
+                await lockers.setPriceWithDiscountRatio(
+                    2100
+                )
+            ).to.emit(
                 lockers, "NewPriceWithDiscountRatio"
             ).withArgs(PRICE_WITH_DISCOUNT_RATIO, 2100);
 
@@ -726,9 +740,11 @@ describe("Lockers", async () => {
 
         it("only owner can call setMinRequiredTDTLockedAmount", async function () {
 
-            await expect(await lockers.setMinRequiredTDTLockedAmount(
-                REQUIRED_LOCKED_AMOUNT + 55
-            )).to.emit(
+            await expect(
+                await lockers.setMinRequiredTDTLockedAmount(
+                    REQUIRED_LOCKED_AMOUNT + 55
+                )
+            ).to.emit(
                 lockers, "NewMinRequiredTDTLockedAmount"
             ).withArgs(minRequiredTDTLockedAmount, REQUIRED_LOCKED_AMOUNT + 55);
 
@@ -751,9 +767,11 @@ describe("Lockers", async () => {
 
         it("only owner can call setMinRequiredTNTLockedAmount", async function () {
 
-            await expect(await lockers.setMinRequiredTNTLockedAmount(
-                REQUIRED_LOCKED_AMOUNT + 55
-            )).to.emit(
+            await expect(
+                await lockers.setMinRequiredTNTLockedAmount(
+                    REQUIRED_LOCKED_AMOUNT + 55
+                )
+            ).to.emit(
                 lockers, "NewMinRequiredTNTLockedAmount"
             ).withArgs(minRequiredNativeTokenLockedAmount, REQUIRED_LOCKED_AMOUNT + 55);
 
@@ -787,9 +805,11 @@ describe("Lockers", async () => {
 
         it("only owner can call setPriceOracle", async function () {
 
-            await expect(await lockers.setPriceOracle(
-                ONE_ADDRESS
-            )).to.emit(
+            await expect(
+                await lockers.setPriceOracle(
+                    ONE_ADDRESS
+                )
+            ).to.emit(
                 lockers, "NewPriceOracle"
             ).withArgs(mockPriceOracle.address, ONE_ADDRESS);
 
@@ -824,9 +844,11 @@ describe("Lockers", async () => {
 
         it("only owner can call setCCBurnRouter", async function () {
 
-            await expect(await lockers.setCCBurnRouter(
-                ONE_ADDRESS
-            )).to.emit(
+            await expect(
+                await lockers.setCCBurnRouter(
+                    ONE_ADDRESS
+                )
+            ).to.emit(
                 lockers, "NewCCBurnRouter"
             ).withArgs(ccBurnSimulatorAddress, ONE_ADDRESS);
 
@@ -859,9 +881,11 @@ describe("Lockers", async () => {
 
         it("only owner can call setExchangeConnector", async function () {
 
-            await expect(await lockers.setExchangeConnector(
-                ONE_ADDRESS
-            )).to.emit(
+            await expect(
+                await lockers.setExchangeConnector(
+                    ONE_ADDRESS
+                )
+            ).to.emit(
                 lockers, "NewExchangeConnector"
             ).withArgs(mockExchangeConnector.address, ONE_ADDRESS);
 
@@ -894,9 +918,11 @@ describe("Lockers", async () => {
 
         it("only owner can call setTeleBTC", async function () {
 
-            await expect(await lockers.setTeleBTC(
-                ONE_ADDRESS
-            )).to.emit(
+            await expect(
+                await lockers.setTeleBTC(
+                    ONE_ADDRESS
+                )
+            ).to.emit(
                 lockers, "NewTeleBTC"
             ).withArgs(teleBTC.address, ONE_ADDRESS);
 
@@ -920,9 +946,11 @@ describe("Lockers", async () => {
 
         it("only owner can call setCollateralRatio", async function () {
 
-            await expect(await lockers.setCollateralRatio(
-                21000
-            )).to.emit(
+            await expect(
+                await lockers.setCollateralRatio(
+                    21000
+                )
+            ).to.emit(
                 lockers, "NewCollateralRatio"
             ).withArgs(collateralRatio, 21000);
 
@@ -946,9 +974,11 @@ describe("Lockers", async () => {
 
         it("only owner can call setLiquidationRatio", async function () {
 
-            await expect(await lockers.setLiquidationRatio(
-                19000
-            )).to.emit(
+            await expect(
+                await lockers.setLiquidationRatio(
+                    19000
+                )
+            ).to.emit(
                 lockers, "NewLiquidationRatio"
             ).withArgs(liquidationRatio, 19000);
 
@@ -1019,7 +1049,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
-                lockerSigner1.requestToBecomeLocker(
+                await lockerSigner1.requestToBecomeLocker(
                     // LOCKER1,
                     LOCKER1_PUBKEY__HASH,
                     minRequiredTDTLockedAmount,
@@ -1418,7 +1448,7 @@ describe("Lockers", async () => {
 
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
 
-            lockerCCBurnSigner.slashIdleLocker(
+            await lockerCCBurnSigner.slashIdleLocker(
                 signer1Address,
                 0,
                 deployerAddress,
