@@ -60,8 +60,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             collateralRatio,
             liquidationRatio,
             lockerPercentageFee,
-            priceWithDiscountRatio,
-            minLeavinngIntervalTime
+            priceWithDiscountRatio
         )
 
         await initializeTx.wait(1)

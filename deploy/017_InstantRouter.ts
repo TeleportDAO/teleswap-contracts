@@ -1,5 +1,6 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
+import config from 'config'
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts} = hre;
@@ -9,6 +10,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const slasherPercentageReward = 10;
     const paybackDeadline = 12;
+
+    const maxPriceDifferencePercent = 2500;
+
+    const treasuryAddress = config.get("cc_burn.treasury")
 
     const teleBTC = await deployments.get("TeleBTC")
     const bitcoinRelay = await deployments.get("BitcoinRelay")
@@ -28,7 +33,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             collateralPoolFactory.address,
             slasherPercentageReward,
             paybackDeadline,
-            defaultExchangeConnector.address
+            defaultExchangeConnector.address,
+            maxPriceDifferencePercent,
+            treasuryAddress
         ],
     });
 };

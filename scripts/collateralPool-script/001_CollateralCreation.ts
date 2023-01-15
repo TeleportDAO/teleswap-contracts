@@ -57,7 +57,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         collateralPoolAddress = hasCollateralPoolAddress
     }
      
-    
+    const depositTx = await erc20asLinkInstance.deposit(
+        {value: 100000000000}
+    );
+    await depositTx.wait(1)
+
     const balanceOfDeployer = await erc20asLinkInstance.balanceOf(deployer) 
 
     const approveForCollateralPoolTx = await erc20asLinkInstance.approve(collateralPoolAddress, balanceOfDeployer.div(2))

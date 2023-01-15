@@ -13,7 +13,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Set relay globally...")
     
-    const relay = await deployments.get("BitcoinRelayTestnet")
+    const relay = await deployments.get("BitcoinRelay")
 
     // set relay in cc transfer router
     const ccTransferRouter = await deployments.get("CCTransferRouter")
