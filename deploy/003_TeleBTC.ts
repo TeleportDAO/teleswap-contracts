@@ -6,8 +6,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const tokenName = "TeleBitcoin"
-    const tokenSymbol = "TBTC"
+    const tokenName = "TeleBTC"
+    const tokenSymbol = "TeleBTC"
 
     const theArgs = [
         tokenName,

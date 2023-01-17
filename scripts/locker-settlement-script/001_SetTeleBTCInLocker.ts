@@ -26,11 +26,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const exchangeConnector = await deployments.get("UniswapV2Connector")
     const priceOracle = await deployments.get("PriceOracle")
     const minTDTLockedAmount = 0;
-    const minNativeLockedAmount = one.mul(2);
-    const collateralRatio = 20000;
-    const liquidationRatio = 15000;
-    const lockerPercentageFee = 50;
-    const priceWithDiscountRatio = 9500;
+
+    // TODO: change it for mainnet
+    const minNativeLockedAmount = one.mul(6);
+    const collateralRatio = 13000;
+    const liquidationRatio = 10500;
+    const lockerPercentageFee = 15;
+    const priceWithDiscountRatio = 9000;
     const minLeavinngIntervalTime = 1000;
 
     const lockersLogicFactory = await ethers.getContractFactory(

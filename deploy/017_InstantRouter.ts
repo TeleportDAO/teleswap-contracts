@@ -8,9 +8,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployer } = await getNamedAccounts();
 
 
-    const slasherPercentageReward = 10;
+    const slasherPercentageReward = 500;
     const paybackDeadline = 12;
 
+    // TODO: change it for mainnet
     const maxPriceDifferencePercent = 2500;
 
     const treasuryAddress = config.get("cc_burn.treasury")

@@ -6,6 +6,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
+    // TODO: change for deploying on mainnet
     const acceptableDelay = 1000;
     const tntToken = await deployments.get("WETH")
 

@@ -7,13 +7,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployer } = await getNamedAccounts();
 
 
-    const instantPercentageFee = 50;
+    const instantPercentageFee = 15;
 
     const teleBTC = await deployments.get("TeleBTC")
     const instantRouter = await deployments.get("InstantRouter")
 
-    const name = "InstantPoolToken"
-    const symbol = "IPT"
+    const name = "TeleBTCInstantPoolToken"
+    const symbol = "BTCIPT"
 
     await deploy("InstantPool", {
         from: deployer,
