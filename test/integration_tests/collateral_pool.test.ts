@@ -26,6 +26,7 @@ describe.only("collateral pool and factory (integration test)", async () => {
     let collateralPool;
     let erc20;
     let collateralPoolAddress;
+    let collateralPoolIndex;
 
     before(async () => {
         signer = new ethers.Wallet(privateKey, ethers.provider);
@@ -35,6 +36,7 @@ describe.only("collateral pool and factory (integration test)", async () => {
         erc20 = await ethers.getContractAt("ERC20", erc20Address, signer)
         collateralPoolAddress = await factory.getCollateralPoolByToken(erc20.address)
         let poolsCount = await factory.allCollateralPoolsLength()
+        collateralPoolIndex = Number(poolsCount) - 1
         
         if (collateralPoolAddress != ZERO_ADDRESS) {
             console.log("using existing collateral pool at: ", collateralPoolAddress)
@@ -44,7 +46,8 @@ describe.only("collateral pool and factory (integration test)", async () => {
             let rc = await tx.wait(1)
             collateralPoolAddress = rc.events[3].args[3]
             console.log("deploying new pool at: ", collateralPoolAddress)
-            await expect (await factory.allCollateralPoolsLength()).to.equal(Number(poolsCount) + 1)
+            await expect (await factory.allCollateralPoolsLength()).to.equal(Number(poolsCount))
+            collateralPoolIndex += 1
         }
 
         collateralPool = await ethers.getContractAt("CollateralPool", collateralPoolAddress, signer)
@@ -66,42 +69,38 @@ describe.only("collateral pool and factory (integration test)", async () => {
             tx = await collateralPool.addCollateral(signer.address, collateralAmount);
             await tx.wait(1)
 
-            await expect(await collateralPool.balanceOf(signer.address)).to.equal(currentCollateralPoolTokenAmount + collateralAmount)
-            await expect(await erc20.balanceOf(signer.address)).to.equal(currentErc20TokenAmount - collateralAmount)
+            console.log("add collateral hash: ", tx.hash)
+
+            await expect(await collateralPool.balanceOf(signer.address)).to.equal(currentCollateralPoolTokenAmount.add(collateralAmount))
+            await expect(await erc20.balanceOf(signer.address)).to.equal(currentErc20TokenAmount.sub(collateralAmount))
         })
 
         it("remove collateral", async () => {
             let tx;
             let currentCollateralPoolTokenAmount = await collateralPool.balanceOf(signer.address)
             let currentErc20TokenAmount = await erc20.balanceOf(signer.address)
-            let collateralAmount = 10;
+            let collateralAmount = 10
+            let equivalentCollateralTokenAmount = await collateralPool.equivalentCollateralToken(collateralAmount)
 
             tx = await collateralPool.removeCollateral(collateralAmount);
             await tx.wait(1)
 
-            await expect(await collateralPool.balanceOf(signer.address)).to.equal(currentCollateralPoolTokenAmount - collateralAmount)
-            await expect(await erc20.balanceOf(signer.address)).to.equal(currentErc20TokenAmount + collateralAmount)
+            console.log("remove collateral hash: ", tx.hash)
+
+            await expect(await collateralPool.balanceOf(signer.address)).to.equal(currentCollateralPoolTokenAmount.sub(collateralAmount))
+            await expect(
+                await erc20.balanceOf(signer.address)
+            ).to.equal(currentErc20TokenAmount.add(equivalentCollateralTokenAmount))
         })
     })
 
-    // describe("#Burn", async () => { 
-    //     it("burn teleBTC", async () => {
-    //         let totalSupply = await teleBTC.totalSupply()
-    //         let currentBalance = await teleBTC.balanceOf(signer.address)
-    //         let burnAmount = oneUnit.mul(2)
-    //         let tx;
+    describe("#Remove collateral pool", async () => { 
+        it("remove pool", async () => {
+            let tx = await factory.removeCollateralPool(erc20.address, collateralPoolIndex);
+            await tx.wait(1)
 
-    //         if (await teleBTC.burners(signer.address) == false) {
-    //             tx = await teleBTC.addBurner(signer.address);
-    //             await tx.wait(1)
-    //         }
-
-    //         tx = await teleBTC.burn(burnAmount);
-    //         await tx.wait(1)
-    //         console.log('burn token hash: ', tx.hash)
-
-    //         await expect(await teleBTC.totalSupply()).to.equal(totalSupply.sub(burnAmount))
-    //         await expect(await teleBTC.balanceOf(signer.address)).to.equal(currentBalance.sub(burnAmount))
-    //     })
-    // })
+            console.log("remove collateral pool hash: ", tx.hash) 
+            await expect(await factory.getCollateralPoolByToken(erc20.address)).to.equal(ZERO_ADDRESS)
+        })
+    })
 })
