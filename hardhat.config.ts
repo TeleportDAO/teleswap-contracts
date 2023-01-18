@@ -114,6 +114,7 @@ const config: HardhatUserConfig = {
 			url: "https://rpc-mumbai.matic.today",
 			chainId: 80001,
 			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			gas: 6000000,
 		},
 		bsc: {
 			url: "https://bsc-dataseed.binance.org/",
