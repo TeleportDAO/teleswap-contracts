@@ -356,10 +356,14 @@ contract PriceOracle is IPriceOracle, Ownable {
             // Gets number of decimals
             decimals1 = AggregatorV3Interface(ChainlinkPriceProxy[_outputToken]).decimals();
 
-            uint price = (uint(price0) * 10**(decimals1)) / (uint(price1) * 10**(decimals0));
+            // uint price = (uint(price0) * 10**(decimals1)) / (uint(price1) * 10**(decimals0));
 
-            // note: to make inside of power parentheses greater than zero, we add them with one
-            _outputAmount = price*_inputAmount*(10**(_outputDecimals + 1))/(10**(_inputDecimals + 1));
+            // // note: to make inside of power parentheses greater than zero, we add them with one
+            // _outputAmount = price*_inputAmount*(10**(_outputDecimals + 1))/(10**(_inputDecimals + 1));
+
+            // convert the above calculation to the below one to eliminate precision loss
+            _outputAmount = (uint(price0) * 10**(decimals1))*_inputAmount*(10**(_outputDecimals + 1));
+            _outputAmount = _outputAmount/((10**(_inputDecimals + 1))*(uint(price1) * 10**(decimals0)));
 
             if (_abs(block.timestamp.toInt256() - _timestamps[0].toInt256()) > acceptableDelay) {
                 return (false, _outputAmount, _timestamps[0]);
