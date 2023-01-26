@@ -992,7 +992,7 @@ describe("CCBurnRouter", async () => {
                 burnReqBlockNumber,
                 CC_BURN_REQUESTS.disputeLocker_input.txId,
                 CC_BURN_REQUESTS.disputeLocker_input.OutputValue +
-                CC_BURN_REQUESTS.disputeLocker_input.OutputValue*SLASHER_PERCENTAGE_REWARD/100
+                CC_BURN_REQUESTS.disputeLocker_input.OutputValue*SLASHER_PERCENTAGE_REWARD/10000
             );
         })
 
