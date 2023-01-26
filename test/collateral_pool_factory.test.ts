@@ -90,7 +90,6 @@ describe("CollateralPoolFactory", async () => {
             ).to.equal(true);
         })
 
-        //TODO hard code number
         it("Reverts since _collateralizationRatio is less than 10000", async function () {
             // Checks thta address is equal to zero
             expect(

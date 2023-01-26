@@ -8,7 +8,7 @@ contract LockersStorageStructure is ILockersStorage {
     // Constants
     uint public constant ONE_HUNDRED_PERCENT = 10000;
     uint public constant HEALTH_FACTOR = 10000;
-    uint public constant UPPER_HEALTH_FACTOR = 12000;
+    uint public constant UPPER_HEALTH_FACTOR = 12500;
     uint public constant MAX_LOCKER_FEE = 10000;
     uint public constant INACTIVATION_DELAY = 345600; // 4 days (it should be greater than MAX_FINALIZATION_PARAMETER)
     uint public constant NATIVE_TOKEN_DECIMAL = 18;

@@ -334,8 +334,7 @@ describe("CollateralPool", async () => {
                 collateralPool.setCollateralizationRatio(0)
             ).to.revertedWith("CollateralPool: zero value")
         })
-
-        //TODO hard code number
+        
         it("Reverts since given ratio is less than 10000", async function () {
             await expect(
                 collateralPool.setCollateralizationRatio(999)

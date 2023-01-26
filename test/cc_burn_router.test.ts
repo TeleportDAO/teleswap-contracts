@@ -973,7 +973,6 @@ describe("CCBurnRouter", async () => {
             await setLockersGetLockerTargetAddress();
             await setLockersSlashThiefLockerReturn();
 
-            // TODO wrong txid
             await expect(
                 await ccBurnRouterSigner2.disputeLocker(
                     LOCKER1_LOCKING_SCRIPT,

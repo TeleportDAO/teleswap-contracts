@@ -28,7 +28,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
     // Constants
     uint constant MAX_SLASHER_PERCENTAGE_REWARD = 10000;
     uint constant ONE_HUNDRED_PERCENT = 10000;
-    uint constant MAX_INSTANT_LOAN_NUMBER = 15;
+    uint constant MAX_INSTANT_LOAN_NUMBER = 10;
 
     // Public variables
     mapping(address => instantRequest[]) public instantRequests; // Mapping from user address to user's unpaid instant requests
