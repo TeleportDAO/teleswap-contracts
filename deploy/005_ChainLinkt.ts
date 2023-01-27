@@ -9,7 +9,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const tokenName = "Chainlink"
     const tokenSymbol = "LINK"
-    const initialSupply = BigNumber.from(10).pow(18).mul(10000)
+    const initialSupply = BigNumber.from(10).pow(18).mul(100000)
 
     await deploy("ERC20AsLink", {
         from: deployer,

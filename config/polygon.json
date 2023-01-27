@@ -1,0 +1,34 @@
+{
+  "bitcoin_network": "mainnet",
+  "uniswap_v2_router_02": "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff",
+  "wrapped_matic": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+  "acceptable_delay": 177,
+  "chain_id": 137,
+  "fee_to_setter": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
+  "cc_transfer": {
+    "treasury": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
+    "app_id": 1,
+    "protocol_percentage_fee": 5
+  },
+  "cc_exchange": {
+    "treasury": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
+    "app_id": 10,
+    "protocol_percentage_fee": 5
+  },
+  "cc_burn": {
+    "treasury": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
+    "protocol_percentage_fee": 5,
+    "slasher_percentage_reward": 500,
+    "bitcoin_fee": 10000,
+    "transfer_deadLine": 18
+  },
+  "instant_router": {
+    "treasury": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
+    "slasher_percentage_reward": 500,
+    "payback_deadline": 12,
+    "max_price_difference_percent": 500
+  },
+  "instant_pool": {
+    "instant_percentage_fee": 15
+  }
+}

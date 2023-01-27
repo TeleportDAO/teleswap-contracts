@@ -1,5 +1,6 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
+import config from 'config'
 var path = require('path');
 var fs = require('fs');
 
@@ -16,7 +17,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    let bitcoinRESTAPI = new BitcoinRESTAPI(networkTestnet, baseURLTestnet, 2);
+    // TODO: check with Sina to use the new bitcoin package
+    let bitcoinRESTAPI;
+    let bitcoinNetwork = config.get("bitcoin_network")
+
+    if (bitcoinNetwork == "testnet") {
+        bitcoinRESTAPI = new BitcoinRESTAPI(networkTestnet, baseURLTestnet, 2);
+    }
+    if (bitcoinNetwork == "mainnet") {
+        bitcoinRESTAPI = new BitcoinRESTAPI(networkMainnet, baseURLMainnet, 2);
+    }
+     
 
     // Deploys BitcoinRelay
     // note: NEVER START WITH 0! IT MAKES PROBLEM

@@ -14,9 +14,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const protocolPercentageFee = config.get("cc_burn.protocol_percentage_fee")
     const slasherPercentageReward = config.get("cc_burn.slasher_percentage_reward")
     const bitcoinFee = config.get("cc_burn.bitcoin_fee")
+
+    // TODO: update treasury address for main net
     const treasuryAddress = config.get("cc_burn.treasury")
 
-    const transferDeadLine = 18
+    const transferDeadLine = config.get("cc_burn.transfer_deadLine")
 
     const bitcoinRelay = await deployments.get("BitcoinRelay")
     const lockersProxy = await deployments.get("LockersProxy")

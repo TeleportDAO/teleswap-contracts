@@ -7,14 +7,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
+    const slasherPercentageReward = config.get("instant_router.slasher_percentage_reward");
+    const paybackDeadline = config.get("instant_router.payback_deadline");
+    const maxPriceDifferencePercent = config.get("instant_router.max_price_difference_percent");
 
-    const slasherPercentageReward = 500;
-    const paybackDeadline = 12;
-
-    // TODO: change it for mainnet
-    const maxPriceDifferencePercent = 2500;
-
-    const treasuryAddress = config.get("cc_burn.treasury")
+    // TODO: update treasury address for main net
+    const treasuryAddress = config.get("instant_router.treasury")
 
     const teleBTC = await deployments.get("TeleBTC")
     const bitcoinRelay = await deployments.get("BitcoinRelay")

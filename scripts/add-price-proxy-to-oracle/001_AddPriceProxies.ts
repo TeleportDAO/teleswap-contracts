@@ -18,6 +18,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         priceOracle.address
     )
 
+    // TODO: get from config
     const wEth = await deployments.get("WETH")
     const maticUSDOracle = "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada";
     tx = await priceOracleInstance.setPriceProxy(
@@ -35,6 +36,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     tx.wait(1)
     console.log("set matic/usd in pricie oracle: ", tx.hash)
 
+    // TODO: get from config
     const tBTC = await deployments.get("TeleBTC")
     const btcUSDOracle = "0x007A22900a3B98143368Bd5906f8E17e9867581b";
     tx = await priceOracleInstance.setPriceProxy(

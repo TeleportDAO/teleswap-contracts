@@ -1,14 +1,14 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
+import config from 'config'
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts} = hre;
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    // TODO: change for deploying on mainnet
-    const acceptableDelay = 1000;
-    const tntToken = await deployments.get("WETH")
+    const acceptableDelay = config.get("acceptable_delay");
+    const tntToken = config.get("wrapped_matic")
 
     await deploy("PriceOracle", {
         from: deployer,
@@ -16,7 +16,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         skipIfAlreadyDeployed: true,
         args: [
             acceptableDelay,
-            tntToken.address
+            tntToken
         ],
     });
 };

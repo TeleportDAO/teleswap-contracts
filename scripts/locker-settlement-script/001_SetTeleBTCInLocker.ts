@@ -27,7 +27,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const priceOracle = await deployments.get("PriceOracle")
     const minTDTLockedAmount = 0;
 
-    // TODO: change it for mainnet
+    // TODO: get from config
     const minNativeLockedAmount = one.mul(6);
     const collateralRatio = 13000;
     const liquidationRatio = 10500;
