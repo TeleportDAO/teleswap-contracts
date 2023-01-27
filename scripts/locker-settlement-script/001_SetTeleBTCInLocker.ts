@@ -71,12 +71,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("locker is already initialized")
     }
 
-    // const setTeleBTCTx = await lockersInstance.setTeleBTC(
-    //     teleBTC.address
-    // )
+    const setTeleBTCTx = await lockersInstance.setTeleBTC(
+        teleBTC.address
+    )
 
-    // await setTeleBTCTx.wait(1)
-    // console.log("set telebtc in locker: ", setTeleBTCTx.hash)
+    await setTeleBTCTx.wait(1)
+    console.log("set telebtc in locker: ", setTeleBTCTx.hash)
 
 
     const isCCTransferMinter = await lockersInstance.isMinter(
