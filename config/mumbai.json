@@ -3,12 +3,16 @@
   "uniswap_v2_router_02": "0x8954AfA98594b838bda56FE4C12a09D7739D179b",
   "uniswap_v2_factory": "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32",
   "wrapped_matic": "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889",
+  "usdt_token": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+  "usdc_token": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
   "acceptable_delay": 900,
   "chain_id": 137,
   "fee_to_setter": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
   "chain_link_oracles": {
     "matic_usd": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
-    "btc_usd": "0x007A22900a3B98143368Bd5906f8E17e9867581b"
+    "btc_usd": "0x007A22900a3B98143368Bd5906f8E17e9867581b",
+    "usdt_usd": "0x92C09849638959196E976289418e5973CC96d645",
+    "usdc_usd": "0x572dDec9087154dC5dfBB1546Bb62713147e0Ab0"
   },
   "cc_transfer": {
     "treasury": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",

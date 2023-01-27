@@ -71,7 +71,43 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         tx.wait(1)
         console.log("set btc/usd in pricie oracle: ", tx.hash)
     } else {
-        console.log("btc/usd is already settled in pricie oracle: ")
+        console.log("btc/usd is already settled in pricie oracle")
+    }
+
+    const usdt = config.get("usdt_token")
+    const usdtUSDOracle = config.get("chain_link_oracles.usdt_usd");
+
+    const checkUsdtUSDTx = await priceOracleInstance.ChainlinkPriceProxy(
+        usdt
+    )
+
+    if (checkUsdtUSDTx != usdtUSDOracle) {
+        tx = await priceOracleInstance.setPriceProxy(
+            usdt,
+            usdtUSDOracle
+        )
+        tx.wait(1)
+        console.log("set usdt/usd in pricie oracle: ", tx.hash)
+    } else {
+        console.log("usdt/usd is already settled in pricie oracle")
+    }
+
+    const usdc = config.get("usdc_token")
+    const usdcUSDOracle = config.get("chain_link_oracles.usdc_usd");
+
+    const checkUsdcUSDTx = await priceOracleInstance.ChainlinkPriceProxy(
+        usdc
+    )
+
+    if (checkUsdcUSDTx != usdcUSDOracle) {
+        tx = await priceOracleInstance.setPriceProxy(
+            usdc,
+            usdcUSDOracle
+        )
+        tx.wait(1)
+        console.log("set usdc/usd in pricie oracle: ", tx.hash)
+    } else {
+        console.log("usdc/usd is already settled in pricie oracle")
     }
     
 
