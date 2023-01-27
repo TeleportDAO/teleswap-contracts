@@ -1,11 +1,12 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import config from 'config'
+import verify from "../helper-functions"
 
 require('dotenv').config({path:"../config/temp.env"});
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts} = hre;
+    const {deployments, getNamedAccounts, network} = hre;
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
@@ -26,7 +27,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
 
 
-    await deploy("CCBurnRouter", {
+    const deployedContract = await deploy("CCBurnRouter", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
@@ -41,6 +42,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             bitcoinFee
         ],
     });
+
+    if (network.name != "hardhat" && process.env.ETHERSCAN_API_KEY && process.env.VERIFY_OPTION == "1") {
+        await verify(deployedContract.address, [
+            bitcoinRelay.address,
+            lockersProxy.address,
+            treasuryAddress,
+            teleBTC.address,
+            transferDeadLine,
+            protocolPercentageFee,
+            slasherPercentageReward,
+            bitcoinFee
+        ], "contracts/routers/CCBurnRouter.sol:CCBurnRouter")
+    }
 };
 
 export default func;

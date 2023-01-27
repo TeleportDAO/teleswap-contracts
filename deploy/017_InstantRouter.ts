@@ -1,9 +1,10 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import config from 'config'
+import verify from "../helper-functions"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts} = hre;
+    const {deployments, getNamedAccounts, network} = hre;
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
@@ -21,7 +22,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const defaultExchangeConnector = await deployments.get("UniswapV2Connector")
 
 
-    await deploy("InstantRouter", {
+    const deployedContract = await deploy("InstantRouter", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
@@ -37,6 +38,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             treasuryAddress
         ],
     });
+
+    if (network.name != "hardhat" && process.env.ETHERSCAN_API_KEY && process.env.VERIFY_OPTION == "1") {
+        await verify(deployedContract.address, [
+            teleBTC.address,
+            bitcoinRelay.address,
+            priceOracle.address,
+            collateralPoolFactory.address,
+            slasherPercentageReward,
+            paybackDeadline,
+            defaultExchangeConnector.address,
+            maxPriceDifferencePercent,
+            treasuryAddress
+        ], "contracts/routers/InstantRouter.sol:InstantRouter")
+    }
 };
 
 export default func;
