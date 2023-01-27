@@ -143,6 +143,21 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         uint256 _deadline,
         bool _isFixedToken
     ) external nonReentrant nonZeroAddress(_to) override returns (bool _result, uint[] memory _amounts) {
+        
+        if (_path.length == 2) {
+            address liquidityPool = IUniswapV2Factory(liquidityPoolFactory).getPair(_path[0], _path[1]);
+
+            if (liquidityPool == address(0)) {
+                address[] memory thePath = new address[](3);
+
+                thePath[0] = _path[0];
+                thePath[1] = wrappedNativeToken;
+                thePath[2] = _path[1];
+
+                _path = thePath;
+            }
+        }
+
         uint neededInputAmount;
         (_result, neededInputAmount) = _checkExchangeConditions(
             _inputAmount,
