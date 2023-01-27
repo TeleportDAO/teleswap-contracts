@@ -22,11 +22,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ccTransferRouter.address
     )
 
-    tx = await ccTransferRouterInstance.setRelay(
-        relay.address
-    )
-    tx.wait(1)
-    console.log("set relay in CCtransfer router: ", tx.hash)
+    const checkRelayInCCTransfer = await ccTransferRouterInstance.relay()
+
+    if (checkRelayInCCTransfer != relay.address) {
+        tx = await ccTransferRouterInstance.setRelay(
+            relay.address
+        )
+        tx.wait(1)
+        console.log("set relay in CCtransfer router: ", tx.hash)
+    } else {
+        console.log("relay is already settled in CCtransfer router")
+    }
+    
 
 
     // set relay in cc burn router
@@ -36,11 +43,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ccBurnRouter.address
     )
 
-    tx = await ccBurnRouterInstance.setRelay(
-        relay.address
-    )
-    tx.wait(1)
-    console.log("set relay in CCburn router: ", tx.hash)
+    const checkRelayInCCBurn = await ccBurnRouterInstance.relay()
+
+    if (checkRelayInCCBurn != relay.address) {
+        tx = await ccBurnRouterInstance.setRelay(
+            relay.address
+        )
+        tx.wait(1)
+        console.log("set relay in CCburn router: ", tx.hash)
+    } else {
+        console.log("relay is already settled in CCburn router")
+    }
+
+    
 
     // set relay in cc exchange router
     const ccExchangeRouter = await deployments.get("CCExchangeRouter")
@@ -49,11 +64,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ccExchangeRouter.address
     )
 
-    tx = await ccExchangeRouterInstance.setRelay(
-        relay.address
-    )
-    tx.wait(1)
-    console.log("set relay in CCexchange router: ", tx.hash)
+    const checkRelayInCCExchange = await ccExchangeRouterInstance.relay()
+
+    if (checkRelayInCCExchange != relay.address) {
+        tx = await ccExchangeRouterInstance.setRelay(
+            relay.address
+        )
+        tx.wait(1)
+        console.log("set relay in CCexchange router: ", tx.hash)
+    } else {
+        console.log("relay is already settled in CCexchange router: ")
+    }
+
+    
 
     // set relay in instant router
     const instantRouter = await deployments.get("InstantRouter")
@@ -62,11 +85,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         instantRouter.address
     )
 
-    tx = await instantRouterInstance.setRelay(
-        relay.address
-    )
-    tx.wait(1)
-    console.log("set relay in instant router: ", tx.hash)
+    const checkRelayInInstantRouter = await instantRouterInstance.relay()
+
+    if (checkRelayInInstantRouter != relay.address) {
+        tx = await instantRouterInstance.setRelay(
+            relay.address
+        )
+        tx.wait(1)
+        console.log("set relay in instant router: ", tx.hash)
+    } else {
+        console.log("relay is already settled in instant router")
+    }
 
 
 };

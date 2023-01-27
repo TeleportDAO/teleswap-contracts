@@ -20,12 +20,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ccBurnRouter.address
     );
 
-    const setTeleBTCTx = await ccBurnRouterInstance.setTeleBTC(
-        teleBTC.address
-    )
+    const checkTeleBTCInCCBurn = await ccBurnRouterInstance.teleBTC()
 
-    await setTeleBTCTx.wait(1)
-    console.log("set telebtc in CC burn: ", setTeleBTCTx.hash)
+    if (checkTeleBTCInCCBurn != teleBTC.address ) {
+        const setTeleBTCTx = await ccBurnRouterInstance.setTeleBTC(
+            teleBTC.address
+        )
+    
+        await setTeleBTCTx.wait(1)
+        console.log("set telebtc in CC burn: ", setTeleBTCTx.hash)
+    } else {
+        console.log("telebtc is already settled in CC burn")
+    }
+    
 
 };
 

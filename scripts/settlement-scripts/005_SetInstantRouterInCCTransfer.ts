@@ -20,13 +20,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ccTransferRouter.address
     );
 
-    const setInstantRouterTx = await ccTransferRouterInstance.setInstantRouter(
-        instantRouter.address
-    )
+    const checkInstantRouterInCCTransfer = await ccTransferRouterInstance.instantRouter()
 
-    await setInstantRouterTx.wait(1)
-    console.log("set instant router in CC transfer: ", setInstantRouterTx.hash)
-
+    if (checkInstantRouterInCCTransfer != instantRouter.address) {
+        const setInstantRouterTx = await ccTransferRouterInstance.setInstantRouter(
+            instantRouter.address
+        )
+    
+        await setInstantRouterTx.wait(1)
+        console.log("set instant router in CC transfer: ", setInstantRouterTx.hash)
+    } else {
+        console.log("instant router is already settled in CC transfer")
+    }
 
 };
 

@@ -41,6 +41,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         await addPriceOracle.wait(1)
         console.log("add price oracle in lockers proxy contract: ", addPriceOracle.hash)
+    } else {
+        console.log("price oracle is already settled in lockers proxy contract")
     }
     
     logger.color('blue').log("-------------------------------------------------")

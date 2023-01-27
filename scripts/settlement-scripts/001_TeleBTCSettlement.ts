@@ -31,6 +31,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         await addLockerAsMinter.wait(1)
         console.log("add locker as minter: ", addLockerAsMinter.hash)
+    } else {
+        console.log("locker is already a minter")
     }
 
     const isLockerBurner = await teleBTCInstance.burners(
@@ -44,6 +46,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         await addLockerAsBurner.wait(1)
         console.log("add locker as burner: ", addLockerAsBurner.hash)
+    } else {
+        console.log("locker is already a burner")
     }
 
 };

@@ -1,6 +1,7 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
+import config from 'config'
 const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -18,33 +19,61 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         priceOracle.address
     )
 
-    // TODO: get from config
-    const wEth = await deployments.get("WETH")
-    const maticUSDOracle = "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada";
-    tx = await priceOracleInstance.setPriceProxy(
-        wEth.address,
-        maticUSDOracle
+    const wrappedMatic = config.get("wrapped_matic")
+    const maticUSDOracle = config.get("chain_link_oracles.matic_usd");
+
+    const checkMaticUSDTx = await priceOracleInstance.ChainlinkPriceProxy(
+        wrappedMatic
     )
-    tx.wait(1)
-    console.log("set matic/usd in pricie oracle: ", tx.hash)
+
+    if (checkMaticUSDTx != maticUSDOracle) {
+        tx = await priceOracleInstance.setPriceProxy(
+            wrappedMatic,
+            maticUSDOracle
+        )
+        tx.wait(1)
+        console.log("set matic/usd in pricie oracle: ", tx.hash)
+    } else {
+        console.log("matic/usd is already settled in price oracle")
+    }
+    
 
     const oneAddress = "0x0000000000000000000000000000000000000001"
-    tx = await priceOracleInstance.setPriceProxy(
-        oneAddress,
-        maticUSDOracle
+    const checkMaticUSDTx2 = await priceOracleInstance.ChainlinkPriceProxy(
+        oneAddress
     )
-    tx.wait(1)
-    console.log("set matic/usd in pricie oracle: ", tx.hash)
 
-    // TODO: get from config
+    if (checkMaticUSDTx2 != maticUSDOracle) {
+        tx = await priceOracleInstance.setPriceProxy(
+            oneAddress,
+            maticUSDOracle
+        )
+        tx.wait(1)
+        console.log("set matic/usd in pricie oracle: ", tx.hash)
+    } else {
+        console.log("matic/usd (one_address) is already settled in pricie oracle: ")
+    }
+
+    
+
     const tBTC = await deployments.get("TeleBTC")
-    const btcUSDOracle = "0x007A22900a3B98143368Bd5906f8E17e9867581b";
-    tx = await priceOracleInstance.setPriceProxy(
-        tBTC.address,
-        btcUSDOracle
+    const btcUSDOracle = config.get("chain_link_oracles.btc_usd");
+
+    const checkBitcoinUSDTx = await priceOracleInstance.ChainlinkPriceProxy(
+        tBTC.address
     )
-    tx.wait(1)
-    console.log("set btc/usd in pricie oracle: ", tx.hash)
+
+    if (checkBitcoinUSDTx != btcUSDOracle) {
+        tx = await priceOracleInstance.setPriceProxy(
+            tBTC.address,
+            btcUSDOracle
+        )
+        tx.wait(1)
+        console.log("set btc/usd in pricie oracle: ", tx.hash)
+    } else {
+        console.log("btc/usd is already settled in pricie oracle: ")
+    }
+    
 
     logger.color('blue').log("-------------------------------------------------")
 };

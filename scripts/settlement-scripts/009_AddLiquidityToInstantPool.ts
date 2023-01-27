@@ -14,6 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Add liquidity to instant pool...")
 
+    // TODO: this script must not be runnable on the main net
     const teleBTC = await deployments.get("TeleBTC")
     const instantPool = await deployments.get("InstantPool")
 

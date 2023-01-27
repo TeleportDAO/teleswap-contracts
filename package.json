@@ -77,6 +77,7 @@
 		"lockers_settlement:mumbai": "NODE_ENV=mumbai hardhat deploy --network mumbai --export export/abi/mumbai.json --deploy-scripts scripts/locker-settlement-script",
 		"global_variables_settlement:mumbai": "NODE_ENV=mumbai hardhat deploy --network mumbai --export export/abi/mumbai.json --deploy-scripts scripts/set-global-variables",
 		"collateral_pool_scripts:mumbai": "NODE_ENV=mumbai hardhat deploy --network mumbai --export export/abi/mumbai.json --deploy-scripts scripts/collateralPool-script",
+		"add_chainlink_to_price_oracle:mumbai": "NODE_ENV=mumbai hardhat deploy --network mumbai --export export/abi/mumbai.json --deploy-scripts scripts/add-price-proxy-to-oracle",
 		"test": "hardhat test"
 	}
 }

@@ -21,6 +21,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       // initialSupply
     ],
   });
+
+  
 };
 
 export default func;

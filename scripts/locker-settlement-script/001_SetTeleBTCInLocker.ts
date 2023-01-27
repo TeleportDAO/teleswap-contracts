@@ -2,6 +2,7 @@ import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
 import { BigNumber, BigNumberish } from "ethers";
+import config from 'config'
 const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -27,13 +28,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const priceOracle = await deployments.get("PriceOracle")
     const minTDTLockedAmount = 0;
 
-    // TODO: get from config
-    const minNativeLockedAmount = one.mul(6);
-    const collateralRatio = 13000;
-    const liquidationRatio = 10500;
-    const lockerPercentageFee = 15;
-    const priceWithDiscountRatio = 9000;
-    const minLeavinngIntervalTime = 1000;
+    const minNativeLockedAmount = config.get("lockers_contract.minimum_native_locked_amount");
+    const collateralRatio = config.get("lockers_contract.collateral_ratio");
+    const liquidationRatio = config.get("lockers_contract.liquidation_ratio");
+    const lockerPercentageFee = config.get("lockers_contract.locker_percentage_fee");
+    const priceWithDiscountRatio = config.get("lockers_contract.price_with_discount_ratio");
+    const minLeavingIntervalTime = config.get("lockers_contract.minimum_leaving_interval_time");
 
     const lockersLogicFactory = await ethers.getContractFactory(
         "LockersLogic",
@@ -67,6 +67,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         await initializeTx.wait(1)
         console.log("initialize locker: ", initializeTx.hash)
+    } else {
+        console.log("locker is already initialized")
     }
 
     // const setTeleBTCTx = await lockersInstance.setTeleBTC(
@@ -88,6 +90,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         await addCCTransferAsMinter.wait(1)
         console.log("add CC transfer router as minter: ", addCCTransferAsMinter.hash)
+    } else {
+        console.log("CC transfer router is already a minter")
     }
 
     const isCCExchangeMinter = await lockersInstance.isMinter(
@@ -101,6 +105,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         await addCCExchangeAsMinter.wait(1)
         console.log("add CC exchange router as minter: ", addCCExchangeAsMinter.hash)
+    } else {
+        console.log("CC exchange router is already a minter")
     }
 
 
@@ -115,6 +121,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         await addCCBurnerAsBurner.wait(1)
         console.log("add CC burn router router as burner: ", addCCBurnerAsBurner.hash)
+    } else {
+        console.log("CC burn router router is already a burner: ")
     }
 
 

@@ -22,11 +22,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ccTransferRouter.address
     )
 
-    tx = await ccTransferRouterInstance.setInstantRouter(
-        instantRouter.address
-    )
-    tx.wait(1)
-    console.log("set instant router in CCtransfer router: ", tx.hash)
+    const checkInstantRouterInCCTransfer = await ccTransferRouterInstance.instantRouter()
+
+    if (checkInstantRouterInCCTransfer != instantRouter.address) {
+        tx = await ccTransferRouterInstance.setInstantRouter(
+            instantRouter.address
+        )
+        tx.wait(1)
+        console.log("set instant router in CCtransfer router: ", tx.hash)
+    } else {
+        console.log("instant router is already settled in CCtransfer router")
+    }
+    
 
 
     //  set instant router in cc instant pool
@@ -36,11 +43,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         instantPool.address
     )
 
-    tx = await instantPoolInstance.setInstantRouter(
-        instantRouter.address
-    )
-    tx.wait(1)
-    console.log("set instant router in instant pool: ", tx.hash)
+    const checkInstantRouterInInstantPool = await instantPoolInstance.instantRouter()
+
+    if (checkInstantRouterInInstantPool != instantRouter.address) {
+        tx = await instantPoolInstance.setInstantRouter(
+            instantRouter.address
+        )
+        tx.wait(1)
+        console.log("set instant router in instant pool: ", tx.hash)
+    }
+
+    
 
     // set instant router in cc exchange router
     const ccExchangeRouter = await deployments.get("CCExchangeRouter")
@@ -49,12 +62,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ccExchangeRouter.address
     )
 
-    tx = await ccExchangeRouterInstance.setInstantRouter(
-        instantRouter.address
-    )
-    tx.wait(1)
-    console.log("set instant router in CCexchange router: ", tx.hash)
+    // TODO: check if it's already settled or not
 
+    const checkInstantRouterCCExchange = await ccExchangeRouterInstance.instantRouter()
+
+    if (checkInstantRouterCCExchange != instantRouter.address) {
+        tx = await ccExchangeRouterInstance.setInstantRouter(
+            instantRouter.address
+        )
+        tx.wait(1)
+        console.log("set instant router in CCexchange router: ", tx.hash)
+    } else {
+        console.log("instant router is already settled in CCexchange router")
+    }
 
 };
 

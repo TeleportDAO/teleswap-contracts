@@ -23,12 +23,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         instantRouter.address
     )
 
-    tx = await instantRouterInstance.setPriceOracle(
-        priceOracle.address
-    )
-    tx.wait(1)
+    const checkPriceOracleInInstantRouter = await instantRouterInstance.priceOracle()
+
+    if (checkPriceOracleInInstantRouter != priceOracle.address) {
+        tx = await instantRouterInstance.setPriceOracle(
+            priceOracle.address
+        )
+        tx.wait(1)
+        
+        console.log("set priceOracle in instant router: ", tx.hash)
+    } else {
+        console.log("priceOracle is already settled in instant router")
+    }
     
-    console.log("set priceOracle in instant router: ", tx.hash)
 
 
 };

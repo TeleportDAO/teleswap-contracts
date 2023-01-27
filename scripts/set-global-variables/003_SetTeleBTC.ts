@@ -22,11 +22,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ccTransferRouter.address
     )
 
-    tx = await ccTransferRouterInstance.setTeleBTC(
-        telebtc.address
-    )
-    tx.wait(1)
-    console.log("set relay in CCtransfer router: ", tx.hash)
+    const checkTeleBTCInCCTransfer = await ccTransferRouterInstance.teleBTC()
+
+    if (checkTeleBTCInCCTransfer != telebtc.address) {
+        tx = await ccTransferRouterInstance.setTeleBTC(
+            telebtc.address
+        )
+        tx.wait(1)
+        console.log("set teleBTC in CCtransfer router: ", tx.hash)
+    } else {
+        console.log("teleBTC is already settled in CCtransfer router")
+    }
+    
 
 
     // set relay in cc burn router
@@ -36,11 +43,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ccBurnRouter.address
     )
 
-    tx = await ccBurnRouterInstance.setTeleBTC(
-        telebtc.address
-    )
-    tx.wait(1)
-    console.log("set telebtc in CCburn router: ", tx.hash)
+    const checkTeleBTCInCCBurn = await ccBurnRouterInstance.teleBTC() 
+
+    if (checkTeleBTCInCCBurn != telebtc.address) {
+        tx = await ccBurnRouterInstance.setTeleBTC(
+            telebtc.address
+        )
+        tx.wait(1)
+        console.log("set telebtc in CCburn router: ", tx.hash)
+    } else {
+        console.log("telebtc is already settled in CCburn router")
+    }
 
     // set telebtc in cc exchange router
     const ccExchangeRouter = await deployments.get("CCExchangeRouter")
@@ -49,11 +62,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ccExchangeRouter.address
     )
 
-    tx = await ccExchangeRouterInstance.setTeleBTC(
-        telebtc.address
-    )
-    tx.wait(1)
-    console.log("set telebtc in CCexchange router: ", tx.hash)
+    const checkTeleBTCInCCExchange = await ccExchangeRouterInstance.teleBTC() 
+
+    if (checkTeleBTCInCCExchange != telebtc.address) {
+        tx = await ccExchangeRouterInstance.setTeleBTC(
+            telebtc.address
+        )
+        tx.wait(1)
+        console.log("set telebtc in CCexchange router: ", tx.hash)
+    } else {
+        console.log("telebtc is already settled in CCexchange router")
+    }
+    
 
     // set telebtc in instant router
     const instantRouter = await deployments.get("InstantRouter")
@@ -62,11 +82,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         instantRouter.address
     )
 
-    tx = await instantRouterInstance.setTeleBTC(
-        telebtc.address
-    )
-    tx.wait(1)
-    console.log("set telebtc in instant router: ", tx.hash)
+    const checkTeleBTCInInstantRouter = await instantRouterInstance.teleBTC() 
+
+    if (checkTeleBTCInInstantRouter != telebtc.address) {
+        tx = await instantRouterInstance.setTeleBTC(
+            telebtc.address
+        )
+        tx.wait(1)
+        console.log("set telebtc in instant router: ", tx.hash)
+    } else {
+        console.log("telebtc is already settled in instant router")
+    }
 
     // set telebtc in instant pool
     const instantPool = await deployments.get("InstantPool")
@@ -75,11 +101,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         instantPool.address
     )
 
-    tx = await instantPoolInstance.setTeleBTC(
-        telebtc.address
-    )
-    tx.wait(1)
-    console.log("set telebtc in instant pool: ", tx.hash)
+    const checkTeleBTCInInstantPool = await instantPoolInstance.teleBTC() 
+
+    if (checkTeleBTCInInstantPool != telebtc.address) {
+        tx = await instantPoolInstance.setTeleBTC(
+            telebtc.address
+        )
+        tx.wait(1)
+        console.log("set telebtc in instant pool: ", tx.hash)
+    } else {
+        console.log("telebtc is already settled in instant pool")
+    }
 
     // set telebtc in locker
     // const lockers = await deployments.get("LockersProxy")

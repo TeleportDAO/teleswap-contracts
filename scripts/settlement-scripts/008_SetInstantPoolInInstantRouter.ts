@@ -20,12 +20,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         instantRouter.address
     );
 
-    const setInstantPoolTx = await instantRouterInstance.setTeleBTCInstantPool(
-        instantPool.address
-    )
+    const checkInstantPoolInInstantRouter = await instantRouterInstance.teleBTCInstantPool()
 
-    await setInstantPoolTx.wait(1)
-    console.log("set instant pool in instant router: ", setInstantPoolTx.hash)
+    if (checkInstantPoolInInstantRouter != instantPool.address) {
+        const setInstantPoolTx = await instantRouterInstance.setTeleBTCInstantPool(
+            instantPool.address
+        )
+    
+        await setInstantPoolTx.wait(1)
+        console.log("set instant pool in instant router: ", setInstantPoolTx.hash)
+    } else {
+        console.log("instant pool is already settled in instant router")
+    }
 
 };
 
