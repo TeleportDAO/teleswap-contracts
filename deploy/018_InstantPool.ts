@@ -13,7 +13,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const teleBTC = await deployments.get("TeleBTC")
     const instantRouter = await deployments.get("InstantRouter")
 
-    const name = "TeleBTCInstantPoolToken"
+    const name = "teleBTCInstantPoolToken"
     const symbol = "TELEBTCIPT"
 
     const deployedContract = await deploy("InstantPool", {
