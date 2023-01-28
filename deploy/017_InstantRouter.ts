@@ -13,7 +13,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const maxPriceDifferencePercent = config.get("instant_router.max_price_difference_percent");
 
     // TODO: update treasury address for main net
-    const treasuryAddress = config.get("instant_router.treasury")
+    const treasuryAddress = config.get("treasury")
 
     const teleBTC = await deployments.get("TeleBTC")
     const bitcoinRelay = await deployments.get("BitcoinRelay")

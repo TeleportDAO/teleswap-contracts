@@ -33,7 +33,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const liquidationRatio = config.get("lockers_contract.liquidation_ratio");
     const lockerPercentageFee = config.get("lockers_contract.locker_percentage_fee");
     const priceWithDiscountRatio = config.get("lockers_contract.price_with_discount_ratio");
-    const minLeavingIntervalTime = config.get("lockers_contract.minimum_leaving_interval_time");
 
     const lockersLogicFactory = await ethers.getContractFactory(
         "LockersLogic",

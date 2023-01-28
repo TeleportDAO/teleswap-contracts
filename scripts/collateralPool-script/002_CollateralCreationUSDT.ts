@@ -13,8 +13,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Create collateral pool with factory and add liquidity to it...")
 
-    const oneUnit18Decimal = BigNumber.from(10).pow(18).mul(1)
-
     const collateralPoolFactoryContract = await deployments.get("CollateralPoolFactory")
     const collateralPoolFactoryFactory = await ethers.getContractFactory("CollateralPoolFactory")
     const collateralPoolFactoryInstance = await collateralPoolFactoryFactory.attach(
@@ -23,59 +21,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const collateralizationRatio = config.get("collateral_pool.collateralization_ratio") 
 
-    const wrappedMatic = config.get("wrapped_matic") as string
-    const erc20Factory = await ethers.getContractFactory("WETH")
-    const erc20Instance = await erc20Factory.attach(
-        wrappedMatic
-    )
+    const usdt = config.get("usdt_token") as string
 
     const hasCollateralPoolAddress = await collateralPoolFactoryInstance.getCollateralPoolByToken(
-        wrappedMatic
+        usdt
     )
-
-    let collateralPoolAddress: any
 
     if (hasCollateralPoolAddress == "0x0000000000000000000000000000000000000000") {
         const createCollateralPoolTx = await collateralPoolFactoryInstance.createCollateralPool(
-            wrappedMatic,
+            usdt,
             collateralizationRatio
         )
     
         await createCollateralPoolTx.wait(1)
-        console.log("create collateral pool: ", createCollateralPoolTx.hash)
-
-        collateralPoolAddress = await collateralPoolFactoryInstance.getCollateralPoolByToken(
-            wrappedMatic
-        )
+        console.log("create usdt collateral pool: ", createCollateralPoolTx.hash)
     
     } else {
-        collateralPoolAddress = hasCollateralPoolAddress
+        console.log("usdt collateral pool already exists: ")
     }
-     
-    const depositTx = await erc20Instance.deposit(
-        {value: oneUnit18Decimal}
-    );
-    await depositTx.wait(1)
-
-    const approveForCollateralPoolTx = await erc20Instance.approve(collateralPoolAddress, oneUnit18Decimal)
-    await approveForCollateralPoolTx.wait(1)
-    console.log("approve collateral pool to has access to link token: ", approveForCollateralPoolTx.hash)
-
-    const collateralPoolContract = await ethers.getContractFactory(
-        "CollateralPool"
-    );
-
-    const collateralPoolInstance = await collateralPoolContract.attach(
-        collateralPoolAddress
-    );
-
-    const addLiquidityTx = await collateralPoolInstance.addCollateral(
-        deployer,
-        oneUnit18Decimal
-    )
-
-    await addLiquidityTx.wait(1)
-    console.log("add collateral to collateral pool: ", addLiquidityTx.hash)
 
     logger.color('blue').log("-------------------------------------------------")
 };

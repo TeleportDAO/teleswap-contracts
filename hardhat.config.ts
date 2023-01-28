@@ -81,24 +81,6 @@ const config: HardhatUserConfig = {
 			1, 
 			6283185,
 		),
-		ropsten: infuraNetwork(
-			process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
-			"ropsten", 
-			3, 
-			6283185
-		),
-		rinkeby: infuraNetwork(
-			process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
-			"rinkeby", 
-			4, 
-			6283185
-		),
-		kovan: infuraNetwork(
-			process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
-			"kovan", 
-			42, 
-			6283185
-		),
 		goerli: infuraNetwork(
 			process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
 			"goerli", 
