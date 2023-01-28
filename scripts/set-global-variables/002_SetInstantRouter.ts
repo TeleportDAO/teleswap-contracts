@@ -62,8 +62,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ccExchangeRouter.address
     )
 
-    // TODO: check if it's already settled or not
-
     const checkInstantRouterCCExchange = await ccExchangeRouterInstance.instantRouter()
 
     if (checkInstantRouterCCExchange != instantRouter.address) {
