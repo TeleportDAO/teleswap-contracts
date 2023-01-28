@@ -230,6 +230,32 @@ describe("UniswapV2Connector", async () => {
             expect(result[1]).to.equal(inputAmount);
         })
 
+        it("Returns true when there is an indirect path", async function () {
+            let outputAmount = 1000;
+
+            let result = await uniswapV2Connector.getInputAmount(
+                outputAmount,
+                erc20.address,
+                erc20Z.address
+            );
+
+            expect(result[0]).to.equal(true);
+            expect(result[1]).to.not.equal(0);
+        })
+
+        it("Returns false when there is no even an indirect path", async function () {
+            let outputAmount = 1000;
+
+            let result = await uniswapV2Connector.getInputAmount(
+                outputAmount,
+                erc20X.address,
+                erc20Z.address
+            );
+
+            expect(result[0]).to.equal(false);
+            expect(result[1]).to.equal(0);
+        })
+
         it("Returns false since liquidity pool does not exist", async function () {
             let outputAmount = 1000;
 
@@ -314,6 +340,32 @@ describe("UniswapV2Connector", async () => {
                 inputAmount,
                 deployerAddress,
                 erc20X.address
+            );
+
+            expect(result[0]).to.equal(false);
+            expect(result[1]).to.equal(0);
+        })
+
+        it("Returns true when there is indirect path", async function () {
+            let inputAmount = 1000;
+
+            let result = await uniswapV2Connector.getOutputAmount(
+                inputAmount,
+                erc20.address,
+                erc20Z.address
+            );
+
+            expect(result[0]).to.equal(true);
+            expect(result[1]).to.not.equal(0);
+        })
+
+        it("Returns false when there is no evenn an indirect path", async function () {
+            let inputAmount = 1000;
+
+            let result = await uniswapV2Connector.getOutputAmount(
+                inputAmount,
+                erc20X.address,
+                erc20Z.address
             );
 
             expect(result[0]).to.equal(false);
