@@ -37,8 +37,8 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
         string memory _name,
         string memory _symbol
     ) ERC20(_name, _symbol) {
-        maxMintLimit = 200 * 10 ** 8;
-        lastMintLimit = 200 * 10 ** 8;
+        maxMintLimit = 10 ** 8;
+        lastMintLimit = 10 ** 8;
         epochLength = 2000;
     }
 
