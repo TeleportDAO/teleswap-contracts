@@ -204,16 +204,15 @@ describe("UniswapV2Connector", async () => {
         it("Returns false since output amount is greater than output reserve", async function () {
             let outputAmount = 15000;
 
+            await expect(
+                uniswapV2Connector.getInputAmount(
+                    outputAmount,
+                    erc20.address,
+                    _erc20.address,
+                )
+            ).to.be.revertedWith("")
+
             let result = await uniswapV2Connector.getInputAmount(
-                outputAmount,
-                erc20.address,
-                _erc20.address,
-            );
-
-            expect(result[0]).to.equal(false);
-            expect(result[1]).to.equal(0);
-
-            result = await uniswapV2Connector.getInputAmount(
                 outputAmount,
                 _erc20.address,
                 erc20.address,
