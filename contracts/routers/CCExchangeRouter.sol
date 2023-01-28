@@ -365,7 +365,7 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
             theCCExchangeReq.recipientAddress,
             [theCCExchangeReq.path[0], theCCExchangeReq.path[1]], // input token // output token
-            [uint256(0), uint256(0)], // input amount // output amount
+            [remainedAmount, theCCExchangeReq.outputAmount], // input amount // output amount
             theCCExchangeReq.speed,
             _msgSender(), // Teleporter address
             theCCExchangeReq.fee,
