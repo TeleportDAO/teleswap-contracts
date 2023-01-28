@@ -4,6 +4,7 @@ import { ethers } from "hardhat";
 import config from 'config'
 import { BigNumber } from 'ethers';
 const logger = require('node-color-log');
+let bitcoinNetwork = config.get("bitcoin_network")
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts, network} = hre;
@@ -52,30 +53,32 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         collateralPoolAddress = hasCollateralPoolAddress
     }
      
-    const depositTx = await erc20Instance.deposit(
-        {value: oneUnit8Decimal}
-    );
-    await depositTx.wait(1)
+    if (bitcoinNetwork == "testnet") {
+        const depositTx = await erc20Instance.deposit(
+            {value: oneUnit8Decimal}
+        );
+        await depositTx.wait(1)
 
-    const approveForCollateralPoolTx = await erc20Instance.approve(collateralPoolAddress, oneUnit8Decimal)
-    await approveForCollateralPoolTx.wait(1)
-    console.log("approve collateral pool to access to wrapped matic: ", approveForCollateralPoolTx.hash)
+        const approveForCollateralPoolTx = await erc20Instance.approve(collateralPoolAddress, oneUnit8Decimal)
+        await approveForCollateralPoolTx.wait(1)
+        console.log("approve collateral pool to access to wrapped matic: ", approveForCollateralPoolTx.hash)
 
-    const collateralPoolContract = await ethers.getContractFactory(
-        "CollateralPool"
-    );
+        const collateralPoolContract = await ethers.getContractFactory(
+            "CollateralPool"
+        );
 
-    const collateralPoolInstance = await collateralPoolContract.attach(
-        collateralPoolAddress
-    );
+        const collateralPoolInstance = await collateralPoolContract.attach(
+            collateralPoolAddress
+        );
 
-    const addLiquidityTx = await collateralPoolInstance.addCollateral(
-        deployer,
-        oneUnit8Decimal
-    )
+        const addLiquidityTx = await collateralPoolInstance.addCollateral(
+            deployer,
+            oneUnit8Decimal
+        )
 
-    await addLiquidityTx.wait(1)
-    console.log("add collateral to collateral pool: ", addLiquidityTx.hash)
+        await addLiquidityTx.wait(1)
+        console.log("add collateral to collateral pool: ", addLiquidityTx.hash)
+    }
 
     logger.color('blue').log("-------------------------------------------------")
 };

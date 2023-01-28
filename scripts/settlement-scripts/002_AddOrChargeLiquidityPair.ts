@@ -4,6 +4,7 @@ import { ethers } from "hardhat";
 import config from 'config'
 import { BigNumber, BigNumberish } from "ethers";
 const logger = require('node-color-log');
+let bitcoinNetwork = config.get("bitcoin_network")
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts, network} = hre;
@@ -49,7 +50,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
 
 
-    if (theLiquidityPair2 == "0x0000000000000000000000000000000000000000") {
+    if (bitcoinNetwork == "testnet" && theLiquidityPair2 == "0x0000000000000000000000000000000000000000") {
 
         const timeNow = Date.now()
         const unixTimeNow = (timeNow - (timeNow % 1000))/1000 + 1000
