@@ -69,33 +69,35 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
 
         // Checks that the liquidity pool exists
         address liquidityPool = IUniswapV2Factory(liquidityPoolFactory).getPair(_inputToken, _outputToken);
+
         if (
             liquidityPool == address(0)
         ) {
-            return (false, 0);
-        }
-
-
-        // Gets reserve of output token and checks that enough output token exists
-        address token0 = IUniswapV2Pair(liquidityPool).token0();
-        (uint reserveIn, uint reserveOut, /*timestamp*/) = IUniswapV2Pair(liquidityPool).getReserves();
-        if (token0 == _inputToken) {
-            if (_outputAmount >= reserveOut) {
+            if (
+                IUniswapV2Factory(liquidityPoolFactory).getPair(_inputToken, wrappedNativeToken) == address(0) ||
+                IUniswapV2Factory(liquidityPoolFactory).getPair(wrappedNativeToken, _outputToken) == address(0)
+            ) {
                 return (false, 0);
-            }
-        }
-        else {
-            if (_outputAmount >= reserveIn) {
-                return (false, 0);
-            }
-        }
+            } 
 
-        address[] memory path = new address[](2);
-        path[0] = _inputToken;
-        path[1] = _outputToken;
-        uint[] memory result = IUniswapV2Router02(exchangeRouter).getAmountsIn(_outputAmount, path);
+            address[] memory path = new address[](3);
+            path[0] = _inputToken;
+            path[1] = wrappedNativeToken;
+            path[2] = _outputToken;
+            uint[] memory result = IUniswapV2Router02(exchangeRouter).getAmountsIn(_outputAmount, path);
 
-        return (true, result[0]);
+            return (true, result[0]);
+
+        } else {
+
+            address[] memory path = new address[](2);
+            path[0] = _inputToken;
+            path[1] = _outputToken;
+            uint[] memory result = IUniswapV2Router02(exchangeRouter).getAmountsIn(_outputAmount, path);
+
+            return (true, result[0]);
+        }
+        
     }
 
     /// @notice                     Returns amount of output token that user receives 
@@ -110,18 +112,34 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
     ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (bool, uint) {
 
         // Checks that the liquidity pool exists
+        address liquidityPool = IUniswapV2Factory(liquidityPoolFactory).getPair(_inputToken, _outputToken);
+
         if (
-            IUniswapV2Factory(liquidityPoolFactory).getPair(_inputToken, _outputToken) == address(0)
+            liquidityPool == address(0)
         ) {
-            return (false, 0);
+            if (
+                IUniswapV2Factory(liquidityPoolFactory).getPair(_inputToken, wrappedNativeToken) == address(0) ||
+                IUniswapV2Factory(liquidityPoolFactory).getPair(wrappedNativeToken, _outputToken) == address(0)
+            ) {
+                return (false, 0);
+            }
+
+            address[] memory path = new address[](3);
+            path[0] = _inputToken;
+            path[1] = wrappedNativeToken;
+            path[2] = _outputToken;
+            uint[] memory result = IUniswapV2Router02(exchangeRouter).getAmountsOut(_inputAmount, path);
+            return (true, result[2]);
+            
+        } else {
+
+            address[] memory path = new address[](2);
+            path[0] = _inputToken;
+            path[1] = _outputToken;
+            uint[] memory result = IUniswapV2Router02(exchangeRouter).getAmountsOut(_inputAmount, path);
+
+            return (true, result[1]);
         }
-
-        address[] memory path = new address[](2);
-        path[0] = _inputToken;
-        path[1] = _outputToken;
-        uint[] memory result = IUniswapV2Router02(exchangeRouter).getAmountsOut(_inputAmount, path);
-
-        return (true, result[1]);
     }
 
     /// @notice                     Exchanges input token for output token through exchange router
