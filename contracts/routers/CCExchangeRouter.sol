@@ -356,6 +356,22 @@ contract CCExchangeRouter is ICCExchangeRouter, Ownable, ReentrancyGuard {
             ccExchangeRequests[_txId].recipientAddress,
             remainedAmount
         );
+
+        ccExchangeRequest memory theCCExchangeReq = ccExchangeRequests[_txId];
+
+        emit CCExchange(
+            _lockerLockingScript,
+            0,
+            ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
+            theCCExchangeReq.recipientAddress,
+            [theCCExchangeReq.path[0], theCCExchangeReq.path[1]], // input token // output token
+            [remainedAmount, theCCExchangeReq.outputAmount], // input amount // output amount
+            theCCExchangeReq.speed,
+            _msgSender(), // Teleporter address
+            theCCExchangeReq.fee,
+            _txId,
+            theCCExchangeReq.appId
+        );
     }
 
     /// @notice                             Parses and saves the request
