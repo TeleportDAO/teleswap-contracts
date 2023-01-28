@@ -8,7 +8,6 @@ import "../uniswap/v2-core/interfaces/IUniswapV2Factory.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "hardhat/console.sol";
 
 contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
 
@@ -162,90 +161,77 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         uint256 _deadline,
         bool _isFixedToken
     ) external nonReentrant nonZeroAddress(_to) override returns (bool _result, uint[] memory _amounts) {
-
-        console.log("We are here");
-        address[] memory thePath;
         
         if (_path.length == 2) {
             address liquidityPool = IUniswapV2Factory(liquidityPoolFactory).getPair(_path[0], _path[1]);
 
-            console.log("111");
-
             if (liquidityPool == address(0)) {
-                thePath = new address[](3);
+                address[] memory thePath = new address[](3);
 
                 thePath[0] = _path[0];
                 thePath[1] = wrappedNativeToken;
                 thePath[2] = _path[1];
-            } else {
-                thePath = new address[](2);
-                thePath = _path;
+
+                _path = thePath;
             }
-
-            console.log("222");
         }
-
-        console.log("333");
 
         uint neededInputAmount;
         (_result, neededInputAmount) = _checkExchangeConditions(
             _inputAmount,
             _outputAmount,
-            thePath,
+            _path,
             _deadline,
             _isFixedToken
         );
-
-        console.log("444");
-        console.log(_result);
         
         if (_result) {
             // Gets tokens from user
-            IERC20(thePath[0]).transferFrom(_msgSender(), address(this), neededInputAmount);
+            IERC20(_path[0]).transferFrom(_msgSender(), address(this), neededInputAmount);
 
             // Gives allowance to exchange router
-            IERC20(thePath[0]).approve(exchangeRouter, neededInputAmount);
+            IERC20(_path[0]).approve(exchangeRouter, neededInputAmount);
 
-            if (_isFixedToken == false && thePath[thePath.length-1] != wrappedNativeToken) {
+            if (_isFixedToken == false && _path[_path.length-1] != wrappedNativeToken) {
                 _amounts = IUniswapV2Router02(exchangeRouter).swapTokensForExactTokens(
                     _outputAmount,
                     _inputAmount,
-                    thePath,
+                    _path,
                     _to,
                     _deadline
                 );
             }
 
-            if (_isFixedToken == false && thePath[thePath.length-1] == wrappedNativeToken) {
+            if (_isFixedToken == false && _path[_path.length-1] == wrappedNativeToken) {
                 _amounts = IUniswapV2Router02(exchangeRouter).swapTokensForExactETH(
                     _outputAmount,
                     _inputAmount,
-                    thePath,
+                    _path,
                     _to,
                     _deadline
                 );
             }
 
-            if (_isFixedToken == true && thePath[thePath.length-1] != wrappedNativeToken) {
+            if (_isFixedToken == true && _path[_path.length-1] != wrappedNativeToken) {
                 _amounts = IUniswapV2Router02(exchangeRouter).swapExactTokensForTokens(
                     _inputAmount,
                     _outputAmount,
-                    thePath,
+                    _path,
                     _to,
                     _deadline
                 );
             }
 
-            if (_isFixedToken == true && thePath[thePath.length-1] == wrappedNativeToken) {
+            if (_isFixedToken == true && _path[_path.length-1] == wrappedNativeToken) {
                 _amounts = IUniswapV2Router02(exchangeRouter).swapExactTokensForETH(
                     _inputAmount,
                     _outputAmount,
-                    thePath,
+                    _path,
                     _to,
                     _deadline
                 );
             }
-            emit Swap(thePath, _amounts, _to);
+            emit Swap(_path, _amounts, _to);
         }
     }
 
@@ -260,21 +246,12 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         }
 
         for (uint i = 0; i < _path.length - 1; i++) {
-
             liquidityPool =
                 IUniswapV2Factory(liquidityPoolFactory).getPair(_path[i], _path[i + 1]);
             if (liquidityPool == address(0)) {
-                console.log("_path[i]:");
-                console.log(_path[i]);
-
-                console.log("_path[i + 1]");
-                console.log(_path[i + 1]);
-
                 return false;
             }
         }
-
-        console.log("isPathValid");
 
         return true;
     }
@@ -300,8 +277,6 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         if (_deadline < block.timestamp) {
             return (false, 0);
         }
-
-        console.log("_checkExchangeConditions");
 
         // Checks that the liquidity pool exists
         if (!isPathValid(_path)) {

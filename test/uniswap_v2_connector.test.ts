@@ -67,8 +67,6 @@ describe("UniswapV2Connector", async () => {
             'WETH'
         );
 
-        console.log("WETH:", WETH.address)
-
         // Deploys uniswapV2Factory
         const uniswapV2FactoryFactory = await ethers.getContractFactory("UniswapV2Factory");
         uniswapV2Factory = await uniswapV2FactoryFactory.deploy(
@@ -99,21 +97,18 @@ describe("UniswapV2Connector", async () => {
             "TT",
             200000
         );
-        console.log("erc20:", erc20.address)
 
         erc20X = await erc20Factory.deploy(
             "AnotherTestToken",
             "ATT",
             200000
         );
-        console.log("erc20X:", erc20X.address)
 
         erc20Z = await erc20Factory.deploy(
             "JustAnotherTestToken",
             "JATT",
             200000
         );
-        console.log("erc20Z:", erc20Z.address)
 
         // Adding liquidity to pools
 
@@ -196,8 +191,6 @@ describe("UniswapV2Connector", async () => {
             erc20Z.address,
             WETH.address,
         );
-
-        console.log("liquidityPoolEFAddress: ", liquidityPoolEFAddress)
 
         // Loads liquidity pool
         liquidityPoolEF = await uniswapV2Pair__factory.attach(liquidityPoolEFAddress);
@@ -360,14 +353,40 @@ describe("UniswapV2Connector", async () => {
             await revertProvider(deployer.provider, snapshotId);
         });
 
+        it("Swaps indirect path fails", async function () {
+
+            let inputAmount = 1000;
+
+            let path = [erc20X.address, erc20Z.address];
+            let to = deployerAddress;
+            let deadline = 10000000000000;
+            let isFixedToken = true;
+
+            await erc20.approve(uniswapV2Connector.address, inputAmount);
+            await expect(
+                uniswapV2Connector.swap(
+                    inputAmount,
+                    500,
+                    path,
+                    to,
+                    deadline,
+                    isFixedToken
+                )
+            ).to.not.emit(uniswapV2Connector, 'Swap');
+        })
+
         it("Swaps indirect path", async function () {
 
             let inputAmount = 1000;
-            let outputAmount = await uniswapV2Router02.getAmountOut(
+            let outputAmount = await uniswapV2Router02.getAmountsOut(
                 inputAmount,
-                oldReserveE,
-                oldReserveF
+                [
+                    erc20.address, 
+                    WETH.address,
+                    erc20Z.address
+                ]
             );
+
             let path = [erc20.address, erc20Z.address];
             let to = deployerAddress;
             let deadline = 10000000000000;
@@ -377,7 +396,7 @@ describe("UniswapV2Connector", async () => {
             await expect(
                 await uniswapV2Connector.swap(
                     inputAmount,
-                    outputAmount,
+                    outputAmount[2],
                     path,
                     to,
                     deadline,
@@ -386,16 +405,16 @@ describe("UniswapV2Connector", async () => {
             ).to.emit(uniswapV2Connector, 'Swap');
 
             // Records new balances of deployer
-            // let newDeployerBalanceA = await erc20.balanceOf(deployerAddress);
-            // let newDeployerBalanceB = await erc20X.balanceOf(deployerAddress);
+            let newDeployerBalanceA = await erc20.balanceOf(deployerAddress);
+            let newDeployerBalanceB = await erc20Z.balanceOf(deployerAddress);
 
-            // // Checks deployer's tokens balances
-            // expect(newDeployerBalanceA.toNumber()).to.equal(
-            //     oldDeployerBalanceERC20.toNumber() - inputAmount
-            // );
-            // expect(newDeployerBalanceB).to.equal(
-            //     oldDeployerBalanceerc20X.add(outputAmount)
-            // );
+            // Checks deployer's tokens balances
+            expect(newDeployerBalanceA.toNumber()).to.equal(
+                oldDeployerBalanceERC20.toNumber() - inputAmount
+            );
+            expect(newDeployerBalanceB).to.equal(
+                oldDeployerBalanceerc20Z.add(outputAmount[2])
+            );
         })
 
         it("Swaps fixed non-WETH for non-WETH", async function () {
