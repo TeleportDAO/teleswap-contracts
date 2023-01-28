@@ -34,10 +34,12 @@ describe("UniswapV2Connector", async () => {
     let uniswapV2Router02: Contract;
     let liquidityPoolAB: UniswapV2Pair; // non-WETH/non-WETH
     let liquidityPoolCD: UniswapV2Pair; // non-WETH/WETH
+    let liquidityPoolEF: UniswapV2Pair; // non-WETH/WETH
     let uniswapV2Factory: Contract;
     let uniswapV2Pair__factory: UniswapV2Pair__factory;
     let erc20: ERC20;
-    let _erc20: ERC20;
+    let erc20X: ERC20;
+    let erc20Z: ERC20;
     let WETH: WETH;
 
     // Variables
@@ -45,8 +47,11 @@ describe("UniswapV2Connector", async () => {
     let oldReserveB: BigNumber;
     let oldReserveC: BigNumber;
     let oldReserveD: BigNumber;
+    let oldReserveE: BigNumber;
+    let oldReserveF: BigNumber;
     let oldDeployerBalanceERC20: BigNumber;
-    let oldDeployerBalance_ERC20: BigNumber;
+    let oldDeployerBalanceerc20X: BigNumber;
+    let oldDeployerBalanceerc20Z: BigNumber;
     let oldSigner1BalanceETH: BigNumber;
 
     before(async () => {
@@ -61,6 +66,8 @@ describe("UniswapV2Connector", async () => {
             'Wrapped-Ethereum',
             'WETH'
         );
+
+        console.log("WETH:", WETH.address)
 
         // Deploys uniswapV2Factory
         const uniswapV2FactoryFactory = await ethers.getContractFactory("UniswapV2Factory");
@@ -92,26 +99,38 @@ describe("UniswapV2Connector", async () => {
             "TT",
             200000
         );
-        _erc20 = await erc20Factory.deploy(
+        console.log("erc20:", erc20.address)
+
+        erc20X = await erc20Factory.deploy(
             "AnotherTestToken",
             "ATT",
             200000
         );
+        console.log("erc20X:", erc20X.address)
+
+        erc20Z = await erc20Factory.deploy(
+            "JustAnotherTestToken",
+            "JATT",
+            200000
+        );
+        console.log("erc20Z:", erc20Z.address)
 
         // Adding liquidity to pools
 
         // Adds liquidity to liquidity pool
         let addedLiquidityA = 20000; // erc20
-        let addedLiquidityB = 10000; // _erc20
+        let addedLiquidityB = 10000; // erc20X
         let addedLiquidityC = 20000; // erc20
         let addedLiquidityD = 10000; // WETH
+        let addedLiquidityE = 20000; // erc20Z
+        let addedLiquidityF = 10000; // WETH
 
         // Adds liquidity for non-WETH/non-WETH pool
         await erc20.approve(uniswapV2Router02.address, addedLiquidityA);
-        await _erc20.approve(uniswapV2Router02.address, addedLiquidityB);
+        await erc20X.approve(uniswapV2Router02.address, addedLiquidityB);
         await uniswapV2Router02.addLiquidity(
             erc20.address,
-            _erc20.address,
+            erc20X.address,
             addedLiquidityA,
             addedLiquidityB,
             0, // Minimum added liquidity for first token
@@ -121,7 +140,7 @@ describe("UniswapV2Connector", async () => {
         );
         let liquidityPoolABAddress = await uniswapV2Factory.getPair(
             erc20.address,
-            _erc20.address
+            erc20X.address
         );
 
         // Loads liquidity pool
@@ -161,9 +180,39 @@ describe("UniswapV2Connector", async () => {
             [oldReserveD, oldReserveC] = await liquidityPoolCD.getReserves()
         }
 
+        // Adds liquidity for non-WETH/WETH pool
+        await erc20Z.approve(uniswapV2Router02.address, addedLiquidityE);
+
+        await uniswapV2Router02.addLiquidityETH(
+            erc20Z.address,
+            addedLiquidityF,
+            0, // Minimum added liquidity for first token
+            0, // Minimum added liquidity for second token
+            deployerAddress,
+            10000000000000, // Long deadline
+            {value: addedLiquidityF}
+        );
+        let liquidityPoolEFAddress = await uniswapV2Factory.getPair(
+            erc20Z.address,
+            WETH.address,
+        );
+
+        console.log("liquidityPoolEFAddress: ", liquidityPoolEFAddress)
+
+        // Loads liquidity pool
+        liquidityPoolEF = await uniswapV2Pair__factory.attach(liquidityPoolEFAddress);
+
+        // Records current reserves of teleBTC and TDT
+        if (await liquidityPoolEF.token0() == erc20Z.address) {
+            [oldReserveE, oldReserveF] = await liquidityPoolEF.getReserves();
+        } else {
+            [oldReserveF, oldReserveE] = await liquidityPoolEF.getReserves()
+        }
+
         // Records current tokens balances of deployer
         oldDeployerBalanceERC20 = await erc20.balanceOf(deployerAddress);
-        oldDeployerBalance_ERC20 = await _erc20.balanceOf(deployerAddress);
+        oldDeployerBalanceerc20X = await erc20X.balanceOf(deployerAddress);
+        oldDeployerBalanceerc20Z = await erc20Z.balanceOf(deployerAddress);
         oldSigner1BalanceETH = await signer1.getBalance();
 
     });
@@ -181,7 +230,7 @@ describe("UniswapV2Connector", async () => {
             let result = await uniswapV2Connector.getInputAmount(
                 outputAmount,
                 erc20.address,
-                _erc20.address
+                erc20X.address
             );
 
             expect(result[0]).to.equal(true);
@@ -194,7 +243,7 @@ describe("UniswapV2Connector", async () => {
             let result = await uniswapV2Connector.getInputAmount(
                 outputAmount,
                 deployerAddress,
-                _erc20.address
+                erc20X.address
             );
 
             expect(result[0]).to.equal(false);
@@ -208,13 +257,13 @@ describe("UniswapV2Connector", async () => {
                 uniswapV2Connector.getInputAmount(
                     outputAmount,
                     erc20.address,
-                    _erc20.address,
+                    erc20X.address,
                 )
             ).to.be.revertedWith("")
 
             let result = await uniswapV2Connector.getInputAmount(
                 outputAmount,
-                _erc20.address,
+                erc20X.address,
                 erc20.address,
             );
 
@@ -229,7 +278,7 @@ describe("UniswapV2Connector", async () => {
                 uniswapV2Connector.getInputAmount(
                     outputAmount,
                     ZERO_ADDRESS,
-                    _erc20.address
+                    erc20X.address
                 )
             ).to.revertedWith("UniswapV2Connector: zero address");
 
@@ -258,7 +307,7 @@ describe("UniswapV2Connector", async () => {
             let result = await uniswapV2Connector.getOutputAmount(
                 inputAmount,
                 erc20.address,
-                _erc20.address
+                erc20X.address
             );
 
             expect(result[0]).to.equal(true);
@@ -271,7 +320,7 @@ describe("UniswapV2Connector", async () => {
             let result = await uniswapV2Connector.getOutputAmount(
                 inputAmount,
                 deployerAddress,
-                _erc20.address
+                erc20X.address
             );
 
             expect(result[0]).to.equal(false);
@@ -285,7 +334,7 @@ describe("UniswapV2Connector", async () => {
                 uniswapV2Connector.getOutputAmount(
                     inputAmount,
                     ZERO_ADDRESS,
-                    _erc20.address
+                    erc20X.address
                 )
             ).to.revertedWith("UniswapV2Connector: zero address");
 
@@ -311,6 +360,44 @@ describe("UniswapV2Connector", async () => {
             await revertProvider(deployer.provider, snapshotId);
         });
 
+        it("Swaps indirect path", async function () {
+
+            let inputAmount = 1000;
+            let outputAmount = await uniswapV2Router02.getAmountOut(
+                inputAmount,
+                oldReserveE,
+                oldReserveF
+            );
+            let path = [erc20.address, erc20Z.address];
+            let to = deployerAddress;
+            let deadline = 10000000000000;
+            let isFixedToken = true;
+
+            await erc20.approve(uniswapV2Connector.address, inputAmount);
+            await expect(
+                await uniswapV2Connector.swap(
+                    inputAmount,
+                    outputAmount,
+                    path,
+                    to,
+                    deadline,
+                    isFixedToken
+                )
+            ).to.emit(uniswapV2Connector, 'Swap');
+
+            // Records new balances of deployer
+            // let newDeployerBalanceA = await erc20.balanceOf(deployerAddress);
+            // let newDeployerBalanceB = await erc20X.balanceOf(deployerAddress);
+
+            // // Checks deployer's tokens balances
+            // expect(newDeployerBalanceA.toNumber()).to.equal(
+            //     oldDeployerBalanceERC20.toNumber() - inputAmount
+            // );
+            // expect(newDeployerBalanceB).to.equal(
+            //     oldDeployerBalanceerc20X.add(outputAmount)
+            // );
+        })
+
         it("Swaps fixed non-WETH for non-WETH", async function () {
 
             let inputAmount = 1000;
@@ -319,7 +406,7 @@ describe("UniswapV2Connector", async () => {
                 oldReserveA,
                 oldReserveB
             );
-            let path = [erc20.address, _erc20.address];
+            let path = [erc20.address, erc20X.address];
             let to = deployerAddress;
             let deadline = 10000000000000;
             let isFixedToken = true;
@@ -338,14 +425,14 @@ describe("UniswapV2Connector", async () => {
 
             // Records new balances of deployer
             let newDeployerBalanceA = await erc20.balanceOf(deployerAddress);
-            let newDeployerBalanceB = await _erc20.balanceOf(deployerAddress);
+            let newDeployerBalanceB = await erc20X.balanceOf(deployerAddress);
 
             // Checks deployer's tokens balances
             expect(newDeployerBalanceA.toNumber()).to.equal(
                 oldDeployerBalanceERC20.toNumber() - inputAmount
             );
             expect(newDeployerBalanceB).to.equal(
-                oldDeployerBalance_ERC20.add(outputAmount)
+                oldDeployerBalanceerc20X.add(outputAmount)
             );
         })
 
@@ -357,7 +444,7 @@ describe("UniswapV2Connector", async () => {
                 oldReserveA,
                 oldReserveB
             );
-            let path = [erc20.address, _erc20.address];
+            let path = [erc20.address, erc20X.address];
             let to = deployerAddress;
             let deadline = 10000000000000;
             let isFixedToken = false;
@@ -376,14 +463,14 @@ describe("UniswapV2Connector", async () => {
 
             // Records new balances of deployer
             let newDeployerBalanceA = await erc20.balanceOf(deployerAddress);
-            let newDeployerBalanceB = await _erc20.balanceOf(deployerAddress);
+            let newDeployerBalanceB = await erc20X.balanceOf(deployerAddress);
 
             // Checks deployer's tokens balances
             expect(newDeployerBalanceA.toNumber()).to.equal(
                 oldDeployerBalanceERC20.toNumber() - inputAmount.toNumber()
             );
             expect(newDeployerBalanceB).to.equal(
-                oldDeployerBalance_ERC20.add(outputAmount)
+                oldDeployerBalanceerc20X.add(outputAmount)
             );
         })
 
@@ -470,7 +557,7 @@ describe("UniswapV2Connector", async () => {
                 oldReserveA,
                 oldReserveB
             );
-            let path = [erc20.address, _erc20.address];
+            let path = [erc20.address, erc20X.address];
             let to = deployerAddress;
             let deadline = 10000000000000;
             let isFixedToken = true;
@@ -496,7 +583,7 @@ describe("UniswapV2Connector", async () => {
                 oldReserveA,
                 oldReserveB
             );
-            let path = [erc20.address, _erc20.address];
+            let path = [erc20.address, erc20X.address];
             let to = deployerAddress;
             let deadline = 10000000000000;
             let isFixedToken = false;
@@ -522,7 +609,7 @@ describe("UniswapV2Connector", async () => {
                 oldReserveA,
                 oldReserveB
             );
-            let path = [erc20.address, _erc20.address];
+            let path = [erc20.address, erc20X.address];
             let to = deployerAddress;
             let deadline = 0;
             let isFixedToken = true;
@@ -607,7 +694,7 @@ describe("UniswapV2Connector", async () => {
 
         it("Returns true since path is valid", async function () {
             expect(
-                await uniswapV2Connector.isPathValid([erc20.address, _erc20.address, WETH.address])
+                await uniswapV2Connector.isPathValid([erc20.address, erc20X.address, WETH.address])
             ).to.equal(false);
         })
 
@@ -631,7 +718,7 @@ describe("UniswapV2Connector", async () => {
 
         it("Returns false since path is invalid", async function () {
             expect(
-                await uniswapV2Connector.isPathValid([erc20.address, _erc20.address, deployerAddress])
+                await uniswapV2Connector.isPathValid([erc20.address, erc20X.address, deployerAddress])
             ).to.equal(false);
         })
     })
