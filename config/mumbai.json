@@ -20,7 +20,7 @@
     "protocol_percentage_fee": 5
   },
   "cc_exchange": {
-    "app_id": 20,
+    "app_id": 10,
     "protocol_percentage_fee": 5
   },
   "cc_burn": {

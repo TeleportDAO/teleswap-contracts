@@ -63,12 +63,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             await addMinterTeleBTCTx.wait(1)
         }
 
-        const mintTeleBTCTx = await teleBTCInstance.mint(deployer, one8Dec.mul(10))
+        const mintTeleBTCTx = await teleBTCInstance.mint(deployer, one8Dec.div(2))
         await mintTeleBTCTx.wait(1)
 
         const approveTeleBTCTx = await teleBTCInstance.approve(
             uniswapRouter,
-            one8Dec
+            one8Dec.div(2)
         )
         await approveTeleBTCTx.wait(1)
 

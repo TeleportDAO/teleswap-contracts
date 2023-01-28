@@ -37,20 +37,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             await addMinterTeleBTCTx.wait(1)
         }
 
-        const mintTeleBTCTx = await teleBTCInstance.mint(deployer, one8Dec.mul(100))
+        const mintTeleBTCTx = await teleBTCInstance.mint(deployer, one8Dec.div(2))
         await mintTeleBTCTx.wait(1)
         console.log("mint telebtc: ", mintTeleBTCTx.hash)
 
         const approveTeleBTCTx = await teleBTCInstance.approve(
             instantPool.address,
-            one8Dec.mul(50)
+            one8Dec.div(2)
         )
         await approveTeleBTCTx.wait(1)
         console.log("approve instant pool to has access to telebtc: ", approveTeleBTCTx.hash)
 
         const addLiquiditylTx = await instantPoolInstance.addLiquidity(
             deployer,
-            one8Dec.mul(50)
+            one8Dec.div(2)
         )
 
         await addLiquiditylTx.wait(1)
