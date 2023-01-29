@@ -1821,7 +1821,7 @@ describe("Lockers", async () => {
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(TeleBTCAmount)
 
-            await teleBTC.mint(signer2Address, 10000000000)
+            await teleBTC.mint(signer2Address, 10000000)
 
             let teleBTCSigner2 = await teleBTC.connect(signer2);
 
@@ -1983,7 +1983,7 @@ describe("Lockers", async () => {
                 theLockerMapping[5]
             ).to.equal(1000);
 
-            await teleBTC.mint(signer2Address, 10000000000)
+            await teleBTC.mint(signer2Address, 10000000)
 
             let teleBTCSigner2 = teleBTC.connect(signer2)
 

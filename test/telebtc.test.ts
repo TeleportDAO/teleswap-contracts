@@ -12,7 +12,7 @@ describe("TeleBTC", async () => {
     // Constants
     const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     const ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
-    const maxMintLimit = 200 * 10 ** 8;
+    const maxMintLimit = 10 ** 8;
     const epochLength = 2000;
 
     // Accounts
