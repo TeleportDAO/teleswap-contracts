@@ -13,6 +13,7 @@ import {CCBurnRouter} from "../src/types/CCBurnRouter";
 import {CCBurnRouter__factory} from "../src/types/factories/CCBurnRouter__factory";
 
 import { takeSnapshot, revertProvider } from "./block_utils";
+import { network } from "hardhat"
 
 describe("CCBurnRouter", async () => {
     let snapshotId: any;
@@ -43,8 +44,7 @@ describe("CCBurnRouter", async () => {
         This one is set so that:
         userRequestedAmount * (1 - lockerFee / 10000 - PROTOCOL_PERCENTAGE_FEE / 10000) - BITCOIN_FEE = 100000000
     */
-    // let userRequestedAmount = BigNumber.from(100060030);
-    let userRequestedAmount = BigNumber.from(10060030);
+    let userRequestedAmount = BigNumber.from(100060030);
     let TRANSFER_DEADLINE = 20
     let PROTOCOL_PERCENTAGE_FEE = 5 // means 0.05%
     let SLASHER_PERCENTAGE_REWARD = 5 // means 0.05%
@@ -97,12 +97,27 @@ describe("CCBurnRouter", async () => {
         // Mints TeleBTC for user
         await teleBTC.addMinter(signer1Address)
         TeleBTCSigner1 = await teleBTC.connect(signer1);
-        await TeleBTCSigner1.mint(signer1Address, 10000000);
+
+        await teleBTC.setMaxMintLimit(oneHundred.mul(2));
+        await moveBlocks(2020)
+
+        await TeleBTCSigner1.mint(signer1Address, oneHundred);
+
+        
 
         // Connects signer1 and signer2 to ccBurnRouter
         ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1);
         ccBurnRouterSigner2 = await ccBurnRouter.connect(signer2)
     });
+
+    async function moveBlocks(amount: number) {
+        for (let index = 0; index < amount; index++) {
+          await network.provider.request({
+            method: "evm_mine",
+            params: [],
+          })
+        }
+    }
 
     const deployTeleBTC = async (
         _signer?: Signer
@@ -177,7 +192,7 @@ describe("CCBurnRouter", async () => {
 
     async function mintTeleBTCForTest(): Promise<void> {
         let TeleBTCSigner1 = await teleBTC.connect(signer1)
-        await TeleBTCSigner1.mint(signer1Address, 10000000);
+        await TeleBTCSigner1.mint(signer1Address, oneHundred);
     }
 
     async function sendBurnRequest(
