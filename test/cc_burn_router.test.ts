@@ -142,6 +142,7 @@ describe("CCBurnRouter", async () => {
         );
 
         const ccBurnRouter = await ccBurnRouterFactory.deploy(
+            0,
             mockBitcoinRelay.address,
             mockLockers.address,
             TREASURY,

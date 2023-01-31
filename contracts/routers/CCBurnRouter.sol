@@ -27,6 +27,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     uint constant MAX_SLASHER_REWARD = 10000;
 
     // Public variables
+    uint public override startingBlockNumber;
     address public override relay;
     address public override lockers;
     address public override teleBTC;
@@ -40,6 +41,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     mapping(bytes32 => bool) public override isUsedAsBurnProof; // Mapping that shows a txId has been submitted to pay a burn request
 
     /// @notice                             Handles cross-chain burn requests
+    /// @param _startingBlockNumber         Requests that are included in a block older than _startingBlockNumber cannot be executed
     /// @param _relay                       Address of relay contract
     /// @param _lockers                     Address of lockers contract
     /// @param _treasury                    Address of the treasury of the protocol
@@ -49,6 +51,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _slasherPercentageReward     Percentage of tokens that slasher receives after slashing a locker
     /// @param _bitcoinFee                  Fee of submitting a transaction on Bitcoin
     constructor(
+        uint _startingBlockNumber,
         address _relay,
         address _lockers,
         address _treasury,
@@ -58,6 +61,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint _slasherPercentageReward,
         uint _bitcoinFee
     ) {
+        startingBlockNumber = _startingBlockNumber;
         _setRelay(_relay);
         _setLockers(_lockers);
         _setTreasury(_treasury);
@@ -243,10 +247,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         // Transfers users's teleBTC
         ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), _amount);
 
-        uint remainingAmount = _getFees(
-            _amount,
-            _lockerTargetAddress
-        );
+        uint remainingAmount = _getFees(_amount);
 
         // Burns remained teleBTC
         ITeleBTC(teleBTC).approve(lockers, remainingAmount);
@@ -301,6 +302,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint[] memory _burnReqIndexes,
         uint[] memory _voutIndexes
     ) external payable nonReentrant override returns (bool) {
+        require(_blockNumber >= startingBlockNumber, "CCBurnRouter: request is too old");
         // Checks that locker's tx doesn't have any locktime
         require(_locktime == bytes4(0), "CCBurnRouter: non-zero lock time");
 
@@ -706,11 +708,9 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @notice                      Checks inclusion of the transaction in the specified block
     /// @dev                         Calls the relay contract to check Merkle inclusion proof
     /// @param _amount               The amount to be burnt
-    /// @param _lockerTargetAddress  The locker's address on the target blockchain
     /// @return                      Remaining amount after reducing fees
     function _getFees(
-        uint _amount,
-        address _lockerTargetAddress
+        uint _amount
     ) private returns (uint) {
         // Calculates protocol fee
         uint protocolFee = _amount*protocolPercentageFee/MAX_PROTOCOL_FEE;

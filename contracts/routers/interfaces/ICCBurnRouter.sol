@@ -134,6 +134,8 @@ interface ICCBurnRouter {
 
 	// Read-only functions
 
+    function startingBlockNumber() external view returns (uint);
+	
 	function relay() external view returns (address);
 
 	function lockers() external view returns (address);
