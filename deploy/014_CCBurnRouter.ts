@@ -10,7 +10,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    let theBlockHeight = process.env.BLOCK_HEIGHT;
+    // TODO: un-comment the above one and remove the second one
+    // let theBlockHeight = process.env.BLOCK_HEIGHT;
+    let theBlockHeight = 773999;
 
     const protocolPercentageFee = config.get("cc_burn.protocol_percentage_fee")
     const slasherPercentageReward = config.get("cc_burn.slasher_percentage_reward")
@@ -32,6 +34,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
+            theBlockHeight,
             bitcoinRelay.address,
             lockersProxy.address,
             treasuryAddress,
