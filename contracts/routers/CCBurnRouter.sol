@@ -250,7 +250,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         // Burns remained teleBTC
         ITeleBTC(teleBTC).approve(lockers, remainingAmount);
-        _burntAmount = ILockers(lockers).burn(_lockerLockingScript, remainingAmount);
+        _burntAmount = (ILockers(lockers).burn(_lockerLockingScript, remainingAmount)) 
+            * (remainingAmount - bitcoinFee) / remainingAmount;
 
         _saveBurnRequest(
             _amount,
@@ -716,13 +717,10 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         require(_amount > protocolFee + bitcoinFee, "CCBurnRouter: amount is too low");
 
-        uint remainingAmount = _amount - protocolFee - bitcoinFee;
+        uint remainingAmount = _amount - protocolFee;
 
         // Transfers protocol fee
         ITeleBTC(teleBTC).transfer(treasury, protocolFee);
-
-        // Transfers bitcoin fee to locker
-        ITeleBTC(teleBTC).transfer(_lockerTargetAddress, bitcoinFee);
 
         return remainingAmount;
     }

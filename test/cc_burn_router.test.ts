@@ -210,10 +210,13 @@ describe("CCBurnRouter", async () => {
         // Sets mock contracts outputs
         await setRelayLastSubmittedHeight(burnReqBlockNumber);
         await setLockersIsLocker(true);
-        let burntAmount: number;
+        let _burntAmount: number;
         let protocolFee = Math.floor(_userRequestedAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
-        burntAmount = _userRequestedAmount.toNumber() - BITCOIN_FEE - protocolFee;
-        await setLockersBurnReturn(burntAmount);
+        _burntAmount = _userRequestedAmount.toNumber() - protocolFee;
+        await setLockersBurnReturn(_burntAmount);
+        let burntAmount = _burntAmount * (_burntAmount - BITCOIN_FEE) / _burntAmount; 
+        // first burntAmount should have been
+        // burntAmount - lockerFee but in this case we have assumed lockerFee = 0
 
         await setLockersGetLockerTargetAddress();
 
@@ -310,8 +313,12 @@ describe("CCBurnRouter", async () => {
 
             // Finds amount of teleBTC that user should receive on Bitcoin
             let protocolFee = Math.floor(userRequestedAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
-            let burntAmount = userRequestedAmount.toNumber() - BITCOIN_FEE - protocolFee;
-            await setLockersBurnReturn(burntAmount);
+            let _burntAmount = userRequestedAmount.toNumber() - protocolFee;
+            await setLockersBurnReturn(_burntAmount);
+
+            let burntAmount = _burntAmount * (_burntAmount - BITCOIN_FEE) / _burntAmount; 
+            // first burntAmount should have been
+            // burntAmount - lockerFee but in this case we have assumed lockerFee = 0
 
             ;
             await setLockersGetLockerTargetAddress();
@@ -332,7 +339,7 @@ describe("CCBurnRouter", async () => {
                 USER_SCRIPT_P2PKH,
                 USER_SCRIPT_P2PKH_TYPE,
                 userRequestedAmount,
-                burntAmount,
+                burntAmount, 
                 ONE_ADDRESS,
                 LOCKER1_LOCKING_SCRIPT,
                 0,
@@ -350,11 +357,6 @@ describe("CCBurnRouter", async () => {
             expect(
                 await teleBTC.balanceOf(TREASURY)
             ).to.equal(protocolFee);
-
-            // Checks that Bitcoin fee has been sent to locker
-            expect(
-                await teleBTC.balanceOf(LOCKER_TARGET_ADDRESS)
-            ).to.equal(BITCOIN_FEE);
 
             // Gets the burn request that has been saved in the contract
             let theBurnRequest = await ccBurnRouter.burnRequests(LOCKER_TARGET_ADDRESS, 0);
