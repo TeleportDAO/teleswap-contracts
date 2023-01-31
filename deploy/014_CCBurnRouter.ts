@@ -12,7 +12,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     // TODO: un-comment the above one and remove the second one
     // let theBlockHeight = process.env.BLOCK_HEIGHT;
-    let theBlockHeight = 774416;
+    let theBlockHeight = 774425;
 
     const protocolPercentageFee = config.get("cc_burn.protocol_percentage_fee")
     const slasherPercentageReward = config.get("cc_burn.slasher_percentage_reward")
@@ -48,6 +48,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     if (network.name != "hardhat" && process.env.ETHERSCAN_API_KEY && process.env.VERIFY_OPTION == "1") {
         await verify(deployedContract.address, [
+            theBlockHeight,
             bitcoinRelay.address,
             lockersProxy.address,
             treasuryAddress,

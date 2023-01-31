@@ -91,7 +91,7 @@ const config: HardhatUserConfig = {
 			url: "https://rpc-mainnet.maticvigil.com/",
 			chainId: 137,
 			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-			gasPrice: 80000000000
+			gasPrice: 100000000000
 		},
 		mumbai: {
 			url: "https://rpc-mumbai.matic.today",
