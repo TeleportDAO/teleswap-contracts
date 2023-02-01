@@ -514,7 +514,6 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         // Finds needed collateral token to pay back loan
         (, uint requiredCollateralToken) = IExchangeConnector(defaultExchangeConnector).getInputAmount(
             modifiedPayBackAmount, // Output amount
-            // theRequest.paybackAmount, // Output amount
             theRequest.collateralToken, // Input token
             teleBTC // Output token
         );
@@ -525,7 +524,6 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
         // Gets the equivalent amount of collateral token
         uint requiredCollateralTokenFromOracle = IPriceOracle(priceOracle).equivalentOutputAmount(
             modifiedPayBackAmount, // input amount
-            // theRequest.paybackAmount, // input amount
             IERC20Metadata(teleBTC).decimals(),
             IERC20Metadata(theRequest.collateralToken).decimals(),
             teleBTC, // input token
@@ -577,11 +575,13 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
 
             // send the laon amount to the instant pool and the excess amount to the treasury
             IERC20(teleBTC).safeTransfer(teleBTCInstantPool, theRequest.paybackAmount);
-            IERC20(teleBTC).safeTransfer(treasuaryAddress, modifiedPayBackAmount - theRequest.paybackAmount);
+            if (modifiedPayBackAmount > theRequest.paybackAmount) {
+                IERC20(teleBTC).safeTransfer(treasuaryAddress, modifiedPayBackAmount - theRequest.paybackAmount);
+            }
 
             // Sends reward to slasher
             uint slasherReward = (totalCollateralToken - resultAmounts[0])
-            *slasherPercentageReward/MAX_SLASHER_PERCENTAGE_REWARD;
+                *slasherPercentageReward/MAX_SLASHER_PERCENTAGE_REWARD;
             IERC20(theRequest.collateralToken).safeTransfer(_msgSender(), slasherReward);
 
             IERC20(theRequest.collateralToken).approve(
@@ -598,7 +598,7 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
             emit SlashUser(
                 _user,
                 theRequest.collateralToken,
-                resultAmounts[0],
+                resultAmounts[0] + slasherReward, // total slashed collateral
                 modifiedPayBackAmount,
                 _msgSender(),
                 slasherReward,
