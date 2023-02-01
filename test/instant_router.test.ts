@@ -1216,7 +1216,6 @@ describe("Instant Router", async () => {
                 requiredCollateralToken, 
                 loanAmount + instantFee,
                 deployerAddress,
-                // Math.floor((totalCollateralToken-requiredCollateralToken)*slasherPercentageReward/100),
                 0,
                 0
             )
