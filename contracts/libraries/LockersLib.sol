@@ -70,7 +70,7 @@ library LockersLib {
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
         uint _collateralAmount
-    ) external  returns (uint neededTeleBTC) {
+    ) external returns (uint neededTeleBTC) {
 
         require(
             theLocker.isLocker,
@@ -87,6 +87,7 @@ library LockersLib {
             libConstants,
             libParams
         );
+
         neededTeleBTC = neededTeleBTCToBuyCollateral(
             libConstants,
             libParams,
@@ -99,6 +100,17 @@ library LockersLib {
             neededTeleBTC <= theLocker.slashingTeleBTCAmount,
             "Lockers: cant slash"
         );
+
+        if (_collateralAmount == theLocker.reservedNativeTokenForSlash) {
+            // we ensure that all the slashing TeleBTC is provided by users 
+            // handle the case that the remaining collateral is very low
+            neededTeleBTC = theLocker.slashingTeleBTCAmount;
+        } else {
+            require(
+                neededTeleBTC > 0,
+                "Lockers: buy amount is low"
+            );
+        }
 
         // Updates locker's slashing info 
         theLocker.slashingTeleBTCAmount =
@@ -161,6 +173,8 @@ library LockersLib {
             _collateralAmount,
             priceOfCollateral
         );
+
+        require(neededTeleBTC > 0, "Lockers: low collateral amount");
 
     }
 
