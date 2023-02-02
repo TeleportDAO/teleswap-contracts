@@ -24,6 +24,9 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
     // Public variables
     address public override collateralToken;
     uint public override collateralizationRatio; // Multiplied by 100
+
+    // private vars
+    uint8 private decimals_;
     
     /// @notice                          This contract is a vault for collateral token
     /// @dev                             Users deposit collateral to use TeleportDAO instant feature
@@ -32,14 +35,21 @@ contract CollateralPool is ICollateralPool, ERC20, Ownable, ReentrancyGuard {
     /// @param _symbol                   Symbol of collateral pool
     /// @param _collateralToken          Address of underlying collateral token
     /// @param _collateralizationRatio   Over-collateralization ratio of collateral token (e.g. 120 means 1.2) 
+    /// @param _decimals                  decimal of collateral pool token (same as the collateral token)
     constructor(
         string memory _name,
         string memory _symbol,
         address _collateralToken,
-        uint _collateralizationRatio
+        uint _collateralizationRatio,
+        uint8 _decimals
     ) ERC20(_name, _symbol) {
         collateralToken = _collateralToken;
         _setCollateralizationRatio(_collateralizationRatio);
+        decimals_ = _decimals;
+    }
+
+    function decimals() override public view returns (uint8) {
+        return decimals_;
     }
 
     function renounceOwnership() public virtual override onlyOwner {}

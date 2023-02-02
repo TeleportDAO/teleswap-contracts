@@ -22,8 +22,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         collateralPoolFactoryContract.address
     )
 
-    const collateralizationRatio = config.get("collateral_pool.collateralization_ratio") 
-
     const wrappedMatic = config.get("wrapped_matic") as string
     const erc20Factory = await ethers.getContractFactory("WETH")
     const erc20Instance = await erc20Factory.attach(
@@ -39,7 +37,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     if (hasCollateralPoolAddress == "0x0000000000000000000000000000000000000000") {
         const createCollateralPoolTx = await collateralPoolFactoryInstance.createCollateralPool(
             wrappedMatic,
-            collateralizationRatio
+            20000
         )
     
         await createCollateralPoolTx.wait(1)

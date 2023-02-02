@@ -19,8 +19,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         collateralPoolFactoryContract.address
     )
 
-    const collateralizationRatio = config.get("collateral_pool.collateralization_ratio") 
-
     const usdc = config.get("usdc_token") as string
 
     const hasCollateralPoolAddress = await collateralPoolFactoryInstance.getCollateralPoolByToken(
@@ -30,7 +28,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     if (hasCollateralPoolAddress == "0x0000000000000000000000000000000000000000") {
         const createCollateralPoolTx = await collateralPoolFactoryInstance.createCollateralPool(
             usdc,
-            collateralizationRatio
+            15000
         )
     
         await createCollateralPoolTx.wait(1)

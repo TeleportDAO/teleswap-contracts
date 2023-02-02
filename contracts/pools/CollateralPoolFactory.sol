@@ -65,9 +65,12 @@ contract CollateralPoolFactory is ICollateralPoolFactory, Ownable, ReentrancyGua
         CollateralPool pool;
         string memory name;
         string memory symbol;
+        uint8 decimals;
+
         name = string(abi.encodePacked(ERC20(_collateralToken).name(), "-", "Collateral-Pool"));
         symbol = string(abi.encodePacked(ERC20(_collateralToken).symbol(), "CP"));
-        pool = new CollateralPool(name, symbol, _collateralToken, _collateralizationRatio);
+        decimals = ERC20(_collateralToken).decimals();
+        pool = new CollateralPool(name, symbol, _collateralToken, _collateralizationRatio, decimals);
 
         // Transfers ownership of collateral pool to owner of this contract
         CollateralPool(address(pool)).transferOwnership(_msgSender());
