@@ -1825,7 +1825,7 @@ describe("Lockers", async () => {
 
             let teleBTCSigner2 = await teleBTC.connect(signer2);
 
-            await teleBTCSigner2.approve(lockers.address, TeleBTCAmount*95/100)
+            await teleBTCSigner2.approve(lockers.address, 1 + TeleBTCAmount*95/100) // add 1 bcz of precision loss
 
             // Someone buys slashed collateral with discount
             let lockerSigner2 = lockers.connect(signer2)
@@ -2141,7 +2141,7 @@ describe("Lockers", async () => {
 
             let teleBTCSigner2 = await teleBTC.connect(signer2);
 
-            await teleBTCSigner2.approve(lockers.address, 13300000)
+            await teleBTCSigner2.approve(lockers.address, 13300000 + 1) // add 1 bcz of precision loss
 
             let signer2NativeTokenBalanceBefore = await teleBTC.provider.getBalance(signer2Address)
 
