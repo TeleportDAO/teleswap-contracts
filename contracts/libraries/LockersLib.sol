@@ -106,10 +106,7 @@ library LockersLib {
             // handle the case that the remaining collateral is very low
             neededTeleBTC = theLocker.slashingTeleBTCAmount;
         } else {
-            require(
-                neededTeleBTC > 0,
-                "Lockers: buy amount is low"
-            );
+            neededTeleBTC = neededTeleBTC + 1; // to avoid precision loss (so buyer cannot profit bcz of that)
         }
 
         // Updates locker's slashing info 
@@ -174,7 +171,7 @@ library LockersLib {
             priceOfCollateral
         );
 
-        require(neededTeleBTC > 0, "Lockers: low collateral amount");
+        neededTeleBTC = neededTeleBTC + 1; // to prevent precision loss
 
     }
 

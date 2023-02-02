@@ -584,16 +584,18 @@ contract InstantRouter is IInstantRouter, Ownable, ReentrancyGuard, Pausable {
                 *slasherPercentageReward/MAX_SLASHER_PERCENTAGE_REWARD;
             IERC20(theRequest.collateralToken).safeTransfer(_msgSender(), slasherReward);
 
-            IERC20(theRequest.collateralToken).approve(
-                theRequest.collateralPool, 
-                totalCollateralToken - resultAmounts[0] - slasherReward
-            );
-
-            // Deposits rest of the tokens to collateral pool on behalf of the user
-            ICollateralPool(theRequest.collateralPool).addCollateral(
-                _user,
-                totalCollateralToken - resultAmounts[0] - slasherReward
-            );
+            if ((totalCollateralToken - resultAmounts[0] - slasherReward) > 0) {
+                // Deposits rest of the tokens to collateral pool on behalf of the user
+                IERC20(theRequest.collateralToken).approve(
+                    theRequest.collateralPool, 
+                    totalCollateralToken - resultAmounts[0] - slasherReward
+                );
+                
+                ICollateralPool(theRequest.collateralPool).addCollateral(
+                    _user,
+                    totalCollateralToken - resultAmounts[0] - slasherReward
+                );
+            }
 
             emit SlashUser(
                 _user,
