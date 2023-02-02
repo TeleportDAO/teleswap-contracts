@@ -48,7 +48,8 @@ describe("CollateralPool", async () => {
             "Test-Collateral-Pool",
             "TCP",
             erc20.address,
-            10000
+            10000,
+            18 // decimal
         );
 
     });

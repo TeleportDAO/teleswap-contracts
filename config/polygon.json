@@ -37,9 +37,6 @@
   "instant_pool": {
     "instant_percentage_fee": 15
   },
-  "collateral_pool": {
-    "collateralization_ratio": 15000
-  },
   "lockers_contract": {
     "minimum_native_locked_amount": "40000000000000000000000",
     "collateral_ratio": 13000,

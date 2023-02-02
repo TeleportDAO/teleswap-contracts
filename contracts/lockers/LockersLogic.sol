@@ -533,12 +533,15 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
         DataTypes.locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
 
-        // Updates net minted and TNT bond of locker
-        lockersMapping[_lockerTargetAddress].netMinted = lockersMapping[_lockerTargetAddress].netMinted - neededTeleBTC;
-        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount = lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - _collateralAmount;
+        // Updates TNT bond of locker
+        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount = 
+            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount - _collateralAmount;
+
+        // transfer teleBTC from user
+        IERC20(teleBTC).safeTransferFrom(msg.sender, address(this), neededTeleBTC);
 
         // Burns TeleBTC for locker rescue script
-        // note: user should give allowance for TeleBTC to cc burn router
+        IERC20(teleBTC).approve(ccBurnRouter, neededTeleBTC);
         ICCBurnRouter(ccBurnRouter).ccBurn(
             neededTeleBTC,
             theLiquidatingLocker.lockerRescueScript,
@@ -570,7 +573,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     function buySlashedCollateralOfLocker(
         address _lockerTargetAddress,
         uint _collateralAmount
-    ) external nonZeroAddress(_lockerTargetAddress) nonZeroValue(_collateralAmount)
+    ) external nonZeroAddress(_lockerTargetAddress)
         nonReentrant whenNotPaused override returns (bool) {
 
         uint neededTeleBTC = LockersLib.buySlashedCollateralOfLocker(

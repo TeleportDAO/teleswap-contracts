@@ -470,6 +470,9 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             "CCBurnRouter: transaction has been used as burn proof"
         );
 
+        // prevents multiple slashing of locker
+        isUsedAsBurnProof[_inputTxId] = true;        
+
         // Extracts outpoint id and index from input tx
         (bytes32 _outpointId, uint _outpointIndex) = BitcoinHelper.extractOutpoint(
             _inputVin,

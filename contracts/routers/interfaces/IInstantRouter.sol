@@ -85,7 +85,7 @@ interface IInstantRouter {
     /// @param user                     Address of user who recieves loan
     /// @param collateralToken          Address of collateral underlying token
 	/// @param slashedAmount            How much user got slashed
-	/// @param paybackAmount            Address of collateral underlying token
+	/// @param paybackAmount            Amount of teleBTC paid back to the protocol
 	/// @param slasher                  Address of slasher
 	/// @param slasherReward            Slasher reward (in collateral token)
     event SlashUser(
