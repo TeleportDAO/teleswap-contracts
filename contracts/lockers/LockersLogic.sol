@@ -570,7 +570,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     function buySlashedCollateralOfLocker(
         address _lockerTargetAddress,
         uint _collateralAmount
-    ) external nonZeroAddress(_lockerTargetAddress) nonZeroValue(_collateralAmount)
+    ) external nonZeroAddress(_lockerTargetAddress)
         nonReentrant whenNotPaused override returns (bool) {
 
         uint neededTeleBTC = LockersLib.buySlashedCollateralOfLocker(
