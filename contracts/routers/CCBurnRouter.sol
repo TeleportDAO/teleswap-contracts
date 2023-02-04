@@ -434,6 +434,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         bytes memory _inputIntermediateNodes,
         uint[] memory _indexesAndBlockNumbers // [inputIndex, inputTxIndex, inputTxBlockNumber]
     ) external payable nonReentrant override returns (bool) {
+
         // Checks input array sizes
         require(
             _versions.length == 2 &&
@@ -441,6 +442,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             _indexesAndBlockNumbers.length == 3,
             "CCBurnRouter: wrong inputs"
         );
+
+        require(_indexesAndBlockNumbers[2] >=  startingBlockNumber, "CCBurnRouter: request is too old");
 
         // Checks if the locking script is valid
         require(

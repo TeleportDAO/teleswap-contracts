@@ -12,7 +12,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     // TODO: un-comment the above one and remove the second one
     // let theBlockHeight = process.env.BLOCK_HEIGHT;
-    let theBlockHeight = 774425;
+    let theBlockHeight = 774959;
 
     const protocolPercentageFee = config.get("cc_burn.protocol_percentage_fee")
     const slasherPercentageReward = config.get("cc_burn.slasher_percentage_reward")
