@@ -95,15 +95,11 @@ library LockersLib {
             priceOfCollateral
         );
 
-        // Users cannot buy more than total slashed TeleBTC
-        require(
-            neededTeleBTC <= theLocker.slashingTeleBTCAmount,
-            "Lockers: cant slash"
-        );
-
-        if (_collateralAmount == theLocker.reservedNativeTokenForSlash) {
+        if (
+            _collateralAmount == theLocker.reservedNativeTokenForSlash || 
+                neededTeleBTC >= theLocker.slashingTeleBTCAmount // Users cannot buy more than total slashed TeleBTC
+        ) {
             // we ensure that all the slashing TeleBTC is provided by users 
-            // handle the case that the remaining collateral is very low
             neededTeleBTC = theLocker.slashingTeleBTCAmount;
         } else {
             neededTeleBTC = neededTeleBTC + 1; // to avoid precision loss (so buyer cannot profit bcz of that)

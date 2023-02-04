@@ -1768,7 +1768,7 @@ describe("Lockers", async () => {
                     signer1Address,
                     BigNumber.from(10).pow(18).mul(1)
                 )
-            ).to.be.revertedWith("Lockers: cant slash")
+            ).to.be.reverted;
 
         })
 
