@@ -794,15 +794,17 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     function getLockerCapacity(
         address _lockerTargetAddress
     ) public override view nonZeroAddress(_lockerTargetAddress) returns (uint) {
-        
-        return ((
-            LockersLib.lockerCollateralInTeleBTC(
-                lockersMapping[_lockerTargetAddress],
-                libConstants,
-                libParams
-            )*ONE_HUNDRED_PERCENT/collateralRatio) - 
-            lockersMapping[_lockerTargetAddress].netMinted
-        );
+        uint _lockerCollateralInTeleBTC = LockersLib.lockerCollateralInTeleBTC(
+            lockersMapping[_lockerTargetAddress],
+            libConstants,
+            libParams
+        )*ONE_HUNDRED_PERCENT/collateralRatio;
+
+        if (_lockerCollateralInTeleBTC > lockersMapping[_lockerTargetAddress].netMinted) {
+            return _lockerCollateralInTeleBTC - lockersMapping[_lockerTargetAddress].netMinted;
+        } else {
+            return 0;
+        }
     }
 
     /**
