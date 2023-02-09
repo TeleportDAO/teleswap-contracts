@@ -63,8 +63,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             await addMinterTeleBTCTx.wait(1)
         }
 
-        const mintTeleBTCTx = await teleBTCInstance.mint(deployer, one8Dec.div(2))
-        await mintTeleBTCTx.wait(1)
+        if ((await teleBTCInstance.totalSupply()) == 0) {
+            const mintTeleBTCTx = await teleBTCInstance.mint(deployer, one8Dec.div(2))
+            await mintTeleBTCTx.wait(1)
+        }
 
         const approveTeleBTCTx = await teleBTCInstance.approve(
             uniswapRouter,
@@ -75,13 +77,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         const addLiquidityPairTx = await uniswapRouterInstance.addLiquidityETH(
             teleBTC.address,
-            one8Dec.div(2300),
-            one8Dec.div(2500),
-            one18Dec.div(12),
+            (one8Dec.div(1800)).toString(),
+            0,
+            0,
             deployer,
             unixTimeNow,
             {
-                value: one18Dec.mul(10)
+                value: (one18Dec.mul(10)).toString()
             }
         )
 
@@ -93,4 +95,3 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-// func.tags = ["PriceOracle", "BitcoinTestnet"];

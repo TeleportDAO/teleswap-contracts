@@ -10,7 +10,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployer } = await getNamedAccounts();
 
     logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set teleBTC in Locker...")
+    logger.color('blue').bold().log("Set CCBurnRouter in Locker...")
 
     const one = BigNumber.from(10).pow(18).mul(1)
 

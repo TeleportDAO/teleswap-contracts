@@ -11,12 +11,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const slasherPercentageReward = config.get("instant_router.slasher_percentage_reward");
     const paybackDeadline = config.get("instant_router.payback_deadline");
     const maxPriceDifferencePercent = config.get("instant_router.max_price_difference_percent");
+    const bitcoin_network = config.get("bitcoin_network")
 
     // TODO: update treasury address for main net
     const treasuryAddress = config.get("treasury")
 
     const teleBTC = await deployments.get("TeleBTC")
-    const bitcoinRelay = await deployments.get("BitcoinRelay")
+    let bitcoinRelay;
+    if (bitcoin_network == 'mainnet') {
+        bitcoinRelay = await deployments.get("BitcoinRelay")
+    } else {
+        bitcoinRelay = await deployments.get("BitcoinRelayTestnet")
+    }
     const priceOracle = await deployments.get("PriceOracle")
     const collateralPoolFactory = await deployments.get("CollateralPoolFactory")
     const defaultExchangeConnector = await deployments.get("UniswapV2Connector")
