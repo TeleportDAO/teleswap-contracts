@@ -31,6 +31,7 @@
 		"hardhat-deploy": "^0.11.10",
 		"hardhat-deploy-tenderly": "^0.1.1",
 		"hardhat-gas-reporter": "^1.0.8",
+		"husky": "^8.0.3",
 		"prettier": "^2.6.2",
 		"prettier-plugin-solidity": "^1.0.0-beta.19",
 		"solhint": "^3.3.7",
@@ -89,5 +90,11 @@
 		"add_chainlink_to_price_oracle:mumbai": "NODE_ENV=mumbai hardhat deploy --network mumbai --export export/abi/mumbai.json --deploy-scripts scripts/add-price-proxy-to-oracle",
 		"test": "hardhat test",
 		"lint": "commitlint --from=HEAD"
+	},
+	"husky": {
+		"hooks": {
+			"pre-commit": "commitlint -E HUSKY_GIT_PARAMS"
+		}
 	}
+	  
 }
