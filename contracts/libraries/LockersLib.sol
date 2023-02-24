@@ -82,27 +82,11 @@ library LockersLib {
             "Lockers: not enough slashed collateral to buy"
         );
 
-        // Finds needed amount of TeleBTC to buy collateral with discount
-        uint priceOfCollateral = priceOfOneUnitOfCollateralInBTC(
-            libConstants,
-            libParams
-        );
+        neededTeleBTC = theLocker.slashingTeleBTCAmount * _collateralAmount / theLocker.reservedNativeTokenForSlash;
 
-        neededTeleBTC = neededTeleBTCToBuyCollateral(
-            libConstants,
-            libParams,
-            _collateralAmount,
-            priceOfCollateral
-        );
-
-        if (
-            _collateralAmount == theLocker.reservedNativeTokenForSlash || 
-                neededTeleBTC >= theLocker.slashingTeleBTCAmount // Users cannot buy more than total slashed TeleBTC
-        ) {
-            // we ensure that all the slashing TeleBTC is provided by users 
-            neededTeleBTC = theLocker.slashingTeleBTCAmount;
-        } else {
-            neededTeleBTC = neededTeleBTC + 1; // to avoid precision loss (so buyer cannot profit bcz of that)
+        if (neededTeleBTC < theLocker.slashingTeleBTCAmount) {
+            // to avoid precision loss (so buyer cannot profit of it)
+            neededTeleBTC = neededTeleBTC + 1;
         }
 
         // Updates locker's slashing info 

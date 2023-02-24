@@ -207,11 +207,10 @@ describe("PriceOracle", async () => {
         });
 
         it("Removes an exchange router", async function () {
-            // since in the previous tests it's added, now it should be commented
-            // await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
+            await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
             await priceOracle.addExchangeConnector(TWO_ADDRESS, mockExchangeConnector.address);
 
-            await expect(
+            expect(
                 await priceOracle.removeExchangeConnector(0)
             ).to.emit(priceOracle, "ExchangeConnectorRemoved").withArgs(
                 deployerAddress
