@@ -210,7 +210,7 @@ describe("PriceOracle", async () => {
             await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
             await priceOracle.addExchangeConnector(TWO_ADDRESS, mockExchangeConnector.address);
 
-            await expect(
+            expect(
                 await priceOracle.removeExchangeConnector(0)
             ).to.emit(priceOracle, "ExchangeConnectorRemoved").withArgs(
                 deployerAddress

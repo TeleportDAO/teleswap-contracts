@@ -72,6 +72,7 @@
 	"scripts": {
 		"build": "hardhat compile && tsc",
 		"clean": "rimraf artifacts && rimraf cache && rimraf deployments/localhost && rimraf src/types/*",
+		"prepare": "husky install",
 		"deploy:local": "hardhat deploy --network hardhat --tags BitcoinMainnet --export export/abi/local.json",
 		"deploy:bsc_testnet": "hardhat deploy --network bsc_testnet --export export/abi/bsc_testnet.json",
 		"deploy:polygon": "NODE_ENV=polygon hardhat deploy --network polygon --export export/abi/polygon.json",
@@ -88,6 +89,7 @@
 		"global_variables_settlement:mumbai": "NODE_ENV=mumbai hardhat deploy --network mumbai --export export/abi/mumbai.json --deploy-scripts scripts/set-global-variables",
 		"collateral_pool_scripts:mumbai": "NODE_ENV=mumbai hardhat deploy --network mumbai --export export/abi/mumbai.json --deploy-scripts scripts/collateralPool-script",
 		"add_chainlink_to_price_oracle:mumbai": "NODE_ENV=mumbai hardhat deploy --network mumbai --export export/abi/mumbai.json --deploy-scripts scripts/add-price-proxy-to-oracle",
-		"test": "hardhat test"
+		"test": "hardhat test",
+		"lint": "commitlint --from=HEAD"
 	}
 }

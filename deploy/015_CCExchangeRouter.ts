@@ -17,11 +17,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const protocolPercentageFee = config.get("cc_exchange.protocol_percentage_fee")
     const chainID = config.get("chain_id")
+    const bitcoin_network = config.get("bitcoin_network")
 
     // TODO: update treasury address for main net
     const treasuryAddress = config.get("treasury")
 
-    const bitcoinRelay = await deployments.get("BitcoinRelay")
+    let bitcoinRelay;
+    if (bitcoin_network == 'mainnet') {
+        bitcoinRelay = await deployments.get("BitcoinRelay")
+    } else {
+        bitcoinRelay = await deployments.get("BitcoinRelayTestnet")
+    }
     const lockersProxy = await deployments.get("LockersProxy")
     const teleBTC = await deployments.get("TeleBTC")
 

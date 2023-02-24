@@ -5,7 +5,7 @@
   "wrapped_matic": "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889",
   "usdt_token": "0xA02f6adc7926efeBBd59Fd43A84f4E0c0c91e832",
   "usdc_token": "0xE097d6B3100777DC31B34dC2c58fB524C2e76921",
-  "acceptable_delay": 900,
+  "acceptable_delay": 7200,
   "chain_id": 137,
   "fee_to_setter": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
   "treasury": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
@@ -38,7 +38,7 @@
     "instant_percentage_fee": 15
   },
   "lockers_contract": {
-    "minimum_native_locked_amount": "6",
+    "minimum_native_locked_amount": "1",
     "collateral_ratio": 13000,
     "liquidation_ratio": 10500,
     "locker_percentage_fee": 15,

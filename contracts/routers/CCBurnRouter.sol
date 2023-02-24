@@ -721,7 +721,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         // Calculates protocol fee
         uint protocolFee = _amount*protocolPercentageFee/MAX_PROTOCOL_FEE;
 
-        // note: to avoid bitcoin dust amount, we require _amount to be greater than (2  * bitcoinFee)
+        // note: to avoid bitcoin g amount, we require _amount to be greater than (2  * bitcoinFee)
         require(_amount > protocolFee + 2*bitcoinFee, "CCBurnRouter: amount is too low");
 
         uint remainingAmount = _amount - protocolFee;

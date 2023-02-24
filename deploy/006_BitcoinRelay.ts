@@ -53,17 +53,33 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     var blockHeight = "BLOCK_HEIGHT=" + height + "\n";
     fs.appendFileSync(tempFilePath, blockHeight);
 
-    const deployedContract = await deploy("BitcoinRelay", {
-        from: deployer,
-        log: true,
-        skipIfAlreadyDeployed: true,
-        args: [
-            '0x' + genesisHeader,
-            height,
-            '0x' + periodStart,
-            tdtToken.address
-        ],
-    });
+    let deployedContract;
+
+    if (bitcoinNetwork == "mainnet") {
+        deployedContract = await deploy("BitcoinRelay", {
+            from: deployer,
+            log: true,
+            skipIfAlreadyDeployed: true,
+            args: [
+                '0x' + genesisHeader,
+                height,
+                '0x' + periodStart,
+                tdtToken.address
+            ],
+        });
+    } else {
+        deployedContract = await deploy("BitcoinRelayTestnet", {
+            from: deployer,
+            log: true,
+            skipIfAlreadyDeployed: true,
+            args: [
+                '0x' + genesisHeader,
+                height,
+                '0x' + periodStart,
+                tdtToken.address
+            ],
+        });
+    }
 
     if (network.name != "hardhat" && process.env.ETHERSCAN_API_KEY && process.env.VERIFY_OPTION == "1") {
 
@@ -76,12 +92,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         let periodStart = await bitcoinRESTAPI.getHexBlockHash(periodStartHeight);
         periodStart = Buffer.from(periodStart , 'hex').reverse().toString('hex');
 
-        await verify(deployedContract.address, [
-            '0x' + genesisHeader,
-            height,
-            '0x' + periodStart,
-            tdtToken.address
-        ], "contracts/relay/BitcoinRelay.sol:BitcoinRelay")
+        if (bitcoinNetwork == "mainnet") {
+            await verify(deployedContract.address, [
+                '0x' + genesisHeader,
+                height,
+                '0x' + periodStart,
+                tdtToken.address
+            ], "contracts/relay/BitcoinRelay.sol:BitcoinRelay")
+        } else {
+            await verify(deployedContract.address, [
+                '0x' + genesisHeader,
+                height,
+                '0x' + periodStart,
+                tdtToken.address
+            ], "contracts/relay/BitcoinRelayTestnet.sol:BitcoinRelayTestnet")
+        }
+        
     }
 };
 
