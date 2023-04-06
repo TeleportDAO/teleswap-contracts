@@ -8,7 +8,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts, network} = hre;
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
-    let tx
+    let tx;
     
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Set relay globally...")
@@ -33,8 +33,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     } else {
         console.log("relay is already settled in CCtransfer router")
     }
-    
-
 
     // set relay in cc burn router
     const ccBurnRouter = await deployments.get("CCBurnRouter")
@@ -55,8 +53,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("relay is already settled in CCburn router")
     }
 
-    
-
     // set relay in cc exchange router
     const ccExchangeRouter = await deployments.get("CCExchangeRouter")
     const ccExchangeRouterFactory = await ethers.getContractFactory("CCExchangeRouter")
@@ -75,8 +71,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     } else {
         console.log("relay is already settled in CCexchange router: ")
     }
-
-    
 
     // set relay in instant router
     const instantRouter = await deployments.get("InstantRouter")
@@ -97,8 +91,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("relay is already settled in instant router")
     }
 
-
 };
 
 export default func;
-// func.tags = ["PriceOracle", "BitcoinTestnet"];

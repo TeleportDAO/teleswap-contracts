@@ -22,12 +22,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const ccExchangeRouterInstance = await ccExchangeRouterFactory.attach(
         ccExchangeRouter.address
     );
-
-    const setInstantRouterTx = await ccExchangeRouterInstance.setInstantRouter(
-        instantRouter.address
-    )
-    await setInstantRouterTx.wait(1)
-    console.log("set instant router in CC exchange: ", setInstantRouterTx.hash)
+    
+    const _instantRouter = await ccExchangeRouterInstance.instantRouter();
+    if (_instantRouter != instantRouter.address) {
+        const setInstantRouterTx = await ccExchangeRouterInstance.setInstantRouter(
+            instantRouter.address
+        )
+        await setInstantRouterTx.wait(1)
+        console.log("set instant router in CC exchange: ", setInstantRouterTx.hash)
+    } else {
+        console.log("instant router is already settled in exchange router")
+    }
 
     const exchangeAppId = config.get("cc_exchange.app_id")
 

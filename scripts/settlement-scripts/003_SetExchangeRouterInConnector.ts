@@ -21,12 +21,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         uniswapConnector.address
     );
 
-    const setExchangeRouterTx = await uniswapConnectorInstance.setExchangeRouter(
-        uniswapRouter
-    )
-    await setExchangeRouterTx.wait(1)
-    console.log("set exchange router in connector: ", setExchangeRouterTx.hash)
-
+    const _exchangeRouter = await uniswapConnectorInstance.exchangeRouter();
+    if (uniswapRouter != _exchangeRouter) {
+        const setExchangeRouterTx = await uniswapConnectorInstance.setExchangeRouter(
+            uniswapRouter
+        )
+        await setExchangeRouterTx.wait(1)
+        console.log("set exchange router in connector: ", setExchangeRouterTx.hash)
+    } else {
+        console.log("exchange router is already settled in exchange connector")
+    }
 
 };
 
