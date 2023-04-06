@@ -597,7 +597,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         bool _isFixedToken,
         address[] calldata _path,
         uint256 _deadline
-    ) internal nonReentrant returns (uint) {
+    ) private returns (uint) {
         require(_path[_path.length - 1] == teleBTC, "CCBurnRouter: invalid path");
         require(_amounts.length == 2, "CCBurnRouter: wrong amounts");
 

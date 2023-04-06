@@ -3,12 +3,14 @@ require('dotenv').config({path:"../../.env"});
 
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
-import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
+import { Signer, BigNumber } from "ethers";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
 import { Address } from "hardhat-deploy/types";
 
 import { TeleBTC } from "../src/types/TeleBTC";
 import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
+import { ERC20 } from "../src/types/ERC20";
+import { ERC20AsDot__factory } from "../src/types/factories/ERC20AsDot__factory";
 import { RelayHelper } from "../src/types/RelayHelper";
 import { RelayHelper__factory } from "../src/types/factories/RelayHelper__factory";
 import { CCBurnRouter } from "../src/types/CCBurnRouter";
@@ -29,6 +31,8 @@ describe("CCBurnRouter", async () => {
 
     // Contracts
     let teleBTC: TeleBTC;
+    let inputToken: ERC20;
+    let inputTokenSigner1: ERC20;
     let TeleBTCSigner1: TeleBTC;
     let relayHelper: RelayHelper;
     let ccBurnRouter: CCBurnRouter;
@@ -38,6 +42,7 @@ describe("CCBurnRouter", async () => {
     // Mock contracts
     let mockBitcoinRelay: MockContract;
     let mockLockers: MockContract;
+    let mockExchangeConnector: MockContract;
 
     // Constants
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -87,12 +92,29 @@ describe("CCBurnRouter", async () => {
             lockers.abi
         )
 
+        const exchangeConnector = await deployments.getArtifact(
+            "UniswapV2Connector"
+        );
+        mockExchangeConnector = await deployMockContract(
+            deployer,
+            exchangeConnector.abi
+        )
+
         // mock finalization parameter
         await mockBitcoinRelay.mock.finalizationParameter.returns(5);
 
         // Deploys contracts
         teleBTC = await deployTeleBTC();
         ccBurnRouter = await deployCCBurnRouter();
+
+        // Deploys input token
+        const erc20Factory = new ERC20AsDot__factory(deployer);
+        inputToken = await erc20Factory.deploy(
+            "TestToken",
+            "TT",
+            100000
+        );
+        inputTokenSigner1 = await inputToken.connect(signer1);
 
         // Mints TeleBTC for user
         await teleBTC.addMinter(signer1Address)
@@ -102,8 +124,6 @@ describe("CCBurnRouter", async () => {
         await moveBlocks(2020)
 
         await TeleBTCSigner1.mint(signer1Address, oneHundred);
-
-        
 
         // Connects signer1 and signer2 to ccBurnRouter
         ccBurnRouterSigner1 = await ccBurnRouter.connect(signer1);
@@ -209,6 +229,11 @@ describe("CCBurnRouter", async () => {
         await mockBitcoinRelay.mock.getBlockHeaderFee.returns(relayFee || 0); // Fee of relay
         await mockBitcoinRelay.mock.checkTxProof
             .returns(isFinal);
+    }
+
+    async function setSwap(result: boolean, amounts: number[]): Promise<void> {
+        await mockExchangeConnector.mock.swap
+            .returns(result, amounts);
     }
 
     async function mintTeleBTCForTest(): Promise<void> {
@@ -455,6 +480,161 @@ describe("CCBurnRouter", async () => {
                     LOCKER1_LOCKING_SCRIPT
                 )
             ).to.revertedWith("CCBurnRouter: not locker")
+        })
+
+    });
+
+    describe("#ccExchangeAndBurn", async () => {
+
+        let inputTokenAmount = 100;
+        let lastSubmittedHeight = 100;
+        let protocolFee = Math.floor(userRequestedAmount.toNumber() * PROTOCOL_PERCENTAGE_FEE / 10000);
+        let _burntAmount = userRequestedAmount.toNumber() - protocolFee;
+        let burntAmount = _burntAmount * (_burntAmount - BITCOIN_FEE) / _burntAmount; 
+        // ^ burntAmount should be (burntAmount - lockerFee) but here we assumed lockerFee = 0
+
+        beforeEach(async () => {
+            // Sends teleBTC to ccBurnRouter (since we mock swap)
+            await TeleBTCSigner1.transfer(
+                ccBurnRouter.address,
+                userRequestedAmount
+            );
+
+            // Sends some inputToken to signer1 then he gives allowance to ccBurnRouter
+            await inputToken.transfer(
+                signer1Address,
+                inputTokenAmount
+            );
+            await inputTokenSigner1.approve(
+                ccBurnRouter.address,
+                inputTokenAmount
+            );
+
+            // Sets mock contracts outputs
+            await setRelayLastSubmittedHeight(lastSubmittedHeight);
+            await setLockersIsLocker(true);
+            await setLockersGetLockerTargetAddress();
+            await setLockersBurnReturn(_burntAmount); // Sets amount of teleBTC that user receives on Bitcoin
+
+            snapshotId = await takeSnapshot(signer1.provider);
+        });
+
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("Exchanges input token for teleBTC then burns it", async function () {
+
+            let prevBalanceSigner1 = await inputToken.balanceOf(signer1Address);
+
+            await setSwap(true, [inputTokenAmount, userRequestedAmount.toNumber()])
+
+            // Exchanges input token then burns teleBTC
+            expect(
+                await ccBurnRouterSigner1.ccExchangeAndBurn(
+                    mockExchangeConnector.address,
+                    [inputTokenAmount, userRequestedAmount],
+                    false, // output token amount is fixed
+                    [inputToken.address, teleBTC.address], // exchange path
+                    10000000000, // deadline
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
+                    LOCKER1_LOCKING_SCRIPT
+                )
+            ).to.emit(ccBurnRouter, "CCBurn").withArgs(
+                signer1Address,
+                USER_SCRIPT_P2PKH,
+                USER_SCRIPT_P2PKH_TYPE,
+                inputTokenAmount,
+                inputToken.address,
+                userRequestedAmount,
+                burntAmount, 
+                ONE_ADDRESS,
+                0,
+                lastSubmittedHeight + TRANSFER_DEADLINE
+            );
+
+            let newBalanceSigner1 = await inputToken.balanceOf(signer1Address);
+
+            // Checks user's balance
+            expect(
+                await newBalanceSigner1
+            ).to.equal(prevBalanceSigner1.sub(inputTokenAmount));
+
+            // Checks that protocol fee has been received
+            expect(
+                await teleBTC.balanceOf(TREASURY)
+            ).to.equal(protocolFee);
+
+            // Gets the burn request that has been saved in the contract
+            let theBurnRequest = await ccBurnRouter.burnRequests(LOCKER_TARGET_ADDRESS, 0);
+
+            expect(
+                theBurnRequest.burntAmount
+            ).to.equal(burntAmount);
+
+        })
+
+        it("Reverts since exchange path is invalid", async function () {
+            await expect(
+                ccBurnRouterSigner1.ccExchangeAndBurn(
+                    mockExchangeConnector.address,
+                    [inputTokenAmount, userRequestedAmount],
+                    false, // output token amount is fixed
+                    [inputToken.address, inputToken.address], // exchange path
+                    10000000000, // deadline
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
+                    LOCKER1_LOCKING_SCRIPT
+                )
+            ).to.revertedWith("CCBurnRouter: invalid path");
+        })
+
+        it("Reverts since amounts is wrong", async function () {
+            await expect(
+                ccBurnRouterSigner1.ccExchangeAndBurn(
+                    mockExchangeConnector.address,
+                    [inputTokenAmount, userRequestedAmount, userRequestedAmount],
+                    false, // output token amount is fixed
+                    [inputToken.address, teleBTC.address], // exchange path
+                    10000000000, // deadline
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
+                    LOCKER1_LOCKING_SCRIPT
+                )
+            ).to.revertedWith("CCBurnRouter: wrong amounts");
+        })
+
+        it("Reverts since exchange failed", async function () {
+            await setSwap(false, [inputTokenAmount, userRequestedAmount.toNumber()])
+            await expect(
+                ccBurnRouterSigner1.ccExchangeAndBurn(
+                    mockExchangeConnector.address,
+                    [inputTokenAmount, userRequestedAmount],
+                    false, // output token amount is fixed
+                    [inputToken.address, teleBTC.address], // exchange path
+                    10000000000, // deadline
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
+                    LOCKER1_LOCKING_SCRIPT
+                )
+            ).to.revertedWith("CCBurnRouter: exchange failed");
+        })
+
+        it("Reverts since exchanged teleBTC is low", async function () {
+            await setSwap(true, [inputTokenAmount, 2 * BITCOIN_FEE - 1])
+            await expect(
+                ccBurnRouterSigner1.ccExchangeAndBurn(
+                    mockExchangeConnector.address,
+                    [inputTokenAmount, userRequestedAmount],
+                    false, // output token amount is fixed
+                    [inputToken.address, teleBTC.address], // exchange path
+                    10000000000, // deadline
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
+                    LOCKER1_LOCKING_SCRIPT
+                )
+            ).to.revertedWith("CCBurnRouter: low amount");
         })
 
     });
