@@ -33,7 +33,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const lockersProxy = await deployments.get("LockersProxy")
     const teleBTC = await deployments.get("TeleBTC")
 
-
+    const relayHelper = await deploy("RelayHelper", {
+        from: deployer,
+        log: true,
+        skipIfAlreadyDeployed: true,
+    })
 
     const deployedContract = await deploy("CCBurnRouter", {
         from: deployer,
@@ -50,6 +54,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             slasherPercentageReward,
             bitcoinFee
         ],
+        libraries: {
+            "RelayHelper": relayHelper.address
+        },
     });
 
     if (network.name != "hardhat" && process.env.ETHERSCAN_API_KEY && process.env.VERIFY_OPTION == "1") {

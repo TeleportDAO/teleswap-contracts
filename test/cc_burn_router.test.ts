@@ -7,10 +7,12 @@ import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
 import { Address } from "hardhat-deploy/types";
 
-import {TeleBTC} from "../src/types/TeleBTC";
-import {TeleBTC__factory} from "../src/types/factories/TeleBTC__factory";
-import {CCBurnRouter} from "../src/types/CCBurnRouter";
-import {CCBurnRouter__factory} from "../src/types/factories/CCBurnRouter__factory";
+import { TeleBTC } from "../src/types/TeleBTC";
+import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
+import { RelayHelper } from "../src/types/RelayHelper";
+import { RelayHelper__factory } from "../src/types/factories/RelayHelper__factory";
+import { CCBurnRouter } from "../src/types/CCBurnRouter";
+import { CCBurnRouter__factory, CCBurnRouterLibraryAddresses } from "../src/types/factories/CCBurnRouter__factory";
 
 import { takeSnapshot, revertProvider } from "./block_utils";
 import { network } from "hardhat"
@@ -28,6 +30,7 @@ describe("CCBurnRouter", async () => {
     // Contracts
     let teleBTC: TeleBTC;
     let TeleBTCSigner1: TeleBTC;
+    let relayHelper: RelayHelper;
     let ccBurnRouter: CCBurnRouter;
     let ccBurnRouterSigner1: CCBurnRouter;
     let ccBurnRouterSigner2: CCBurnRouter;
@@ -53,9 +56,6 @@ describe("CCBurnRouter", async () => {
 
     let LOCKER_TARGET_ADDRESS = ONE_ADDRESS;
     let LOCKER1_LOCKING_SCRIPT = '0x76a914748284390f9e263a4b766a75d0633c50426eb87587ac';
-
-    let btcPublicKey = "03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd"
-    let btcAddress = "mmPPsxXdtqgHFrxZdtFCtkwhHynGTiTsVh"
 
     let USER_SCRIPT_P2PKH = "0x12ab8dc588ca9d5787dde7eb29569da63c3a238c";
     let USER_SCRIPT_P2PKH_TYPE = 1; // P2PKH
@@ -134,10 +134,30 @@ describe("CCBurnRouter", async () => {
         return teleBTC;
     };
 
+    const deployRelayHelper = async (
+        _signer?: Signer
+    ): Promise<RelayHelper> => {
+        const RelayHelperFactory = new RelayHelper__factory(
+            _signer || deployer
+        );
+
+        const relayHelper = await RelayHelperFactory.deploy(
+        );
+
+        return relayHelper;
+    };
+
     const deployCCBurnRouter = async (
         _signer?: Signer
     ): Promise<CCBurnRouter> => {
+        relayHelper = await deployRelayHelper()
+        let linkLibraryAddresses: CCBurnRouterLibraryAddresses;
+        linkLibraryAddresses = {
+            "contracts/libraries/RelayHelper.sol:RelayHelper": relayHelper.address,
+        };
+
         const ccBurnRouterFactory = new CCBurnRouter__factory(
+            linkLibraryAddresses,
             _signer || deployer
         );
 
@@ -265,6 +285,11 @@ describe("CCBurnRouter", async () => {
     describe("#ccBurn", async () => {
 
         beforeEach(async () => {
+            // Gives allowance to ccBurnRouter to burn tokens
+            await TeleBTCSigner1.approve(
+                ccBurnRouter.address,
+                userRequestedAmount
+            );
             snapshotId = await takeSnapshot(signer1.provider);
 
         });
@@ -284,7 +309,7 @@ describe("CCBurnRouter", async () => {
                     USER_SCRIPT_P2PKH_TYPE,
                     LOCKER1_LOCKING_SCRIPT
                 )
-            ).to.revertedWith("CCBurnRouter: invalid user script")
+            ).to.revertedWith("CCBurnRouter: invalid script")
 
             await expect(
                 ccBurnRouterSigner1.ccBurn(
@@ -293,8 +318,7 @@ describe("CCBurnRouter", async () => {
                     4,
                     LOCKER1_LOCKING_SCRIPT
                 )
-            ).to.revertedWith("CCBurnRouter: invalid user script")
-
+            ).to.revertedWith("CCBurnRouter: invalid script")
 
         })
         
@@ -339,10 +363,11 @@ describe("CCBurnRouter", async () => {
                 signer1Address,
                 USER_SCRIPT_P2PKH,
                 USER_SCRIPT_P2PKH_TYPE,
+                0,
+                ZERO_ADDRESS,
                 userRequestedAmount,
                 burntAmount, 
                 ONE_ADDRESS,
-                LOCKER1_LOCKING_SCRIPT,
                 0,
                 lastSubmittedHeight + TRANSFER_DEADLINE
             );
@@ -368,18 +393,6 @@ describe("CCBurnRouter", async () => {
 
         })
 
-        it("Reverts since user requested amount is zero", async function () {
-
-            await expect(
-                ccBurnRouterSigner1.ccBurn(
-                    0,
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER1_LOCKING_SCRIPT
-                )
-            ).to.revertedWith("CCBurnRouter: value is zero")
-        })
-
         it("Reverts since requested amount doesn't cover Bitcoin fee", async function () {
             let lastSubmittedHeight = 100;
 
@@ -403,7 +416,7 @@ describe("CCBurnRouter", async () => {
                     USER_SCRIPT_P2PKH_TYPE,
                     LOCKER1_LOCKING_SCRIPT
                 )
-            ).to.revertedWith("CCBurnRouter: amount is too low");
+            ).to.revertedWith("CCBurnRouter: low amount");
 
         })
 
@@ -413,6 +426,12 @@ describe("CCBurnRouter", async () => {
             await setLockersIsLocker(true);
 
             await setLockersGetLockerTargetAddress();
+
+            // Gives allowance to ccBurnRouter to burn tokens
+            await TeleBTCSigner1.approve(
+                ccBurnRouter.address,
+                0
+            );
 
             await expect(
                 ccBurnRouterSigner1.ccBurn(
@@ -435,7 +454,7 @@ describe("CCBurnRouter", async () => {
                     USER_SCRIPT_P2PKH_TYPE,
                     LOCKER1_LOCKING_SCRIPT
                 )
-            ).to.revertedWith("CCBurnRouter: given locking script is not locker")
+            ).to.revertedWith("CCBurnRouter: not locker")
         })
 
     });
@@ -631,7 +650,7 @@ describe("CCBurnRouter", async () => {
                     [0],
                     [0]
                 )
-            ).to.revertedWith("CCBurnRouter: given locking script is not locker")
+            ).to.revertedWith("CCBurnRouter: not locker")
         })
 
         it("Reverts if given indexes doesn't match", async function () {
@@ -693,7 +712,7 @@ describe("CCBurnRouter", async () => {
                     [0],
                     [0]
                 )
-            ).to.revertedWith("CCBurnRouter: relay fee is not sufficient");
+            ).to.revertedWith("BitcoinRelay: low fee");
         })
 
         it("Reverts if locker's tx has not been finalized on relay", async function () {
@@ -715,7 +734,7 @@ describe("CCBurnRouter", async () => {
                     [0],
                     [0]
                 )
-            ).to.revertedWith("CCBurnRouter: transaction has not finalized yet");
+            ).to.revertedWith("CCBurnRouter: not finalized");
         })
 
         it("Reverts if vout is null", async function () {
@@ -923,7 +942,7 @@ describe("CCBurnRouter", async () => {
                     LOCKER_TARGET_ADDRESS,
                     [0]
                 )
-            ).to.revertedWith("CCBurnRouter: request has been paid before")
+            ).to.revertedWith("CCBurnRouter: already paid")
         })
 
         it("Reverts since locking script is invalid", async function () {
@@ -936,7 +955,7 @@ describe("CCBurnRouter", async () => {
                     LOCKER_TARGET_ADDRESS,
                     [0]
                 )
-            ).to.revertedWith("CCBurnRouter: given locking script is not locker")
+            ).to.revertedWith("CCBurnRouter: not locker")
         })
 
         it("Reverts since locker has paid before hand", async function () {
@@ -953,7 +972,7 @@ describe("CCBurnRouter", async () => {
                     LOCKER_TARGET_ADDRESS,
                     [0]
                 )
-            ).to.revertedWith("CCBurnRouter: request has been paid before")
+            ).to.revertedWith("CCBurnRouter: already paid")
         })
 
         it("Reverts since deadline hasn't reached", async function () {
@@ -967,7 +986,7 @@ describe("CCBurnRouter", async () => {
                     LOCKER_TARGET_ADDRESS,
                     [0]
                 )
-            ).to.revertedWith("CCBurnRouter: payback deadline has not passed yet")
+            ).to.revertedWith("CCBurnRouter: deadline not passed")
         })
 
     });
@@ -1076,7 +1095,7 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.disputeLocker_input.intermediateNodes,
                     [0, 1, burnReqBlockNumber]
                 )
-            ).to.revertedWith("CCBurnRouter: given locking script is not locker");
+            ).to.revertedWith("CCBurnRouter: not locker");
         })
 
         it("Reverts since input tx has not finalized", async function () {
@@ -1097,7 +1116,7 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.disputeLocker_input.intermediateNodes,
                     [0, 1, burnReqBlockNumber]
                 )
-            ).to.revertedWith("CCBurnRouter: input transaction is not finalized");
+            ).to.revertedWith("CCBurnRouter: not finalized");
         })
 
         it("Reverts since input tx has been used as burn proof", async function () {
@@ -1118,7 +1137,7 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.disputeLocker_input.intermediateNodes,
                     [0, 1, burnReqBlockNumber]
                 )
-            ).to.revertedWith("CCBurnRouter: input transaction is not finalized");
+            ).to.revertedWith("CCBurnRouter: not finalized");
         })
 
         it("Reverts since outpoint doesn't match with output tx", async function () {
@@ -1142,7 +1161,7 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.disputeLocker_input.intermediateNodes,
                     [0, 1, burnReqBlockNumber]
                 )
-            ).to.revertedWith("CCBurnRouter: outpoint tx doesn't match with output tx");
+            ).to.revertedWith("CCBurnRouter: wrong output tx");
         })
 
         it("Reverts since tx doesn't belong to locker", async function () {
@@ -1166,7 +1185,7 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.disputeLocker_input.intermediateNodes,
                     [0, 1, burnReqBlockNumber]
                 )
-            ).to.revertedWith("CCBurnRouter: output tx doesn't belong to locker");
+            ).to.revertedWith("CCBurnRouter: not for locker");
         })
 
         it("Reverts since locker may submit input tx as burn proof", async function () {
@@ -1194,7 +1213,7 @@ describe("CCBurnRouter", async () => {
                     CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     [0, 1, burnReqBlockNumber]
                 )
-            ).to.revertedWith("CCBurnRouter: transaction has been used as burn proof");
+            ).to.revertedWith("CCBurnRouter: already used");
         })
     });
 
@@ -1223,7 +1242,7 @@ describe("CCBurnRouter", async () => {
         it("Reverts since protocol percentage fee is greater than 10000", async function () {
             await expect(
                 ccBurnRouter.setProtocolPercentageFee(10001)
-            ).to.revertedWith("CCBurnRouter: protocol fee is out of range");
+            ).to.revertedWith("CCBurnRouter: invalid fee");
         })
 
         it("Sets transfer deadline", async function () {
@@ -1264,7 +1283,7 @@ describe("CCBurnRouter", async () => {
 
             await expect(
                 ccBurnRouter.fixTransferDeadline()
-            ).to.revertedWith("CCBurnRouter: finalization parameter is not greater than transfer deadline");
+            ).to.revertedWith("CCBurnRouter: low deadline");
         })
 
         it("Reverts since transfer deadline is smaller than relay finalizatio parameter", async function () {
@@ -1272,7 +1291,7 @@ describe("CCBurnRouter", async () => {
 
             await expect(
                 ccBurnRouter.setTransferDeadline(9)
-            ).to.revertedWith("CCBurnRouter: transfer deadline is too low");
+            ).to.revertedWith("CCBurnRouter: low deadline");
 
         })
 
@@ -1281,7 +1300,7 @@ describe("CCBurnRouter", async () => {
 
             await expect(
                 ccBurnRouter.setTransferDeadline(10)
-            ).to.revertedWith("CCBurnRouter: transfer deadline is too low");
+            ).to.revertedWith("CCBurnRouter: low deadline");
 
         })
 
@@ -1300,7 +1319,7 @@ describe("CCBurnRouter", async () => {
         it("Reverts since slasher reward is greater than 100", async function () {
             await expect(
                 ccBurnRouter.setSlasherPercentageReward(10001)
-            ).to.revertedWith("CCBurnRouter: slasher percentage reward is out of range");
+            ).to.revertedWith("CCBurnRouter: invalid reward");
         })
 
         it("Sets bitcoin fee", async function () {
@@ -1363,19 +1382,19 @@ describe("CCBurnRouter", async () => {
         it("Reverts since given address is zero", async function () {
             await expect(
                 ccBurnRouter.setRelay(ZERO_ADDRESS)
-            ).to.revertedWith("CCBurnRouter: address is zero");
+            ).to.revertedWith("CCBurnRouter: zero address");
 
             await expect(
                 ccBurnRouter.setLockers(ZERO_ADDRESS)
-            ).to.revertedWith("CCBurnRouter: address is zero");
+            ).to.revertedWith("CCBurnRouter: zero address");
 
             await expect(
                 ccBurnRouter.setTeleBTC(ZERO_ADDRESS)
-            ).to.revertedWith("CCBurnRouter: address is zero");
+            ).to.revertedWith("CCBurnRouter: zero address");
 
             await expect(
                 ccBurnRouter.setTreasury(ZERO_ADDRESS)
-            ).to.revertedWith("CCBurnRouter: address is zero");
+            ).to.revertedWith("CCBurnRouter: zero address");
         })
 
     });
