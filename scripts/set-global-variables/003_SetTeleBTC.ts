@@ -1,14 +1,11 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
-import { BigNumber, BigNumberish } from "ethers";
 const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts, network} = hre;
-    const {deploy} = deployments;
-    const { deployer } = await getNamedAccounts();
-    let tx
+    let tx;
     
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Set telebtc globally...")
@@ -37,8 +34,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
 
     // set relay in cc burn router
+    const relayHelper = await deployments.get("RelayHelper")
     const ccBurnRouter = await deployments.get("CCBurnRouter")
-    const ccBurnRouterFactory = await ethers.getContractFactory("CCBurnRouter")
+    const ccBurnRouterFactory = await ethers.getContractFactory(
+        "CCBurnRouter",
+        {
+            libraries: {
+                RelayHelper: relayHelper.address
+            }
+        }
+    )
     const ccBurnRouterInstance = await ccBurnRouterFactory.attach(
         ccBurnRouter.address
     )

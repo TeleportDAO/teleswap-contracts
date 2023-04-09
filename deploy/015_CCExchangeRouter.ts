@@ -31,7 +31,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const lockersProxy = await deployments.get("LockersProxy")
     const teleBTC = await deployments.get("TeleBTC")
 
-
     const deployedContract = await deploy("CCExchangeRouter", {
         from: deployer,
         log: true,
