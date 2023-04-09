@@ -1,19 +1,24 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
-import { BigNumber, BigNumberish } from "ethers";
 const logger = require('node-color-log');
+import config from 'config';
+;
+let bitcoinNetwork = config.get("bitcoin_network")
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts, network} = hre;
-    const {deploy} = deployments;
-    const { deployer } = await getNamedAccounts();
     let tx;
     
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Set relay globally...")
     
-    const relay = await deployments.get("BitcoinRelay")
+    let relay;
+    if (bitcoinNetwork == "testnet") {
+        relay = await deployments.get("BitcoinRelayTestnet")
+    } else {
+        relay = await deployments.get("BitcoinRelay")
+    }
 
     // set relay in cc transfer router
     const ccTransferRouter = await deployments.get("CCTransferRouter")
@@ -35,8 +40,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
 
     // set relay in cc burn router
+    const relayHelper = await deployments.get("RelayHelper")
     const ccBurnRouter = await deployments.get("CCBurnRouter")
-    const ccBurnRouterFactory = await ethers.getContractFactory("CCBurnRouter")
+    const ccBurnRouterFactory = await ethers.getContractFactory(
+        "CCBurnRouter",
+        {
+            libraries: {
+                RelayHelper: relayHelper.address
+            }
+        }
+    )
     const ccBurnRouterInstance = await ccBurnRouterFactory.attach(
         ccBurnRouter.address
     )

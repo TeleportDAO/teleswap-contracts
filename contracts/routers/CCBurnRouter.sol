@@ -603,6 +603,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         // Transfers user's input token
         IERC20(_path[0]).transferFrom(_msgSender(), address(this), _amounts[0]);
+        IERC20(_path[0]).approve(_exchangeConnector, _amounts[0]); // Gives approval to exchange connector
         (bool result, uint[] memory amounts) = IExchangeConnector(_exchangeConnector).swap(
             _amounts[0], 
             _amounts[1], 
