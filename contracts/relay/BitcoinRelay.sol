@@ -21,6 +21,10 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     // Public variables
     uint constant ONE_HUNDRED_PERCENT = 10000;
     uint constant MAX_FINALIZATION_PARAMETER = 432; // roughly 3 days
+    uint constant MAX_ALLOWED_GAP = 90 minutes;
+    // ^ This is to prevent the submission of a Bitcoin block header with a timestamp 
+    // that is more than 90 minutes ahead of the network's timestamp. Without this check,
+    // the attacker could manipulate the difficulty target of a new epoch
 
     uint public override initialHeight;
     uint public override lastSubmittedHeight;
@@ -459,18 +463,6 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         return false;
     }
 
-    // function _revertBytes32(bytes32 _input) internal pure returns(bytes32) {
-    //     bytes memory temp;
-    //     bytes32 result;
-    //     for (uint256 i = 0; i < 32; i++) {
-    //         temp = abi.encodePacked(temp, _input[31-i]);
-    //     }
-    //     assembly {
-    //         result := mload(add(temp, 32))
-    //     }
-    //     return result;
-    // }
-
     /// @notice                 Gets fee from the user
     /// @dev                    Fee is paid in target blockchain native token
     /// @param gasPrice         The gas price had been used for adding the bitcoin block header
@@ -488,7 +480,8 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param gasPrice         The gas price had been used for adding the bitcoin block header
     /// @return                 The fee amount 
     function _calculateFee(uint gasPrice) private view returns (uint) {
-        return (submissionGasUsed * gasPrice * (ONE_HUNDRED_PERCENT + relayerPercentageFee) * epochLength) / lastEpochQueries / ONE_HUNDRED_PERCENT;
+        return (submissionGasUsed * gasPrice * (ONE_HUNDRED_PERCENT + relayerPercentageFee) * epochLength) 
+            / lastEpochQueries / ONE_HUNDRED_PERCENT;
     }
 
     /// @notice             Adds headers to storage after validating
@@ -542,6 +535,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
                 "BitcoinRelay: headers should be submitted by calling addHeadersWithRetarget"
             );
 
+            require(_header.time() < block.timestamp + MAX_ALLOWED_GAP, "BitcoinRelay: block is ahead in time");
             require(_header.target() == _target, "BitcoinRelay: target changed unexpectedly");
             require(_header.checkParent(_previousHash), "BitcoinRelay: headers do not form a consistent chain");
             
