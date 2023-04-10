@@ -490,7 +490,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param  _headers    A tightly-packed list of new 80-byte Bitcoin headers to record
     /// @param  _internal   True if called internally from addHeadersWithRetarget, false otherwise
     /// @return             True if successfully written, error otherwise
-    function _addHeaders(bytes29 _anchor, bytes29 _headers, bool _internal) internal returns (bool) {
+    function _addHeaders(bytes29 _anchor, bytes29 _headers, bool _internal) internal virtual returns (bool) {
         // Extract basic info
         bytes32 _previousHash = _anchor.hash256();
         uint256 _anchorHeight = _findHeight(_previousHash); // revert if the block is unknown
@@ -694,7 +694,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         bytes29 _oldStart,
         bytes29 _oldEnd,
         bytes29 _headers
-    ) internal returns (bool) {
+    ) internal virtual returns (bool) {
         // requires that both blocks are known
         uint256 _startHeight = _findHeight(_oldStart.hash256());
         uint256 _endHeight = _findHeight(_oldEnd.hash256());
