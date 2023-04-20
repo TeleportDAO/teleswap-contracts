@@ -4,12 +4,12 @@ pragma solidity >=0.8.0 <0.8.4;
 interface IBitcoinRelay {
     // Structures
 
-    /// @notice                 	Structure for recording block header
-    /// @param selfHash             Hash of block header
-    /// @param parentHash          	Hash of parent block header
-    /// @param merkleRoot       	Merkle root of transactions in the block
-    /// @param relayer              Address of relayer who submitted the block header
-    /// @param gasPrice             Gas price of tx that relayer submitted the block header
+    /// @notice Structure for recording block header
+    /// @param selfHash Hash of block header
+    /// @param parentHash Hash of parent header
+    /// @param merkleRoot Merkle root of transactions in the header
+    /// @param relayer Address of Relayer who submitted the block header
+    /// @param gasPrice Gas price of block header submission transaction
     struct blockHeader {
         bytes32 selfHash;
         bytes32 parentHash;
@@ -20,11 +20,11 @@ interface IBitcoinRelay {
 
     // Events
 
-    /// @notice                     Emits when a block header is added
-    /// @param height               Height of submitted header
-    /// @param selfHash             Hash of submitted header
-    /// @param parentHash           Parent hash of submitted header
-    /// @param relayer              Address of relayer who submitted the block header
+    /// @notice Emits when a block header is added
+    /// @param height of submitted header
+    /// @param selfHash Hash of submitted header
+    /// @param parentHash of submitted header
+    /// @param relayer Address of Relayer who submitted the block header
     event BlockAdded(
         uint indexed height,
         bytes32 selfHash,
@@ -32,13 +32,13 @@ interface IBitcoinRelay {
         address indexed relayer
     );
 
-    /// @notice                     Emits when a block header gets finalized
-    /// @param height               Height of the header
-    /// @param selfHash             Hash of the header
-    /// @param parentHash           Parent hash of the header
-    /// @param relayer              Address of relayer who submitted the block header
-    /// @param rewardAmountTNT      Amount of reward that the relayer receives in target native token
-    /// @param rewardAmountTDT      Amount of reward that the relayer receives in TDT
+    /// @notice Emits when a block header gets finalized
+    /// @param height of the header
+    /// @param selfHash Hash of the header
+    /// @param parentHash of the header
+    /// @param relayer Address of Relayer who submitted the block header
+    /// @param rewardAmountTNT Amount of reward that the Relayer receives in target blockchain native token
+    /// @param rewardAmountTDT Amount of reward that the Relayer receives in TeleportDAO token
     event BlockFinalized(
         uint indexed height,
         bytes32 selfHash,
@@ -58,44 +58,36 @@ interface IBitcoinRelay {
         uint paidFee
     );
          
-
-    /// @notice                     Emits when changes made to reward amount in TDT
     event NewRewardAmountInTDT (
         uint oldRewardAmountInTDT, 
         uint newRewardAmountInTDT
     );
 
-    /// @notice                     Emits when changes made to finalization parameter
     event NewFinalizationParameter (
         uint oldFinalizationParameter, 
         uint newFinalizationParameter
     );
 
-    /// @notice                     Emits when changes made to relayer percentage fee
     event NewRelayerPercentageFee (
         uint oldRelayerPercentageFee, 
         uint newRelayerPercentageFee
     );
 
-    /// @notice                     Emits when changes made to teleportDAO token
     event NewTeleportDAOToken(
         address oldTeleportDAOToken, 
         address newTeleportDAOToken
     );
 
-    /// @notice                     Emits when changes made to epoch length
     event NewEpochLength(
         uint oldEpochLength, 
         uint newEpochLength
     );
 
-    /// @notice                     Emits when changes made to base queries
     event NewBaseQueries(
         uint oldBaseQueries, 
         uint newBaseQueries
     );
 
-    /// @notice                     Emits when changes made to submission gas used
     event NewSubmissionGasUsed(
         uint oldSubmissionGasUsed, 
         uint newSubmissionGasUsed
