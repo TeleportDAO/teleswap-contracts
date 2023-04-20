@@ -47,6 +47,16 @@ interface IBitcoinRelay {
         uint rewardAmountTNT,
         uint rewardAmountTDT
     );
+
+    /// @notice Emits when inclusion of a tx is queried
+    /// @param txId of queried transaction
+    /// @param blockHeight of the block that includes the tx
+    /// @param paidFee Amount of fee that user paid to Relay
+    event NewQuery(
+        bytes32 txId,
+        uint blockHeight,
+        uint paidFee
+    );
          
 
     /// @notice                     Emits when changes made to reward amount in TDT
@@ -68,7 +78,7 @@ interface IBitcoinRelay {
     );
 
     /// @notice                     Emits when changes made to teleportDAO token
-    event NewTeleportDAOToken (
+    event NewTeleportDAOToken(
         address oldTeleportDAOToken, 
         address newTeleportDAOToken
     );
@@ -126,10 +136,6 @@ interface IBitcoinRelay {
     function availableTNT() external view returns(uint);
 
     function findHeight(bytes32 _hash) external view returns (uint256);
-
-    function findAncestor(bytes32 _hash, uint256 _offset) external view returns (bytes32); 
-
-    function isAncestor(bytes32 _ancestor, bytes32 _descendant, uint256 _limit) external view returns (bool); 
 
     function rewardAmountInTDT() external view returns (uint);
 
