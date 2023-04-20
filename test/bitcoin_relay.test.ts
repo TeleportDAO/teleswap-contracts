@@ -793,6 +793,43 @@ describe("Bitcoin Relay", async () => {
 
     });
 
+    describe('#getBlockHeaderHashContract', async () => {
+        /* eslint-disable-next-line camelcase */
+        const { chain, genesis, orphan_562630 } = REGULAR_CHAIN;
+
+        beforeEach(async () => {
+            instance = await bitcoinRelayFactory.deploy(
+                genesis.hex,
+                genesis.height,
+                orphan_562630.digest_le,
+                ZERO_ADDRESS
+            );
+        });
+
+        it('views the hash correctly', async () => {
+            const header = chain[0].hex;
+            expect(
+                await instance.addHeaders(genesis.hex, header)
+            ).to.emit(instance, "BlockAdded");
+            let neededFee = await instance.getBlockHeaderFee(chain[0].height, 0);
+            expect(
+                await instance.getBlockHeaderHashContract(chain[0].height, 0, {value: neededFee})
+            ).to.emit(instance, "NewQuery").withArgs(chain[0].digest_le, chain[0].height, 0)
+        });
+
+        it('reverts since paid fee is not enough', async () => {
+            const header = chain[0].hex;
+            expect(
+                await instance.addHeaders(genesis.hex, header)
+            ).to.emit(instance, "BlockAdded");
+            let neededFee = await instance.getBlockHeaderFee(chain[0].height, 0);
+            await expect(
+                instance.getBlockHeaderHashContract(chain[0].height, 0, {value: neededFee.sub(1)})
+            ).to.revertedWith("BitcoinRelay: fee is not enough");
+        });
+
+    });
+
     describe('## Setters', async () => {
         /* eslint-disable-next-line camelcase */
         const { genesis, orphan_562630 } = REGULAR_CHAIN;

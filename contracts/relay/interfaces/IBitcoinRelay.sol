@@ -166,6 +166,8 @@ interface IBitcoinRelay {
         uint index
     ) external payable returns (bool);
 
+    function getBlockHeaderHashContract(uint _height, uint _index) external payable returns (bytes32);
+
     function addHeaders(bytes calldata _anchor, bytes calldata _headers) external returns (bool);
 
     function addHeadersWithRetarget(

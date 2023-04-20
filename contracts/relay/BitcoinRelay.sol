@@ -100,10 +100,15 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     }
 
     /// @notice Getter for a specific block header's hash in the stored chain
+    /// @dev It cannot be called by other contracts
     /// @param  _height of the desired block header
     /// @param  _index of the desired block header in that height
     /// @return Block header's hash
-    function getBlockHeaderHash(uint _height, uint _index) external view override returns(bytes32) {
+    function getBlockHeaderHash(uint _height, uint _index) external view override returns (bytes32) {
+        require(
+            !Address.isContract(msg.sender), 
+            "BitcoinRelay: addr is contract"
+        );
         return chain[_height][_index].selfHash;
     }
 
@@ -111,7 +116,7 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @param  _height of the desired block header
     /// @param  _index of the desired block header in that height
     /// @return Block header submission gas price
-    function getBlockHeaderFee(uint _height, uint _index) external view override returns(uint) {
+    function getBlockHeaderFee(uint _height, uint _index) external view override returns (uint) {
         return _calculateFee(chain[_height][_index].gasPrice);
     }
 
@@ -124,12 +129,12 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     }
 
     /// @notice Getter for available TDT in Relay treasury
-    function availableTDT() external view override returns(uint) {
+    function availableTDT() external view override returns (uint) {
         return IERC20(TeleportDAOToken).balanceOf(address(this));
     }
 
     /// @notice Getter for available target native token (TNT) in Relay treasury
-    function availableTNT() external view override returns(uint) {
+    function availableTNT() external view override returns (uint) {
         return address(this).balance;
     }
 
@@ -187,66 +192,6 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         _setSubmissionGasUsed(_submissionGasUsed);
     }
 
-    /// @notice nternal setter for rewardAmountInTDT
-    function _setRewardAmountInTDT(uint _rewardAmountInTDT) private {
-        emit NewRewardAmountInTDT(rewardAmountInTDT, _rewardAmountInTDT);
-        // this reward can be zero as well
-        rewardAmountInTDT = _rewardAmountInTDT;
-    }
-
-    /// @notice Internal setter for finalizationParameter
-    function _setFinalizationParameter(uint _finalizationParameter) private {
-        emit NewFinalizationParameter(finalizationParameter, _finalizationParameter);
-        require(
-            _finalizationParameter > 0 && _finalizationParameter <= MAX_FINALIZATION_PARAMETER,
-            "BitcoinRelay: invalid finalization param"
-        );
-
-        finalizationParameter = _finalizationParameter;
-    }
-
-    /// @notice Internal setter for relayerPercentageFee
-    function _setRelayerPercentageFee(uint _relayerPercentageFee) private {
-        emit NewRelayerPercentageFee(relayerPercentageFee, _relayerPercentageFee);
-        require(
-            _relayerPercentageFee <= ONE_HUNDRED_PERCENT,
-            "BitcoinRelay: relay fee is above max"
-        );
-        relayerPercentageFee = _relayerPercentageFee;
-    }
-
-    /// @notice Internal setter for teleportDAO token
-    function _setTeleportDAOToken(address _TeleportDAOToken) private {
-        emit NewTeleportDAOToken(TeleportDAOToken, _TeleportDAOToken);
-        TeleportDAOToken = _TeleportDAOToken;
-    }
-
-    /// @notice Internal setter for epochLength
-    function _setEpochLength(uint _epochLength) private {
-        emit NewEpochLength(epochLength, _epochLength);
-        require(
-            _epochLength > 0,
-            "BitcoinRelay: zero epoch length"
-        );
-        epochLength = _epochLength;
-    }
-
-    /// @notice Internal setter for baseQueries
-    function _setBaseQueries(uint _baseQueries) private {
-        emit NewBaseQueries(baseQueries, _baseQueries);
-        require(
-            _baseQueries > 0,
-            "BitcoinRelay: zero base query"
-        );
-        baseQueries = _baseQueries;
-    }
-
-    /// @notice Internal setter for submissionGasUsed
-    function _setSubmissionGasUsed(uint _submissionGasUsed) private {
-        emit NewSubmissionGasUsed(submissionGasUsed, _submissionGasUsed);
-        submissionGasUsed = _submissionGasUsed;
-    }
-
     /// @notice Checks if a tx is included and finalized on Bitcoin
     /// @dev Checks if the block is finalized, and Merkle proof is valid
     /// @param _txid Desired tx Id in LE form
@@ -271,9 +216,6 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
             _blockHeight >= initialHeight,
             "BitcoinRelay: the requested height is not submitted on the relay (too old)"
         );
-        
-        // Count the query for next epoch fee calculation
-        currentEpochQueries += 1;
 
         // Get the Relay fee from the user
         uint paidFee = _getFee(chain[_blockHeight][0].gasPrice);
@@ -284,6 +226,14 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
         
         emit NewQuery(_txid, _blockHeight, paidFee); 
         return BitcoinHelper.prove(_txid, _merkleRoot, intermediateNodes, _index);   
+    }
+
+    /// @notice Same as getBlockHeaderHash, but can be called by other contracts
+    /// @dev Caller should pay the query fee
+    function getBlockHeaderHashContract(uint _height, uint _index) external payable override returns (bytes32) {
+        uint paidFee = _getFee(chain[_height][_index].gasPrice);
+        emit NewQuery(chain[_height][_index].selfHash, _height, paidFee); 
+        return chain[_height][_index].selfHash;
     }
 
     /// @notice Adds headers to storage after validating
@@ -393,7 +343,9 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
     /// @dev Fee is paid in target blockchain native token (called TNT)
     /// @param _gasPrice has been used for submitting the block header
     /// @return _feeAmount Needed fee
-    function _getFee(uint _gasPrice) internal returns (uint _feeAmount){
+    function _getFee(uint _gasPrice) internal returns (uint _feeAmount) {
+        // Count the query for next epoch fee calculation
+        currentEpochQueries += 1;
         _feeAmount = _calculateFee(_gasPrice);
         require(msg.value >= _feeAmount, "BitcoinRelay: fee is not enough");
         Address.sendValue(payable(_msgSender()), msg.value - _feeAmount);
@@ -638,5 +590,65 @@ contract BitcoinRelay is IBitcoinRelay, Ownable, ReentrancyGuard, Pausable {
             chain[_height].pop();
             idx -= 1;
         }
+    }
+
+    /// @notice nternal setter for rewardAmountInTDT
+    function _setRewardAmountInTDT(uint _rewardAmountInTDT) private {
+        emit NewRewardAmountInTDT(rewardAmountInTDT, _rewardAmountInTDT);
+        // this reward can be zero as well
+        rewardAmountInTDT = _rewardAmountInTDT;
+    }
+
+    /// @notice Internal setter for finalizationParameter
+    function _setFinalizationParameter(uint _finalizationParameter) private {
+        emit NewFinalizationParameter(finalizationParameter, _finalizationParameter);
+        require(
+            _finalizationParameter > 0 && _finalizationParameter <= MAX_FINALIZATION_PARAMETER,
+            "BitcoinRelay: invalid finalization param"
+        );
+
+        finalizationParameter = _finalizationParameter;
+    }
+
+    /// @notice Internal setter for relayerPercentageFee
+    function _setRelayerPercentageFee(uint _relayerPercentageFee) private {
+        emit NewRelayerPercentageFee(relayerPercentageFee, _relayerPercentageFee);
+        require(
+            _relayerPercentageFee <= ONE_HUNDRED_PERCENT,
+            "BitcoinRelay: relay fee is above max"
+        );
+        relayerPercentageFee = _relayerPercentageFee;
+    }
+
+    /// @notice Internal setter for teleportDAO token
+    function _setTeleportDAOToken(address _TeleportDAOToken) private {
+        emit NewTeleportDAOToken(TeleportDAOToken, _TeleportDAOToken);
+        TeleportDAOToken = _TeleportDAOToken;
+    }
+
+    /// @notice Internal setter for epochLength
+    function _setEpochLength(uint _epochLength) private {
+        emit NewEpochLength(epochLength, _epochLength);
+        require(
+            _epochLength > 0,
+            "BitcoinRelay: zero epoch length"
+        );
+        epochLength = _epochLength;
+    }
+
+    /// @notice Internal setter for baseQueries
+    function _setBaseQueries(uint _baseQueries) private {
+        emit NewBaseQueries(baseQueries, _baseQueries);
+        require(
+            _baseQueries > 0,
+            "BitcoinRelay: zero base query"
+        );
+        baseQueries = _baseQueries;
+    }
+
+    /// @notice Internal setter for submissionGasUsed
+    function _setSubmissionGasUsed(uint _submissionGasUsed) private {
+        emit NewSubmissionGasUsed(submissionGasUsed, _submissionGasUsed);
+        submissionGasUsed = _submissionGasUsed;
     }
 }
