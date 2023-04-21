@@ -1,10 +1,6 @@
-# TeleportDAO Bitcoin<>EVM Bridge and TeleSwap Protocol V1
+# TeleSwap Protocol V1
 
-This repository contains the smart contracts for the TeleportDAO Bitcoin<>EVM bridge and TeleSwap protocol. The repository uses Hardhat as development environment for compilation, testing and deployment tasks.
-
-## What is TeleportDAO Bitcoin<>EVM Bridge?
-
-TeleportDAO Bitcoin<>EVM Bridge is a trustless protocol that makes Bitcoin data accessible on EVM chains. This is achieved by implementing the Bitcoin light client as a smart contract. The bridge can be leveraged to build cross-chain dApps between Bitcoin and EVM chains.
+This repository contains the smart contracts for the TeleSwap protocol. The repository uses Hardhat as development environment for compilation, testing and deployment tasks.
 
 ## What is TeleSwap?
 
@@ -12,8 +8,7 @@ TeleSwap is a fully decentralized cross-chain settlement protocol that facilitat
 
 ## Documentation
 
-See the links below: 
-- [TeleportDAO documentation](https://docs.teleportdao.xyz/introduction/what-is-teleportdao)
+See the link below: 
 - [TeleSwap documentation](https://docs.teleswap.xyz/teleswap/introduction)
 
 ## Audits
