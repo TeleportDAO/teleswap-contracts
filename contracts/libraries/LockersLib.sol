@@ -4,8 +4,8 @@ pragma solidity >=0.8.0 <0.8.4;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../oracle/interfaces/IPriceOracle.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
-import "../types/ScriptTypesEnum.sol";
 import "../types/DataTypes.sol";
+import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 
 library LockersLib {
 

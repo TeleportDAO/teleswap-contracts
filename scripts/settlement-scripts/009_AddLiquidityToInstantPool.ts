@@ -46,7 +46,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             one8Dec.div(2)
         )
         await approveTeleBTCTx.wait(1)
-        console.log("approve instant pool to has access to telebtc: ", approveTeleBTCTx.hash)
+        console.log("approve instant pool to access to telebtc: ", approveTeleBTCTx.hash)
 
         const addLiquiditylTx = await instantPoolInstance.addLiquidity(
             deployer,

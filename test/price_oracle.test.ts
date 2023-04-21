@@ -5,10 +5,10 @@ import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract
 
 import { PriceOracle } from "../src/types/PriceOracle";
 import { PriceOracle__factory } from "../src/types/factories/PriceOracle__factory";
-import { ERC20AsDot } from "../src/types/ERC20AsDot";
-import { ERC20AsDot__factory } from "../src/types/factories/ERC20AsDot__factory";
+import { erc20 } from "../src/types/erc20";
+import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 import { ERC20 } from "../src/types/ERC20";
-import { ERC20__factory } from "../src/types/factories/ERC20__factory";
+import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 
 import { takeSnapshot, revertProvider } from "./block_utils";
 
@@ -48,7 +48,7 @@ describe("PriceOracle", async () => {
         signer1Address = await signer1.getAddress();
 
         // Deploys erc20 contracts
-        const erc20Factory = new ERC20AsDot__factory(deployer);
+        const erc20Factory = new Erc20__factory(deployer);
         erc20 = await erc20Factory.deploy(
             "TestToken",
             "TT",

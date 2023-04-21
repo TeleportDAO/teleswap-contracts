@@ -1,5 +1,5 @@
-import {HardhatRuntimeEnvironment} from 'hardhat/types';
-import {DeployFunction} from 'hardhat-deploy/types';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { DeployFunction } from 'hardhat-deploy/types';
 import config from 'config'
 import { BigNumber } from 'ethers';
 import verify from "../helper-functions"
@@ -7,8 +7,8 @@ import verify from "../helper-functions"
 require('dotenv').config({path:"../config/temp.env"});
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts, network} = hre;
-    const {deploy} = deployments;
+    const { deployments, getNamedAccounts, network } = hre;
+    const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
     let theBlockHeight = process.env.BLOCK_HEIGHT;
@@ -18,16 +18,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const protocolPercentageFee = config.get("cc_exchange.protocol_percentage_fee")
     const chainID = config.get("chain_id")
     const bitcoin_network = config.get("bitcoin_network")
-
-    // TODO: update treasury address for main net
     const treasuryAddress = config.get("treasury")
-
-    let bitcoinRelay;
-    if (bitcoin_network == 'mainnet') {
-        bitcoinRelay = await deployments.get("BitcoinRelay")
-    } else {
-        bitcoinRelay = await deployments.get("BitcoinRelayTestnet")
-    }
+    const bitcoinRelay = config.get("bitcoin_relay");
+    
     const lockersProxy = await deployments.get("LockersProxy")
     const teleBTC = await deployments.get("TeleBTC")
 
@@ -40,7 +33,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             protocolPercentageFee,
             chainID,
             lockersProxy.address,
-            bitcoinRelay.address,
+            bitcoinRelay,
             teleBTC.address,
             treasuryAddress
         ],
@@ -52,7 +45,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             protocolPercentageFee,
             chainID,
             lockersProxy.address,
-            bitcoinRelay.address,
+            bitcoinRelay,
             teleBTC.address,
             treasuryAddress
         ], "contracts/routers/CCExchangeRouter.sol:CCExchangeRouter")
