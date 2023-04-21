@@ -4,8 +4,6 @@ import { Signer} from "ethers";
 
 import { CollateralPool } from "../src/types/CollateralPool";
 import { CollateralPool__factory } from "../src/types/factories/CollateralPool__factory";
-import { erc20 } from "../src/types/erc20";
-import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 

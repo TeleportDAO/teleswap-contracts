@@ -26,8 +26,6 @@ import { LockersLib__factory } from "../src/types/factories/LockersLib__factory"
 
 import { TeleBTC } from "../src/types/TeleBTC";
 import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
-import { erc20 } from "../src/types/erc20";
-import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 import { WETH } from "../src/types/WETH";

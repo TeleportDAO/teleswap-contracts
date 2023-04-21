@@ -7,8 +7,7 @@ const logger = require('node-color-log');
 let bitcoinNetwork = config.get("bitcoin_network")
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts, network} = hre;
-    const {deploy, log} = deployments;
+    const { deployments, getNamedAccounts, network } = hre;
     const { deployer } = await getNamedAccounts();
 
     logger.color('blue').log("-------------------------------------------------")

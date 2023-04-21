@@ -1,13 +1,13 @@
-import {HardhatRuntimeEnvironment} from 'hardhat/types';
-import {DeployFunction} from 'hardhat-deploy/types';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { DeployFunction } from 'hardhat-deploy/types';
 import config from 'config'
 import verify from "../helper-functions"
 
 require('dotenv').config({path:"../config/temp.env"});
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts, network} = hre;
-    const {deploy} = deployments;
+    const { deployments, getNamedAccounts, network } = hre;
+    const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
     const theBlockHeight = process.env.BLOCK_HEIGHT;
@@ -17,13 +17,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const bitcoin_network = config.get("bitcoin_network")
     const treasuryAddress = config.get("treasury")
     const transferDeadLine = config.get("cc_burn.transfer_deadLine")
-
-    let bitcoinRelay;
-    if (bitcoin_network == 'mainnet') {
-        bitcoinRelay = await deployments.get("BitcoinRelay")
-    } else {
-        bitcoinRelay = await deployments.get("BitcoinRelayTestnet")
-    }
+    const bitcoinRelay = config.get("bitcoin_relay");
+    
     const lockersProxy = await deployments.get("LockersProxy")
     const teleBTC = await deployments.get("TeleBTC")
 
@@ -39,7 +34,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         skipIfAlreadyDeployed: true,
         args: [
             theBlockHeight,
-            bitcoinRelay.address,
+            bitcoinRelay,
             lockersProxy.address,
             treasuryAddress,
             teleBTC.address,
@@ -56,7 +51,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     if (network.name != "hardhat" && process.env.ETHERSCAN_API_KEY && process.env.VERIFY_OPTION == "1") {
         await verify(deployedContract.address, [
             theBlockHeight,
-            bitcoinRelay.address,
+            bitcoinRelay,
             lockersProxy.address,
             treasuryAddress,
             teleBTC.address,

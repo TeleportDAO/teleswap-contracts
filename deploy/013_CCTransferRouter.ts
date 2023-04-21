@@ -8,24 +8,17 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts, network} = hre;
-    const {deploy} = deployments;
+    const { deployments, getNamedAccounts, network } = hre;
+    const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
     let theBlockHeight = await process.env.BLOCK_HEIGHT;
 
-    const protocolPercentageFee = config.get("cc_transfer.protocol_percentage_fee")
-    const chainId = config.get("chain_id")
-    const appId = config.get("cc_transfer.app_id")
-    const bitcoin_network = config.get("bitcoin_network")
-    const treasuryAddress = config.get("treasury")
-
-    let bitcoinRelay;
-    if (bitcoin_network == 'mainnet') {
-        bitcoinRelay = await deployments.get("BitcoinRelay")
-    } else {
-        bitcoinRelay = await deployments.get("BitcoinRelayTestnet")
-    }
+    const protocolPercentageFee = config.get("cc_transfer.protocol_percentage_fee");
+    const chainId = config.get("chain_id");
+    const appId = config.get("cc_transfer.app_id");
+    const treasuryAddress = config.get("treasury");
+    const bitcoinRelay = config.get("bitcoin_relay");
     
     const lockersProxy = await deployments.get("LockersProxy")
     const teleBTC = await deployments.get("TeleBTC")
@@ -39,7 +32,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             protocolPercentageFee,
             chainId,
             appId,
-            bitcoinRelay.address,
+            bitcoinRelay,
             lockersProxy.address,
             teleBTC.address,
             treasuryAddress
@@ -52,7 +45,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             protocolPercentageFee,
             chainId,
             appId,
-            bitcoinRelay.address,
+            bitcoinRelay,
             lockersProxy.address,
             teleBTC.address,
             treasuryAddress

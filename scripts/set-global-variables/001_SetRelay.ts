@@ -1,24 +1,17 @@
-import {HardhatRuntimeEnvironment} from 'hardhat/types';
-import {DeployFunction} from 'hardhat-deploy/types';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { DeployFunction } from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
 const logger = require('node-color-log');
 import config from 'config';
-;
-let bitcoinNetwork = config.get("bitcoin_network")
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts, network} = hre;
+    const { deployments, getNamedAccounts, network } = hre;
     let tx;
     
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Set relay globally...")
     
-    let relay;
-    if (bitcoinNetwork == "testnet") {
-        relay = await deployments.get("BitcoinRelayTestnet")
-    } else {
-        relay = await deployments.get("BitcoinRelay")
-    }
+    const relay = config.get("bitcoin_relay");
 
     // set relay in cc transfer router
     const ccTransferRouter = await deployments.get("CCTransferRouter")
@@ -29,9 +22,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const checkRelayInCCTransfer = await ccTransferRouterInstance.relay()
 
-    if (checkRelayInCCTransfer != relay.address) {
+    if (checkRelayInCCTransfer != relay) {
         tx = await ccTransferRouterInstance.setRelay(
-            relay.address
+            relay
         )
         tx.wait(1)
         console.log("set relay in CCtransfer router: ", tx.hash)
@@ -56,9 +49,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const checkRelayInCCBurn = await ccBurnRouterInstance.relay()
 
-    if (checkRelayInCCBurn != relay.address) {
+    if (checkRelayInCCBurn != relay) {
         tx = await ccBurnRouterInstance.setRelay(
-            relay.address
+            relay
         )
         tx.wait(1)
         console.log("set relay in CCburn router: ", tx.hash)
@@ -75,9 +68,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const checkRelayInCCExchange = await ccExchangeRouterInstance.relay()
 
-    if (checkRelayInCCExchange != relay.address) {
+    if (checkRelayInCCExchange != relay) {
         tx = await ccExchangeRouterInstance.setRelay(
-            relay.address
+            relay
         )
         tx.wait(1)
         console.log("set relay in CCexchange router: ", tx.hash)
@@ -94,9 +87,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const checkRelayInInstantRouter = await instantRouterInstance.relay()
 
-    if (checkRelayInInstantRouter != relay.address) {
+    if (checkRelayInInstantRouter != relay) {
         tx = await instantRouterInstance.setRelay(
-            relay.address
+            relay
         )
         tx.wait(1)
         console.log("set relay in instant router: ", tx.hash)

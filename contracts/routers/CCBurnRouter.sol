@@ -3,11 +3,11 @@ pragma solidity >=0.8.0 <0.8.4;
 
 import "./interfaces/ICCBurnRouter.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
-import "../relay/interfaces/IBitcoinRelay.sol";
 import "../lockers/interfaces/ILockers.sol";
 import "../connectors/interfaces/IExchangeConnector.sol";
 import "../libraries/RelayHelper.sol";
-import "../libraries/BitcoinHelper.sol";
+import "@teleportdao/btc-evm-bridge/contracts/libraries/BitcoinHelper.sol";
+import "@teleportdao/btc-evm-bridge/contracts/relay/interfaces/IBitcoinRelay.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 

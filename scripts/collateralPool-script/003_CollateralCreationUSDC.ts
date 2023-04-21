@@ -6,9 +6,7 @@ import { BigNumber } from 'ethers';
 const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts, network} = hre;
-    const {deploy, log} = deployments;
-    const { deployer } = await getNamedAccounts();
+    const { deployments, getNamedAccounts, network } = hre;
 
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Create collateral pool with factory and add liquidity to it...")
