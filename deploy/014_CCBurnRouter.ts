@@ -10,18 +10,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = deployments;
     const { deployer } = await getNamedAccounts();
 
-    // TODO: un-comment the above one and remove the second one
-    // let theBlockHeight = process.env.BLOCK_HEIGHT;
-    let theBlockHeight = 777121;
-
+    const theBlockHeight = process.env.BLOCK_HEIGHT;
     const protocolPercentageFee = config.get("cc_burn.protocol_percentage_fee")
     const slasherPercentageReward = config.get("cc_burn.slasher_percentage_reward")
     const bitcoinFee = config.get("cc_burn.bitcoin_fee")
     const bitcoin_network = config.get("bitcoin_network")
-
-    // TODO: update treasury address for main net
     const treasuryAddress = config.get("treasury")
-
     const transferDeadLine = config.get("cc_burn.transfer_deadLine")
 
     let bitcoinRelay;

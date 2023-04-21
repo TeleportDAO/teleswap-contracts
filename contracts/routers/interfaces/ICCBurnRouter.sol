@@ -180,7 +180,7 @@ interface ICCBurnRouter {
 		bytes calldata _userScript,
 		ScriptTypes _scriptType,
 		bytes calldata _lockerLockingScript
-	) external;
+	) external returns (uint);
 
     function ccExchangeAndBurn(
         address _exchangeConnector,
@@ -191,7 +191,7 @@ interface ICCBurnRouter {
         bytes memory _userScript,
         ScriptTypes _scriptType,
         bytes calldata _lockerLockingScript
-	) external;
+	) external returns (uint);
 
 	function burnProof(
 		bytes4 _version,
@@ -209,7 +209,7 @@ interface ICCBurnRouter {
 	function disputeBurn(
 		bytes calldata _lockerLockingScript,
 		uint[] memory _indices
-	) external returns (bool);
+	) external;
 
     function disputeLocker(
         bytes memory _lockerLockingScript,
@@ -222,5 +222,5 @@ interface ICCBurnRouter {
         bytes memory _inputIntermediateNodes,
         uint[] memory _indexesAndBlockNumbers 
 		// ^ [inputIndex, inputTxIndex, outputTxIndex, inputTxBlockNumber, outputTxBlockNumber]
-    ) external payable returns (bool);
+    ) external payable;
 }

@@ -18,8 +18,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = config.get("chain_id")
     const appId = config.get("cc_transfer.app_id")
     const bitcoin_network = config.get("bitcoin_network")
-
-    // TODO: update treasury address for main net
     const treasuryAddress = config.get("treasury")
 
     let bitcoinRelay;

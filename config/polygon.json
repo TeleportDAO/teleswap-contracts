@@ -8,7 +8,7 @@
   "acceptable_delay": 177,
   "chain_id": 137,
   "fee_to_setter": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
-  "treasury": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
+  "treasury": "0x24004f4f6d2e75b039d528e82b100355d8b1d4fb",
   "chain_link_oracles": {
     "matic_usd": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
     "btc_usd": "0xc907E116054Ad103354f2D350FD2514433D57F6f",

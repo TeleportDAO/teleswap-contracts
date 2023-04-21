@@ -10,7 +10,7 @@ import { Address } from "hardhat-deploy/types";
 import { TeleBTC } from "../src/types/TeleBTC";
 import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
 import { ERC20 } from "../src/types/ERC20";
-import { ERC20AsDot__factory } from "../src/types/factories/ERC20AsDot__factory";
+import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 import { RelayHelper } from "../src/types/RelayHelper";
 import { RelayHelper__factory } from "../src/types/factories/RelayHelper__factory";
 import { CCBurnRouter } from "../src/types/CCBurnRouter";
@@ -108,7 +108,7 @@ describe("CCBurnRouter", async () => {
         ccBurnRouter = await deployCCBurnRouter();
 
         // Deploys input token
-        const erc20Factory = new ERC20AsDot__factory(deployer);
+        const erc20Factory = new Erc20__factory(deployer);
         inputToken = await erc20Factory.deploy(
             "TestToken",
             "TT",
@@ -1439,31 +1439,6 @@ describe("CCBurnRouter", async () => {
             expect(
                 await ccBurnRouter.transferDeadline()
             ).to.equal(100);
-        })
-
-        it("Fixes transfer deadline", async function () {
-
-            await mockBitcoinRelay.mock.finalizationParameter.returns(10);
-
-            await expect(
-                ccBurnRouter.fixTransferDeadline()
-            ).to.emit(
-                ccBurnRouter, "NewTransferDeadline"
-            ).withArgs(TRANSFER_DEADLINE, 21);
-
-
-            expect(
-                await ccBurnRouter.transferDeadline()
-            ).to.equal(21);
-        })
-
-        it("can't Fix transfer deadline if finalizationParameter is greater than current transfer deadline", async function () {
-            await ccBurnRouter.setTransferDeadline(9);
-            await mockBitcoinRelay.mock.finalizationParameter.returns(10);
-
-            await expect(
-                ccBurnRouter.fixTransferDeadline()
-            ).to.revertedWith("CCBurnRouter: low deadline");
         })
 
         it("Reverts since transfer deadline is smaller than relay finalizatio parameter", async function () {

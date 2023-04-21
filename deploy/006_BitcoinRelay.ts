@@ -1,8 +1,7 @@
-import {HardhatRuntimeEnvironment} from 'hardhat/types';
-import {DeployFunction} from 'hardhat-deploy/types';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { DeployFunction } from 'hardhat-deploy/types';
 import config from 'config'
 import verify from "../helper-functions"
-import { number } from 'bitcoinjs-lib/src/script';
 
 var path = require('path');
 var fs = require('fs');

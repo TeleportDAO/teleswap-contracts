@@ -5,7 +5,7 @@ import { Signer} from "ethers";
 import { CollateralPoolFactory } from "../src/types/CollateralPoolFactory";
 import { CollateralPoolFactory__factory } from "../src/types/factories/CollateralPoolFactory__factory";
 import { ERC20 } from "../src/types/ERC20";
-import { ERC20__factory } from "../src/types/factories/ERC20__factory";
+import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 
 import { takeSnapshot, revertProvider } from "./block_utils";
 
@@ -35,7 +35,7 @@ describe("CollateralPoolFactory", async () => {
         collateralPoolFactory = await collateralPoolFactoryFactory.deploy();
 
         // Deploys erc20 contract
-        const erc20Factory = new ERC20__factory(deployer);
+        const erc20Factory = new Erc20__factory(deployer);
         erc20 = await erc20Factory.deploy(
             "TestToken",
             "TT"

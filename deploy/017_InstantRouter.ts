@@ -12,8 +12,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const paybackDeadline = config.get("instant_router.payback_deadline");
     const maxPriceDifferencePercent = config.get("instant_router.max_price_difference_percent");
     const bitcoin_network = config.get("bitcoin_network")
-
-    // TODO: update treasury address for main net
     const treasuryAddress = config.get("treasury")
 
     const teleBTC = await deployments.get("TeleBTC")
