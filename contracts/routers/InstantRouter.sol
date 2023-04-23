@@ -8,7 +8,7 @@ import "../pools/interfaces/ICollateralPool.sol";
 import "../pools/interfaces/ICollateralPoolFactory.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../oracle/interfaces/IPriceOracle.sol";
-import "../relay/interfaces/IBitcoinRelay.sol";
+import "@teleportdao/btc-evm-bridge/contracts/relay/interfaces/IBitcoinRelay.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";

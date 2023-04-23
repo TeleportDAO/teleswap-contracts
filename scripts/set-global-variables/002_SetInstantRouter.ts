@@ -1,14 +1,11 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
-import { BigNumber, BigNumberish } from "ethers";
 const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts, network} = hre;
-    const {deploy} = deployments;
-    const { deployer } = await getNamedAccounts();
-    let tx
+    let tx;
     
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Set instant router globally...")
@@ -77,4 +74,3 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-// func.tags = ["PriceOracle", "BitcoinTestnet"];

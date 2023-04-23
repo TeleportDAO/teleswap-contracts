@@ -5,9 +5,7 @@ import config from 'config'
 const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts, network} = hre;
-    const {deploy, log} = deployments;
-    const { deployer } = await getNamedAccounts();
+    const { deployments, getNamedAccounts, network } = hre;
     let tx
 
     logger.color('blue').log("-------------------------------------------------")
@@ -53,8 +51,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     } else {
         console.log("matic/usd (one_address) is already settled in pricie oracle: ")
     }
-
-    
 
     const tBTC = await deployments.get("TeleBTC")
     const btcUSDOracle = config.get("chain_link_oracles.btc_usd");
@@ -115,4 +111,3 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-// func.tags = ["PriceOracle", "BitcoinTestnet"];

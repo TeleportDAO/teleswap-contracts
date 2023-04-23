@@ -15,7 +15,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const teleBTC = await deployments.get("TeleBTC")
     const ccBurnRouter = await deployments.get("CCBurnRouter")
 
-    const ccBurnRouterFactory = await ethers.getContractFactory("CCBurnRouter");
+    const relayHelper = await deployments.get("RelayHelper")
+    const ccBurnRouterFactory = await ethers.getContractFactory(
+        "CCBurnRouter",
+        {
+            libraries: {
+                RelayHelper: relayHelper.address
+            }
+        }
+    );
     const ccBurnRouterInstance = await ccBurnRouterFactory.attach(
         ccBurnRouter.address
     );

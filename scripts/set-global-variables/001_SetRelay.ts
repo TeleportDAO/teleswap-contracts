@@ -1,19 +1,17 @@
-import {HardhatRuntimeEnvironment} from 'hardhat/types';
-import {DeployFunction} from 'hardhat-deploy/types';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { DeployFunction } from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
-import { BigNumber, BigNumberish } from "ethers";
 const logger = require('node-color-log');
+import config from 'config';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts, network} = hre;
-    const {deploy} = deployments;
-    const { deployer } = await getNamedAccounts();
-    let tx
+    const { deployments, getNamedAccounts, network } = hre;
+    let tx;
     
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Set relay globally...")
     
-    const relay = await deployments.get("BitcoinRelay")
+    const relay = config.get("bitcoin_relay");
 
     // set relay in cc transfer router
     const ccTransferRouter = await deployments.get("CCTransferRouter")
@@ -24,38 +22,42 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const checkRelayInCCTransfer = await ccTransferRouterInstance.relay()
 
-    if (checkRelayInCCTransfer != relay.address) {
+    if (checkRelayInCCTransfer != relay) {
         tx = await ccTransferRouterInstance.setRelay(
-            relay.address
+            relay
         )
         tx.wait(1)
         console.log("set relay in CCtransfer router: ", tx.hash)
     } else {
         console.log("relay is already settled in CCtransfer router")
     }
-    
-
 
     // set relay in cc burn router
+    const relayHelper = await deployments.get("RelayHelper")
     const ccBurnRouter = await deployments.get("CCBurnRouter")
-    const ccBurnRouterFactory = await ethers.getContractFactory("CCBurnRouter")
+    const ccBurnRouterFactory = await ethers.getContractFactory(
+        "CCBurnRouter",
+        {
+            libraries: {
+                RelayHelper: relayHelper.address
+            }
+        }
+    )
     const ccBurnRouterInstance = await ccBurnRouterFactory.attach(
         ccBurnRouter.address
     )
 
     const checkRelayInCCBurn = await ccBurnRouterInstance.relay()
 
-    if (checkRelayInCCBurn != relay.address) {
+    if (checkRelayInCCBurn != relay) {
         tx = await ccBurnRouterInstance.setRelay(
-            relay.address
+            relay
         )
         tx.wait(1)
         console.log("set relay in CCburn router: ", tx.hash)
     } else {
         console.log("relay is already settled in CCburn router")
     }
-
-    
 
     // set relay in cc exchange router
     const ccExchangeRouter = await deployments.get("CCExchangeRouter")
@@ -66,17 +68,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const checkRelayInCCExchange = await ccExchangeRouterInstance.relay()
 
-    if (checkRelayInCCExchange != relay.address) {
+    if (checkRelayInCCExchange != relay) {
         tx = await ccExchangeRouterInstance.setRelay(
-            relay.address
+            relay
         )
         tx.wait(1)
         console.log("set relay in CCexchange router: ", tx.hash)
     } else {
         console.log("relay is already settled in CCexchange router: ")
     }
-
-    
 
     // set relay in instant router
     const instantRouter = await deployments.get("InstantRouter")
@@ -87,9 +87,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const checkRelayInInstantRouter = await instantRouterInstance.relay()
 
-    if (checkRelayInInstantRouter != relay.address) {
+    if (checkRelayInInstantRouter != relay) {
         tx = await instantRouterInstance.setRelay(
-            relay.address
+            relay
         )
         tx.wait(1)
         console.log("set relay in instant router: ", tx.hash)
@@ -97,8 +97,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("relay is already settled in instant router")
     }
 
-
 };
 
 export default func;
-// func.tags = ["PriceOracle", "BitcoinTestnet"];

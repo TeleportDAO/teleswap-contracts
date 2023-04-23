@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.8.4;
 
-import "../../types/ScriptTypesEnum.sol";
+import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 
 interface ICCBurnRouter {
 
 	// Structures
 
-    /// @notice                 	Structure for recording cc burn requests
-    /// @param amount         		Amount of tokens that user wants to burn
-    /// @param burntAmount   	    Amount that user will receive (after reducing fees from amount)
-    /// @param sender       		Address of user who requests burning
-    /// @param userScript    		Locking script of the user on Bitcoin
-    /// @param deadline         	Deadline of locker for executing the request
-    /// @param isTransferred    	True if the request has been executed
-    /// @param scriptType    		The script type of the user (for bitcoin address)
-    /// @param requestIdOfLocker    The index of the request for a specific locker
+    /// @notice Structure for recording cc burn requests
+    /// @param amount of tokens that user wants to burn
+    /// @param burntAmount that user will receive (after reducing fees from amount)
+    /// @param sender Address of user who requests burning
+    /// @param userScript Script hash of the user on Bitcoin
+    /// @param deadline of locker for executing the request
+    /// @param isTransferred True if the request has been processed
+    /// @param scriptType The script type of the user
+    /// @param requestIdOfLocker The index of the request for a specific locker
 	struct burnRequest {
 		uint amount;
 		uint burntAmount;
@@ -29,33 +29,35 @@ interface ICCBurnRouter {
 
   	// Events
 
-	/// @notice                 		Emits when a burn request gets submitted
-    /// @param userTargetAddress        Target address of the user
-    /// @param userScript        		Locking script of user on Bitcoin
-    /// @param scriptType        		The script type of the user (for bitcoin address)
-    /// @param amount         			Total requested amount
-    /// @param burntAmount   		    Amount that user will receive (after reducing fees)
-	/// @param lockerTargetAddress		Locker's address on the target chain
-	/// @param lockerLockingScript		Locker's locking script on Bitcoin blockchain
-    /// @param requestIdOfLocker        The index of a request for a locker
-    /// @param deadline         		Deadline of locker for executing the request
+	/// @notice Emits when a burn request gets submitted
+    /// @param userTargetAddress Address of the user
+    /// @param userScript Script of user on Bitcoin
+    /// @param scriptType Script type of the user (for bitcoin address)
+    /// @param inputAmount Amount of input token (0 if input token is teleBTC)
+    /// @param inputToken Address of token that will be exchanged for teleBTC (address(0) if input token is teleBTC)
+	/// @param teleBTCAmount amount of teleBTC that user sent OR Amount of teleBTC after exchanging
+    /// @param burntAmount that user will receive (after reducing fees)
+	/// @param lockerTargetAddress Address of Locker
+	/// @param requestIdOfLocker Index of request between Locker's burn requests
+	/// @param deadline of Locker for executing the request (in terms of Bitcoin blocks)
   	event CCBurn(
 		address indexed userTargetAddress,
 		bytes userScript,
 		ScriptTypes scriptType,
-		uint amount, 
-		uint burntAmount, 
-		address indexed lockerTargetAddress,
-		bytes lockerLockingScript,
+		uint inputAmount,
+		address inputToken,
+		uint teleBTCAmount, 
+		uint burntAmount,
+		address lockerTargetAddress,
 		uint requestIdOfLocker,
 		uint indexed deadline
 	);
 
-	/// @notice                 		Emits when a burn proof is provided
-    /// @param lockerTargetAddress      Target address of the locker
-    /// @param requestIdOfLocker        The index of a request of a locker
-    /// @param bitcoinTxId   		    The bitcoin transaction hash
-	/// @param bitcoinTxOutputIndex		The output index in the transaction
+	/// @notice Emits when a burn proof is provided
+    /// @param lockerTargetAddress Address of Locker
+    /// @param requestIdOfLocker Index of paid request of among Locker's requests
+    /// @param bitcoinTxId The hash of tx that paid a burn request
+	/// @param bitcoinTxOutputIndex The output index in tx
 	event PaidCCBurn(
 		address indexed lockerTargetAddress,
 		uint requestIdOfLocker,
@@ -63,11 +65,11 @@ interface ICCBurnRouter {
 		uint bitcoinTxOutputIndex
 	);
 
-	/// @notice                 		Emits when a locker gets slashed for withdrawing BTC without proper reason
-	/// @param _lockerTargetAddress		Locker's address on the target chain
-	/// @param _blockNumber				Block number of the malicious tx
-	/// @param txId						Transaction ID of the malicious tx
-	/// @param amount					Slashed amount
+	/// @notice  Emits when a locker gets slashed for withdrawing BTC without proper reason
+	/// @param _lockerTargetAddress	Locker's address on the target chain
+	/// @param _blockNumber	Block number of the malicious tx
+	/// @param txId	Transaction ID of the malicious tx
+	/// @param amount Slashed amount
 	event LockerDispute(
         address _lockerTargetAddress,
 		bytes lockerLockingScript,
@@ -83,54 +85,53 @@ interface ICCBurnRouter {
 		uint requestIdOfLocker
 	);
 
-	/// @notice                     	Emits when changes made to relay address
+	/// @notice Emits when relay address is updated
     event NewRelay(
         address oldRelay, 
         address newRelay
     );
 
-	/// @notice                     	Emits when changes made to treasury address
+	/// @notice Emits when treasury address is updated
     event NewTreasury(
         address oldTreasury, 
         address newTreasury
     );
 
-	/// @notice                     	Emits when changes made to lockers address
+	/// @notice Emits when lockers address is updated
     event NewLockers(
         address oldLockers, 
         address newLockers
     );
 
-	/// @notice                     	Emits when changes made to TeleBTC address
+	/// @notice Emits when TeleBTC address is updated
     event NewTeleBTC(
         address oldTeleBTC, 
         address newTeleBTC
     );
 
-	/// @notice                     	Emits when changes made to transfer deadline
+	/// @notice Emits when transfer deadline is updated
     event NewTransferDeadline(
         uint oldTransferDeadline, 
         uint newTransferDeadline
     );
 
-	/// @notice                     	Emits when changes made to percentage fee
+	/// @notice Emits when percentage fee is updated
     event NewProtocolPercentageFee(
         uint oldProtocolPercentageFee, 
         uint newProtocolPercentageFee
     );
 
-	/// @notice                     	Emits when changes made to slasher percentage fee
+	/// @notice Emits when slasher percentage fee is updated
     event NewSlasherPercentageFee(
         uint oldSlasherPercentageFee, 
         uint newSlasherPercentageFee
     );
 
-	/// @notice                     	Emits when changes made to bitcoin fee
+	/// @notice Emits when bitcoin fee is updated
     event NewBitcoinFee(
         uint oldBitcoinFee, 
         uint newBitcoinFee
     );
-
 
 	// Read-only functions
 
@@ -181,6 +182,17 @@ interface ICCBurnRouter {
 		bytes calldata _lockerLockingScript
 	) external returns (uint);
 
+    function ccExchangeAndBurn(
+        address _exchangeConnector,
+        uint[] calldata _amounts,
+        bool _isFixedToken,
+        address[] calldata _path,
+        uint256 _deadline, 
+        bytes memory _userScript,
+        ScriptTypes _scriptType,
+        bytes calldata _lockerLockingScript
+	) external returns (uint);
+
 	function burnProof(
 		bytes4 _version,
 		bytes memory _vin,
@@ -197,7 +209,7 @@ interface ICCBurnRouter {
 	function disputeBurn(
 		bytes calldata _lockerLockingScript,
 		uint[] memory _indices
-	) external returns (bool);
+	) external;
 
     function disputeLocker(
         bytes memory _lockerLockingScript,
@@ -208,6 +220,7 @@ interface ICCBurnRouter {
         bytes memory _outputVout,
         bytes4[] memory _locktimes, // [inputTxLocktime, outputTxLocktime]
         bytes memory _inputIntermediateNodes,
-        uint[] memory _indexesAndBlockNumbers // [inputIndex, inputTxIndex, outputTxIndex, inputTxBlockNumber, outputTxBlockNumber]
-    ) external payable returns (bool);
+        uint[] memory _indexesAndBlockNumbers 
+		// ^ [inputIndex, inputTxIndex, outputTxIndex, inputTxBlockNumber, outputTxBlockNumber]
+    ) external payable;
 }
