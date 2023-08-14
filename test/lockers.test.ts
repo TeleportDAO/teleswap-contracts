@@ -7,10 +7,8 @@ import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract
 import { Contract } from "@ethersproject/contracts";
 import { Address } from "hardhat-deploy/types";
 
-import { LockersProxy } from "../src/types/LockersProxy";
 import { LockersProxy__factory } from "../src/types/factories/LockersProxy__factory";
 
-import { LockersLogic } from "../src/types/LockersLogic";
 import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
 import { LockersLogicLibraryAddresses } from "../src/types/factories/LockersLogic__factory";
 
@@ -19,8 +17,6 @@ import { LockersLib__factory } from "../src/types/factories/LockersLib__factory"
 
 import { TeleBTC } from "../src/types/TeleBTC";
 import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
-import { erc20 } from "../src/types/erc20";
-import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 

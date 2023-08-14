@@ -2,37 +2,24 @@
 pragma solidity >=0.8.0 <0.8.4;
 
 import "../libraries/RequestHelper.sol";
-import "./interfaces/ICCTransferRouter.sol";
+import "./CcTransferRouterStorage.sol";
+import "./interfaces/ICcTransferRouter.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "./interfaces/IInstantRouter.sol";
 import "../lockers/interfaces/ILockers.sol";
 import "@teleportdao/btc-evm-bridge/contracts/libraries/BitcoinHelper.sol";
 import "@teleportdao/btc-evm-bridge/contracts/relay/interfaces/IBitcoinRelay.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
+contract CcTransferRouterLogic is ICcTransferRouter, CcTransferRouterStorage, 
+    OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "CCTransferRouter: address is zero");
         _;
     }
-
-    // Constants
-    uint constant MAX_PROTOCOL_FEE = 10000;
-
-    // Public variables
-    uint public override startingBlockNumber;
-    uint public override chainId;
-    uint public override appId;
-    uint public override protocolPercentageFee; // A number between 0 to 10000
-    address public override relay;
-    address public override lockers;
-    address public override teleBTC;
-    address public override instantRouter;
-    address public override treasury;
-    mapping(bytes32 => ccTransferRequest) public ccTransferRequests; // TxId to CCTransferRequest structure
 
     /// @notice                             Gives default params to initiate cc transfer router
     /// @param _startingBlockNumber         Requests that are included in a block older than _startingBlockNumber cannot be executed
@@ -43,7 +30,7 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
     /// @param _lockers                     Lockers' contract address
     /// @param _teleBTC                     TeleportDAO BTC ERC20 token address
     /// @param _treasury                    Address of treasury that collects protocol fees
-    constructor(
+    function initialize(
         uint _startingBlockNumber,
         uint _protocolPercentageFee,
         uint _chainId,
@@ -52,7 +39,10 @@ contract CCTransferRouter is ICCTransferRouter, Ownable, ReentrancyGuard {
         address _lockers,
         address _teleBTC,
         address _treasury
-    ) {
+    ) public initializer {
+        OwnableUpgradeable.__Ownable_init();
+        ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
+
         startingBlockNumber = _startingBlockNumber;
         chainId = _chainId;
         appId = _appId;
