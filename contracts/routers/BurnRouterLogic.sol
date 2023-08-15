@@ -1,44 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.8.4;
 
-import "./interfaces/ICCBurnRouter.sol";
+import "./interfaces/IBurnRouter.sol";
+import "./BurnRouterStorage.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../lockers/interfaces/ILockers.sol";
 import "../connectors/interfaces/IExchangeConnector.sol";
-import "../libraries/RelayHelper.sol";
+import "../libraries/BurnRouterLib.sol";
 import "@teleportdao/btc-evm-bridge/contracts/libraries/BitcoinHelper.sol";
-import "@teleportdao/btc-evm-bridge/contracts/relay/interfaces/IBitcoinRelay.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
-
-    using RelayHelper for *;
+contract BurnRouterLogic is IBurnRouter, BurnRouterStorage, 
+    OwnableUpgradeable, ReentrancyGuardUpgradeable {
     
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "CCBurnRouter: zero address");
         _;
     }
-
-    // Constants
-    uint constant MAX_PROTOCOL_FEE = 10000;
-    uint constant MAX_SLASHER_REWARD = 10000;
-
-    // Public variables
-    uint public override startingBlockNumber;
-    address public override relay;
-    address public override lockers;
-    address public override teleBTC;
-    address public override treasury;
-    uint public override transferDeadline;
-    uint public override protocolPercentageFee; // Min amount is %0.01
-    uint public override slasherPercentageReward; // Min amount is %1
-    uint public override bitcoinFee; // Fee of submitting a tx on Bitcoin
-    mapping(address => burnRequest[]) public burnRequests; 
-    // ^ Mapping from locker target address to assigned burn requests
-    mapping(address => uint) public burnRequestCounter;
-    mapping(bytes32 => bool) public override isUsedAsBurnProof; 
-    // ^ Mapping that shows a txId has been submitted to pay a burn request
 
     /// @notice Handles cross-chain burn requests
     /// @param _startingBlockNumber Requests that are included in a block older 
@@ -51,7 +30,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _protocolPercentageFee Percentage of tokens that user pays to protocol for burning
     /// @param _slasherPercentageReward Percentage of tokens that slasher receives after slashing a locker
     /// @param _bitcoinFee Fee of submitting a transaction on Bitcoin
-    constructor(
+    function initialize(
         uint _startingBlockNumber,
         address _relay,
         address _lockers,
@@ -61,7 +40,10 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint _protocolPercentageFee,
         uint _slasherPercentageReward,
         uint _bitcoinFee
-    ) {
+    ) public initializer {
+        OwnableUpgradeable.__Ownable_init();
+        ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
+
         startingBlockNumber = _startingBlockNumber;
         _setRelay(_relay);
         _setLockers(_lockers);
@@ -256,10 +238,6 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             "CCBurnRouter: not locker"
         );
 
-        // Get the target address of the locker from its locking script
-        address _lockerTargetAddress = ILockers(lockers)
-        .getLockerTargetAddress(_lockerLockingScript);
-
         require(
             _burnReqIndexes.length == _voutIndexes.length,
             "CCBurnRouter: wrong indexes"
@@ -268,7 +246,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         // Checks inclusion of transaction
         bytes32 txId = BitcoinHelper.calculateTxId(_version, _vin, _vout, _locktime);
         require(
-            RelayHelper.isConfirmed(
+            BurnRouterLib.isConfirmed(
                 relay,
                 txId,
                 _blockNumber,
@@ -277,6 +255,9 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             ),
             "CCBurnRouter: not finalized"
         );
+
+        // Get the target address of the locker from its locking script
+        address _lockerTargetAddress = ILockers(lockers).getLockerTargetAddress(_lockerLockingScript);
 
         // Checks the paid burn requests
         uint paidOutputCounter = _checkPaidBurnRequests(
@@ -311,10 +292,9 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         );
 
         // Get the target address of the locker from its locking script
-        address _lockerTargetAddress = ILockers(lockers)
-        .getLockerTargetAddress(_lockerLockingScript);
+        address _lockerTargetAddress = ILockers(lockers).getLockerTargetAddress(_lockerLockingScript);
 
-        uint _lastSubmittedHeight = IBitcoinRelay(relay).lastSubmittedHeight();
+        uint _lastSubmittedHeight = BurnRouterLib.lastSubmittedHeight(relay);
 
         // Goes through provided indexes of burn requests to see if locker should be slashed
         for (uint i = 0; i < _indices.length; i++) {
@@ -364,7 +344,8 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
     /// @param _outputVout Outputs of the spent transaction
     /// @param _locktimes Locktimes of input and output tx
     /// @param _inputIntermediateNodes Merkle inclusion proof for the malicious transaction
-    /// @param _indexesAndBlockNumbers Indices of malicious input in input tx, input tx in block and block number of input tx
+    /// @param _indexesAndBlockNumbers Indices of malicious input in input tx, 
+    ///                                input tx in block and block number of input tx
     function disputeLocker(
         bytes memory _lockerLockingScript,
         bytes4[] memory _versions, // [inputTxVersion, outputTxVersion]
@@ -376,17 +357,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         bytes memory _inputIntermediateNodes,
         uint[] memory _indexesAndBlockNumbers // [inputIndex, inputTxIndex, inputTxBlockNumber]
     ) external payable nonReentrant override {
-
-        // Checks input array sizes
-        require(
-            _versions.length == 2 &&
-            _locktimes.length == 2 &&
-            _indexesAndBlockNumbers.length == 3,
-            "CCBurnRouter: wrong inputs"
-        );
-
-        require(_indexesAndBlockNumbers[2] >=  startingBlockNumber, "CCBurnRouter: old request");
-
+        
         // Checks if the locking script is valid
         require(
             ILockers(lockers).isLocker(_lockerLockingScript),
@@ -395,29 +366,18 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
         // Finds input tx id and checks its inclusion
         bytes32 _inputTxId = BitcoinHelper.calculateTxId(_versions[0], _inputVin, _inputVout, _locktimes[0]);
-        require(
-            RelayHelper.isConfirmed(
-                relay,
-                _inputTxId,
-                _indexesAndBlockNumbers[2], // Block number
-                _inputIntermediateNodes,
-                _indexesAndBlockNumbers[1] // Index of input tx in the block
-            ),
-            "CCBurnRouter: not finalized"
-        );
 
-        /*
-            Checks that input tx has not been provided as a burn proof
-            note: if a locker executes a cc burn request but doesn't provide burn proof before deadline,
-            we consider the transaction as a malicious tx
-        */
-        require(
-            !isUsedAsBurnProof[_inputTxId],
-            "CCBurnRouter: already used"
-        );
-
-        // prevents multiple slashing of locker
-        isUsedAsBurnProof[_inputTxId] = true;        
+        BurnRouterLib.disputeLockerHelper(
+            isUsedAsBurnProof,
+            transferDeadline,
+            relay,
+            startingBlockNumber,
+            _inputTxId,
+            _versions,
+            _locktimes,
+            _inputIntermediateNodes,
+            _indexesAndBlockNumbers
+        );     
 
         // Extracts outpoint id and index from input tx
         (bytes32 _outpointId, uint _outpointIndex) = BitcoinHelper.extractOutpoint(
@@ -436,12 +396,6 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             keccak256(BitcoinHelper.getLockingScript(_outputVout, _outpointIndex)) ==
             keccak256(_lockerLockingScript),
             "CCBurnRouter: not for locker"
-        );
-
-        // Checks that deadline for using the tx as burn proof has passed
-        require(
-            IBitcoinRelay(relay).lastSubmittedHeight() > transferDeadline + _indexesAndBlockNumbers[2],
-            "CCBurnRouter: deadline not passed"
         );
 
         // Slashes locker
@@ -520,7 +474,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             _burntAmount,
             _userScript,
             _scriptType,
-            IBitcoinRelay(relay).lastSubmittedHeight(),
+            BurnRouterLib.lastSubmittedHeight(relay),
             _lockerTargetAddress
         );
     }
@@ -570,8 +524,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
         uint totalValue = BitcoinHelper.parseOutputsTotalValue(_inputVout);
 
         // Gets the target address of the locker from its Bitcoin address
-        address _lockerTargetAddress = ILockers(lockers)
-        .getLockerTargetAddress(_lockerLockingScript);
+        address _lockerTargetAddress = ILockers(lockers).getLockerTargetAddress(_lockerLockingScript);
 
         ILockers(lockers).slashThiefLocker(
             _lockerTargetAddress,
@@ -633,7 +586,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
             // Checks that the request has not been paid and its deadline has not passed
             if (
                 !burnRequests[_lockerTargetAddress][_burnReqIndex].isTransferred &&
-            burnRequests[_lockerTargetAddress][_burnReqIndex].deadline >= _paidBlockNumber
+                burnRequests[_lockerTargetAddress][_burnReqIndex].deadline >= _paidBlockNumber
             ) {
 
                 parsedAmount = BitcoinHelper.parseValueFromSpecificOutputHavingScript(
@@ -766,7 +719,7 @@ contract CCBurnRouter is ICCBurnRouter, Ownable, ReentrancyGuard {
 
     /// @notice Internal setter for deadline of executing burn requests
     function _setTransferDeadline(uint _transferDeadline) private {
-        uint _finalizationParameter = IBitcoinRelay(relay).finalizationParameter();
+        uint _finalizationParameter = BurnRouterLib.finalizationParameter(relay);
         require(
             _msgSender() == owner() || transferDeadline < _finalizationParameter, 
             "CCBurnRouter: no permit"

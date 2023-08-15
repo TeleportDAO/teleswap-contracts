@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.8.4;
 
+import "./interfaces/ILockers.sol";
+import "./LockersStorageStructure.sol";
 import "../oracle/interfaces/IPriceOracle.sol";
 import "../connectors/interfaces/IExchangeConnector.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
-import "../routers/interfaces/ICCBurnRouter.sol";
+import "../routers/interfaces/IBurnRouter.sol";
+import "../libraries/LockersLib.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./interfaces/ILockers.sol";
-import "../libraries/LockersLib.sol";
-import "./LockersStorageStructure.sol";
 
-contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
+contract LockersLogic is LockersStorageStructure, ILockers, 
+    OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
 
     using LockersLib for *;
     using SafeERC20 for IERC20;
@@ -542,7 +543,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
         // Burns TeleBTC for locker rescue script
         IERC20(teleBTC).approve(ccBurnRouter, neededTeleBTC);
-        ICCBurnRouter(ccBurnRouter).ccBurn(
+        IBurnRouter(ccBurnRouter).ccBurn(
             neededTeleBTC,
             theLiquidatingLocker.lockerRescueScript,
             theLiquidatingLocker.lockerRescueType,

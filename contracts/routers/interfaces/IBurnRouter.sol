@@ -3,29 +3,7 @@ pragma solidity >=0.8.0 <0.8.4;
 
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 
-interface ICCBurnRouter {
-
-	// Structures
-
-    /// @notice Structure for recording cc burn requests
-    /// @param amount of tokens that user wants to burn
-    /// @param burntAmount that user will receive (after reducing fees from amount)
-    /// @param sender Address of user who requests burning
-    /// @param userScript Script hash of the user on Bitcoin
-    /// @param deadline of locker for executing the request
-    /// @param isTransferred True if the request has been processed
-    /// @param scriptType The script type of the user
-    /// @param requestIdOfLocker The index of the request for a specific locker
-	struct burnRequest {
-		uint amount;
-		uint burntAmount;
-		address sender;
-		bytes userScript;
-		uint deadline;
-		bool isTransferred;
-		ScriptTypes scriptType;
-		uint requestIdOfLocker;
-  	}
+interface IBurnRouter {
 
   	// Events
 
@@ -135,27 +113,7 @@ interface ICCBurnRouter {
 
 	// Read-only functions
 
-    function startingBlockNumber() external view returns (uint);
-	
-	function relay() external view returns (address);
-
-	function lockers() external view returns (address);
-
-	function teleBTC() external view returns (address);
-
-	function treasury() external view returns (address);
-
-	function transferDeadline() external view returns (uint);
-
-	function protocolPercentageFee() external view returns (uint);
-
-	function slasherPercentageReward() external view returns (uint);
-
-	function bitcoinFee() external view returns (uint); // Bitcoin transaction fee
-
 	function isTransferred(address _lockerTargetAddress, uint _index) external view returns (bool);
-
-	function isUsedAsBurnProof(bytes32 _txId) external view returns (bool);
 
 	// State-changing functions
 
