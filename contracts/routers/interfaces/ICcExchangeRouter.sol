@@ -1,32 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.8.4;
 
-interface ICCExchangeRouter {
-    // Structures
-
-    /// @notice                    Structure for recording cross-chain exchange requests
-    /// @param appId               Application id that user wants to use (defines the exchange that user wants to use)
-    /// @param inputAmount         Amount of locked BTC on source chain
-    /// @param outputAmount        Amount of output token
-    /// @param isFixedToken        True if amount of input token is fixed
-    /// @param recipientAddress    Address of exchange recipient
-    /// @param fee                 Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
-    /// @param isUsed              Whether the tx is used or not
-    /// @param path                Path from input token to output token
-    /// @param deadline            Deadline of exchanging tokens
-    /// @param speed               Speed of the request (normal or instant)
-    struct ccExchangeRequest {
-        uint appId;
-        uint inputAmount;
-        uint outputAmount;
-        bool isFixedToken;
-        address recipientAddress;
-        uint fee;
-        bool isUsed;
-        address[] path;
-        uint deadline;
-        uint speed;
-    }
+interface ICcExchangeRouter {
 
     // Events
 
@@ -116,25 +91,7 @@ interface ICCExchangeRouter {
 
     // Read-only functions
     
-    function startingBlockNumber() external view returns (uint);
-
-    function protocolPercentageFee() external view returns (uint);
-    
-    function chainId() external view returns (uint);
-
-    function relay() external view returns (address);
-
-    function instantRouter() external view returns (address);
-
-    function lockers() external view returns (address);
-
-    function teleBTC() external view returns (address);
-
     function isRequestUsed(bytes32 _txId) external view returns (bool);
-
-    function exchangeConnector(uint appId) external view returns (address);
-
-    function treasury() external view returns (address);
 
     // State-changing functions
 
@@ -153,15 +110,13 @@ interface ICCExchangeRouter {
 	function setProtocolPercentageFee(uint _protocolPercentageFee) external;
 
     function ccExchange(
-        // Bitcoin tx
         bytes4 _version,
         bytes memory _vin,
         bytes calldata _vout,
         bytes4 _locktime,
-        // Bitcoin block number
-        uint256 _blockNumber,
-        // Merkle proof
-        bytes calldata _intermediateNodes,
+        // ^ Bitcoin tx
+        uint256 _blockNumber, // Bitcoin block number
+        bytes calldata _intermediateNodes, // Merkle proof
         uint _index,
         bytes calldata _lockerLockingScript
     ) external payable returns(bool);
