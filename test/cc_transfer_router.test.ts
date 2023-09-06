@@ -36,7 +36,6 @@ describe("CcTransferRouter", async () => {
     const PROTOCOL_PERCENTAGE_FEE = 10; // Means %0.1
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
     const PRICE_WITH_DISCOUNT_RATIO = 9500; // Means %95
-    const INACTIVATION_DELAY = 0
     const STARTING_BLOCK_NUMBER = 1;
     const TREASURY = "0x0000000000000000000000000000000000000002";
 

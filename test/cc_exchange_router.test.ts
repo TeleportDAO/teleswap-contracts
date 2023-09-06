@@ -14,8 +14,9 @@ import { UniswapV2Router02 } from "../src/types/UniswapV2Router02";
 import { UniswapV2Router02__factory } from "../src/types/factories/UniswapV2Router02__factory";
 import { UniswapV2Connector } from "../src/types/UniswapV2Connector";
 import { UniswapV2Connector__factory } from "../src/types/factories/UniswapV2Connector__factory";
-import { CCExchangeRouter } from "../src/types/CCExchangeRouter";
-import { CCExchangeRouter__factory } from "../src/types/factories/CCExchangeRouter__factory";
+
+import { CcExchangeRouterProxy__factory } from "../src/types/factories/CcExchangeRouterProxy__factory";
+import { CcExchangeRouterLogic__factory } from "../src/types/factories/CcExchangeRouterLogic__factory";
 
 import { LockersProxy__factory } from "../src/types/factories/LockersProxy__factory";
 import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
@@ -33,7 +34,7 @@ import { WETH__factory } from "../src/types/factories/WETH__factory";
 
 import { takeSnapshot, revertProvider } from "./block_utils";
 
-describe("CCExchangeRouter", async () => {
+describe("CcExchangeRouter", async () => {
 
     let snapshotId: any;
 
@@ -46,12 +47,10 @@ describe("CCExchangeRouter", async () => {
     const PROTOCOL_PERCENTAGE_FEE = 10; // Means %0.1
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
     const PRICE_WITH_DISCOUNT_RATIO = 9500; // Means %95
-    const INACTIVATION_DELAY = 0
     const STARTING_BLOCK_NUMBER = 1;
     const TREASURY = "0x0000000000000000000000000000000000000002";
 
     // Bitcoin public key (32 bytes)
-    let LOCKER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
     let LOCKER1_LOCKING_SCRIPT = '0xa9144062c8aeed4f81c2d73ff854a2957021191e20b687';
 
     let LOCKER_RESCUE_SCRIPT_P2PKH = "0x12ab8dc588ca9d5787dde7eb29569da63c3a238c";
@@ -76,7 +75,7 @@ describe("CCExchangeRouter", async () => {
     let uniswapV2Router02: UniswapV2Router02;
     let uniswapV2Pair: UniswapV2Pair;
     let uniswapV2Factory: UniswapV2Factory;
-    let ccExchangeRouter: CCExchangeRouter;
+    let ccExchangeRouter: Contract;
     let lockersLib: LockersLib;
     let lockers: Contract;
     let teleBTC: TeleBTC;
@@ -193,8 +192,21 @@ describe("CCExchangeRouter", async () => {
         lockers = await deployLockers();
 
         // Deploys ccExchangeRouter contract
-        const ccExchangeRouterFactory = new CCExchangeRouter__factory(deployer);
-        ccExchangeRouter = await ccExchangeRouterFactory.deploy(
+        const ccExchangeRouterLogicFactory = new CcExchangeRouterLogic__factory(deployer);
+        const ccExchangeRouterLogic = await ccExchangeRouterLogicFactory.deploy();
+
+        const ccExchangeRouterProxyFactory = new CcExchangeRouterProxy__factory(deployer);
+        const ccExchangeRouterProxy = await ccExchangeRouterProxyFactory.deploy(
+            ccExchangeRouterLogic.address,    
+            proxyAdminAddress,
+            "0x"
+        );
+        
+        ccExchangeRouter = await ccExchangeRouterLogic.attach(
+            ccExchangeRouterProxy.address
+        );
+
+        await ccExchangeRouter.initialize(
             STARTING_BLOCK_NUMBER,
             PROTOCOL_PERCENTAGE_FEE,
             CHAIN_ID,
@@ -206,7 +218,6 @@ describe("CCExchangeRouter", async () => {
 
         // Sets exchangeConnector address in ccExchangeRouter
         await ccExchangeRouter.setExchangeConnector(APP_ID, exchangeConnector.address);
-
 
         await lockers.setTeleBTC(teleBTC.address)
         await lockers.addMinter(ccExchangeRouter.address)
