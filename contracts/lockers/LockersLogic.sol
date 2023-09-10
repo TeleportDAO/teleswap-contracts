@@ -579,8 +579,6 @@ contract LockersLogic is LockersStorageStructure, ILockers,
 
         uint neededTeleBTC = LockersLib.buySlashedCollateralOfLocker(
             lockersMapping[_lockerTargetAddress],
-            libConstants,
-            libParams,
             _collateralAmount
         );
 
@@ -980,10 +978,10 @@ contract LockersLogic is LockersStorageStructure, ILockers,
     /// @notice                     Internal setter for liquidation ratio
     /// @param _liquidationRatio    The new liquidation ratio
     function _setLiquidationRatio(uint _liquidationRatio) private {
-        require(
-            _liquidationRatio >= ONE_HUNDRED_PERCENT,
-            "Lockers: problem in CR and LR"
-        );
+        // require(
+        //     _liquidationRatio >= ONE_HUNDRED_PERCENT,
+        //     "Lockers: problem in CR and LR"
+        // );
         require(
             collateralRatio > _liquidationRatio,
             "Lockers: must CR > LR"

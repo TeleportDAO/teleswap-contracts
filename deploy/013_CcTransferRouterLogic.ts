@@ -12,31 +12,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
-    // let theBlockHeight = await process.env.BLOCK_HEIGHT;
-
-    // const protocolPercentageFee = config.get("cc_transfer.protocol_percentage_fee");
-    // const chainId = config.get("chain_id");
-    // const appId = config.get("cc_transfer.app_id");
-    // const treasuryAddress = config.get("treasury");
-    // const bitcoinRelay = config.get("bitcoin_relay");
-    
-    // const lockersProxy = await deployments.get("LockersProxy")
-    // const teleBTC = await deployments.get("TeleBTC")
-
     const deployedContract = await deploy("CcTransferRouterLogic", {
         from: deployer,
         log: true,
-        skipIfAlreadyDeployed: true,
-        // args: [
-        //     theBlockHeight,
-        //     protocolPercentageFee,
-        //     chainId,
-        //     appId,
-        //     bitcoinRelay,
-        //     lockersProxy.address,
-        //     teleBTC.address,
-        //     treasuryAddress
-        // ],
+        skipIfAlreadyDeployed: true
     });
 
     if (network.name != "hardhat" && process.env.ETHERSCAN_API_KEY && process.env.VERIFY_OPTION == "1") {
