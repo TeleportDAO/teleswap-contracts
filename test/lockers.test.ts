@@ -103,7 +103,7 @@ describe("Lockers", async () => {
         );
 
         const ccBurnRouterContract = await deployments.getArtifact(
-            "ICCBurnRouter"
+            "BurnRouterLogic"
         );
         mockCCBurnRouter = await deployMockContract(
             deployer,
