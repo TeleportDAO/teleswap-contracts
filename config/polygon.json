@@ -45,5 +45,10 @@
     "liquidation_ratio": 10500,
     "locker_percentage_fee": 15,
     "price_with_discount_ratio": 9000
+  },
+  "collateral_pools": {
+    "usdt_collateral_ratio": 15000,
+    "usdc_collateral_ratio": 15000,
+    "wmatic_collateral_ratio": 20000
   }
 }
