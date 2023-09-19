@@ -1,21 +1,108 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { ethers } from "hardhat";
+import config from 'config';
 const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments } = hre;
 
-    logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set teleBTC in Locker...")
-
     const lockersLib = await deployments.get("LockersLib")
     const lockersProxy = await deployments.get("LockersProxy")
-    const ccTransferRouterProxy = await deployments.get("CcTransferRouterProxy")
-    const ccExchangeRouterProxy = await deployments.get("CcExchangeRouterProxy")
-    const burnRouterProxy = await deployments.get("BurnRouterProxy")
     const teleBTC = await deployments.get("TeleBTC")
     const priceOracle = await deployments.get("PriceOracle")
+    const ccTransferRouterProxy = await deployments.get("CcTransferRouterProxy")
+    const instantRouter = await deployments.get("InstantRouter")
+    const burnRouterProxy = await deployments.get("BurnRouterProxy")
+    const burnRouterLib = await deployments.get("BurnRouterLib")
+    const ccExchangeRouterProxy = await deployments.get("CCExchangeRouter")
+    const exchangeConnector = await deployments.get("UniswapV2Connector")
+
+    logger.color('blue').log("-------------------------------------------------")
+    logger.color('blue').bold().log("Set teleBTC in BurnRouter ...")
+
+    const burnRouterLogicFactory = await ethers.getContractFactory(
+        "BurnRouterLogic",
+        {
+            libraries: {
+                BurnRouterLib: burnRouterLib.address
+            }
+        }
+    );
+    const burnRouterProxyInstance = await burnRouterLogicFactory.attach(
+        burnRouterProxy.address
+    );
+
+    const _teleBTC = await burnRouterProxyInstance.teleBTC()
+
+    if (_teleBTC != teleBTC.address) {
+        const setTeleBTCTx = await burnRouterProxyInstance.setTeleBTC(
+            teleBTC.address
+        )
+        await setTeleBTCTx.wait(1)
+        console.log("Set teleBTC in BurnRouter: ", setTeleBTCTx.hash)
+    } else {
+        console.log("teleBTC is already set")
+    }
+
+    logger.color('blue').log("-------------------------------------------------")
+    logger.color('blue').bold().log("Set InstantRouter in CcTransferRouterProxy ...")
+
+    const ccTransferRouterLogicFactory = await ethers.getContractFactory("CcTransferRouterLogic");
+    const ccTransferRouterProxyInstance = await ccTransferRouterLogicFactory.attach(
+        ccTransferRouterProxy.address
+    );
+
+    const _instantRouter = await ccTransferRouterProxyInstance.instantRouter()
+
+    if (_instantRouter != instantRouter.address) {
+        const setInstantRouterTx = await ccTransferRouterProxyInstance.setInstantRouter(
+            instantRouter.address
+        )
+        await setInstantRouterTx.wait(1)
+        console.log("Set InstantRouter in CcTransferRouterProxy: ", setInstantRouterTx.hash)
+    } else {
+        console.log("InstantRouter is already set")
+    }
+
+    logger.color('blue').log("-------------------------------------------------")
+    logger.color('blue').bold().log("Set InstantRouter in CcExchangeRouterProxy ...")
+
+    const ccExchangeRouterLogicFactory = await ethers.getContractFactory("CcExchangeRouterLogic");
+    const ccExchangeRouterProxyInstance = await ccExchangeRouterLogicFactory.attach(
+        ccExchangeRouterProxy.address
+    );
+    
+    if (_instantRouter != instantRouter.address) {
+        const setInstantRouterTx = await ccExchangeRouterProxyInstance.setInstantRouter(
+            instantRouter.address
+        )
+        await setInstantRouterTx.wait(1)
+        console.log("Set InstantRouter in CcExchangeRouterProxy: ", setInstantRouterTx.hash)
+    } else {
+        console.log("InstantRouter is already set")
+    }
+
+    logger.color('blue').log("-------------------------------------------------")
+    logger.color('blue').bold().log("Set ExchangeConnector in CcExchangeRouterProxy ...")
+
+    const exchangeAppId = config.get("cc_exchange.app_id")
+
+    const _exchangeConnector = await ccExchangeRouterProxyInstance.exchangeConnector(exchangeAppId)
+
+    if (_exchangeConnector != exchangeConnector.address) {
+        const setConnectorAndAppIdTx = await ccExchangeRouterProxyInstance.setExchangeConnector(
+            exchangeAppId,
+            exchangeConnector.address
+        )
+        await setConnectorAndAppIdTx.wait(1)
+        console.log("Set ExchangeConnector in CcExchangeRouterProxy: ", setConnectorAndAppIdTx.hash)
+    } else {
+        console.log("ExchangeConnector is already set")
+    }
+
+    logger.color('blue').log("-------------------------------------------------")
+    logger.color('blue').bold().log("Set teleBTC in Locker...")
 
     const lockersLogicFactory = await ethers.getContractFactory(
         "LockersLogic",

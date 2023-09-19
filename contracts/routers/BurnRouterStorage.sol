@@ -32,11 +32,12 @@ contract BurnRouterStorage is IBurnRouterStorage {
     uint constant MAX_SLASHER_REWARD = 10000;
 
     // Public variables
-    uint public override startingBlockNumber;
     address public override relay;
     address public override lockers;
     address public override teleBTC;
     address public override treasury;
+    address public override bitcoinFeeOracle;
+    uint public override startingBlockNumber;
     uint public override transferDeadline;
     uint public override protocolPercentageFee; // Min amount is %0.01
     uint public override slasherPercentageReward; // Min amount is %1

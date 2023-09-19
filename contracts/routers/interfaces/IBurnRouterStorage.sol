@@ -27,4 +27,6 @@ interface IBurnRouterStorage {
 
 	function isUsedAsBurnProof(bytes32 _txId) external view returns (bool);
 
+	function bitcoinFeeOracle() external view returns (address);
+
 }

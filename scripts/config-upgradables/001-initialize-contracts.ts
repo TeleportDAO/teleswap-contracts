@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
-import { ethers } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 import config from 'config';
 const logger = require('node-color-log');
 
@@ -49,7 +49,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         lockersProxy.address
     );
 
-    const _lockersLogic = await lockersProxyInstance.implementation()
+    // const _lockersLogic = await upgrades.erc1967.getImplementationAddress(lockersProxy.address);
+    const _lockersLogic = await lockersProxyInstance.implementation();
 
     if (_lockersLogic != lockersLogic.address) {
         const setLogicTx = await lockersProxyInstance.upgradeTo(
@@ -71,9 +72,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const _ccTransferRouterLogic = await lockersProxyInstance.implementation()
 
-    if (_ccTransferRouterLogic != ccTransferRouterProxy.address) {
+    if (_ccTransferRouterLogic != ccTransferRouterLogic.address) {
         const setTx = await ccTransferRouterProxyInstance.upgradeTo(
-            ccTransferRouterProxy.address
+            ccTransferRouterLogic.address
         )
         await setTx.wait(1)
         console.log("Set CcTransferRouterLogic in CcTransferRouterProxy: ", setTx.hash)
@@ -91,9 +92,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const _ccExchangeRouterLogic = await lockersProxyInstance.implementation()
 
-    if (_ccExchangeRouterLogic != ccExchangeRouterProxy.address) {
+    if (_ccExchangeRouterLogic != ccExchangeRouterLogic.address) {
         const setTx = await ccExchangeRouterProxyInstance.upgradeTo(
-            ccExchangeRouterProxy.address
+            ccExchangeRouterLogic.address
         )
         await setTx.wait(1)
         console.log("Set CcExchangeRouterLogic in CcExchangeRouterProxy: ", setTx.hash)
@@ -104,16 +105,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Set BurnRouterLogic in BurnRouterProxy ...")
 
-    const burnRouterProxyFactory = await ethers.getContractFactory("burnRouterProxy");
+    const burnRouterProxyFactory = await ethers.getContractFactory("BurnRouterProxy");
     const burnRouterProxyInstance = await burnRouterProxyFactory.attach(
         burnRouterProxy.address
     );
 
     const _burnRouterLogic = await lockersProxyInstance.implementation()
 
-    if (_burnRouterLogic != ccExchangeRouterProxy.address) {
+    if (_burnRouterLogic != burnRouterLogic.address) {
         const setTx = await burnRouterProxyInstance.upgradeTo(
-            burnRouterProxy.address
+            burnRouterLogic.address
         )
         await setTx.wait(1)
         console.log("Set BurnRouterLogic in BurnRouterProxy: ", setTx.hash)
@@ -164,9 +165,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const ccTransferRouterLogicFactory = await ethers.getContractFactory(
         "CcTransferRouterLogic"
     );
-    const ccTransferRouterLogicInstance = await ccTransferRouterLogicFactory.attach(
-        ccTransferRouterLogic.address
-    );
 
     let _relayProxy = await ccTransferRouterProxyInstance.relay();
     if (_relayProxy == ZERO_ADD) {
@@ -183,7 +181,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await initializeTxProxy.wait(1);
         console.log("Initialized CcTransferRouterProxy: ", initializeTxProxy.hash);
     }
-
+    
+    const ccTransferRouterLogicInstance = await ccTransferRouterLogicFactory.attach(
+        ccTransferRouterLogic.address
+    );
     let _relayLogic = await ccTransferRouterLogicInstance.relay();
     if (_relayLogic == ZERO_ADD) {
         const initializeTxLogic = await ccTransferRouterLogicInstance.initialize(
@@ -233,7 +234,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
 
     _relayLogic = await burnRouterLogicInstance.relay();
-    if (_relayLogic == ) {
+    if (_relayLogic == ZERO_ADD) {
         const initializeTxLogic = await burnRouterLogicInstance.initialize(
             startingBlockHeight,
             bitcoinRelay,

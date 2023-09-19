@@ -8,6 +8,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments } = hre;
     const ZERO_ADD = "0x0000000000000000000000000000000000000000";
 
+    const instantRouter = await deployments.get("InstantRouter")
+
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Set LockersProxy as minter and burner in teleBTC ...")
 
@@ -71,7 +73,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
 
     logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set Exchange Router in price oracle...")
+    logger.color('blue').bold().log("Set ExchangeRouter in PriceOracle ...")
 
     const priceOracle = await deployments.get("PriceOracle")
     const priceOracleFactory = await ethers.getContractFactory("PriceOracle");
@@ -92,98 +94,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("Set ExchangeRouter in PriceOracle: ", addExchangeTx.hash)
     } else {
         console.log("ExchangeRouter is already set")
-    }
-
-    logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set teleBTC in BurnRouter ...")
-
-    const burnRouterProxy = await deployments.get("BurnRouterProxy")
-
-    const burnRouterLib = await deployments.get("BurnRouterLib")
-    const burnRouterLogicFactory = await ethers.getContractFactory(
-        "BurnRouterLogic",
-        {
-            libraries: {
-                BurnRouterLib: burnRouterLib.address
-            }
-        }
-    );
-    const burnRouterProxyInstance = await burnRouterLogicFactory.attach(
-        burnRouterProxy.address
-    );
-
-    const _teleBTC = await burnRouterProxyInstance.teleBTC()
-
-    if (_teleBTC != teleBTC.address) {
-        const setTeleBTCTx = await burnRouterProxyInstance.setTeleBTC(
-            teleBTC.address
-        )
-        await setTeleBTCTx.wait(1)
-        console.log("Set teleBTC in BurnRouter: ", setTeleBTCTx.hash)
-    } else {
-        console.log("teleBTC is already set")
-    }
-
-    logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set InstantRouter in CcTransferRouterProxy ...")
-
-    const ccTransferRouterProxy = await deployments.get("CcTransferRouterProxy")
-    const instantRouter = await deployments.get("InstantRouter")
-
-    const ccTransferRouterLogicFactory = await ethers.getContractFactory("CcTransferRouterLogic");
-    const ccTransferRouterProxyInstance = await ccTransferRouterLogicFactory.attach(
-        ccTransferRouterProxy.address
-    );
-
-    const _instantRouter = await ccTransferRouterProxyInstance.instantRouter()
-
-    if (_instantRouter != instantRouter.address) {
-        const setInstantRouterTx = await ccTransferRouterProxyInstance.setInstantRouter(
-            instantRouter.address
-        )
-        await setInstantRouterTx.wait(1)
-        console.log("Set InstantRouter in CcTransferRouterProxy: ", setInstantRouterTx.hash)
-    } else {
-        console.log("InstantRouter is already set")
-    }
-
-    logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set InstantRouter in CcExchangeRouterProxy ...")
-
-    const ccExchangeRouterProxy = await deployments.get("CCExchangeRouter")
-    const exchangeConnector = await deployments.get("UniswapV2Connector")
-
-    const ccExchangeRouterLogicFactory = await ethers.getContractFactory("CcExchangeRouterLogic");
-    const ccExchangeRouterProxyInstance = await ccExchangeRouterLogicFactory.attach(
-        ccExchangeRouterProxy.address
-    );
-    
-    if (_instantRouter != instantRouter.address) {
-        const setInstantRouterTx = await ccExchangeRouterProxyInstance.setInstantRouter(
-            instantRouter.address
-        )
-        await setInstantRouterTx.wait(1)
-        console.log("Set InstantRouter in CcExchangeRouterProxy: ", setInstantRouterTx.hash)
-    } else {
-        console.log("InstantRouter is already set")
-    }
-
-    logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set ExchangeConnector in CcExchangeRouterProxy ...")
-
-    const exchangeAppId = config.get("cc_exchange.app_id")
-
-    const _exchangeConnector = await ccExchangeRouterProxyInstance.exchangeConnector(exchangeAppId)
-
-    if (_exchangeConnector != exchangeConnector.address) {
-        const setConnectorAndAppIdTx = await ccExchangeRouterProxyInstance.setExchangeConnector(
-            exchangeAppId,
-            exchangeConnector.address
-        )
-        await setConnectorAndAppIdTx.wait(1)
-        console.log("Set ExchangeConnector in CcExchangeRouterProxy: ", setConnectorAndAppIdTx.hash)
-    } else {
-        console.log("ExchangeConnector is already set")
     }
 
     logger.color('blue').log("-------------------------------------------------")
@@ -216,6 +126,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         instantPool.address
     );
     
+    const _instantRouter = await instantPoolInstance.instantRouter()
+
     if (_instantRouter != instantRouter.address) {
         const setInstantRouterTx = await instantPoolInstance.setInstantRouter(
             instantRouter.address

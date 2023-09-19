@@ -111,6 +111,12 @@ interface IBurnRouter {
         uint newBitcoinFee
     );
 
+	/// @notice Emits when bitcoin fee oracle is updated
+    event NewBitcoinFeeOracle(
+        address oldBitcoinFeeOracle, 
+        address newBitcoinFeeOracle
+    );
+
 	// Read-only functions
 
 	function isTransferred(address _lockerTargetAddress, uint _index) external view returns (bool);
@@ -132,6 +138,8 @@ interface IBurnRouter {
 	function setSlasherPercentageReward(uint _slasherPercentageReward) external;
 
 	function setBitcoinFee(uint _bitcoinFee) external;
+
+	function setBitcoinFeeOracle(address _bitcoinFeeOracle) external;
 
 	function ccBurn(
 		uint _amount, 

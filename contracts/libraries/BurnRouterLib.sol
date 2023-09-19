@@ -2,10 +2,36 @@
 pragma solidity >=0.8.0 <0.8.4;
 
 import "@teleportdao/btc-evm-bridge/contracts/relay/interfaces/IBitcoinRelay.sol";
+import "@teleportdao/btc-evm-bridge/contracts/libraries/BitcoinHelper.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
 library BurnRouterLib {
+
+   /// @notice Checks if all outputs of the transaction used to pay a cc burn request
+    /// @dev  One output might return the remaining value to the locker
+    /// @param _paidOutputCounter  Number of the tx outputs that pay a cc burn request
+    /// @param _vout Outputs of a transaction
+    /// @param _lockerLockingScript Locking script of locker
+    /// @param _txId Transaction id
+    function updateIsUsedAsBurnProof(
+        mapping(bytes32 => bool) storage _isUsedAsBurnProof,
+        uint _paidOutputCounter,
+        bytes memory _vout,
+        bytes memory _lockerLockingScript,
+        bytes32 _txId
+    ) external {
+        uint parsedAmount = BitcoinHelper.parseValueHavingLockingScript(_vout, _lockerLockingScript);
+        uint numberOfOutputs = BitcoinHelper.numberOfOutputs(_vout);
+
+        if (parsedAmount != 0 && _paidOutputCounter + 1 == numberOfOutputs) {
+            // One output sends the remaining value to locker
+            _isUsedAsBurnProof[_txId] = true;
+        } else if (_paidOutputCounter == numberOfOutputs) {
+            // All output pays cc burn requests
+            _isUsedAsBurnProof[_txId] = true;
+        }
+    }
 
     function disputeLockerHelper(
         mapping(bytes32 => bool) storage _isUsedAsBurnProof,
@@ -24,10 +50,10 @@ library BurnRouterLib {
             _versions.length == 2 &&
             _locktimes.length == 2 &&
             _indexesAndBlockNumbers.length == 3,
-            "CCBurnRouter: wrong inputs"
+            "BurnRouterLogic: wrong inputs"
         );
 
-        require(_indexesAndBlockNumbers[2] >= _startingBlockNumber, "CCBurnRouter: old request");
+        require(_indexesAndBlockNumbers[2] >= _startingBlockNumber, "BurnRouterLogic: old request");
 
         require(
             isConfirmed(
@@ -37,7 +63,7 @@ library BurnRouterLib {
                 _inputIntermediateNodes,
                 _indexesAndBlockNumbers[1] // Index of input tx in the block
             ),
-            "CCBurnRouter: not finalized"
+            "BurnRouterLogic: not finalized"
         );
 
         /*
@@ -47,7 +73,7 @@ library BurnRouterLib {
         */
         require(
             !_isUsedAsBurnProof[_inputTxId],
-            "CCBurnRouter: already used"
+            "BurnRouterLogic: already used"
         );
 
         // prevents multiple slashing of locker
@@ -56,7 +82,7 @@ library BurnRouterLib {
         // Checks that deadline for using the tx as burn proof has passed
         require(
             lastSubmittedHeight(_relay) > _transferDeadline + _indexesAndBlockNumbers[2],
-            "CCBurnRouter: deadline not passed"
+            "BurnRouterLogic: deadline not passed"
         ); 
 
     }
