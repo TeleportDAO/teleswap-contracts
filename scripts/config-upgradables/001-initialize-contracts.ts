@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
-import { ethers, upgrades } from "hardhat";
+import { ethers } from "hardhat";
 import config from 'config';
 const logger = require('node-color-log');
 
@@ -42,87 +42,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainID = config.get("chain_id");
 
     logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set LockersLogic in LockersProxy ...")
-
-    const lockersProxyFactory = await ethers.getContractFactory("LockersProxy");
-    const lockersProxyInstance = await lockersProxyFactory.attach(
-        lockersProxy.address
-    );
-
-    // const _lockersLogic = await upgrades.erc1967.getImplementationAddress(lockersProxy.address);
-    const _lockersLogic = await lockersProxyInstance.implementation();
-
-    if (_lockersLogic != lockersLogic.address) {
-        const setLogicTx = await lockersProxyInstance.upgradeTo(
-            lockersLogic.address
-        )
-        await setLogicTx.wait(1)
-        console.log("Set LockersLogic in LockersProxy: ", setLogicTx.hash)
-    } else {
-        console.log("LockersLogic is already set")
-    }
-
-    logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set CcTransferRouterLogic in CcTransferRouterProxy ...")
-
-    const ccTransferRouterProxyFactory = await ethers.getContractFactory("CcTransferRouterProxy");
-    const ccTransferRouterProxyInstance = await ccTransferRouterProxyFactory.attach(
-        ccTransferRouterProxy.address
-    );
-
-    const _ccTransferRouterLogic = await lockersProxyInstance.implementation()
-
-    if (_ccTransferRouterLogic != ccTransferRouterLogic.address) {
-        const setTx = await ccTransferRouterProxyInstance.upgradeTo(
-            ccTransferRouterLogic.address
-        )
-        await setTx.wait(1)
-        console.log("Set CcTransferRouterLogic in CcTransferRouterProxy: ", setTx.hash)
-    } else {
-        console.log("CcTransferRouterLogic is already set")
-    }
-
-    logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set CcExchangeRouterLogic in CcExchangeRouterProxy ...")
-
-    const ccExchangeRouterProxyFactory = await ethers.getContractFactory("CcExchangeRouterProxy");
-    const ccExchangeRouterProxyInstance = await ccExchangeRouterProxyFactory.attach(
-        ccExchangeRouterProxy.address
-    );
-
-    const _ccExchangeRouterLogic = await lockersProxyInstance.implementation()
-
-    if (_ccExchangeRouterLogic != ccExchangeRouterLogic.address) {
-        const setTx = await ccExchangeRouterProxyInstance.upgradeTo(
-            ccExchangeRouterLogic.address
-        )
-        await setTx.wait(1)
-        console.log("Set CcExchangeRouterLogic in CcExchangeRouterProxy: ", setTx.hash)
-    } else {
-        console.log("CcExchangeRouterLogic is already set")
-    }
-
-    logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set BurnRouterLogic in BurnRouterProxy ...")
-
-    const burnRouterProxyFactory = await ethers.getContractFactory("BurnRouterProxy");
-    const burnRouterProxyInstance = await burnRouterProxyFactory.attach(
-        burnRouterProxy.address
-    );
-
-    const _burnRouterLogic = await lockersProxyInstance.implementation()
-
-    if (_burnRouterLogic != burnRouterLogic.address) {
-        const setTx = await burnRouterProxyInstance.upgradeTo(
-            burnRouterLogic.address
-        )
-        await setTx.wait(1)
-        console.log("Set BurnRouterLogic in BurnRouterProxy: ", setTx.hash)
-    } else {
-        console.log("BurnRouterLogic is already set")
-    }
-
-    logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Initialize Lockers ...")
 
     const lockersLogicFactory = await ethers.getContractFactory(
@@ -133,14 +52,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             }
         }
     );
-    const lockersInstance = await lockersLogicFactory.attach(
+    const lockersProxyInstance = await lockersLogicFactory.attach(
+        lockersProxy.address
+    );
+    const lockersLogicInstance = await lockersLogicFactory.attach(
         lockersLogic.address
     );
 
-    const teleDAOTokenAddress = await lockersInstance.TeleportDAOToken()
-
-    if (teleDAOTokenAddress == ZERO_ADD) {
-        const initializeTx = await lockersInstance.initialize(
+    let _relayProxy = await lockersProxyInstance.relay();
+    if (_relayProxy == ZERO_ADD) {
+        const initializeTx = await lockersProxyInstance.initialize(
             teleBTC.address,
             teleDAOToken.address,
             exchangeConnector.address,
@@ -154,9 +75,30 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             priceWithDiscountRatio
         )
         await initializeTx.wait(1)
-        console.log("Initialized LockersLogic: ", initializeTx.hash)
+        console.log("Initialized lockersProxy: ", initializeTx.hash)
     } else {
-        console.log("LockersLogic is already initialized")
+        console.log("lockersProxy is already initialized")
+    }
+
+    let _relayLogic = await lockersLogicInstance.relay()
+    if (_relayLogic == ZERO_ADD) {
+        const initializeTx = await lockersLogicInstance.initialize(
+            teleBTC.address,
+            teleDAOToken.address,
+            exchangeConnector.address,
+            priceOracle.address,
+            ccBurnRouter.address,
+            minTDTLockedAmount,
+            minNativeLockedAmount,
+            collateralRatio,
+            liquidationRatio,
+            lockerPercentageFee,
+            priceWithDiscountRatio
+        )
+        await initializeTx.wait(1)
+        console.log("Initialized lockersLogic: ", initializeTx.hash)
+    } else {
+        console.log("lockersLogic is already initialized")
     }
 
     logger.color('blue').log("-------------------------------------------------")
@@ -165,8 +107,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const ccTransferRouterLogicFactory = await ethers.getContractFactory(
         "CcTransferRouterLogic"
     );
+    const ccTransferRouterProxyInstance = await ccTransferRouterLogicFactory.attach(
+        ccTransferRouterProxy.address
+    );
+    const ccTransferRouterLogicInstance = await ccTransferRouterLogicFactory.attach(
+        ccTransferRouterLogic.address
+    );
 
-    let _relayProxy = await ccTransferRouterProxyInstance.relay();
+    _relayProxy = await ccTransferRouterProxyInstance.relay();
     if (_relayProxy == ZERO_ADD) {
         const initializeTxProxy = await ccTransferRouterProxyInstance.initialize(
             startingBlockHeight,
@@ -182,10 +130,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("Initialized CcTransferRouterProxy: ", initializeTxProxy.hash);
     }
     
-    const ccTransferRouterLogicInstance = await ccTransferRouterLogicFactory.attach(
-        ccTransferRouterLogic.address
-    );
-    let _relayLogic = await ccTransferRouterLogicInstance.relay();
+    _relayLogic = await ccTransferRouterLogicInstance.relay();
     if (_relayLogic == ZERO_ADD) {
         const initializeTxLogic = await ccTransferRouterLogicInstance.initialize(
             startingBlockHeight,
@@ -211,6 +156,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
                 BurnRouterLib: burnRouterLib.address
             }
         }
+    );
+    const burnRouterProxyInstance = await burnRouterLogicFactory.attach(
+        burnRouterProxy.address
     );
     const burnRouterLogicInstance = await burnRouterLogicFactory.attach(
         burnRouterLogic.address
@@ -255,6 +203,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const ccExchangeRouterLogicFactory = await ethers.getContractFactory(
         "CcExchangeRouterLogic"
+    );
+    const ccExchangeRouterProxyInstance = await ccExchangeRouterLogicFactory.attach(
+        ccExchangeRouterProxy.address
     );
     const ccExchangeRouterLogicInstance = await ccExchangeRouterLogicFactory.attach(
         ccExchangeRouterLogic.address
