@@ -126,9 +126,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         instantPool.address
     );
     
-    const _instantRouter = await instantPoolInstance.instantRouter()
+    const _instantRouter = await instantPoolInstance.instantRouter();
 
-    if (_instantRouter != instantRouter.address) {
+    if (_instantRouter.toLowerCase() != instantRouter.address) {
         const setInstantRouterTx = await instantPoolInstance.setInstantRouter(
             instantRouter.address
         )
@@ -139,7 +139,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
 
     logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("ADD PriceProxies to PriceOracle ...")
+    logger.color('blue').bold().log("Set PriceProxies to PriceOracle ...")
 
     const wrappedMatic = config.get("wrapped_matic")
     const maticUSDOracle = config.get("chain_link_oracles.matic_usd");

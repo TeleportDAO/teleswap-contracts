@@ -1,7 +1,7 @@
 {
   "bitcoin_network": "mainnet",
   "bitcoin_relay": "0x7DeB66341b1d499D7e699589d0cf665De4132EA3",
-  "starting_block_height": "123",
+  "starting_block_height": "808494",
   "uniswap_v2_router_02": "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff",
   "uniswap_v2_factory": "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32",
   "wrapped_matic": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",

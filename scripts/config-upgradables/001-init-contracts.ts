@@ -10,7 +10,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const lockersLib = await deployments.get("LockersLib")
     const lockersLogic = await deployments.get("LockersLogic")
-    const ccBurnRouter = await deployments.get("CCBurnRouter")
     const teleDAOToken = await deployments.get("ERC20");
     const teleBTC = await deployments.get("TeleBTC");
     const exchangeConnector = await deployments.get("UniswapV2Connector");
@@ -59,14 +58,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         lockersLogic.address
     );
 
-    let _relayProxy = await lockersProxyInstance.relay();
-    if (_relayProxy == ZERO_ADD) {
+    let _teleBtcProxy = await lockersProxyInstance.teleBTC();
+    if (_teleBtcProxy == ZERO_ADD) {
         const initializeTx = await lockersProxyInstance.initialize(
             teleBTC.address,
             teleDAOToken.address,
             exchangeConnector.address,
             priceOracle.address,
-            ccBurnRouter.address,
+            burnRouterProxy.address,
             minTDTLockedAmount,
             minNativeLockedAmount,
             collateralRatio,
@@ -80,14 +79,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("lockersProxy is already initialized")
     }
 
-    let _relayLogic = await lockersLogicInstance.relay()
-    if (_relayLogic == ZERO_ADD) {
+    let _teleBtcLogic = await lockersLogicInstance.teleBTC()
+    if (_teleBtcLogic == ZERO_ADD) {
         const initializeTx = await lockersLogicInstance.initialize(
             teleBTC.address,
             teleDAOToken.address,
             exchangeConnector.address,
             priceOracle.address,
-            ccBurnRouter.address,
+            burnRouterProxy.address,
             minTDTLockedAmount,
             minNativeLockedAmount,
             collateralRatio,
@@ -114,7 +113,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ccTransferRouterLogic.address
     );
 
-    _relayProxy = await ccTransferRouterProxyInstance.relay();
+    let _relayProxy = await ccTransferRouterProxyInstance.relay();
     if (_relayProxy == ZERO_ADD) {
         const initializeTxProxy = await ccTransferRouterProxyInstance.initialize(
             startingBlockHeight,
@@ -130,7 +129,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("Initialized CcTransferRouterProxy: ", initializeTxProxy.hash);
     }
     
-    _relayLogic = await ccTransferRouterLogicInstance.relay();
+    let _relayLogic = await ccTransferRouterLogicInstance.relay();
     if (_relayLogic == ZERO_ADD) {
         const initializeTxLogic = await ccTransferRouterLogicInstance.initialize(
             startingBlockHeight,

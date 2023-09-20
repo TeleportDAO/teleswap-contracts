@@ -15,7 +15,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const instantRouter = await deployments.get("InstantRouter")
     const burnRouterProxy = await deployments.get("BurnRouterProxy")
     const burnRouterLib = await deployments.get("BurnRouterLib")
-    const ccExchangeRouterProxy = await deployments.get("CCExchangeRouter")
+    const ccExchangeRouterProxy = await deployments.get("CcExchangeRouterProxy")
     const exchangeConnector = await deployments.get("UniswapV2Connector")
 
     logger.color('blue').log("-------------------------------------------------")
@@ -55,7 +55,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const _instantRouter = await ccTransferRouterProxyInstance.instantRouter()
 
-    if (_instantRouter != instantRouter.address) {
+    if (_instantRouter.toLowerCase() != instantRouter.address) {
         const setInstantRouterTx = await ccTransferRouterProxyInstance.setInstantRouter(
             instantRouter.address
         )
@@ -73,7 +73,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ccExchangeRouterProxy.address
     );
     
-    if (_instantRouter != instantRouter.address) {
+    if (_instantRouter.toLowerCase() != instantRouter.address) {
         const setInstantRouterTx = await ccExchangeRouterProxyInstance.setInstantRouter(
             instantRouter.address
         )
@@ -176,9 +176,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Set PriceOracle in Lockers ...")
 
-    const priceOracleAddress = await lockersInstance.priceOracle()
+    const _priceOracleAddress = await lockersInstance.priceOracle()
 
-    if (priceOracleAddress != priceOracle.address) {
+    if (_priceOracleAddress.toLowerCase() != priceOracle.address) {
         const addPriceOracle = await lockersInstance.setPriceOracle(
             priceOracle.address
         )
