@@ -1,7 +1,8 @@
 import * as dotenv from "dotenv";
 
-import { task, HardhatUserConfig} from "hardhat/config";
+import { HardhatUserConfig} from "hardhat/config";
 import { HttpNetworkUserConfig } from "hardhat/types";
+import '@openzeppelin/hardhat-upgrades';
 
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-waffle";

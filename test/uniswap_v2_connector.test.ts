@@ -7,8 +7,6 @@ import { UniswapV2Connector } from "../src/types/UniswapV2Connector";
 import { UniswapV2Connector__factory } from "../src/types/factories/UniswapV2Connector__factory";
 import { UniswapV2Pair } from "../src/types/UniswapV2Pair";
 import { UniswapV2Pair__factory } from "../src/types/factories/UniswapV2Pair__factory";
-import { erc20 } from "../src/types/erc20";
-import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 import { WETH } from "../src/types/WETH";
@@ -47,8 +45,6 @@ describe("UniswapV2Connector", async () => {
     let oldReserveB: BigNumber;
     let oldReserveC: BigNumber;
     let oldReserveD: BigNumber;
-    let oldReserveE: BigNumber;
-    let oldReserveF: BigNumber;
     let oldDeployerBalanceERC20: BigNumber;
     let oldDeployerBalanceerc20X: BigNumber;
     let oldDeployerBalanceerc20Z: BigNumber;
@@ -123,6 +119,7 @@ describe("UniswapV2Connector", async () => {
         // Adds liquidity for non-WETH/non-WETH pool
         await erc20.approve(uniswapV2Router02.address, addedLiquidityA);
         await erc20X.approve(uniswapV2Router02.address, addedLiquidityB);
+
         await uniswapV2Router02.addLiquidity(
             erc20.address,
             erc20X.address,
@@ -133,6 +130,7 @@ describe("UniswapV2Connector", async () => {
             deployerAddress,
             10000000000000, // Long deadline
         );
+        console.log("we are here2");
         let liquidityPoolABAddress = await uniswapV2Factory.getPair(
             erc20.address,
             erc20X.address

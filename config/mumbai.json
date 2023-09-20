@@ -1,6 +1,7 @@
 {
   "bitcoin_network": "testnet",
   "bitcoin_relay": "0x5b845e3EB38d78cD5006C04b0Bc78692b5535F56",
+  "starting_block_height": "123",
   "uniswap_v2_router_02": "0x8954AfA98594b838bda56FE4C12a09D7739D179b",
   "uniswap_v2_factory": "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32",
   "wrapped_matic": "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889",
@@ -44,5 +45,10 @@
     "liquidation_ratio": 10500,
     "locker_percentage_fee": 15,
     "price_with_discount_ratio": 9000
+  },
+  "collateral_pools": {
+    "usdt_collateral_ratio": 15000,
+    "usdc_collateral_ratio": 15000,
+    "wmatic_collateral_ratio": 20000
   }
 }

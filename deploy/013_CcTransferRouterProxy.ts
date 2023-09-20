@@ -1,20 +1,23 @@
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { DeployFunction } from 'hardhat-deploy/types';
+import {HardhatRuntimeEnvironment} from 'hardhat/types';
+import {DeployFunction} from 'hardhat-deploy/types';
 import verify from "../helper-functions"
+
+import * as dotenv from "dotenv";
+dotenv.config();
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts, network } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const lockersLogic = await deployments.get("LockersLogic")
+    const ccTransferRouterLogic = await deployments.get("CcTransferRouterLogic")
 
-    const deployedContract = await deploy("LockersProxy", {
+    const deployedContract = await deploy("CcTransferRouterProxy", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            lockersLogic.address,
+            ccTransferRouterLogic.address,
             deployer,
             "0x"
         ],
@@ -24,14 +27,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await verify(
             deployedContract.address, 
             [
-                lockersLogic.address,
+                ccTransferRouterLogic.address,
                 deployer,
                 "0x"
             ], 
-            "contracts/lockers/LockersProxy.sol:LockersProxy"
+            "contracts/routers/CcTransferRouterProxy.sol:CcTransferRouterProxy"
         )
     }
 };
 
 export default func;
-func.tags = ["LockersProxy"];
+func.tags = ["CcTransferRouterProxy"];
