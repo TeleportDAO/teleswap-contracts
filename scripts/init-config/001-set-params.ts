@@ -8,8 +8,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments } = hre;
     const ZERO_ADD = "0x0000000000000000000000000000000000000000";
 
-    const instantRouter = await deployments.get("InstantRouter")
-
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Set LockersProxy as minter and burner in teleBTC ...")
 
@@ -94,48 +92,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("Set ExchangeRouter in PriceOracle: ", addExchangeTx.hash)
     } else {
         console.log("ExchangeRouter is already set")
-    }
-
-    logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set InstantPool in InstantRouter ...")
-
-    const instantPool = await deployments.get("InstantPool")
-
-    const instantRouterFactory = await ethers.getContractFactory("InstantRouter");
-    const instantRouterInstance = await instantRouterFactory.attach(
-        instantRouter.address
-    );
-
-    const _instantPool = await instantRouterInstance.teleBTCInstantPool()
-
-    if (_instantPool != instantPool.address) {
-        const setInstantPoolTx = await instantRouterInstance.setTeleBTCInstantPool(
-            instantPool.address
-        )
-        await setInstantPoolTx.wait(1)
-        console.log("Set InstantPool in InstantRouter: ", setInstantPoolTx.hash)
-    } else {
-        console.log("InstantPool is already set")
-    }
-
-    logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set InstantRouter in InstantPool ...")
-
-    const instantPoolFactory = await ethers.getContractFactory("InstantPool");
-    const instantPoolInstance = await instantPoolFactory.attach(
-        instantPool.address
-    );
-    
-    const _instantRouter = await instantPoolInstance.instantRouter();
-
-    if (_instantRouter.toLowerCase() != instantRouter.address) {
-        const setInstantRouterTx = await instantPoolInstance.setInstantRouter(
-            instantRouter.address
-        )
-        await setInstantRouterTx.wait(1)
-        console.log("Set InstantRouter in InstantPool: ", setInstantRouterTx.hash)
-    } else {
-        console.log("InstantRouter is already set")
     }
 
     logger.color('blue').log("-------------------------------------------------")
@@ -230,72 +186,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("USDC/USD is already set")
     }
     
-    logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Create USDC collateral pool ...")
-
-    const collateralPoolFactoryContract = await deployments.get("CollateralPoolFactory")
-    const collateralPoolFactoryFactory = await ethers.getContractFactory("CollateralPoolFactory")
-    const collateralPoolFactoryInstance = await collateralPoolFactoryFactory.attach(
-        collateralPoolFactoryContract.address
-    )
-    const usdcCollateralRatio = config.get("collateral_pools.usdc_collateral_ratio");
-
-    let hasCollateralPoolAddress = await collateralPoolFactoryInstance.getCollateralPoolByToken(
-        usdc
-    )
-
-    if (hasCollateralPoolAddress == ZERO_ADD) {
-        const createCollateralPoolTx = await collateralPoolFactoryInstance.createCollateralPool(
-            usdc,
-            usdcCollateralRatio
-        )
-        await createCollateralPoolTx.wait(1)
-        console.log("Created USDC collateral pool: ", createCollateralPoolTx.hash)
-    
-    } else {
-        console.log("USDC collateral pool already exists")
-    }
-
-    logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Create USDtT collateral pool ...")
-
-    hasCollateralPoolAddress = await collateralPoolFactoryInstance.getCollateralPoolByToken(
-        usdt
-    )
-    const usdtCollateralRatio = config.get("collateral_pools.usdt_collateral_ratio");
-
-    if (hasCollateralPoolAddress == ZERO_ADD) {
-        const createCollateralPoolTx = await collateralPoolFactoryInstance.createCollateralPool(
-            usdt,
-            usdtCollateralRatio
-        )
-        await createCollateralPoolTx.wait(1)
-        console.log("Created USDT collateral pool: ", createCollateralPoolTx.hash)
-    
-    } else {
-        console.log("USDT collateral pool already exists")
-    }
-
-    logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Create WMATIC collateral pool")
-
-    hasCollateralPoolAddress = await collateralPoolFactoryInstance.getCollateralPoolByToken(
-        wrappedMatic
-    )
-    const wmaticCollateralRatio = config.get("collateral_pools.wmatic_collateral_ratio");
-
-    if (hasCollateralPoolAddress == "0x0000000000000000000000000000000000000000") {
-        const createCollateralPoolTx = await collateralPoolFactoryInstance.createCollateralPool(
-            wrappedMatic,
-            wmaticCollateralRatio
-        )
-        await createCollateralPoolTx.wait(1)
-        console.log("Created WMATIC collateral pool: ", createCollateralPoolTx.hash)
-    
-    } else {
-        console.log("WMATIC collateral pool already exists")
-    }
-
 };
 
 export default func;

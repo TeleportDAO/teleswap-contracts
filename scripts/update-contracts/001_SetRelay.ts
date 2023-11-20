@@ -78,25 +78,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("relay is already settled in CCexchange router: ")
     }
 
-    // set relay in instant router
-    const instantRouter = await deployments.get("InstantRouter")
-    const instantRouterFactory = await ethers.getContractFactory("InstantRouter")
-    const instantRouterInstance = await instantRouterFactory.attach(
-        instantRouter.address
-    )
-
-    const checkRelayInInstantRouter = await instantRouterInstance.relay()
-
-    if (checkRelayInInstantRouter != relay) {
-        tx = await instantRouterInstance.setRelay(
-            relay
-        )
-        tx.wait(1)
-        console.log("set relay in instant router: ", tx.hash)
-    } else {
-        console.log("relay is already settled in instant router")
-    }
-
 };
 
 export default func;

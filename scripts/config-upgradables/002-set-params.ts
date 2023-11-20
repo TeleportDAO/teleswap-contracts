@@ -12,7 +12,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const teleBTC = await deployments.get("TeleBTC")
     const priceOracle = await deployments.get("PriceOracle")
     const ccTransferRouterProxy = await deployments.get("CcTransferRouterProxy")
-    const instantRouter = await deployments.get("InstantRouter")
     const burnRouterProxy = await deployments.get("BurnRouterProxy")
     const burnRouterLib = await deployments.get("BurnRouterLib")
     const ccExchangeRouterProxy = await deployments.get("CcExchangeRouterProxy")
@@ -46,46 +45,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
 
     logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set InstantRouter in CcTransferRouterProxy ...")
-
-    const ccTransferRouterLogicFactory = await ethers.getContractFactory("CcTransferRouterLogic");
-    const ccTransferRouterProxyInstance = await ccTransferRouterLogicFactory.attach(
-        ccTransferRouterProxy.address
-    );
-
-    const _instantRouter = await ccTransferRouterProxyInstance.instantRouter()
-
-    if (_instantRouter.toLowerCase() != instantRouter.address) {
-        const setInstantRouterTx = await ccTransferRouterProxyInstance.setInstantRouter(
-            instantRouter.address
-        )
-        await setInstantRouterTx.wait(1)
-        console.log("Set InstantRouter in CcTransferRouterProxy: ", setInstantRouterTx.hash)
-    } else {
-        console.log("InstantRouter is already set")
-    }
-
-    logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set InstantRouter in CcExchangeRouterProxy ...")
+    logger.color('blue').bold().log("Set ExchangeConnector in CcExchangeRouterProxy ...")
 
     const ccExchangeRouterLogicFactory = await ethers.getContractFactory("CcExchangeRouterLogic");
     const ccExchangeRouterProxyInstance = await ccExchangeRouterLogicFactory.attach(
         ccExchangeRouterProxy.address
     );
-    
-    if (_instantRouter.toLowerCase() != instantRouter.address) {
-        const setInstantRouterTx = await ccExchangeRouterProxyInstance.setInstantRouter(
-            instantRouter.address
-        )
-        await setInstantRouterTx.wait(1)
-        console.log("Set InstantRouter in CcExchangeRouterProxy: ", setInstantRouterTx.hash)
-    } else {
-        console.log("InstantRouter is already set")
-    }
-
-    logger.color('blue').log("-------------------------------------------------")
-    logger.color('blue').bold().log("Set ExchangeConnector in CcExchangeRouterProxy ...")
-
     const exchangeAppId = config.get("cc_exchange.app_id")
 
     const _exchangeConnector = await ccExchangeRouterProxyInstance.exchangeConnector(exchangeAppId)

@@ -741,7 +741,6 @@ contract BurnRouterLogic is IBurnRouter, BurnRouterStorage,
     /// @notice Internal setter for Bitcoin transaction fee
     function _setBitcoinFee(uint _bitcoinFee) private {
         emit NewBitcoinFee(bitcoinFee, _bitcoinFee);
-        require(MAX_PROTOCOL_FEE >= _bitcoinFee, "BurnRouterLogic: invalid btc fee");
         bitcoinFee = _bitcoinFee;
     }
 

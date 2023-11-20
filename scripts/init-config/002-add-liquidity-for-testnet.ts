@@ -18,7 +18,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const uniswapRouter = await config.get("uniswap_v2_router_02") as string
 
     const teleBTC = await deployments.get("TeleBTC")
-    const instantPool = await deployments.get("InstantPool")
 
     const teleBTCFactory = await ethers.getContractFactory("TeleBTC");
     const teleBTCInstance = await teleBTCFactory.attach(
@@ -66,7 +65,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
         await approveTeleBTCTx.wait(1)
 
-
         const addLiquidityPairTx = await uniswapRouterInstance.addLiquidityETH(
             teleBTC.address,
             (one8Dec.div(1800)).toString(),
@@ -81,85 +79,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         await addLiquidityPairTx.wait(1)
         console.log("Charged WMATIC-TELEBTC pool: ", addLiquidityPairTx.hash)
-
-        logger.color('blue').log("-------------------------------------------------")
-        logger.color('blue').bold().log("Add liquidity to InstantPool ...")
-
-        const instantPoolFactory = await ethers.getContractFactory("InstantPool");
-        const instantPoolInstance = await instantPoolFactory.attach(
-            instantPool.address
-        );
-
-        if(!isMinterTeleBTCTx) {
-            const addMinterTeleBTCTx = await teleBTCInstance.addMinter(deployer)
-            await addMinterTeleBTCTx.wait(1)
-        }
-
-        const mintTeleBTCTx = await teleBTCInstance.mint(deployer, one8Dec.div(2))
-        await mintTeleBTCTx.wait(1)
-        console.log("mint telebtc: ", mintTeleBTCTx.hash)
-
-        approveTeleBTCTx = await teleBTCInstance.approve(
-            instantPool.address,
-            one8Dec.div(2)
-        )
-        await approveTeleBTCTx.wait(1)
-
-        const addLiquiditylTx = await instantPoolInstance.addLiquidity(
-            deployer,
-            one8Dec.div(2)
-        )
-
-        await addLiquiditylTx.wait(1)
-        console.log("Added liquidity to InstantPool: ", addLiquiditylTx.hash)
-
-        logger.color('blue').log("-------------------------------------------------")
-        logger.color('blue').bold().log("Charge WMATIC collateral pool ...")
-
-        const wrappedMatic = config.get("wrapped_matic") as string
-        const erc20Factory = await ethers.getContractFactory("WETH")
-        const erc20Instance = await erc20Factory.attach(
-            wrappedMatic
-        )
-
-        const collateralPoolFactoryContract = await deployments.get("CollateralPoolFactory")
-        const collateralPoolFactoryFactory = await ethers.getContractFactory("CollateralPoolFactory")
-        const collateralPoolFactoryInstance = await collateralPoolFactoryFactory.attach(
-            collateralPoolFactoryContract.address
-        )
-        const collateralPoolAddress = await collateralPoolFactoryInstance.getCollateralPoolByToken(
-            wrappedMatic
-        )
-
-        const depositTx = await erc20Instance.deposit(
-            { value: one8Dec }
-        );
-        await depositTx.wait(1)
-
-        const approveForCollateralPoolTx = await erc20Instance.approve(
-            collateralPoolAddress, 
-            one8Dec
-        );
-        await approveForCollateralPoolTx.wait(1)
-        console.log("Approved collateral pool to access to WMATIC: ", approveForCollateralPoolTx.hash)
-
-        const collateralPoolContract = await ethers.getContractFactory(
-            "CollateralPool"
-        );
-
-        const collateralPoolInstance = await collateralPoolContract.attach(
-            collateralPoolAddress
-        );
-
-        const addLiquidityTx = await collateralPoolInstance.addCollateral(
-            deployer,
-            one8Dec
-        )
-
-        await addLiquidityTx.wait(1)
-        console.log("Added WMATIC to collateral pool: ", addLiquidityTx.hash)
     }
-
 };
 
 export default func;

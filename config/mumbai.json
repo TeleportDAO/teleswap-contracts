@@ -31,24 +31,11 @@
     "bitcoin_fee": 10000,
     "transfer_deadLine": 72
   },
-  "instant_router": {
-    "slasher_percentage_reward": 500,
-    "payback_deadline": 12,
-    "max_price_difference_percent": 2500
-  },
-  "instant_pool": {
-    "instant_percentage_fee": 15
-  },
   "lockers_contract": {
     "minimum_native_locked_amount": "1",
     "collateral_ratio": 13000,
     "liquidation_ratio": 10500,
     "locker_percentage_fee": 15,
     "price_with_discount_ratio": 9000
-  },
-  "collateral_pools": {
-    "usdt_collateral_ratio": 15000,
-    "usdc_collateral_ratio": 15000,
-    "wmatic_collateral_ratio": 20000
   }
 }

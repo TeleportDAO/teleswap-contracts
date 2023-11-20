@@ -3,7 +3,6 @@ pragma solidity >=0.8.0 <0.8.4;
 
 import "./CcTransferRouterStorage.sol";
 import "./interfaces/ICcTransferRouter.sol";
-import "./interfaces/IInstantRouter.sol";
 import "../libraries/RequestHelper.sol";
 import "../lockers/interfaces/ILockers.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
@@ -206,25 +205,10 @@ contract CcTransferRouterLogic is ICcTransferRouter, CcTransferRouterStorage,
 
         // Normal cc transfer request
         if (ccTransferRequests[txId].speed == 0) {
-            (uint receivedAmount, uint _protocolFee, uint _teleporterFee) = _sendTeleBTC(_lockerLockingScript, txId);
-            emit CCTransfer(
-                _lockerLockingScript,
-                0,
-                ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
-                ccTransferRequests[txId].recipientAddress,
-                ccTransferRequests[txId].inputAmount,
-                receivedAmount,
-                ccTransferRequests[txId].speed,
-                _msgSender(),
-                _teleporterFee,
-                0,
-                _protocolFee,
+            (uint receivedAmount, uint _protocolFee, uint _teleporterFee) = _sendTeleBTC(
+                _lockerLockingScript, 
                 txId
             );
-            return true;
-        } else {
-            // Pays back instant loan (ccTransferRequests[txId].speed == 1)
-            (uint receivedAmount, uint _protocolFee, uint _teleporterFee) = _payBackInstantLoan(_lockerLockingScript, txId);
             emit CCTransfer(
                 _lockerLockingScript,
                 0,
@@ -257,31 +241,6 @@ contract CcTransferRouterLogic is ICcTransferRouter, CcTransferRouterStorage,
 
         // Transfers rest of tokens to recipient
         ITeleBTC(teleBTC).transfer(
-            ccTransferRequests[_txId].recipientAddress,
-            _remainedAmount
-        );
-    }
-
-    /// @notice                             Executes the paying back instant loan request
-    /// @param _lockerLockingScript         Locker's locking script
-    /// @param _txId                        The transaction ID of the request
-    /// @return _remainedAmount             Amount of teleBTC that user receives after reducing fees
-    function _payBackInstantLoan(
-        bytes memory _lockerLockingScript, 
-        bytes32 _txId
-    ) private returns (uint _remainedAmount, uint _protocolFee, uint _teleporterFee) {
-
-        // Gets remained amount after reducing fees
-        (_remainedAmount, _protocolFee, _teleporterFee) = _mintAndReduceFees(_lockerLockingScript, _txId);
-
-        // Gives allowance to instant router to transfer remained teleBTC
-        ITeleBTC(teleBTC).approve(
-            instantRouter,
-            _remainedAmount
-        );
-
-        // Pays back instant loan
-        IInstantRouter(instantRouter).payBackLoan(
             ccTransferRequests[_txId].recipientAddress,
             _remainedAmount
         );

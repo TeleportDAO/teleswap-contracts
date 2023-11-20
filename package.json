@@ -1,7 +1,7 @@
 {
 	"name": "@teleportdao/teleswap-contracts",
-	"version": "1.0.0",
-	"description": "Trustless wrapping&swapping protocol for Bitcoin",
+	"version": "1.1.0",
+	"description": "Trustless protocol for bridging and trading Bitcoin",
 	"license": "MIT",
 	"devDependencies": {
 		"@commitlint/cli": "^17.4.4",

@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 const logger = require('node-color-log');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts, network} = hre;
+    const { deployments } = hre;
     let tx;
     
     logger.color('blue').log("-------------------------------------------------")
@@ -30,8 +30,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     } else {
         console.log("teleBTC is already settled in CCtransfer router")
     }
-    
-
 
     // set relay in cc burn router
     const relayHelper = await deployments.get("RelayHelper")
@@ -78,45 +76,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     } else {
         console.log("telebtc is already settled in CCexchange router")
     }
-    
-
-    // set telebtc in instant router
-    const instantRouter = await deployments.get("InstantRouter")
-    const instantRouterFactory = await ethers.getContractFactory("InstantRouter")
-    const instantRouterInstance = await instantRouterFactory.attach(
-        instantRouter.address
-    )
-
-    const checkTeleBTCInInstantRouter = await instantRouterInstance.teleBTC() 
-
-    if (checkTeleBTCInInstantRouter != telebtc.address) {
-        tx = await instantRouterInstance.setTeleBTC(
-            telebtc.address
-        )
-        tx.wait(1)
-        console.log("set telebtc in instant router: ", tx.hash)
-    } else {
-        console.log("telebtc is already settled in instant router")
-    }
-
-    // set telebtc in instant pool
-    const instantPool = await deployments.get("InstantPool")
-    const instantPoolFactory = await ethers.getContractFactory("InstantPool")
-    const instantPoolInstance = await instantPoolFactory.attach(
-        instantPool.address
-    )
-
-    const checkTeleBTCInInstantPool = await instantPoolInstance.teleBTC() 
-
-    if (checkTeleBTCInInstantPool != telebtc.address) {
-        tx = await instantPoolInstance.setTeleBTC(
-            telebtc.address
-        )
-        tx.wait(1)
-        console.log("set telebtc in instant pool: ", tx.hash)
-    } else {
-        console.log("telebtc is already settled in instant pool")
-    }
 
     // set telebtc in locker
     // const lockers = await deployments.get("LockersProxy")
@@ -138,7 +97,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // )
     // tx.wait(1)
     // console.log("set telebtc in lockers: ", tx.hash)
-
 
     logger.color('blue').log("-------------------------------------------------")
 

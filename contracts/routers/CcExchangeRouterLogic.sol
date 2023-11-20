@@ -3,7 +3,6 @@ pragma solidity >=0.8.0 <0.8.4;
 
 import "./CcExchangeRouterStorage.sol";
 import "./interfaces/ICcExchangeRouter.sol";
-import "./interfaces/IInstantRouter.sol";
 import "../connectors/interfaces/IExchangeConnector.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../lockers/interfaces/ILockers.sol";
@@ -212,9 +211,6 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
         if (ccExchangeRequests[txId].speed == 0) {
             // Normal cc exchange request
             _normalCCExchange(_lockerLockingScript, txId);
-        } else {
-            // Pay back instant loan (ccExchangeRequests[txId].speed == 1)
-            _payBackInstantLoan(_lockerLockingScript, txId);
         }
 
         return true;
@@ -323,43 +319,6 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
                 theCCExchangeReq.appId
             );
         }
-    }
-
-    /// @notice                        Executes an instant cross-chain exchange request
-    /// @dev                           Mints teleBTC for instant router to pay back loan
-    /// @param _lockerLockingScript    Locker's locking script
-    /// @param _txId                   Id of the transaction containing the user request
-    function _payBackInstantLoan(bytes memory _lockerLockingScript, bytes32 _txId) private {
-        // Gets remained amount after reducing fees
-        uint remainedAmount = _mintAndReduceFees(_lockerLockingScript, _txId);
-
-        // Gives allowance to instant router to transfer minted teleBTC
-        ITeleBTC(teleBTC).approve(
-            instantRouter,
-            remainedAmount
-        );
-
-        // Pays back instant loan
-        IInstantRouter(instantRouter).payBackLoan(
-            ccExchangeRequests[_txId].recipientAddress,
-            remainedAmount
-        );
-
-        ccExchangeRequest memory theCCExchangeReq = ccExchangeRequests[_txId];
-
-        emit CCExchange(
-            _lockerLockingScript,
-            0,
-            ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
-            theCCExchangeReq.recipientAddress,
-            [theCCExchangeReq.path[0], theCCExchangeReq.path[1]], // input token // output token
-            [remainedAmount, theCCExchangeReq.outputAmount], // input amount // output amount
-            theCCExchangeReq.speed,
-            _msgSender(), // Teleporter address
-            theCCExchangeReq.fee,
-            _txId,
-            theCCExchangeReq.appId
-        );
     }
 
     /// @notice                             Parses and saves the request
