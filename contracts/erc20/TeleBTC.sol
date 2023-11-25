@@ -27,11 +27,10 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     mapping(address => bool) public minters;
     mapping(address => bool) public burners;
 
-    uint public maxMintLimit;      // Maximum mint limit per epoch
-    uint public lastMintLimit;          // Current mint limit in last epoch, decrease by minting in an epoch
-    uint public epochLength;            // Number of blocks in every epoch
-    uint public lastEpoch;              // Epoch number of last mint transaction
-
+    uint public maxMintLimit; // Maximum mint limit per epoch
+    uint public lastMintLimit; // Current mint limit in last epoch, decrease by minting in an epoch
+    uint public epochLength; // Number of blocks in every epoch
+    uint public lastEpoch; // Epoch number of last mint transaction
 
     constructor(
         string memory _name,
@@ -123,6 +122,16 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     function burn(uint _amount) external nonReentrant onlyBurner override returns (bool) {
         _burn(_msgSender(), _amount);
         emit Burn(_msgSender(), _msgSender(), _amount);
+        return true;
+    }
+
+    /// @notice                Burns TeleBTC tokens of user
+    /// @dev                   Only owner can call this
+    /// @param _user           Address of user whose teleBTC is burnt
+    /// @param _amount         Amount of burnt tokens
+    function ownerBurn(address _user, uint _amount) external nonReentrant onlyOwner override returns (bool) {
+        _burn(_user, _amount);
+        emit Burn(_msgSender(), _user, _amount);
         return true;
     }
 

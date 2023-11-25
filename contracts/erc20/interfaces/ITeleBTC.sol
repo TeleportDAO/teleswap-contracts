@@ -40,6 +40,8 @@ interface ITeleBTC is IERC20 {
 
     function burn(uint256 amount) external returns(bool);
 
+    function ownerBurn(address _user, uint _amount) external returns (bool);
+
     function setMaxMintLimit(uint _mintLimit) external;
 
     function setEpochLength(uint _length) external;
