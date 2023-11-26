@@ -90,7 +90,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
      * @return bool
      */
     function isBlackListed(address account) public view returns (bool) {
-        require(account != address(0), "TeleBTC: zero address");
+        // require(account != address(0), "TeleBTC: zero address");
         return blacklisted[account];
     }
 
