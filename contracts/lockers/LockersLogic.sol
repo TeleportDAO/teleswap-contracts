@@ -736,7 +736,10 @@ contract LockersLogic is LockersStorageStructure, ILockers,
         address _lockerTargetAddress = lockerTargetAddress[_lockerLockingScript];
 
         // Transfers teleBTC from user
-        ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), _amount);
+        require(
+            ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), _amount),
+            "Lockers: transferFrom failed"
+        );
 
         uint lockerFee = _amount*lockerPercentageFee/MAX_LOCKER_FEE;
         uint remainedAmount = _amount - lockerFee;
@@ -750,8 +753,14 @@ contract LockersLogic is LockersStorageStructure, ILockers,
         lockersMapping[_lockerTargetAddress].netMinted = netMinted - remainedAmount;
 
         // Burns teleBTC and sends rest of it to locker
-        ITeleBTC(teleBTC).burn(remainedAmount);
-        ITeleBTC(teleBTC).transfer(_lockerTargetAddress, lockerFee);
+        require(
+            ITeleBTC(teleBTC).burn(remainedAmount),
+            "Lockers: burn failed"
+        );
+        require(
+            ITeleBTC(teleBTC).transfer(_lockerTargetAddress, lockerFee),
+            "Lockers: lockerFee failed"
+        );
 
         emit BurnByLocker(
             _lockerTargetAddress,

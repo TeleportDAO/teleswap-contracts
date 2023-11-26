@@ -123,6 +123,8 @@ interface IBurnRouter {
 
 	// State-changing functions
 
+	function setStartingBlockNumber(uint _startingBlockNumber) external;
+
 	function setRelay(address _relay) external;
 
 	function setLockers(address _lockers) external;

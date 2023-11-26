@@ -10,7 +10,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Set telebtc globally...")
     
-    const telebtc = await deployments.get("TeleBTC")
+    // const telebtc = await deployments.get("TeleBTC")
+    const telebtc = await deployments.get("TeleBTCProxy")
 
     // set relay in cc transfer router
     const ccTransferRouter = await deployments.get("CCTransferRouter")

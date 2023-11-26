@@ -11,7 +11,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const lockersLib = await deployments.get("LockersLib")
     const lockersLogic = await deployments.get("LockersLogic")
     const teleDAOToken = await deployments.get("ERC20");
-    const teleBTC = await deployments.get("TeleBTC");
+    // const teleBTC = await deployments.get("TeleBTC");
+    const teleBTC = await deployments.get("TeleBTCProxy");
+    const teleBTCLogic = await deployments.get("TeleBTCLogic");
     const exchangeConnector = await deployments.get("UniswapV2Connector");
     const priceOracle = await deployments.get("PriceOracle");
     const ccTransferRouterLogic = await deployments.get("CcTransferRouterLogic");
@@ -238,6 +240,47 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         )
         await initializeTxLogic.wait(1);
         console.log("Initialize CcExchangeRouterLogic: ", initializeTxLogic.hash);
+    }
+
+
+    logger.color('blue').log("-------------------------------------------------")
+    logger.color('blue').bold().log("Initialize TeleBTC ...")
+
+    const teleBTCLogicFactory = await ethers.getContractFactory(
+        "TeleBTCLogic"
+    );
+    const teleBTCProxyInstance = await teleBTCLogicFactory.attach(
+        teleBTC.address
+    );
+    const teleBTCLogicInstance = await teleBTCLogicFactory.attach(
+        teleBTCLogic.address
+    );
+
+    let _ownerProxy = await teleBTCProxyInstance.owner();
+    if (_ownerProxy == ZERO_ADD) {
+        const tokenName = "teleBTC"
+        const tokenSymbol = "TELEBTC"
+
+        const initializeTxProxy = await teleBTCProxyInstance.initialize(
+            tokenName,
+            tokenSymbol
+        );
+        await initializeTxProxy.wait(1);
+        console.log("Initialize TeleBTC: ", initializeTxProxy.hash);
+    }
+
+    let _ownerLogic = await teleBTCLogicInstance.owner();
+    if (_ownerLogic == ZERO_ADD) {
+
+        const tokenName = "teleBTC"
+        const tokenSymbol = "TELEBTC"
+
+        const initializeTxLogic = await teleBTCLogicInstance.initialize(
+            tokenName,
+            tokenSymbol
+        )
+        await initializeTxLogic.wait(1);
+        console.log("Initialize TeleBTC: ", initializeTxLogic.hash);
     }
 
 };

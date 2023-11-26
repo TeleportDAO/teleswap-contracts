@@ -5,6 +5,7 @@ import "@teleportdao/btc-evm-bridge/contracts/relay/interfaces/IBitcoinRelay.sol
 import "@teleportdao/btc-evm-bridge/contracts/libraries/BitcoinHelper.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "../routers/BurnRouterStorage.sol";
 
 library BurnRouterLib {
 
@@ -31,6 +32,35 @@ library BurnRouterLib {
             // All output pays cc burn requests
             _isUsedAsBurnProof[_txId] = true;
         }
+    }
+
+    function disputeBurnHelper(
+        mapping(address => BurnRouterStorage.burnRequest[]) storage burnRequests,
+        address _lockerTargetAddress,
+        uint _index, 
+        uint _transferDeadline,
+        uint _lastSubmittedHeight,
+        uint _startingBlockNumber
+    ) external {
+        // Checks that locker has not provided burn proof
+        require(
+            !burnRequests[_lockerTargetAddress][_index].isTransferred,
+            "BurnRouterLogic: already paid"
+        );
+
+        // Checks that payback deadline has passed
+        require(
+            burnRequests[_lockerTargetAddress][_index].deadline < _lastSubmittedHeight,
+            "BurnRouterLogic: deadline not passed"
+        );
+
+        require(
+            burnRequests[_lockerTargetAddress][_index].deadline > _startingBlockNumber + _transferDeadline,
+            "BurnRouterLogic: old request"
+        );
+
+        // Sets "isTransferred = true" to prevent slashing the locker again
+        burnRequests[_lockerTargetAddress][_index].isTransferred = true;
     }
 
     function disputeLockerHelper(

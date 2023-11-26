@@ -41,8 +41,8 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
 
-        startingBlockNumber = _startingBlockNumber;
         chainId = _chainId;
+        _setStartingBlockNumber(_startingBlockNumber);
         _setProtocolPercentageFee(_protocolPercentageFee);
         _setRelay(_relay);
         _setLockers(_lockers);
@@ -51,6 +51,11 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
     }
 
     function renounceOwnership() public virtual override onlyOwner {}
+
+    /// @notice Setter for starting block number
+    function setStartingBlockNumber(uint _startingBlockNumber) external override onlyOwner {
+        _setStartingBlockNumber(_startingBlockNumber);
+    }
 
     /// @notice         Changes relay contract address
     /// @dev            Only owner can call this
@@ -145,6 +150,15 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
         protocolPercentageFee = _protocolPercentageFee;
     }
 
+    /// @notice Internal setter for starting block number
+    function _setStartingBlockNumber(uint _startingBlockNumber) private {
+        require(
+            _startingBlockNumber > startingBlockNumber,
+            "CCExchangeRouter: low startingBlockNumber"
+        );
+        startingBlockNumber = _startingBlockNumber;
+    }
+
     /// @notice                    Internal setter for treasury
     /// @param _treasury           Treasury address
     function _setTreasury(address _treasury) private nonZeroAddress(_treasury) {
@@ -181,6 +195,7 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
         uint _index,
         bytes calldata _lockerLockingScript
     ) external payable nonReentrant override returns (bool) {
+        require(_msgSender() == instantRouter, "CCExchangeRouter: invalid sender");
         require(_blockNumber >= startingBlockNumber, "CCExchangeRouter: request is too old");
 
         // Calculates transaction id
@@ -208,10 +223,8 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
             "CCExchangeRouter: transaction has not been finalized yet"
         );
 
-        if (ccExchangeRequests[txId].speed == 0) {
-            // Normal cc exchange request
-            _normalCCExchange(_lockerLockingScript, txId);
-        }
+        // Normal cc exchange request
+        _normalCCExchange(_lockerLockingScript, txId);
 
         return true;
     }
@@ -346,6 +359,8 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
             _lockerLockingScript
         );
 
+        require(arbitraryData.length == 79, "CCExchangeRouter: invalid len");
+
         // Checks that input amount is not zero
         require(request.inputAmount > 0, "CCExchangeRouter: input amount is zero");
 
@@ -378,7 +393,7 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
         request.fee = percentageFee*request.inputAmount/MAX_PROTOCOL_FEE;
 
         request.speed = RequestHelper.parseSpeed(arbitraryData);
-        require(request.speed == 0 || request.speed == 1, "CCExchangeRouter: speed is not correct");
+        require(request.speed == 0, "CCExchangeRouter: speed is not correct");
 
         request.isUsed = true;
 

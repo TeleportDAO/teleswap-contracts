@@ -9,7 +9,6 @@
   "usdc_token": "0xE097d6B3100777DC31B34dC2c58fB524C2e76921",
   "acceptable_delay": 7200,
   "chain_id": 137,
-  "fee_to_setter": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
   "treasury": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
   "chain_link_oracles": {
     "matic_usd": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
@@ -29,12 +28,12 @@
     "protocol_percentage_fee": 5,
     "slasher_percentage_reward": 500,
     "bitcoin_fee": 10000,
-    "transfer_deadLine": 72
+    "transfer_deadLine": 720
   },
   "lockers_contract": {
     "minimum_native_locked_amount": "1",
-    "collateral_ratio": 13000,
-    "liquidation_ratio": 10500,
+    "collateral_ratio": 10,
+    "liquidation_ratio": 5,
     "locker_percentage_fee": 15,
     "price_with_discount_ratio": 9000
   }

@@ -9,7 +9,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const lockersLib = await deployments.get("LockersLib")
     const lockersProxy = await deployments.get("LockersProxy")
-    const teleBTC = await deployments.get("TeleBTC")
+    // const teleBTC = await deployments.get("TeleBTC")
+    const teleBTC = await deployments.get("TeleBTCProxy")
     const priceOracle = await deployments.get("PriceOracle")
     const ccTransferRouterProxy = await deployments.get("CcTransferRouterProxy")
     const burnRouterProxy = await deployments.get("BurnRouterProxy")

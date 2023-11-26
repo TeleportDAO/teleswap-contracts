@@ -7,29 +7,29 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const tokenName = "teleBTC"
-    const tokenSymbol = "TELEBTC"
+    const teleBTCLogic = await deployments.get("TeleBTCLogic")
 
-    const theArgs = [
-        tokenName,
-        tokenSymbol
+    let theArgs = [
+        teleBTCLogic.address,
+        deployer,
+        "0x"
     ]
 
-    const deployedContract = await deploy("TeleBTC", {
+    const deployedContract = await deploy("TeleBTCProxy", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
-        args: theArgs
+        args: theArgs,
     });
 
     if (network.name != "hardhat" && process.env.ETHERSCAN_API_KEY && process.env.VERIFY_OPTION == "1") {
-        await verify(deployedContract.address, [
-        tokenName,
-        tokenSymbol,
-        ], "contracts/erc20/TeleBTC.sol:TeleBTC")
+        await verify(
+            deployedContract.address, 
+            theArgs, 
+            "contracts/erc20/TeleBTCProxy.sol:TeleBTCProxy"
+        )
     }
-    
 };
 
 export default func;
-func.tags = ["TeleBTC"];
+func.tags = ["TeleBTCProxy"];

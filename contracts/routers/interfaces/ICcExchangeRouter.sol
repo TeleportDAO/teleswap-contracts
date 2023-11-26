@@ -95,6 +95,8 @@ interface ICcExchangeRouter {
 
     // State-changing functions
 
+    function setStartingBlockNumber(uint _startingBlockNumber) external;
+
     function setRelay(address _relay) external;
 
     function setInstantRouter(address _instantRouter) external;
