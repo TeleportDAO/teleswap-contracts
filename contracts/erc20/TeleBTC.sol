@@ -7,6 +7,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
+
+    modifier onlyBlackLister() {
+        require(isBlackLister(_msgSender()), "TeleBTC: only blacklisters");
+        _;
+    }
+
+    modifier notBlackListed(address _account) {
+        require(!isBlackListed(_account), "TeleBTC: blacklisted");
+        _;
+    }
  
     modifier onlyMinter() {
         require(isMinter(_msgSender()), "TeleBTC: only minters can mint");
@@ -26,6 +36,9 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     // Public variables
     mapping(address => bool) public minters;
     mapping(address => bool) public burners;
+    mapping(address => bool) public blacklisters;
+
+    mapping(address => bool) internal blacklisted;
 
     uint public maxMintLimit; // Maximum mint limit per epoch
     uint public lastMintLimit; // Current mint limit in last epoch, decrease by minting in an epoch
@@ -64,11 +77,29 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     }
 
     /**
+     * @dev Check if an account is blacklister.
+     * @return bool
+     */
+    function isBlackLister(address account) internal view returns (bool) {
+        require(account != address(0), "TeleBTC: zero address");
+        return blacklisters[account];
+    }
+
+    /**
+     * @dev Check if an account is blacklisted.
+     * @return bool
+     */
+    function isBlackListed(address account) public view returns (bool) {
+        require(account != address(0), "TeleBTC: zero address");
+        return blacklisted[account];
+    }
+
+    /**
      * @dev Check if an account is minter.
      * @return bool
      */
     function isMinter(address account) internal view returns (bool) {
-        require(account != address(0), "TeleBTC: account is the zero address");
+        require(account != address(0), "TeleBTC: zero address");
         return minters[account];
     }
 
@@ -76,15 +107,33 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     /// @param  account        The account which intended to be checked
     /// @return bool
     function isBurner(address account) internal view returns (bool) {
-        require(account != address(0), "TeleBTC: account is the zero address");
+        require(account != address(0), "TeleBTC: zero address");
         return burners[account];
+    }
+
+    /// @notice                Adds a blacklister
+    /// @dev                   Only owner can call this function
+    /// @param  account        The account which intended to be added to blacklisters
+    function addBlackLister(address account) external override onlyOwner {
+        require(!isBlackLister(account), "TeleBTC: already has role");
+        blacklisters[account] = true;
+        emit BlackListerAdded(account);
+    }
+
+    /// @notice                Removes a blacklister
+    /// @dev                   Only owner can call this function
+    /// @param  account        The account which intended to be removed from blacklisters
+    function removeBlackLister(address account) external override onlyOwner {
+        require(isBlackLister(account), "TeleBTC: does not have role");
+        blacklisters[account] = false;
+        emit BlackListerRemoved(account);
     }
 
     /// @notice                Adds a minter
     /// @dev                   Only owner can call this function
     /// @param  account        The account which intended to be added to minters
     function addMinter(address account) external override onlyOwner {
-        require(!isMinter(account), "TeleBTC: account already has role");
+        require(!isMinter(account), "TeleBTC: already has role");
         minters[account] = true;
         emit MinterAdded(account);
     }
@@ -93,7 +142,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     /// @dev                   Only owner can call this function
     /// @param  account        The account which intended to be removed from minters
     function removeMinter(address account) external override onlyOwner {
-        require(isMinter(account), "TeleBTC: account does not have role");
+        require(isMinter(account), "TeleBTC: does not have role");
         minters[account] = false;
         emit MinterRemoved(account);
     }
@@ -102,7 +151,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     /// @dev                   Only owner can call this function
     /// @param  account        The account which intended to be added to burners
     function addBurner(address account) external override onlyOwner {
-        require(!isBurner(account), "TeleBTC: account already has role");
+        require(!isBurner(account), "TeleBTC: already has role");
         burners[account] = true;
         emit BurnerAdded(account);
     }
@@ -111,7 +160,7 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     /// @dev                   Only owner can call this function
     /// @param  account        The account which intended to be removed from burners
     function removeBurner(address account) external override onlyOwner {
-        require(isBurner(account), "TeleBTC: account does not have role");
+        require(isBurner(account), "TeleBTC: does not have role");
         burners[account] = false;
         emit BurnerRemoved(account);
     }
@@ -162,5 +211,40 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
             lastMintLimit = maxMintLimit - _amount;
         }
         return true;
+    }
+
+    /// @notice                Burns TeleBTC tokens of account
+    /// @dev                   Only owner can call this
+    /// @param amount         Amount of burnt tokens
+    function burnUserBalance(address account, uint256 amount) external nonReentrant onlyOwner returns (bool) {
+        _burn(account, amount);
+        emit Burn(owner(), account, amount);
+        return true;
+    }
+
+
+    /// @notice                Blacklist an account
+    /// @dev                   Only Blacklisters can call this
+    /// @param _account        Account blacklisted
+    function blacklist(address _account) external override nonReentrant onlyBlackLister {
+        blacklisted[_account] = true;
+        emit Blacklisted(_account);
+    }
+
+    /// @notice                UnBlacklist an account
+    /// @dev                   Only Blacklisters can call this
+    /// @param _account        Account unblacklisted
+    function unBlacklist(address _account) external override nonReentrant onlyBlackLister {
+        blacklisted[_account] = false;
+        emit UnBlacklisted(_account);
+    }
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override {
+        require(!isBlackListed(from), "TeleBTC: from is blacklisted");
+        require(!isBlackListed(to), "TeleBTC: to is blacklisted");
     }
 }
