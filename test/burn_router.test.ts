@@ -115,7 +115,7 @@ describe("BurnRouter", async () => {
         burnRouter = await deployBurnRouter();
 
         await burnRouter.initialize(
-            0,
+            1,
             mockBitcoinRelay.address,
             mockLockers.address,
             TREASURY,
@@ -358,7 +358,7 @@ describe("BurnRouter", async () => {
                     USER_SCRIPT_P2PKH_TYPE,
                     LOCKER1_LOCKING_SCRIPT
                 )
-            ).to.revertedWith("BurnRouterLogic: invalid script")
+            ).to.revertedWith("BurnRouter: invalid script")
 
             await expect(
                 burnRouterSigner1.ccBurn(
@@ -367,7 +367,7 @@ describe("BurnRouter", async () => {
                     4,
                     LOCKER1_LOCKING_SCRIPT
                 )
-            ).to.revertedWith("BurnRouterLogic: invalid script")
+            ).to.revertedWith("BurnRouter: invalid script")
 
         })
         
@@ -465,7 +465,7 @@ describe("BurnRouter", async () => {
                     USER_SCRIPT_P2PKH_TYPE,
                     LOCKER1_LOCKING_SCRIPT
                 )
-            ).to.revertedWith("BurnRouterLogic: low amount");
+            ).to.revertedWith("BurnRouter: low amount");
 
         })
 
@@ -503,7 +503,7 @@ describe("BurnRouter", async () => {
                     USER_SCRIPT_P2PKH_TYPE,
                     LOCKER1_LOCKING_SCRIPT
                 )
-            ).to.revertedWith("BurnRouterLogic: not locker")
+            ).to.revertedWith("BurnRouter: not locker")
         })
 
     });
@@ -611,7 +611,7 @@ describe("BurnRouter", async () => {
                     USER_SCRIPT_P2PKH_TYPE,
                     LOCKER1_LOCKING_SCRIPT
                 )
-            ).to.revertedWith("BurnRouterLogic: invalid path");
+            ).to.revertedWith("BurnRouter: invalid path");
         })
 
         it("Reverts since amounts is wrong", async function () {
@@ -626,7 +626,7 @@ describe("BurnRouter", async () => {
                     USER_SCRIPT_P2PKH_TYPE,
                     LOCKER1_LOCKING_SCRIPT
                 )
-            ).to.revertedWith("BurnRouterLogic: wrong amounts");
+            ).to.revertedWith("BurnRouter: wrong amounts");
         })
 
         it("Reverts since exchange failed", async function () {
@@ -642,7 +642,7 @@ describe("BurnRouter", async () => {
                     USER_SCRIPT_P2PKH_TYPE,
                     LOCKER1_LOCKING_SCRIPT
                 )
-            ).to.revertedWith("BurnRouterLogic: exchange failed");
+            ).to.revertedWith("BurnRouter: exchange failed");
         })
 
         it("Reverts since exchanged teleBTC is low", async function () {
@@ -658,7 +658,7 @@ describe("BurnRouter", async () => {
                     USER_SCRIPT_P2PKH_TYPE,
                     LOCKER1_LOCKING_SCRIPT
                 )
-            ).to.revertedWith("BurnRouterLogic: low amount");
+            ).to.revertedWith("BurnRouter: low amount");
         })
 
     });
@@ -741,7 +741,7 @@ describe("BurnRouter", async () => {
                     [0, 1],
                     [1, 0]
                 )
-            ).to.be.revertedWith("BurnRouterLogic: un-sorted vout indexes")
+            ).to.be.revertedWith("BurnRouter: un-sorted vout indexes")
         })
 
         it("Submits a valid burn proof (for P2WPKH)", async function () {
@@ -834,7 +834,7 @@ describe("BurnRouter", async () => {
                     [0],
                     [0]
                 )
-            ).to.revertedWith("BurnRouterLogic: non-zero lock time")
+            ).to.revertedWith("BurnRouter: non-zero lock time")
         })
 
         it("Reverts if locking script is not valid", async function () {
@@ -854,7 +854,7 @@ describe("BurnRouter", async () => {
                     [0],
                     [0]
                 )
-            ).to.revertedWith("BurnRouterLogic: not locker")
+            ).to.revertedWith("BurnRouter: not locker")
         })
 
         it("Reverts if given indexes doesn't match", async function () {
@@ -878,7 +878,7 @@ describe("BurnRouter", async () => {
                     [0, 1],
                     [0]
                 )
-            ).to.revertedWith("BurnRouterLogic: wrong indexes")
+            ).to.revertedWith("BurnRouter: wrong indexes")
 
             // Should revert when end index is bigger than total number of burn requests
             await expect(
@@ -894,7 +894,7 @@ describe("BurnRouter", async () => {
                     [0],
                     [0, 1]
                 )
-            ).to.revertedWith("BurnRouterLogic: wrong index")
+            ).to.revertedWith("BurnRouter: wrong index")
         })
 
         it("Reverts since paid fee is not enough", async function () {
@@ -938,7 +938,7 @@ describe("BurnRouter", async () => {
                     [0],
                     [0]
                 )
-            ).to.revertedWith("BurnRouterLogic: not finalized");
+            ).to.revertedWith("BurnRouter: not finalized");
         })
 
         it("Reverts if vout is null", async function () {
@@ -1146,7 +1146,7 @@ describe("BurnRouter", async () => {
                     LOCKER_TARGET_ADDRESS,
                     [0]
                 )
-            ).to.revertedWith("BurnRouterLogic: already paid")
+            ).to.revertedWith("BurnRouter: already paid")
         })
 
         it("Reverts since locking script is invalid", async function () {
@@ -1159,7 +1159,7 @@ describe("BurnRouter", async () => {
                     LOCKER_TARGET_ADDRESS,
                     [0]
                 )
-            ).to.revertedWith("BurnRouterLogic: not locker")
+            ).to.revertedWith("BurnRouter: not locker")
         })
 
         it("Reverts since locker has paid before hand", async function () {
@@ -1176,7 +1176,7 @@ describe("BurnRouter", async () => {
                     LOCKER_TARGET_ADDRESS,
                     [0]
                 )
-            ).to.revertedWith("BurnRouterLogic: already paid")
+            ).to.revertedWith("BurnRouter: already paid")
         })
 
         it("Reverts since deadline hasn't reached", async function () {
@@ -1190,7 +1190,7 @@ describe("BurnRouter", async () => {
                     LOCKER_TARGET_ADDRESS,
                     [0]
                 )
-            ).to.revertedWith("BurnRouterLogic: deadline not passed")
+            ).to.revertedWith("BurnRouter: deadline not passed")
         })
 
     });
@@ -1251,7 +1251,7 @@ describe("BurnRouter", async () => {
                     CC_BURN_REQUESTS.disputeLocker_input.intermediateNodes,
                     [0, 1, burnReqBlockNumber]
                 )
-            ).to.revertedWith("BurnRouterLogic: wrong inputs");
+            ).to.revertedWith("BurnRouter: wrong inputs");
 
             await expect(
                 burnRouterSigner2.disputeLocker(
@@ -1265,7 +1265,7 @@ describe("BurnRouter", async () => {
                     CC_BURN_REQUESTS.disputeLocker_input.intermediateNodes,
                     [0, 1, burnReqBlockNumber]
                 )
-            ).to.revertedWith("BurnRouterLogic: wrong inputs");
+            ).to.revertedWith("BurnRouter: wrong inputs");
 
             await expect(
                 burnRouterSigner2.disputeLocker(
@@ -1279,7 +1279,7 @@ describe("BurnRouter", async () => {
                     CC_BURN_REQUESTS.disputeLocker_input.intermediateNodes,
                     [0, 1]
                 )
-            ).to.revertedWith("BurnRouterLogic: wrong inputs")
+            ).to.revertedWith("BurnRouter: wrong inputs")
         })
 
         it("Reverts since locking script is not valid", async function () {
@@ -1299,7 +1299,7 @@ describe("BurnRouter", async () => {
                     CC_BURN_REQUESTS.disputeLocker_input.intermediateNodes,
                     [0, 1, burnReqBlockNumber]
                 )
-            ).to.revertedWith("BurnRouterLogic: not locker");
+            ).to.revertedWith("BurnRouter: not locker");
         })
 
         it("Reverts since input tx has not finalized", async function () {
@@ -1320,7 +1320,7 @@ describe("BurnRouter", async () => {
                     CC_BURN_REQUESTS.disputeLocker_input.intermediateNodes,
                     [0, 1, burnReqBlockNumber]
                 )
-            ).to.revertedWith("BurnRouterLogic: not finalized");
+            ).to.revertedWith("BurnRouter: not finalized");
         })
 
         it("Reverts since input tx has been used as burn proof", async function () {
@@ -1341,7 +1341,7 @@ describe("BurnRouter", async () => {
                     CC_BURN_REQUESTS.disputeLocker_input.intermediateNodes,
                     [0, 1, burnReqBlockNumber]
                 )
-            ).to.revertedWith("BurnRouterLogic: not finalized");
+            ).to.revertedWith("BurnRouter: not finalized");
         })
 
         it("Reverts since outpoint doesn't match with output tx", async function () {
@@ -1365,7 +1365,7 @@ describe("BurnRouter", async () => {
                     CC_BURN_REQUESTS.disputeLocker_input.intermediateNodes,
                     [0, 1, burnReqBlockNumber]
                 )
-            ).to.revertedWith("BurnRouterLogic: wrong output tx");
+            ).to.revertedWith("BurnRouter: wrong output tx");
         })
 
         it("Reverts since tx doesn't belong to locker", async function () {
@@ -1389,7 +1389,7 @@ describe("BurnRouter", async () => {
                     CC_BURN_REQUESTS.disputeLocker_input.intermediateNodes,
                     [0, 1, burnReqBlockNumber]
                 )
-            ).to.revertedWith("BurnRouterLogic: not for locker");
+            ).to.revertedWith("BurnRouter: not for locker");
         })
 
         it("Reverts since locker may submit input tx as burn proof", async function () {
@@ -1417,7 +1417,7 @@ describe("BurnRouter", async () => {
                     CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
                     [0, 1, burnReqBlockNumber]
                 )
-            ).to.revertedWith("BurnRouterLogic: already used");
+            ).to.revertedWith("BurnRouter: already used");
         })
     });
 
@@ -1446,7 +1446,7 @@ describe("BurnRouter", async () => {
         it("Reverts since protocol percentage fee is greater than 10000", async function () {
             await expect(
                 burnRouter.setProtocolPercentageFee(10001)
-            ).to.revertedWith("BurnRouterLogic: invalid fee");
+            ).to.revertedWith("BurnRouter: invalid fee");
         })
 
         it("Sets transfer deadline", async function () {
@@ -1470,7 +1470,7 @@ describe("BurnRouter", async () => {
 
             await expect(
                 burnRouter.setTransferDeadline(9)
-            ).to.revertedWith("BurnRouterLogic: low deadline");
+            ).to.revertedWith("BurnRouter: low deadline");
 
         })
 
@@ -1479,7 +1479,7 @@ describe("BurnRouter", async () => {
 
             await expect(
                 burnRouter.setTransferDeadline(10)
-            ).to.revertedWith("BurnRouterLogic: low deadline");
+            ).to.revertedWith("BurnRouter: low deadline");
 
         })
 
@@ -1498,7 +1498,7 @@ describe("BurnRouter", async () => {
         it("Reverts since slasher reward is greater than 100", async function () {
             await expect(
                 burnRouter.setSlasherPercentageReward(10001)
-            ).to.revertedWith("BurnRouterLogic: invalid reward");
+            ).to.revertedWith("BurnRouter: invalid reward");
         })
 
         it("Sets bitcoin fee", async function () {
@@ -1561,19 +1561,19 @@ describe("BurnRouter", async () => {
         it("Reverts since given address is zero", async function () {
             await expect(
                 burnRouter.setRelay(ZERO_ADDRESS)
-            ).to.revertedWith("BurnRouterLogic: zero address");
+            ).to.revertedWith("BurnRouter: zero address");
 
             await expect(
                 burnRouter.setLockers(ZERO_ADDRESS)
-            ).to.revertedWith("BurnRouterLogic: zero address");
+            ).to.revertedWith("BurnRouter: zero address");
 
             await expect(
                 burnRouter.setTeleBTC(ZERO_ADDRESS)
-            ).to.revertedWith("BurnRouterLogic: zero address");
+            ).to.revertedWith("BurnRouter: zero address");
 
             await expect(
                 burnRouter.setTreasury(ZERO_ADDRESS)
-            ).to.revertedWith("BurnRouterLogic: zero address");
+            ).to.revertedWith("BurnRouter: zero address");
         })
 
     });

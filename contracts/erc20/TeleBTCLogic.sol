@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.8.4;
 
-import "./interfaces/ITeleBTCUpgradeable.sol";
+import "./interfaces/ITeleBTC.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-contract TeleBTCLogic is ITeleBTCUpgradeable, ERC20Upgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+contract TeleBTCLogic is ITeleBTC, ERC20Upgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     modifier onlyBlackLister() {
         require(isBlackLister(_msgSender()), "TeleBTC: only blacklisters");
@@ -63,7 +63,7 @@ contract TeleBTCLogic is ITeleBTCUpgradeable, ERC20Upgradeable, OwnableUpgradeab
 
     function renounceOwnership() public virtual override onlyOwner {}
 
-    function decimals() public view virtual override(ERC20Upgradeable, ITeleBTCUpgradeable) returns (uint8) {
+    function decimals() public view virtual override(ERC20Upgradeable, ITeleBTC) returns (uint8) {
         return 8;
     }
 
@@ -186,15 +186,11 @@ contract TeleBTCLogic is ITeleBTCUpgradeable, ERC20Upgradeable, OwnableUpgradeab
     /// @param _user           Address of user whose teleBTC is burnt
     /// @param _amount         Amount of burnt tokens
     function ownerBurn(address _user, uint _amount) external nonReentrant onlyOwner override returns (bool) {
-        // _burn(_user, _amount);
-        // emit Burn(_msgSender(), _user, _amount);
-        // return true;
 
         if (isBlackListed(_user)) {
             blacklisted[_user] = false;
             _burn(_user, _amount);
             blacklisted[_user] = true;
-            
         } else {
             _burn(_user, _amount);
         }
@@ -252,7 +248,7 @@ contract TeleBTCLogic is ITeleBTCUpgradeable, ERC20Upgradeable, OwnableUpgradeab
         address from,
         address to,
         uint256 amount
-    ) internal override {
+    ) internal view override {
         require(!isBlackListed(from), "TeleBTC: from is blacklisted");
         require(!isBlackListed(to), "TeleBTC: to is blacklisted");
     }

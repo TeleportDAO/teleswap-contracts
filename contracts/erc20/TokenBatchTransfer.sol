@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -11,14 +12,12 @@ contract TokenBatchTransfer is Ownable {
     modifier onlyOperator() {
         require(
             msg.sender == transferOperator,
-            "Only operator can call this function."
+            "TokenBatchTransfer: only operator can call this."
         );
         _;
     }
 
-    constructor(address _token)
-    public
-    {
+    constructor(address _token) {
         token = ERC20(_token);
         transferOperator = msg.sender;
     }
@@ -27,30 +26,28 @@ contract TokenBatchTransfer is Ownable {
     event WithdrawToken(address indexed owner, uint256 stakeAmount);
 
     function updateOperator(address newOperator) public onlyOwner {
-        require(newOperator != address(0), "Invalid operator address");
-        
+        require(newOperator != address(0), "TokenBatchTransfer: Invalid operator");
         transferOperator = newOperator;
-
         emit NewOperator(newOperator);
     }
 
-    function withdrawToken(uint256 value) public onlyOperator
-    {
-        require(token.balanceOf(address(this)) >= value, "Not enough balance in the contract");
-
-        require(token.transfer(msg.sender, value), "Unable to transfer token to the owner account");
-
+    function withdrawToken(uint256 value) public onlyOperator {
+        require(token.balanceOf(address(this)) >= value, "TokenBatchTransfer: not enough balance");
+        require(token.transfer(msg.sender, value), "TokenBatchTransfer: Unable to transfer tokens");
         emit WithdrawToken(msg.sender, value);
     }
 
-    function batchTransfer(address[] calldata tokenHolders, uint256[] calldata amounts) 
-    external 
-    onlyOperator
-    {
-        require(tokenHolders.length == amounts.length, "Invalid input parameters");
+    function batchTransfer(
+        address[] calldata tokenHolders, 
+        uint256[] calldata amounts
+    ) external onlyOperator {
+        require(tokenHolders.length == amounts.length, "TokenBatchTransfer: invalid input params");
 
         for(uint256 indx = 0; indx < tokenHolders.length; indx++) {
-            require(token.transfer(tokenHolders[indx], amounts[indx]), "Unable to transfer token to the account");
+            require(
+                token.transfer(tokenHolders[indx], amounts[indx]), 
+                "TokenBatchTransfer: unable to transfer"
+            );
         }
     }
 
