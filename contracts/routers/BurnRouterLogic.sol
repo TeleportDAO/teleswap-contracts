@@ -309,7 +309,7 @@ contract BurnRouterLogic is IBurnRouter, BurnRouterStorage,
     function disputeBurn(
         bytes calldata _lockerLockingScript,
         uint[] memory _indices
-    ) external nonReentrant override {
+    ) external nonReentrant onlyOwner override {
         // Checks if the locking script is valid
         require(
             ILockers(lockers).isLocker(_lockerLockingScript),
@@ -374,7 +374,7 @@ contract BurnRouterLogic is IBurnRouter, BurnRouterStorage,
         bytes4[] memory _locktimes, // [inputTxLocktime, outputTxLocktime]
         bytes memory _inputIntermediateNodes,
         uint[] memory _indexesAndBlockNumbers // [inputIndex, inputTxIndex, inputTxBlockNumber]
-    ) external payable nonReentrant override {
+    ) external payable nonReentrant onlyOwner override {
         
         // Checks if the locking script is valid
         require(

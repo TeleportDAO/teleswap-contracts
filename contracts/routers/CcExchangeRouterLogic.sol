@@ -195,6 +195,7 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
         uint _index,
         bytes calldata _lockerLockingScript
     ) external payable nonReentrant override returns (bool) {
+        require(_msgSender() == instantRouter, "CCExchangeRouter: invalid sender");
         require(_blockNumber >= startingBlockNumber, "CCExchangeRouter: request is too old");
 
         // Calculates transaction id

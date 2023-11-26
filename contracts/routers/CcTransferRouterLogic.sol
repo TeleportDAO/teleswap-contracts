@@ -191,6 +191,7 @@ contract CcTransferRouterLogic is ICcTransferRouter, CcTransferRouterStorage,
         uint _index,
         bytes calldata _lockerLockingScript
     ) external payable nonReentrant override returns (bool) {
+        require(_msgSender() == instantRouter, "CCTransferRouter: invalid sender");
         require(_blockNumber >= startingBlockNumber, "CCTransferRouter: request is too old");
 
         // Finds txId on the source chain
