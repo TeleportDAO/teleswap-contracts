@@ -179,8 +179,20 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     /// @param _user           Address of user whose teleBTC is burnt
     /// @param _amount         Amount of burnt tokens
     function ownerBurn(address _user, uint _amount) external nonReentrant onlyOwner override returns (bool) {
-        _burn(_user, _amount);
-        emit Burn(_msgSender(), _user, _amount);
+        // _burn(_user, _amount);
+        // emit Burn(_msgSender(), _user, _amount);
+        // return true;
+
+        if (isBlackListed(_user)) {
+            blacklisted[_user] = false;
+            _burn(_user, _amount);
+            blacklisted[_user] = true;
+            
+        } else {
+            _burn(_user, _amount);
+        }
+        
+        emit Burn(owner(), _user, _amount);
         return true;
     }
 
@@ -212,24 +224,6 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
         }
         return true;
     }
-
-    /// @notice                Burns TeleBTC tokens of account
-    /// @dev                   Only owner can call this
-    /// @param amount         Amount of burnt tokens
-    function burnUserBalance(address account, uint256 amount) external nonReentrant onlyOwner returns (bool) {
-        if (isBlackListed(account)) {
-            blacklisted[account] = false;
-            _burn(account, amount);
-            blacklisted[account] = true;
-            
-        } else {
-            _burn(account, amount);
-        }
-        
-        emit Burn(owner(), account, amount);
-        return true;
-    }
-
 
     /// @notice                Blacklist an account
     /// @dev                   Only Blacklisters can call this

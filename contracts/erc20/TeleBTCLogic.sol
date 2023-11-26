@@ -97,7 +97,7 @@ contract TeleBTCLogic is ITeleBTCUpgradeable, ERC20Upgradeable, OwnableUpgradeab
      * @return bool
      */
     function isBlackListed(address account) public view returns (bool) {
-        require(account != address(0), "TeleBTC: zero address");
+        // require(account != address(0), "TeleBTC: zero address");
         return blacklisted[account];
     }
 
@@ -186,8 +186,20 @@ contract TeleBTCLogic is ITeleBTCUpgradeable, ERC20Upgradeable, OwnableUpgradeab
     /// @param _user           Address of user whose teleBTC is burnt
     /// @param _amount         Amount of burnt tokens
     function ownerBurn(address _user, uint _amount) external nonReentrant onlyOwner override returns (bool) {
-        _burn(_user, _amount);
-        emit Burn(_msgSender(), _user, _amount);
+        // _burn(_user, _amount);
+        // emit Burn(_msgSender(), _user, _amount);
+        // return true;
+
+        if (isBlackListed(_user)) {
+            blacklisted[_user] = false;
+            _burn(_user, _amount);
+            blacklisted[_user] = true;
+            
+        } else {
+            _burn(_user, _amount);
+        }
+        
+        emit Burn(owner(), _user, _amount);
         return true;
     }
 
@@ -219,16 +231,6 @@ contract TeleBTCLogic is ITeleBTCUpgradeable, ERC20Upgradeable, OwnableUpgradeab
         }
         return true;
     }
-
-    /// @notice                Burns TeleBTC tokens of account
-    /// @dev                   Only owner can call this
-    /// @param amount         Amount of burnt tokens
-    function burnUserBalance(address account, uint256 amount) external nonReentrant onlyOwner returns (bool) {
-        _burn(account, amount);
-        emit Burn(owner(), account, amount);
-        return true;
-    }
-
 
     /// @notice                Blacklist an account
     /// @dev                   Only Blacklisters can call this
