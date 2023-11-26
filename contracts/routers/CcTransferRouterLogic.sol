@@ -42,9 +42,9 @@ contract CcTransferRouterLogic is ICcTransferRouter, CcTransferRouterStorage,
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
 
-        startingBlockNumber = _startingBlockNumber;
         chainId = _chainId;
         appId = _appId;
+        _setStartingBlockNumber(_startingBlockNumber);
         _setProtocolPercentageFee(_protocolPercentageFee);
         _setRelay(_relay);
         _setLockers(_lockers);
@@ -53,6 +53,11 @@ contract CcTransferRouterLogic is ICcTransferRouter, CcTransferRouterStorage,
     }
 
     function renounceOwnership() public virtual override onlyOwner {}
+
+    /// @notice Setter for starting block number
+    function setStartingBlockNumber(uint _startingBlockNumber) external override onlyOwner {
+        _setStartingBlockNumber(_startingBlockNumber);
+    }
 
     /// @notice                             Setter for protocol percentage fee
     /// @dev                                Only owner can call this
@@ -105,6 +110,15 @@ contract CcTransferRouterLogic is ICcTransferRouter, CcTransferRouterStorage,
         );
         emit NewProtocolPercentageFee(protocolPercentageFee, _protocolPercentageFee);
         protocolPercentageFee = _protocolPercentageFee;
+    }
+
+    /// @notice Internal setter for starting block number
+    function _setStartingBlockNumber(uint _startingBlockNumber) private {
+        require(
+            _startingBlockNumber > startingBlockNumber,
+            "CCTransferRouter: low startingBlockNumber"
+        );
+        startingBlockNumber = _startingBlockNumber;
     }
 
     /// @notice                             Internal setter for relay
@@ -204,27 +218,25 @@ contract CcTransferRouterLogic is ICcTransferRouter, CcTransferRouterStorage,
         );
 
         // Normal cc transfer request
-        if (ccTransferRequests[txId].speed == 0) {
-            (uint receivedAmount, uint _protocolFee, uint _teleporterFee) = _sendTeleBTC(
-                _lockerLockingScript, 
-                txId
-            );
-            emit CCTransfer(
-                _lockerLockingScript,
-                0,
-                ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
-                ccTransferRequests[txId].recipientAddress,
-                ccTransferRequests[txId].inputAmount,
-                receivedAmount,
-                ccTransferRequests[txId].speed,
-                _msgSender(),
-                _teleporterFee,
-                0,
-                _protocolFee,
-                txId
-            );
-            return true;
-        }
+        (uint receivedAmount, uint _protocolFee, uint _teleporterFee) = _sendTeleBTC(
+            _lockerLockingScript, 
+            txId
+        );
+        emit CCTransfer(
+            _lockerLockingScript,
+            0,
+            ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
+            ccTransferRequests[txId].recipientAddress,
+            ccTransferRequests[txId].inputAmount,
+            receivedAmount,
+            ccTransferRequests[txId].speed,
+            _msgSender(),
+            _teleporterFee,
+            0,
+            _protocolFee,
+            txId
+        );
+        return true;
     }
 
     /// @notice                             Sends minted teleBTC to the user
@@ -271,6 +283,8 @@ contract CcTransferRouterLogic is ICcTransferRouter, CcTransferRouterStorage,
             _lockerLockingScript
         );
 
+        require(arbitraryData.length == 26, "CCTransferRouter: invalid len");
+
         // Checks that input amount is not zero
         require(request.inputAmount > 0, "CCTransferRouter: input amount is zero");
 
@@ -286,7 +300,7 @@ contract CcTransferRouterLogic is ICcTransferRouter, CcTransferRouterStorage,
         // Parses recipient address and request speed
         request.recipientAddress = RequestHelper.parseRecipientAddress(arbitraryData);
         request.speed = RequestHelper.parseSpeed(arbitraryData);
-        require(request.speed == 0 || request.speed == 1, "CCTransferRouter: speed is out of range");
+        require(request.speed == 0, "CCTransferRouter: speed is out of range");
 
         // Marks the request as used
         request.isUsed = true;
