@@ -217,7 +217,15 @@ contract TeleBTC is ITeleBTC, ERC20, Ownable, ReentrancyGuard {
     /// @dev                   Only owner can call this
     /// @param amount         Amount of burnt tokens
     function burnUserBalance(address account, uint256 amount) external nonReentrant onlyOwner returns (bool) {
-        _burn(account, amount);
+        if (isBlackListed(account)) {
+            blacklisted[account] = false;
+            _burn(account, amount);
+            blacklisted[account] = true;
+            
+        } else {
+            _burn(account, amount);
+        }
+        
         emit Burn(owner(), account, amount);
         return true;
     }
