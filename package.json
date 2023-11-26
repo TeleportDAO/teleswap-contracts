@@ -50,7 +50,7 @@
 		"@liquality/client": "^1.13.0",
 		"@openzeppelin/contracts": "4.3.3",
 		"@openzeppelin/contracts-upgradeable": "^4.7.3",
-		"@teleportdao/btc-evm-bridge": "1.0.2",
+		"@teleportdao/btc-evm-bridge": "1.0.3",
 		"@uniswap/v2-core": "^1.0.1",
 		"@uniswap/v2-periphery": "^1.1.0-beta.0",
 		"config": "^3.3.6",

@@ -11,8 +11,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Set LockersProxy as minter and burner in teleBTC ...")
 
-    // TODO: update to be compatible with upgradeable teleBTC
-    // const teleBTC = await deployments.get("TeleBTC")
     const teleBTC = await deployments.get("TeleBTCProxy")
     const lockersProxy = await deployments.get("LockersProxy")
 

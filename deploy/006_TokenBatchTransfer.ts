@@ -7,7 +7,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const teleBTC = await deployments.get("TeleBTC")
+    const teleBTC = await deployments.get("TeleBTCProxy")
 
     const theArgs = [
         teleBTC.address
