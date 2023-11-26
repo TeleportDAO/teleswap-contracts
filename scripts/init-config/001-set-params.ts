@@ -11,11 +11,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Set LockersProxy as minter and burner in teleBTC ...")
 
-    const teleBTC = await deployments.get("TeleBTC")
+    // TODO: update to be compatible with upgradeable teleBTC
+    // const teleBTC = await deployments.get("TeleBTC")
+    const teleBTC = await deployments.get("TeleBTCProxy")
     const lockersProxy = await deployments.get("LockersProxy")
 
-    const teleBTCFactory = await ethers.getContractFactory("TeleBTC");
-    const teleBTCInstance = await teleBTCFactory.attach(
+    const teleBTCLogicFactory = await ethers.getContractFactory("TeleBTCLogic");
+    const teleBTCInstance = await teleBTCLogicFactory.attach(
         teleBTC.address
     );
 
@@ -132,7 +134,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("MATIC/USD (ONE_ADD) is already set")
     }
 
-    const tBTC = await deployments.get("TeleBTC")
+    // const tBTC = await deployments.get("TeleBTC")
+    const tBTC = await deployments.get("TeleBTCProxy")
     const btcUSDOracle = config.get("chain_link_oracles.btc_usd");
 
     const checkBitcoinUSDTx = await priceOracleInstance.ChainlinkPriceProxy(

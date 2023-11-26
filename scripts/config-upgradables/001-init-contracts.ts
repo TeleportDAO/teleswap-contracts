@@ -242,6 +242,47 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("Initialize CcExchangeRouterLogic: ", initializeTxLogic.hash);
     }
 
+
+    logger.color('blue').log("-------------------------------------------------")
+    logger.color('blue').bold().log("Initialize TeleBTC ...")
+
+    const teleBTCLogicFactory = await ethers.getContractFactory(
+        "TeleBTCLogic"
+    );
+    const teleBTCProxyInstance = await teleBTCLogicFactory.attach(
+        teleBTC.address
+    );
+    const teleBTCLogicInstance = await teleBTCLogicFactory.attach(
+        teleBTCLogic.address
+    );
+
+    let _ownerProxy = await teleBTCProxyInstance.owner();
+    if (_ownerProxy == ZERO_ADD) {
+        const tokenName = "teleBTC"
+        const tokenSymbol = "TELEBTC"
+
+        const initializeTxProxy = await teleBTCProxyInstance.initialize(
+            tokenName,
+            tokenSymbol
+        );
+        await initializeTxProxy.wait(1);
+        console.log("Initialize TeleBTC: ", initializeTxProxy.hash);
+    }
+
+    let _ownerLogic = await teleBTCLogicInstance.owner();
+    if (_ownerLogic == ZERO_ADD) {
+
+        const tokenName = "teleBTC"
+        const tokenSymbol = "TELEBTC"
+
+        const initializeTxLogic = await teleBTCLogicInstance.initialize(
+            tokenName,
+            tokenSymbol
+        )
+        await initializeTxLogic.wait(1);
+        console.log("Initialize TeleBTC: ", initializeTxLogic.hash);
+    }
+
 };
 
 export default func;
