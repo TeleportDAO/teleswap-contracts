@@ -67,8 +67,6 @@ library LockersLib {
 
     function buySlashedCollateralOfLocker(
         DataTypes.locker storage theLocker,
-        DataTypes.lockersLibConstants memory libConstants,
-        DataTypes.lockersLibParam memory libParams,
         uint _collateralAmount
     ) external returns (uint neededTeleBTC) {
 
