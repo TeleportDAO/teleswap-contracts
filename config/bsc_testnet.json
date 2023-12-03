@@ -4,14 +4,14 @@
   "starting_block_height": "123",
   "uniswap_v2_router_02": "0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3",
   "uniswap_v2_factory": "0xB7926C0430Afb07AA7DEfDE6DA862aE0Bde767bc ",
-  "wrapped_matic": "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd",
+  "wrapped_native_token": "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd",
   "usdt_token": "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd",
   "usdc_token": "0x64544969ed7EBf5f083679233325356EbE738930",
   "acceptable_delay": 7200,
   "chain_id": 97,
   "treasury": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
   "chain_link_oracles": {
-    "matic_usd": "0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526",
+    "native_token_usd": "0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526",
     "btc_usd": "0x5741306c21795FdCBb9b265Ea0255F499DFe515C",
     "usdt_usd": "0xEca2605f0BCF2BA5966372C99837b1F182d3D620",
     "usdc_usd": "0x90c069C4538adAc136E051052E14c1cD799C41B7"

@@ -13,7 +13,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const one18Dec = BigNumber.from(10).pow(18).mul(1)
     
     const bitcoinNetwork = config.get("bitcoin_network");
-    const wrappedMatic = config.get("wrapped_matic") as string;
+    const wrappedMatic = config.get("wrapped_native_token") as string;
     const uniswapFactory = await config.get("uniswap_v2_factory") as string
     const uniswapRouter = await config.get("uniswap_v2_router_02") as string
 

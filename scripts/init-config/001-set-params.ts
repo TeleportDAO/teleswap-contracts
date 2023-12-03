@@ -97,7 +97,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Set PriceProxies to PriceOracle ...")
 
-    const wrappedMatic = config.get("wrapped_matic")
+    const wrappedMatic = config.get("wrapped_native_token")
     const maticUSDOracle = config.get("chain_link_oracles.matic_usd");
     
     let tx;
