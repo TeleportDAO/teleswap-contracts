@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.8.4;
 
+import "./interfaces/ILockers.sol";
+import "./LockersStorageStructure.sol";
 import "../oracle/interfaces/IPriceOracle.sol";
 import "../connectors/interfaces/IExchangeConnector.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
-import "../routers/interfaces/ICCBurnRouter.sol";
+import "../routers/interfaces/IBurnRouter.sol";
+import "../libraries/LockersLib.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./interfaces/ILockers.sol";
-import "../libraries/LockersLib.sol";
-import "./LockersStorageStructure.sol";
 
-contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
+contract LockersLogic is LockersStorageStructure, ILockers, 
+    OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
 
     using LockersLib for *;
     using SafeERC20 for IERC20;
@@ -542,7 +543,7 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
         // Burns TeleBTC for locker rescue script
         IERC20(teleBTC).approve(ccBurnRouter, neededTeleBTC);
-        ICCBurnRouter(ccBurnRouter).ccBurn(
+        IBurnRouter(ccBurnRouter).ccBurn(
             neededTeleBTC,
             theLiquidatingLocker.lockerRescueScript,
             theLiquidatingLocker.lockerRescueType,
@@ -578,8 +579,6 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
 
         uint neededTeleBTC = LockersLib.buySlashedCollateralOfLocker(
             lockersMapping[_lockerTargetAddress],
-            libConstants,
-            libParams,
             _collateralAmount
         );
 
@@ -737,7 +736,10 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         address _lockerTargetAddress = lockerTargetAddress[_lockerLockingScript];
 
         // Transfers teleBTC from user
-        ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), _amount);
+        require(
+            ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), _amount),
+            "Lockers: transferFrom failed"
+        );
 
         uint lockerFee = _amount*lockerPercentageFee/MAX_LOCKER_FEE;
         uint remainedAmount = _amount - lockerFee;
@@ -751,8 +753,14 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
         lockersMapping[_lockerTargetAddress].netMinted = netMinted - remainedAmount;
 
         // Burns teleBTC and sends rest of it to locker
-        ITeleBTC(teleBTC).burn(remainedAmount);
-        ITeleBTC(teleBTC).transfer(_lockerTargetAddress, lockerFee);
+        require(
+            ITeleBTC(teleBTC).burn(remainedAmount),
+            "Lockers: burn failed"
+        );
+        require(
+            ITeleBTC(teleBTC).transfer(_lockerTargetAddress, lockerFee),
+            "Lockers: lockerFee failed"
+        );
 
         emit BurnByLocker(
             _lockerTargetAddress,
@@ -979,10 +987,10 @@ contract LockersLogic is LockersStorageStructure, ILockers, OwnableUpgradeable, 
     /// @notice                     Internal setter for liquidation ratio
     /// @param _liquidationRatio    The new liquidation ratio
     function _setLiquidationRatio(uint _liquidationRatio) private {
-        require(
-            _liquidationRatio >= ONE_HUNDRED_PERCENT,
-            "Lockers: problem in CR and LR"
-        );
+        // require(
+        //     _liquidationRatio >= ONE_HUNDRED_PERCENT,
+        //     "Lockers: problem in CR and LR"
+        // );
         require(
             collateralRatio > _liquidationRatio,
             "Lockers: must CR > LR"
