@@ -9,7 +9,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployer } = await getNamedAccounts();
 
     const acceptableDelay = config.get("acceptable_delay");
-    const tntToken = config.get("wrapped_matic")
+    const tntToken = config.get("wrapped_native_token")
 
     const deployedContract = await deploy("PriceOracle", {
         from: deployer,
