@@ -1,6 +1,7 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
-import verify from "../helper-functions"
+import verify from "../helper-functions";
+import config from 'config';
 
 import * as dotenv from "dotenv";
 dotenv.config();
@@ -10,6 +11,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
+    const proxyAdmin = config.get("proxy_admin");
     const ccExchangeRouterLogic = await deployments.get("CcExchangeRouterLogic")
 
     const deployedContract = await deploy("CcExchangeRouterProxy", {
@@ -18,7 +20,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         skipIfAlreadyDeployed: true,
         args: [
             ccExchangeRouterLogic.address,
-            deployer,
+            proxyAdmin,
             "0x"
         ],
     });
@@ -28,7 +30,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             deployedContract.address, 
             [
                 ccExchangeRouterLogic.address,
-                deployer,
+                proxyAdmin,
                 "0x"
             ], 
             "contracts/routers/CcExchangeRouterProxy.sol:CcExchangeRouterProxy"

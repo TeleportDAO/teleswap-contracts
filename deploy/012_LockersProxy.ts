@@ -1,12 +1,14 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
-import verify from "../helper-functions"
+import verify from "../helper-functions";
+import config from 'config';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts, network } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
+    const proxyAdmin = config.get("proxy_admin");
     const lockersLogic = await deployments.get("LockersLogic")
 
     const deployedContract = await deploy("LockersProxy", {
@@ -15,7 +17,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         skipIfAlreadyDeployed: true,
         args: [
             lockersLogic.address,
-            deployer,
+            proxyAdmin,
             "0x"
         ],
     });
@@ -25,7 +27,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             deployedContract.address, 
             [
                 lockersLogic.address,
-                deployer,
+                proxyAdmin,
                 "0x"
             ], 
             "contracts/lockers/LockersProxy.sol:LockersProxy"
