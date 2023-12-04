@@ -893,7 +893,7 @@ contract LockersLogic is LockersStorageStructure, ILockers,
 
     /// @notice                     Internal setter for teleportDAO token of lockers
     /// @param _tdtTokenAddress     The new teleportDAO token address
-    function _setTeleportDAOToken(address _tdtTokenAddress) private nonZeroAddress(_tdtTokenAddress) {
+    function _setTeleportDAOToken(address _tdtTokenAddress) private {
         emit NewTeleportDAOToken(TeleportDAOToken, _tdtTokenAddress);
         TeleportDAOToken = _tdtTokenAddress;
         libParams.teleportDAOToken = TeleportDAOToken;

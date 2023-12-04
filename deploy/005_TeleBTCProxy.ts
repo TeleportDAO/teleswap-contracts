@@ -1,17 +1,19 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
-import verify from "../helper-functions"
+import verify from "../helper-functions";
+import config from 'config';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts, network } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
+    const proxyAdmin = config.get("proxy_admin");
     const teleBTCLogic = await deployments.get("TeleBTCLogic")
 
     let theArgs = [
         teleBTCLogic.address,
-        deployer,
+        proxyAdmin,
         "0x"
     ]
 

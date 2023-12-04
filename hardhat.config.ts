@@ -91,8 +91,7 @@ const config: HardhatUserConfig = {
 		polygon: {
 			url: "https://rpc-mainnet.maticvigil.com/",
 			chainId: 137,
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-			gasPrice: 177000000000
+			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : []
 		},
 		mumbai: {
 			url: "https://rpc-mumbai.maticvigil.com",
@@ -102,7 +101,6 @@ const config: HardhatUserConfig = {
 		bsc: {
 			url: "https://bsc-dataseed.binance.org/",
 			chainId: 56,
-			gasPrice: 20000000000,
 			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
 		},
 		bsc_testnet: {
