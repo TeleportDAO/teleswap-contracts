@@ -467,7 +467,6 @@ contract LockersLogic is LockersStorageStructure, ILockers,
         return true;
     }
 
-
     /// @notice                           Slashes lockers for moving BTC without a good reason
     /// @dev                              Only cc burn router can call this
     ///                                   Locker is slashed because he/she moved BTC from 
@@ -873,7 +872,6 @@ contract LockersLogic is LockersStorageStructure, ILockers,
         DataTypes.locker memory _removingLocker = lockersMapping[_lockerTargetAddress];
 
         // Removes locker from lockersMapping
-
         delete lockerTargetAddress[lockersMapping[_lockerTargetAddress].lockerLockingScript];
         delete lockersMapping[_lockerTargetAddress];
         totalNumberOfLockers = totalNumberOfLockers - 1;
@@ -987,10 +985,6 @@ contract LockersLogic is LockersStorageStructure, ILockers,
     /// @notice                     Internal setter for liquidation ratio
     /// @param _liquidationRatio    The new liquidation ratio
     function _setLiquidationRatio(uint _liquidationRatio) private {
-        // require(
-        //     _liquidationRatio >= ONE_HUNDRED_PERCENT,
-        //     "Lockers: problem in CR and LR"
-        // );
         require(
             collateralRatio > _liquidationRatio,
             "Lockers: must CR > LR"
