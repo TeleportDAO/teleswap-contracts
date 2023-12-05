@@ -337,7 +337,6 @@ library LockersLib {
 
     }
 
-
     function lockerCollateralInTeleBTC(
         DataTypes.locker storage theLocker,
         DataTypes.lockersLibConstants memory libConstants,
