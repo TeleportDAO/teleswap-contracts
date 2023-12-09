@@ -37,5 +37,7 @@ interface IEthCcExchangeRouterStorage is ICcExchangeRouterStorage {
 
     function isExchangeTokenSupported(address _exchangeToken) external view returns (bool);
 
-    function accross() external view returns (address);
+    function across() external view returns (address);
+
+    function burnRouter() external view returns (address);
 }

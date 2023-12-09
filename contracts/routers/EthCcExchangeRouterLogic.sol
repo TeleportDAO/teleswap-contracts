@@ -13,10 +13,15 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@across-protocol/contracts-v2/contracts/interfaces/SpokePoolInterface.sol";
+import "./interfaces/IBurnRouter.sol";
+import "solidity-bytes-utils/contracts/BytesLib.sol";
+import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 
 
 contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterStorage, 
     OwnableUpgradeable, ReentrancyGuardUpgradeable {
+
+    using BytesLib for bytes;
 
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "CCExchangeRouter: address is zero");
@@ -40,7 +45,8 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
         address _teleBTC,
         address _treasury,
         address[] memory _supportedTokens,
-        address _across
+        address _across,
+        address _burnRouter
     ) public initializer {
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
@@ -58,6 +64,8 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
         }
 
         _setAcross(_across);
+
+        _setBurnRouter(_burnRouter);
     }
 
     function renounceOwnership() public virtual override onlyOwner {}
@@ -143,6 +151,13 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
         _setAcross(_across);
     }
 
+    /// @notice                    Setter for burnRouter
+    /// @dev                       Only owner can call this
+    /// @param _burnRouter         BurnRouter address
+    function updateBurnRouter(address _burnRouter) external override onlyOwner {
+        _setBurnRouter(_burnRouter);
+    }
+
     /// @notice         Internal setter for relay contract address
     /// @param _relay   The new relay contract address
     function _setRelay(address _relay) private nonZeroAddress(_relay) {
@@ -216,8 +231,15 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
     /// @notice                    Internal setter for across
     /// @param _across             Across address
     function _setAcross(address _across) private nonZeroAddress(_across) {
-        emit AcrossUpdated(accross, _across);
-        accross = _across;
+        emit AcrossUpdated(across, _across);
+        across = _across;
+    }
+
+    /// @notice                    Internal setter for burnRouter
+    /// @param _burnRouter         BurnRouter address
+    function _setBurnRouter(address _burnRouter) private nonZeroAddress(_burnRouter) {
+        emit BurnRouterUpdated(burnRouter, _burnRouter);
+        burnRouter = _burnRouter;
     }
 
     /// @notice                             Check if the cc exchange request has been executed before
@@ -318,130 +340,132 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
                 _txId,
                 theCCExchangeReq.appId
             );
-        }
-
-        // Gives allowance to exchange connector to transfer from cc exchange router
-        ITeleBTC(teleBTC).approve(
-            _exchangeConnector,
-            remainedInputAmount
-        );
-
-        if (IExchangeConnector(_exchangeConnector).isPathValid(theCCExchangeReq.path)) {
-            // Exchanges minted teleBTC for output token
-            (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
-                remainedInputAmount,
-                theCCExchangeReq.outputAmount,
-                theCCExchangeReq.path,
-                // theCCExchangeReq.recipientAddress,
-                // get all the tokens
-                address(this),
-                theCCExchangeReq.deadline,
-                // theCCExchangeReq.isFixedToken
-                // we shold use all the input
-                true
-            );
-        } else {
-            // Exchanges minted teleBTC for output token via wrappedNativeToken
-            // note: path is [teleBTC, wrappedNativeToken, outputToken]
-            address[] memory _path = new address[](3);
-            _path[0] = theCCExchangeReq.path[0];
-            _path[1] = IExchangeConnector(_exchangeConnector).wrappedNativeToken();
-            _path[2] = theCCExchangeReq.path[1];
-
-            (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
-                remainedInputAmount,
-                theCCExchangeReq.outputAmount,
-                _path,
-                // theCCExchangeReq.recipientAddress,
-                // get all the tokens
-                address(this),
-                theCCExchangeReq.deadline,
-                // theCCExchangeReq.isFixedToken
-                // We should use all the input
-                true
-            );
-        }
-
-        if (result) {
-            // Emits CCExchange if exchange was successful
-            emit CCExchange(
-                _lockerLockingScript,
-                0,
-                ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
-                theCCExchangeReq.recipientAddress,
-                [theCCExchangeReq.path[0], theCCExchangeReq.path[1]], // input token // output token
-                [amounts[0], amounts[amounts.length-1]], // input amount // output amount
-                theCCExchangeReq.speed,
-                _msgSender(), // Teleporter address
-                theCCExchangeReq.fee,
-                _txId,
-                theCCExchangeReq.appId
-            );
-
-            // FIXME: add all requirement
-            ITeleBTC(theCCExchangeReq.path[1]).approve(
-                accross, 
-                amounts[amounts.length-1]
-            );
-
-            ccExchangeRequests[_txId].isTransferedToEth = true;
-
-            bytes memory nullData;
-
-            SpokePoolInterface(accross).deposit(
-                theCCExchangeReq.recipientAddress,
-                theCCExchangeReq.path[1],
-                amounts[amounts.length-1],
-                // eth chain id
-                1,
-                // FIXME: decide relayer percentage fee to be updatable or not
-                10000,
-                uint32(block.timestamp),
-                nullData,
-                115792089237316195423570985008687907853269984665640564039457584007913129639935
-            );
-
-            // Transfers rest of teleBTC to recipientAddress (if input amount is not fixed)
-            // FIXME: convert all input TeleBTC to the desired token
-            // if (theCCExchangeReq.isFixedToken == false) {
-            //     ITeleBTC(teleBTC).transfer(
-            //         theCCExchangeReq.recipientAddress,
-            //         remainedInputAmount - amounts[0]
-            //     );
-            // }
 
         } else {
-            // Handles situation when exchange was not successful
-
-            // FIXME: how to handle the failed situation
-
-            // Revokes allowance
+            // Gives allowance to exchange connector to transfer from cc exchange router
             ITeleBTC(teleBTC).approve(
                 _exchangeConnector,
-                0
+                remainedInputAmount
             );
 
-            // Sends teleBTC to recipient if exchange wasn't successful
-            // ITeleBTC(teleBTC).transfer(
-            //     theCCExchangeReq.recipientAddress,
-            //     remainedInputAmount
-            // );
+            // TODO: swap fucntion of IExchangeConnector is doing the exact thing, so it's a duplicate
+            if (IExchangeConnector(_exchangeConnector).isPathValid(theCCExchangeReq.path)) {
+                // Exchanges minted teleBTC for output token
+                (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
+                    remainedInputAmount,
+                    theCCExchangeReq.outputAmount,
+                    theCCExchangeReq.path,
+                    // theCCExchangeReq.recipientAddress,
+                    // get all the tokens
+                    address(this),
+                    theCCExchangeReq.deadline,
+                    // theCCExchangeReq.isFixedToken
+                    // we shold use all the input
+                    true
+                );
+            } else {
+                // Exchanges minted teleBTC for output token via wrappedNativeToken
+                // note: path is [teleBTC, wrappedNativeToken, outputToken]
+                address[] memory _path = new address[](3);
+                _path[0] = theCCExchangeReq.path[0];
+                _path[1] = IExchangeConnector(_exchangeConnector).wrappedNativeToken();
+                _path[2] = theCCExchangeReq.path[1];
 
-            // FIXME: in the case of failure TELEBTC will be stock in the contract, till its owner do something for it
+                (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
+                    remainedInputAmount,
+                    theCCExchangeReq.outputAmount,
+                    _path,
+                    // theCCExchangeReq.recipientAddress,
+                    // get all the tokens
+                    address(this),
+                    theCCExchangeReq.deadline,
+                    // theCCExchangeReq.isFixedToken
+                    // We should use all the input
+                    true
+                );
+            }
 
-            emit FailedCCExchange(
-                _lockerLockingScript,
-                0,
-                ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
-                theCCExchangeReq.recipientAddress,
-                [theCCExchangeReq.path[0], theCCExchangeReq.path[1]], // input token // output token
-                [remainedInputAmount, 0],// input amount //  output amount
-                theCCExchangeReq.speed,
-                _msgSender(), // Teleporter address
-                theCCExchangeReq.fee,
-                _txId,
-                theCCExchangeReq.appId
-            );
+            if (result) {
+                // Emits CCExchange if exchange was successful
+                emit CCExchange(
+                    _lockerLockingScript,
+                    0,
+                    ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
+                    theCCExchangeReq.recipientAddress,
+                    [theCCExchangeReq.path[0], theCCExchangeReq.path[1]], // input token // output token
+                    [amounts[0], amounts[amounts.length-1]], // input amount // output amount
+                    theCCExchangeReq.speed,
+                    _msgSender(), // Teleporter address
+                    theCCExchangeReq.fee,
+                    _txId,
+                    theCCExchangeReq.appId
+                );
+
+                // FIXME: add all requirement
+                ITeleBTC(theCCExchangeReq.path[1]).approve(
+                    across, 
+                    amounts[amounts.length-1]
+                );
+
+                ccExchangeRequests[_txId].isTransferedToEth = true;
+
+                bytes memory nullData;
+
+                SpokePoolInterface(across).deposit(
+                    theCCExchangeReq.recipientAddress,
+                    theCCExchangeReq.path[1],
+                    amounts[amounts.length-1],
+                    // eth chain id
+                    1,
+                    // FIXME: decide relayer percentage fee to be updatable or not
+                    1000000,
+                    uint32(block.timestamp),
+                    nullData,
+                    115792089237316195423570985008687907853269984665640564039457584007913129639935
+                );
+
+                // Transfers rest of teleBTC to recipientAddress (if input amount is not fixed)
+                // FIXME: convert all input TeleBTC to the desired token
+                // if (theCCExchangeReq.isFixedToken == false) {
+                //     ITeleBTC(teleBTC).transfer(
+                //         theCCExchangeReq.recipientAddress,
+                //         remainedInputAmount - amounts[0]
+                //     );
+                // }
+
+            } else {
+                // Handles situation when exchange was not successful
+
+                // FIXME: how to handle the failed situation
+
+                // Revokes allowance
+                ITeleBTC(teleBTC).approve(
+                    _exchangeConnector,
+                    0
+                );
+
+                // Sends teleBTC to recipient if exchange wasn't successful
+                // ITeleBTC(teleBTC).transfer(
+                //     theCCExchangeReq.recipientAddress,
+                //     remainedInputAmount
+                // );
+
+                // FIXME: in the case of failure TELEBTC will be stock in the contract, till its owner do something for it
+
+                emit FailedCCExchange(
+                    _lockerLockingScript,
+                    0,
+                    ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
+                    theCCExchangeReq.recipientAddress,
+                    [theCCExchangeReq.path[0], theCCExchangeReq.path[1]], // input token // output token
+                    [remainedInputAmount, 0],// input amount //  output amount
+                    theCCExchangeReq.speed,
+                    _msgSender(), // Teleporter address
+                    theCCExchangeReq.fee,
+                    _txId,
+                    theCCExchangeReq.appId
+                );
+            }
         }
     }
 
@@ -587,4 +611,163 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
     }
 
     receive() external payable {}
+
+
+    /// @notice                     Executes a cross-chain exchange request after checking its merkle inclusion proof
+    /// @dev                        Mints teleBTC for user if exchanging is not successful
+    /// @param _message             Version of the transaction containing the user request
+    /// @return
+    function withdrawFailedCcExchangeToBTC(
+        bytes memory _message,
+        bytes32 r,
+        bytes32 s,
+        uint8 v,
+        bytes calldata _lockerLockingScript
+    ) external nonReentrant override returns (bool) {
+
+        uint8 theScriptType = _message.toUint8(0);
+        uint8 theUserScriptLength = _message.toUint8(8);
+        bytes32 theTxId = _message.toBytes32(16);
+        bytes memory userScript = _message.slice(48, uint256(theUserScriptLength));
+
+        require(
+            theScriptType <= uint8(ScriptTypes.P2TR),
+            "CCExchangeRouter: invalid script type"
+        );
+
+        require(
+            _verifySig(
+                _message,
+                r,
+                s,
+                v
+            ) == ccExchangeRequests[theTxId].recipientAddress,
+            "CCExchangeRouter: invalid signature"
+        );
+
+        IBurnRouter(burnRouter).ccBurn(
+            ccExchangeRequests[theTxId].remainedInputAmount,
+            userScript,
+            ScriptTypes(theScriptType),
+            _lockerLockingScript
+        );
+
+        return true;
+    }
+
+    // TODO: move to a library
+    function _verifySig(
+        bytes memory message,
+        bytes32 r,
+        bytes32 s,
+        uint8 v
+    ) internal pure returns (address) {
+        // Compute the message hash
+        bytes32 messageHash = keccak256(message);
+
+        // Prefix the message hash as per the Ethereum signing standard
+        bytes32 ethSignedMessageHash = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n", uintToString(message.length), messageHash)
+        );
+
+        // Verify the message using ecrecover
+        address signer = ecrecover(ethSignedMessageHash, v, r, s);
+        require(signer != address(0), "PolygonConnectorLogic: Invalid sig");
+
+        return signer;
+    }
+
+    // TODO: move to a library
+    // Helper function to convert uint to string
+    function uintToString(uint v) private pure returns (string memory str) {
+        if (v == 0) {
+            return "0";
+        }
+        uint j = v;
+        uint length;
+        while (j != 0) {
+            length++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(length);
+        uint k = length;
+        while (v != 0) {
+            k = k-1;
+            uint8 temp = (48 + uint8(v - v / 10 * 10));
+            bytes1 b1 = bytes1(temp);
+            bstr[k] = b1;
+            v /= 10;
+        }
+        str = string(bstr);
+    }
+
+
+    /// @notice                     Executes a cross-chain exchange request after checking its merkle inclusion proof
+    /// @dev                        Mints teleBTC for user if exchanging is not successful
+    /// @param _message             Version of the transaction containing the user request
+    /// @return
+    function reDoFailedCcExchange(
+        bytes memory _message,
+        bytes32 r,
+        bytes32 s,
+        uint8 v
+    ) external nonReentrant override returns (bool) {
+        bytes32 theTxId = _message.toBytes32(0);
+        uint256 theOutputAmount = _message.toUint256(32);
+        uint256 theDeadline = _message.toUint256(64);
+
+        ethCcExchangeRequest memory theCCExchangeReq = ccExchangeRequests[theTxId];
+
+        require(
+            _verifySig(
+                _message,
+                r,
+                s,
+                v
+            ) == theCCExchangeReq.recipientAddress,
+            "CCExchangeRouter: invalid signature"
+        );
+
+        bool result;
+        uint[] memory amounts;
+
+        address _exchangeConnector = exchangeConnector[theCCExchangeReq.appId];
+
+        (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
+            theCCExchangeReq.remainedInputAmount,
+            theOutputAmount,
+            theCCExchangeReq.path,
+            address(this),
+            theDeadline,
+            true
+        );
+
+        require(result, "CCExchangeRouter: swap failed");
+
+
+        // FIXME: add all requirement
+        ITeleBTC(theCCExchangeReq.path[1]).approve(
+            across, 
+            amounts[amounts.length-1]
+        );
+
+        ccExchangeRequests[theTxId].isTransferedToEth = true;
+
+        bytes memory nullData;
+
+        SpokePoolInterface(across).deposit(
+            theCCExchangeReq.recipientAddress,
+            theCCExchangeReq.path[1],
+            amounts[amounts.length-1],
+            // eth chain id
+            1,
+            // FIXME: decide relayer percentage fee to be updatable or not
+            1000000,
+            uint32(block.timestamp),
+            nullData,
+            115792089237316195423570985008687907853269984665640564039457584007913129639935
+        );
+
+        return true;
+    }
 }

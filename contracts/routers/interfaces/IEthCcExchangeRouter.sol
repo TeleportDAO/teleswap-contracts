@@ -18,10 +18,39 @@ interface IEthCcExchangeRouter is ICcExchangeRouter {
         address newAcross
     );
 
+    event BurnRouterUpdated (
+        address oldBurnRouter,
+        address newBurnRouter
+    );
+
 
     function addSupportedExchangeToken(address _token) external;
 
     function removeSupportedExchangeToken(address _token) external;
 
     function updateAcross(address _across) external;
+
+    function updateBurnRouter(address _burnRouter) external;
+
+    function withdrawFailedCcExchangeToBTC(
+        bytes memory _message,
+        bytes32 r,
+        bytes32 s,
+        uint8 v,
+        // extract from user's message
+        // bytes memory _userScript,
+        // ScriptTypes _scriptType,
+        bytes calldata _lockerLockingScript
+    ) external returns (bool);
+
+
+    function reDoFailedCcExchange(
+        bytes memory _message,
+        bytes32 r,
+        bytes32 s,
+        uint8 v
+        // extract from user's message
+        // outputAmount,
+        // deadline,
+    ) external returns (bool);
 }

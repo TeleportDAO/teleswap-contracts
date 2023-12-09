@@ -23,5 +23,7 @@ contract EthCcExchangeRouterStorage is IEthCcExchangeRouterStorage {
     // Private variables
     mapping(bytes32 => ethCcExchangeRequest) internal ccExchangeRequests;
 
-    address public override accross;
+    address public override across;
+
+    address public override burnRouter;
 }
