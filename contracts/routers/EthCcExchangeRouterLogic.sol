@@ -24,7 +24,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
     using BytesLib for bytes;
 
     modifier nonZeroAddress(address _address) {
-        require(_address != address(0), "CCExchangeRouter: address is zero");
+        require(_address != address(0), "CCExchange: zero address");
         _;
     }
 
@@ -58,14 +58,12 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
         _setLockers(_lockers);
         _setTeleBTC(_teleBTC);
         _setTreasury(_treasury);
+        _setAcross(_across);
+        _setBurnRouter(_burnRouter);
 
         for (uint i = 0; i < _supportedTokens.length; i++) {
             _addSupportedExchangeToken(_supportedTokens[i]);
         }
-
-        _setAcross(_across);
-
-        _setBurnRouter(_burnRouter);
     }
 
     function renounceOwnership() public virtual override onlyOwner {}
@@ -191,7 +189,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
     function _setProtocolPercentageFee(uint _protocolPercentageFee) private {
         require(
             MAX_PROTOCOL_FEE >= _protocolPercentageFee,
-            "CCExchangeRouter: fee is out of range"
+            "CCExchange: fee is out of range"
         );
         emit NewProtocolPercentageFee(protocolPercentageFee, _protocolPercentageFee);
         protocolPercentageFee = _protocolPercentageFee;
@@ -201,7 +199,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
     function _setStartingBlockNumber(uint _startingBlockNumber) private {
         require(
             _startingBlockNumber > startingBlockNumber,
-            "CCExchangeRouter: low startingBlockNumber"
+            "CCExchange: low startingBlockNumber"
         );
         startingBlockNumber = _startingBlockNumber;
     }
@@ -247,7 +245,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
     /// @param _txId                        The transaction ID of request on source chain 
     /// @return                             True if the cc exchange request has been already executed
     function isRequestUsed(bytes32 _txId) external view override returns (bool) {
-        return ccExchangeRequests[_txId].isUsed ? true : false;
+        return ethCcExchangeRequests[_txId].isUsed ? true : false;
     }
 
     /// @notice                     Executes a cross-chain exchange request after checking its merkle inclusion proof
@@ -271,19 +269,19 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
         uint _index,
         bytes calldata _lockerLockingScript
     ) external payable nonReentrant override returns (bool) {
-        require(_msgSender() == instantRouter, "CCExchangeRouter: invalid sender");
-        require(_blockNumber >= startingBlockNumber, "CCExchangeRouter: request is too old");
+        require(_msgSender() == instantRouter, "CCExchange: invalid sender");
+        require(_blockNumber >= startingBlockNumber, "CCExchange: request is old");
 
         // Calculates transaction id
         bytes32 txId = BitcoinHelper.calculateTxId(_version, _vin, _vout, _locktime);
 
         // Checks that the request has not been processed before
         require(
-            !ccExchangeRequests[txId].isUsed,
-            "CCExchangeRouter: the request has been used before"
+            !ethCcExchangeRequests[txId].isUsed,
+            "CCExchange: request is used"
         );
 
-        require(_locktime == bytes4(0), "CCExchangeRouter: lock time is non-zero");
+        require(_locktime == bytes4(0), "CCExchange: lock time is non-zero");
 
         // Extracts information from the request
         _saveCCExchangeRequest(_lockerLockingScript, _vout, txId);
@@ -296,7 +294,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
                 _intermediateNodes,
                 _index
             ),
-            "CCExchangeRouter: transaction has not been finalized yet"
+            "CCExchange: non-finalized transaction"
         );
 
         // Normal cc exchange request
@@ -313,16 +311,16 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
         // Gets remained amount after reducing fees
         uint remainedInputAmount = _mintAndReduceFees(_lockerLockingScript, _txId);
 
-        ccExchangeRequests[_txId].remainedInputAmount = remainedInputAmount;
+        ethCcExchangeRequests[_txId].remainedInputAmount = remainedInputAmount;
 
         bool result;
         uint[] memory amounts;
 
         // Gets exchange connector address
-        address _exchangeConnector = exchangeConnector[ccExchangeRequests[_txId].appId];
-        require(_exchangeConnector != address(0), "CCExchangeRouter: app id doesn't exist");
+        address _exchangeConnector = exchangeConnector[ethCcExchangeRequests[_txId].appId];
+        require(_exchangeConnector != address(0), "CCExchange: invalid appid");
         
-        ethCcExchangeRequest memory theCCExchangeReq = ccExchangeRequests[_txId];
+        ethCcExchangeRequest memory theCCExchangeReq = ethCcExchangeRequests[_txId];
 
         if (!isExchangeTokenSupported[theCCExchangeReq.path[1]]) {
             // FIXME: in the case of failure TELEBTC will be stock in the contract, till its owner do something for it
@@ -349,41 +347,54 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
             );
 
             // TODO: swap fucntion of IExchangeConnector is doing the exact thing, so it's a duplicate
-            if (IExchangeConnector(_exchangeConnector).isPathValid(theCCExchangeReq.path)) {
-                // Exchanges minted teleBTC for output token
-                (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
-                    remainedInputAmount,
-                    theCCExchangeReq.outputAmount,
-                    theCCExchangeReq.path,
-                    // theCCExchangeReq.recipientAddress,
-                    // get all the tokens
-                    address(this),
-                    theCCExchangeReq.deadline,
-                    // theCCExchangeReq.isFixedToken
-                    // we shold use all the input
-                    true
-                );
-            } else {
-                // Exchanges minted teleBTC for output token via wrappedNativeToken
-                // note: path is [teleBTC, wrappedNativeToken, outputToken]
-                address[] memory _path = new address[](3);
-                _path[0] = theCCExchangeReq.path[0];
-                _path[1] = IExchangeConnector(_exchangeConnector).wrappedNativeToken();
-                _path[2] = theCCExchangeReq.path[1];
+            // if (IExchangeConnector(_exchangeConnector).isPathValid(theCCExchangeReq.path)) {
+            //     // Exchanges minted teleBTC for output token
+            //     (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
+            //         remainedInputAmount,
+            //         theCCExchangeReq.outputAmount,
+            //         theCCExchangeReq.path,
+            //         // theCCExchangeReq.recipientAddress,
+            //         // get all the tokens
+            //         address(this),
+            //         theCCExchangeReq.deadline,
+            //         // theCCExchangeReq.isFixedToken
+            //         // we shold use all the input
+            //         true
+            //     );
+            // } else {
+            //     // Exchanges minted teleBTC for output token via wrappedNativeToken
+            //     // note: path is [teleBTC, wrappedNativeToken, outputToken]
+            //     address[] memory _path = new address[](3);
+            //     _path[0] = theCCExchangeReq.path[0];
+            //     _path[1] = IExchangeConnector(_exchangeConnector).wrappedNativeToken();
+            //     _path[2] = theCCExchangeReq.path[1];
 
-                (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
-                    remainedInputAmount,
-                    theCCExchangeReq.outputAmount,
-                    _path,
-                    // theCCExchangeReq.recipientAddress,
-                    // get all the tokens
-                    address(this),
-                    theCCExchangeReq.deadline,
-                    // theCCExchangeReq.isFixedToken
-                    // We should use all the input
-                    true
-                );
-            }
+            //     (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
+            //         remainedInputAmount,
+            //         theCCExchangeReq.outputAmount,
+            //         _path,
+            //         // theCCExchangeReq.recipientAddress,
+            //         // get all the tokens
+            //         address(this),
+            //         theCCExchangeReq.deadline,
+            //         // theCCExchangeReq.isFixedToken
+            //         // We should use all the input
+            //         true
+            //     );
+            // }
+
+            (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
+                remainedInputAmount,
+                theCCExchangeReq.outputAmount,
+                theCCExchangeReq.path,
+                // theCCExchangeReq.recipientAddress,
+                // get all the tokens
+                address(this),
+                theCCExchangeReq.deadline,
+                // theCCExchangeReq.isFixedToken
+                // we shold use all the input
+                true
+            );
 
             if (result) {
                 // Emits CCExchange if exchange was successful
@@ -407,7 +418,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
                     amounts[amounts.length-1]
                 );
 
-                ccExchangeRequests[_txId].isTransferedToEth = true;
+                ethCcExchangeRequests[_txId].isTransferedToEth = true;
 
                 bytes memory nullData;
 
@@ -424,33 +435,13 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
                     115792089237316195423570985008687907853269984665640564039457584007913129639935
                 );
 
-                // Transfers rest of teleBTC to recipientAddress (if input amount is not fixed)
-                // FIXME: convert all input TeleBTC to the desired token
-                // if (theCCExchangeReq.isFixedToken == false) {
-                //     ITeleBTC(teleBTC).transfer(
-                //         theCCExchangeReq.recipientAddress,
-                //         remainedInputAmount - amounts[0]
-                //     );
-                // }
-
             } else {
                 // Handles situation when exchange was not successful
-
-                // FIXME: how to handle the failed situation
-
                 // Revokes allowance
                 ITeleBTC(teleBTC).approve(
                     _exchangeConnector,
                     0
                 );
-
-                // Sends teleBTC to recipient if exchange wasn't successful
-                // ITeleBTC(teleBTC).transfer(
-                //     theCCExchangeReq.recipientAddress,
-                //     remainedInputAmount
-                // );
-
-                // FIXME: in the case of failure TELEBTC will be stock in the contract, till its owner do something for it
 
                 emit FailedCCExchange(
                     _lockerLockingScript,
@@ -483,7 +474,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
         // Checks that given script hash is locker
         require(
             ILockers(lockers).isLocker(_lockerLockingScript),
-            "CCExchangeRouter: no locker with give script hash exists"
+            "CCExchange: no locker with script hash"
         );
 
         // Extracts value and opreturn data from request
@@ -495,13 +486,13 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
             _lockerLockingScript
         );
 
-        require(arbitraryData.length == 79, "CCExchangeRouter: invalid len");
+        require(arbitraryData.length == 79, "CCExchange: invalid len");
 
         // Checks that input amount is not zero
-        require(request.inputAmount > 0, "CCExchangeRouter: input amount is zero");
+        require(request.inputAmount > 0, "CCExchang: input amount is zero");
 
         // Checks that the request belongs to this chain
-        require(chainId == RequestHelper.parseChainId(arbitraryData), "CCExchangeRouter: chain id is not correct");
+        require(chainId == RequestHelper.parseChainId(arbitraryData), "CCExchange: chain id is not correct");
         request.appId = RequestHelper.parseAppId(arbitraryData);
         
         address exchangeToken = RequestHelper.parseExchangeToken(arbitraryData);
@@ -528,17 +519,17 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
 
         // Calculates fee
         uint percentageFee = RequestHelper.parsePercentageFee(arbitraryData);
-        require(percentageFee <= MAX_PROTOCOL_FEE, "CCExchangeRouter: percentage fee is not correct");
+        require(percentageFee <= MAX_PROTOCOL_FEE, "CCExchange: percentage fee is not correct");
         request.fee = percentageFee*request.inputAmount/MAX_PROTOCOL_FEE;
 
         // FIXME: speed can be removed and and compare EthCc with Cc based on the appIds
         request.speed = RequestHelper.parseSpeed(arbitraryData);
-        require(request.speed == 1, "CCExchangeRouter: speed is not correct");
+        require(request.speed == 1, "CCExchange: speed is not correct");
 
         request.isUsed = true;
 
         // Saves request
-        ccExchangeRequests[_txId] = request;
+        ethCcExchangeRequests[_txId] = request;
     }
 
     /// @notice                             Checks if tx has been finalized on source chain
@@ -556,7 +547,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
     ) private returns (bool) {
         // Finds fee amount
         uint feeAmount = IBitcoinRelay(relay).getBlockHeaderFee(_blockNumber, 0);
-        require(msg.value >= feeAmount, "CCExchangeRouter: paid fee is not sufficient");
+        require(msg.value >= feeAmount, "CCExchange: paid fee is not sufficient");
 
         // Calls relay contract
         bytes memory data = Address.functionCallWithValue(
@@ -590,12 +581,12 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
         uint mintedAmount = ILockers(lockers).mint(
             _lockerLockingScript,
             address(this),
-            ccExchangeRequests[_txId].inputAmount
+            ethCcExchangeRequests[_txId].inputAmount
         );
 
         // Calculates fees
-        uint protocolFee = ccExchangeRequests[_txId].inputAmount*protocolPercentageFee/MAX_PROTOCOL_FEE;
-        uint teleporterFee = ccExchangeRequests[_txId].fee;
+        uint protocolFee = ethCcExchangeRequests[_txId].inputAmount*protocolPercentageFee/MAX_PROTOCOL_FEE;
+        uint teleporterFee = ethCcExchangeRequests[_txId].fee;
 
         // Pays Teleporter fee
         if (teleporterFee > 0) {
@@ -624,6 +615,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
         uint8 v,
         bytes calldata _lockerLockingScript
     ) external nonReentrant override returns (bool) {
+        require(_msgSender() == instantRouter, "CCExchange: invalid sender");
 
         uint8 theScriptType = _message.toUint8(0);
         uint8 theUserScriptLength = _message.toUint8(8);
@@ -632,7 +624,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
 
         require(
             theScriptType <= uint8(ScriptTypes.P2TR),
-            "CCExchangeRouter: invalid script type"
+            "CCExchange: invalid script type"
         );
 
         require(
@@ -641,12 +633,17 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
                 r,
                 s,
                 v
-            ) == ccExchangeRequests[theTxId].recipientAddress,
-            "CCExchangeRouter: invalid signature"
+            ) == ethCcExchangeRequests[theTxId].recipientAddress,
+            "CCExchange: invalid signature"
+        );
+
+        ITeleBTC(teleBTC).approve(
+            burnRouter,
+            ethCcExchangeRequests[theTxId].remainedInputAmount
         );
 
         IBurnRouter(burnRouter).ccBurn(
-            ccExchangeRequests[theTxId].remainedInputAmount,
+            ethCcExchangeRequests[theTxId].remainedInputAmount,
             userScript,
             ScriptTypes(theScriptType),
             _lockerLockingScript
@@ -712,11 +709,13 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
         bytes32 s,
         uint8 v
     ) external nonReentrant override returns (bool) {
+        require(_msgSender() == instantRouter, "CCExchange: invalid sender");
+
         bytes32 theTxId = _message.toBytes32(0);
         uint256 theOutputAmount = _message.toUint256(32);
         uint256 theDeadline = _message.toUint256(64);
 
-        ethCcExchangeRequest memory theCCExchangeReq = ccExchangeRequests[theTxId];
+        ethCcExchangeRequest memory theCCExchangeReq = ethCcExchangeRequests[theTxId];
 
         require(
             _verifySig(
@@ -751,7 +750,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
             amounts[amounts.length-1]
         );
 
-        ccExchangeRequests[theTxId].isTransferedToEth = true;
+        ethCcExchangeRequests[theTxId].isTransferedToEth = true;
 
         bytes memory nullData;
 

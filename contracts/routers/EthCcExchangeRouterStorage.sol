@@ -21,7 +21,7 @@ contract EthCcExchangeRouterStorage is IEthCcExchangeRouterStorage {
     mapping(address => bool) public override isExchangeTokenSupported; // mapping to store supported exchange tokens
 
     // Private variables
-    mapping(bytes32 => ethCcExchangeRequest) internal ccExchangeRequests;
+    mapping(bytes32 => ethCcExchangeRequest) internal ethCcExchangeRequests;
 
     address public override across;
 
