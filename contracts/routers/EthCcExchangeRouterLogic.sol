@@ -443,7 +443,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
                     theCCExchangeReq.path[1],
                     amounts[amounts.length-1],
                     // eth chain id
-                    1,
+                    5,
                     acrossRelayerFee,
                     uint32(block.timestamp),
                     nullData,
@@ -774,7 +774,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
             theCCExchangeReq.path[1],
             amounts[amounts.length-1],
             // eth chain id
-            1,
+            5,
             acrossRelayerFee,
             uint32(block.timestamp),
             nullData,
