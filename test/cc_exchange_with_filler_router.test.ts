@@ -98,6 +98,8 @@ describe("CcExchangeRouter", async () => {
     //
     let uniswapV2Pair__factory: UniswapV2Pair__factory;
 
+    let address1 = "0x0000000000000000000000000000000000000001"
+
 
     before(async () => {
         // Sets accounts
@@ -704,7 +706,6 @@ describe("CcExchangeRouter", async () => {
             ).withArgs(ccExchangeRouter.address, deployer.address, 1000)
         })
 
-
         it("fill tx successfully (one filler more than needed amount)", async function () {
             await exchangeToken.approve(ccExchangeRouter.address, 1000);
             await ccExchangeRouter.fillTx(
@@ -746,7 +747,6 @@ describe("CcExchangeRouter", async () => {
             );
 
 
-            // TODO txid?
             await expect(
                 ccExchangeRouter.returnUnusedFills(
                     CC_EXCHANGE_REQUESTS.fixedRateCCExchange.txId
@@ -762,6 +762,66 @@ describe("CcExchangeRouter", async () => {
             ).to.emit(
                 teleBTC, "Transfer"
             ).withArgs(ccExchangeRouter.address, deployer.address, CC_EXCHANGE_REQUESTS.fixedRateCCExchange.bitcoinAmount - teleporterFee - lockerFee - protocolFee)
+
+        })
+
+        it("fill tx with ethereum successfully (one filler more than needed amount)", async function () {
+            await ccExchangeRouter.fillTx(
+                CC_EXCHANGE_REQUESTS.fixedRateCCExchangeWithEth.txId,
+                address1,
+                BigNumber.from("1000000000000000000000"),
+                {value: BigNumber.from("1000000000000000000000")}
+            )
+
+            // Replaces dummy address in vout with exchange token address
+            let vout = CC_EXCHANGE_REQUESTS.fixedRateCCExchangeWithEth.vout;
+            vout = vout.replace(DUMMY_ADDRESS, address1.slice(2, address1.length));
+
+            // Calculates fees
+            let [lockerFee, teleporterFee, protocolFee] = calculateFees(
+                CC_EXCHANGE_REQUESTS.fixedRateCCExchangeWithEth
+            );
+
+            // Exchanges teleBTC for TT
+            expect(
+                await ccExchangeRouter.ccExchange(
+                    CC_EXCHANGE_REQUESTS.fixedRateCCExchangeWithEth.version,
+                    CC_EXCHANGE_REQUESTS.fixedRateCCExchangeWithEth.vin,
+                    vout,
+                    CC_EXCHANGE_REQUESTS.fixedRateCCExchangeWithEth.locktime,
+                    CC_EXCHANGE_REQUESTS.fixedRateCCExchangeWithEth.blockNumber,
+                    CC_EXCHANGE_REQUESTS.fixedRateCCExchangeWithEth.intermediateNodes,
+                    CC_EXCHANGE_REQUESTS.fixedRateCCExchangeWithEth.index,
+                    LOCKER1_LOCKING_SCRIPT,
+                )
+            ).to.emit(ccExchangeRouter, 'CCExchange').withArgs(
+                CC_EXCHANGE_REQUESTS.fixedRateCCExchangeWithEth.recipientAddress,
+                teleBTC.address,
+                address1,
+                CC_EXCHANGE_REQUESTS.fixedRateCCExchangeWithEth.bitcoinAmount - teleporterFee - lockerFee - protocolFee,
+                CC_EXCHANGE_REQUESTS.fixedRateCCExchangeWithEth.exchangeAmount,
+                0,
+                deployerAddress,
+                teleporterFee
+            );
+
+            let oldEthBalance = await ccExchangeRouter.provider.getBalance(deployerAddress)
+            
+            await ccExchangeRouter.returnUnusedFills(
+                CC_EXCHANGE_REQUESTS.fixedRateCCExchangeWithEth.txId
+            )
+
+            let newEthBalance = await ccExchangeRouter.provider.getBalance(deployerAddress)
+
+            await expect(newEthBalance - oldEthBalance).to.be.greaterThan(900000000000000000000)
+
+            await expect(
+                ccExchangeRouter.receiveFillBenefit(
+                    CC_EXCHANGE_REQUESTS.fixedRateCCExchangeWithEth.txId
+                )
+            ).to.emit(
+                teleBTC, "Transfer"
+            ).withArgs(ccExchangeRouter.address, deployer.address, CC_EXCHANGE_REQUESTS.fixedRateCCExchangeWithEth.bitcoinAmount - teleporterFee - lockerFee - protocolFee)
 
         })
 
@@ -794,7 +854,6 @@ describe("CcExchangeRouter", async () => {
                 LOCKER1_LOCKING_SCRIPT,
             )
 
-            // TODO txid?
             await expect(
                 ccExchangeRouter.returnUnusedFills(
                     CC_EXCHANGE_REQUESTS.fixedRateCCExchange.txId
@@ -864,7 +923,6 @@ describe("CcExchangeRouter", async () => {
                 teleporterFee
             );
 
-            // TODO txid?
             await expect(
                 ccExchangeRouter.returnUnusedFills(
                     CC_EXCHANGE_REQUESTS.fixedRateCCExchange.txId
@@ -932,7 +990,6 @@ describe("CcExchangeRouter", async () => {
                 teleporterFee
             );
 
-            // TODO txid?
             await expect(
                 ccExchangeRouter.returnUnusedFills(
                     CC_EXCHANGE_REQUESTS.fixedRateCCExchange.txId

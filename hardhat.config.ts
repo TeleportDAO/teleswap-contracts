@@ -61,7 +61,8 @@ const config: HardhatUserConfig = {
 				version: "0.8.0",
 				settings: {
 					optimizer: {
-						enabled: true
+						enabled: true,
+						runs: 1000,
 					},
 				},
 			},
@@ -69,7 +70,8 @@ const config: HardhatUserConfig = {
 				version: "0.8.2",
 				settings: {
 					optimizer: {
-						enabled: true
+						enabled: true,
+						runs: 1000,
 					},
 				},
 			}
@@ -109,6 +111,9 @@ const config: HardhatUserConfig = {
 			url: "https://bsc-testnet.publicnode.com",
 			chainId: 97,
 			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+		},
+		hardhat: {
+			allowUnlimitedContractSize: true,
 		},
 	},	
   	paths: {

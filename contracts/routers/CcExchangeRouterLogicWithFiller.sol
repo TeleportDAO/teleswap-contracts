@@ -70,21 +70,30 @@ contract CcExchangeRouterLogicWithFiller is CcExchangeRouterLogic {
         emit NewFillerWithdrawInterval(fillerWithdrawInterval, _fillerWithdrawInterval);
         fillerWithdrawInterval = _fillerWithdrawInterval;
     }
+    
+    function ethMappedToken () public returns (address) {
+        return address(1);
+    }
 
     function fillTx(
         bytes32 txId,
         address token,
         uint amount
-    ) external nonReentrant returns (bool) {
+    ) external payable nonReentrant returns (bool) {
         require (amount > 0,  "CCExchangeRouter: filler amount is zero");
         FillerData memory _previousData = fillersData[txId][_msgSender()];
         require (_previousData.amount == 0, "CCExchangeRouter: already filled txid");
 
         PrefixFillSum storage _prefixFillSum = prefixFillSums[txId][token];
-        require(
-            ERC20(token).transferFrom(_msgSender(), address(this), amount),
-            "CCExchangeRouter: Unable to transfer token to contract"
-        ); 
+
+        if (token == ethMappedToken()) {
+            require(msg.value == amount, "CCExchangeRouter: amount is incorrect");
+        } else {
+            require(
+                ERC20(token).transferFrom(_msgSender(), address(this), amount),
+                "CCExchangeRouter: Unable to transfer token to contract"
+            ); 
+        }
 
         if (_prefixFillSum.currentIndex == 0) {
             _prefixFillSum.prefixSum.push(0);
@@ -117,6 +126,7 @@ contract CcExchangeRouterLogicWithFiller is CcExchangeRouterLogic {
         );
     }
 
+    // TODO event
     function returnUnusedFills (
         bytes32 txId
     ) external nonReentrant returns (bool) {
@@ -129,19 +139,33 @@ contract CcExchangeRouterLogicWithFiller is CcExchangeRouterLogic {
         FillerData memory fillerData = fillersData[txId][_msgSender()];
         
         if (txFillData.choosedToken != fillerData.token || txFillData.affectingIndex < fillerData.index) {
-            require(
-                ERC20(fillerData.token).transfer(_msgSender(), fillerData.amount), 
-                "CCExchangeRouter: can't transfer token"
-            );
+            if (fillerData.token == ethMappedToken()) {
+                require(
+                    payable(_msgSender()).send(fillerData.amount), 
+                    "CCExchangeRouter: can't send Ether"
+                );
+            } else {
+                require(
+                    ERC20(fillerData.token).transfer(_msgSender(), fillerData.amount), 
+                    "CCExchangeRouter: can't transfer token"
+                );
+            }
             fillersData[txId][_msgSender()].amount = 0;
             return true;
         }
 
         if (txFillData.affectingIndex == fillerData.index && txsFillData[txId].remainingAmountOfLastFillIsWithdrawn == false) {
-            require(
-                ERC20(fillerData.token).transfer(_msgSender(), txFillData.remainingAmountOfLastFill), 
-                "CCExchangeRouter: can't transfer token"
-            );
+            if (fillerData.token == ethMappedToken()) {
+                require(
+                    payable(_msgSender()).send(txFillData.remainingAmountOfLastFill), 
+                    "CCExchangeRouter: can't send Ether"
+                );
+            } else {
+                require(
+                    ERC20(fillerData.token).transfer(_msgSender(), txFillData.remainingAmountOfLastFill), 
+                    "CCExchangeRouter: can't transfer token"
+                );
+            }
             txsFillData[txId].remainingAmountOfLastFillIsWithdrawn = true;
             return true;
         }
@@ -226,6 +250,7 @@ contract CcExchangeRouterLogicWithFiller is CcExchangeRouterLogic {
         );
         
         ccExchangeRequest memory request = ccExchangeRequests[txId];
+        
         if (
             request.speed == 1 && 
             _canFill(txId, request.path[1], request.outputAmount) && 
@@ -243,6 +268,7 @@ contract CcExchangeRouterLogicWithFiller is CcExchangeRouterLogic {
 
     function _canFill(bytes32 _txId, address token, uint256 amount) private returns(bool){
         PrefixFillSum memory _prefixFillSum = prefixFillSums[_txId][token];
+        if (_prefixFillSum.currentIndex < 1) return false;
         return _prefixFillSum.prefixSum[_prefixFillSum.currentIndex - 1] >= amount;
     }
 
@@ -276,7 +302,12 @@ contract CcExchangeRouterLogicWithFiller is CcExchangeRouterLogic {
         _txFillData.affectingIndex = _findAffectingIndexOfFill(_prefixFillSum, request.outputAmount);
         _txFillData.remainingAmountOfLastFill = _prefixFillSum.prefixSum[_txFillData.affectingIndex] - request.outputAmount;
 
-        bool result = ERC20(request.path[1]).transfer(request.recipientAddress, request.outputAmount);
+        bool result;
+        if (request.path[1] == ethMappedToken()) {
+            result = payable(request.recipientAddress).send(request.outputAmount);
+        } else {
+            result = ERC20(request.path[1]).transfer(request.recipientAddress, request.outputAmount);
+        }
 
         if (result) {
             txsFillData[_txId] = _txFillData;
