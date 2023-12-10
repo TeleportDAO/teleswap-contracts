@@ -39,5 +39,7 @@ interface IEthCcExchangeRouterStorage is ICcExchangeRouterStorage {
 
     function across() external view returns (address);
 
+    function acrossRelayerFee() external view returns (int64);
+
     function burnRouter() external view returns (address);
 }

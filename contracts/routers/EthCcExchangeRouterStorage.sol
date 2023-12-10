@@ -25,5 +25,7 @@ contract EthCcExchangeRouterStorage is IEthCcExchangeRouterStorage {
 
     address public override across;
 
+    int64 public override acrossRelayerFee;
+
     address public override burnRouter;
 }

@@ -46,7 +46,8 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
         address _treasury,
         address[] memory _supportedTokens,
         address _across,
-        address _burnRouter
+        address _burnRouter,
+        int64 _acrossRelayerFee
     ) public initializer {
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
@@ -60,6 +61,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
         _setTreasury(_treasury);
         _setAcross(_across);
         _setBurnRouter(_burnRouter);
+        _setAcrossRelayerFee(_acrossRelayerFee);
 
         for (uint i = 0; i < _supportedTokens.length; i++) {
             _addSupportedExchangeToken(_supportedTokens[i]);
@@ -156,6 +158,13 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
         _setBurnRouter(_burnRouter);
     }
 
+    /// @notice                    Setter for acrossRelayerFee
+    /// @dev                       Only owner can call this
+    /// @param _acrossRelayerFee   Across relayer fee
+    function updateAcrossRelayerFee(int64 _acrossRelayerFee) external override onlyOwner {
+        _setAcrossRelayerFee(_acrossRelayerFee);
+    }
+
     /// @notice         Internal setter for relay contract address
     /// @param _relay   The new relay contract address
     function _setRelay(address _relay) private nonZeroAddress(_relay) {
@@ -238,6 +247,13 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
     function _setBurnRouter(address _burnRouter) private nonZeroAddress(_burnRouter) {
         emit BurnRouterUpdated(burnRouter, _burnRouter);
         burnRouter = _burnRouter;
+    }
+
+    /// @notice                    Internal setter for acrossRelayerFee
+    /// @param _acrossRelayerFee   Across relayer fee
+    function _setAcrossRelayerFee(int64 _acrossRelayerFee) private {
+        emit AcrossRelayerFeeUpdated(acrossRelayerFee, _acrossRelayerFee);
+        acrossRelayerFee = _acrossRelayerFee;
     }
 
     /// @notice                             Check if the cc exchange request has been executed before
@@ -428,8 +444,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
                     amounts[amounts.length-1],
                     // eth chain id
                     1,
-                    // FIXME: decide relayer percentage fee to be updatable or not
-                    1000000,
+                    acrossRelayerFee,
                     uint32(block.timestamp),
                     nullData,
                     115792089237316195423570985008687907853269984665640564039457584007913129639935
@@ -760,8 +775,7 @@ contract EthCcExchangeRouterLogic is IEthCcExchangeRouter, EthCcExchangeRouterSt
             amounts[amounts.length-1],
             // eth chain id
             1,
-            // FIXME: decide relayer percentage fee to be updatable or not
-            1000000,
+            acrossRelayerFee,
             uint32(block.timestamp),
             nullData,
             115792089237316195423570985008687907853269984665640564039457584007913129639935

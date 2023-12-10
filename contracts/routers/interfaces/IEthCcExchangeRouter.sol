@@ -18,6 +18,11 @@ interface IEthCcExchangeRouter is ICcExchangeRouter {
         address newAcross
     );
 
+    event AcrossRelayerFeeUpdated (
+        int64 oldAcrossFee,
+        int64 newAcrossFee
+    );
+
     event BurnRouterUpdated (
         address oldBurnRouter,
         address newBurnRouter
@@ -29,6 +34,8 @@ interface IEthCcExchangeRouter is ICcExchangeRouter {
     function removeSupportedExchangeToken(address _token) external;
 
     function updateAcross(address _across) external;
+
+    function updateAcrossRelayerFee(int64 _fee) external;
 
     function updateBurnRouter(address _burnRouter) external;
 
