@@ -25,8 +25,10 @@ import { LockersLogicLibraryAddresses } from "../src/types/factories/LockersLogi
 import { LockersLib } from "../src/types/LockersLib";
 import { LockersLib__factory } from "../src/types/factories/LockersLib__factory";
 
-import { TeleBTC } from "../src/types/TeleBTC";
-import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
+import { TeleBTCLogic } from "../src/types/TeleBTCLogic";
+import { TeleBTCLogic__factory } from "../src/types/factories/TeleBTCLogic__factory";
+import { TeleBTCProxy } from "../src/types/TeleBTCProxy";
+import { TeleBTCProxy__factory } from "../src/types/factories/TeleBTCProxy__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 import { WETH } from "../src/types/WETH";
@@ -142,8 +144,22 @@ describe("CcExchangeRouter", async () => {
         // await mockInstantRouter.mock.payBackLoan.returns(true);
 
         // Deploys teleBTC contract
-        const teleBTCFactory = new TeleBTC__factory(deployer);
-        teleBTC = await teleBTCFactory.deploy(
+
+        const teleBTCLogicFactory = new TeleBTCLogic__factory(deployer);
+        const teleBTCLogic = await teleBTCLogicFactory.deploy();
+
+        const teleBTCProxyFactory = new CcExchangeRouterProxy__factory(deployer);
+        const teleBTCProxy = await teleBTCProxyFactory.deploy(
+            teleBTCLogic.address,    
+            proxyAdminAddress,
+            "0x"
+        );
+        
+        teleBTC = await teleBTCLogic.attach(
+            teleBTCProxy.address
+        );
+
+        await teleBTC.initialize(
             "TeleportDAO-BTC",
             "teleBTC"
         );
@@ -501,7 +517,7 @@ describe("CcExchangeRouter", async () => {
             let addedLiquidityA = 10000;
             let addedLiquidityB = 10000;
 
-            console.log(uniswapV2Router02.address)
+            // console.log(await teleBTC.balanceOf(deployerAddress))
             // await uniswapV2Router02.addLiquidity(
             //     teleBTC.address,
             //     exchangeToken.address,
@@ -513,7 +529,7 @@ describe("CcExchangeRouter", async () => {
             //     1000000000000000, // Long deadline
             // );
 
-            // Creates liquidity pool of TeleBTC-WETH and adds liquidity in it
+            // // Creates liquidity pool of TeleBTC-WETH and adds liquidity in it
             // await teleBTC.approve(uniswapV2Router02.address, 10000);
             // await uniswapV2Router02.addLiquidityETH(
             //     teleBTC.address,
@@ -589,6 +605,9 @@ describe("CcExchangeRouter", async () => {
         it("When first filler fill a tx, a timer will be started and it will be not changed", async function () {
             let txId = "0x344e6fed192d01647ef2f715e29474ba6eef54cc197d9f59d3d05cf249f3a09d"
             await exchangeToken.approve(ccExchangeRouter.address, 2000);
+            await exchangeToken.transfer(signer1.address, 1000);
+            await exchangeToken.connect(signer1).approve(ccExchangeRouter.address, 1000);
+
             await expect(
                 ccExchangeRouter.fillTx(
                     txId,
@@ -602,7 +621,7 @@ describe("CcExchangeRouter", async () => {
             let oldFillingStartTime = await ccExchangeRouter.txsFillData(txId).startingTime
 
             await expect(
-                ccExchangeRouter.fillTx(
+                ccExchangeRouter.connect(signer1).fillTx(
                     txId,
                     exchangeToken.address,
                     1000
@@ -617,6 +636,32 @@ describe("CcExchangeRouter", async () => {
                 oldFillingStartTime
             ).to.be.equal(
                 newFillingStartTime
+            )
+        })
+
+        it("A filler can't fill a tx twice", async function () {
+            let txId = "0x344e6fed192d01647ef2f715e29474ba6eef54cc197d9f59d3d05cf249f3a09d"
+            await exchangeToken.approve(ccExchangeRouter.address, 2000);
+
+            await expect(
+                ccExchangeRouter.fillTx(
+                    txId,
+                    exchangeToken.address,
+                    1000
+                )
+            ).to.emit(
+                ccExchangeRouter, "TxIdFillStart"
+            )
+
+
+            await expect(
+                ccExchangeRouter.fillTx(
+                    txId,
+                    exchangeToken.address,
+                    1000
+                )
+            ).to.be.revertedWith(
+                "CCExchangeRouter: already filled txid"
             )
         })
 
@@ -660,7 +705,7 @@ describe("CcExchangeRouter", async () => {
         })
 
 
-        it.only("fill tx successfully (one filler more than needed amount)", async function () {
+        it("fill tx successfully (one filler more than needed amount)", async function () {
             await exchangeToken.approve(ccExchangeRouter.address, 1000);
             await ccExchangeRouter.fillTx(
                 CC_EXCHANGE_REQUESTS.fixedRateCCExchange.txId,
@@ -700,6 +745,7 @@ describe("CcExchangeRouter", async () => {
                 teleporterFee
             );
 
+
             // TODO txid?
             await expect(
                 ccExchangeRouter.returnUnusedFills(
@@ -716,6 +762,7 @@ describe("CcExchangeRouter", async () => {
             ).to.emit(
                 teleBTC, "Transfer"
             ).withArgs(ccExchangeRouter.address, deployer.address, CC_EXCHANGE_REQUESTS.fixedRateCCExchange.bitcoinAmount - teleporterFee - lockerFee - protocolFee)
+
         })
 
         it("can't withdraw remaining amount of last fill twice", async function () {

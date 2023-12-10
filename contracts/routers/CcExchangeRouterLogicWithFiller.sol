@@ -34,7 +34,6 @@ contract CcExchangeRouterLogicWithFiller is CcExchangeRouterLogic {
     );
 
     // TODO add matic
-    // TODO just one Filler data
 
     struct FillerData {
         uint index;
@@ -77,6 +76,10 @@ contract CcExchangeRouterLogicWithFiller is CcExchangeRouterLogic {
         address token,
         uint amount
     ) external nonReentrant returns (bool) {
+        require (amount > 0,  "CCExchangeRouter: filler amount is zero");
+        FillerData memory _previousData = fillersData[txId][_msgSender()];
+        require (_previousData.amount == 0, "CCExchangeRouter: already filled txid");
+
         PrefixFillSum storage _prefixFillSum = prefixFillSums[txId][token];
         require(
             ERC20(token).transferFrom(_msgSender(), address(this), amount),
@@ -211,7 +214,6 @@ contract CcExchangeRouterLogicWithFiller is CcExchangeRouterLogic {
         // Extracts information from the request
         _saveCCExchangeRequest(_lockerLockingScript, _vout, txId);
 
-        console.logBytes32(txId);
         // Check if transaction has been confirmed on source chain
         require(
             _isConfirmed(
