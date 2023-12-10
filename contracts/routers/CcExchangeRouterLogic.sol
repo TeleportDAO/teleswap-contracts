@@ -194,7 +194,7 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
         bytes calldata _intermediateNodes,
         uint _index,
         bytes calldata _lockerLockingScript
-    ) external payable nonReentrant override returns (bool) {
+    ) external payable nonReentrant override virtual returns (bool) {
         require(_msgSender() == instantRouter, "CCExchangeRouter: invalid sender");
         require(_blockNumber >= startingBlockNumber, "CCExchangeRouter: request is too old");
 
@@ -233,7 +233,7 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
     /// @dev                             Mints teleBTC for user if exchanging is not successful
     /// @param _lockerLockingScript      Locker's locking script    
     /// @param _txId                     Id of the transaction containing the user request
-    function _normalCCExchange(bytes memory _lockerLockingScript, bytes32 _txId) private {
+    function _normalCCExchange(bytes memory _lockerLockingScript, bytes32 _txId) internal {
         // Gets remained amount after reducing fees
         uint remainedInputAmount = _mintAndReduceFees(_lockerLockingScript, _txId);
 
@@ -343,7 +343,7 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
         bytes memory _lockerLockingScript,
         bytes memory _vout,
         bytes32 _txId
-    ) private {
+    ) internal {
 
         // Checks that given script hash is locker
         require(
@@ -393,7 +393,9 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
         request.fee = percentageFee*request.inputAmount/MAX_PROTOCOL_FEE;
 
         request.speed = RequestHelper.parseSpeed(arbitraryData);
-        require(request.speed == 0, "CCExchangeRouter: speed is not correct");
+
+        //TODO remove
+        // require(request.speed == 0, "CCExchangeRouter: speed is not correct");
 
         request.isUsed = true;
 
@@ -413,7 +415,7 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
         uint256 _blockNumber,
         bytes memory _intermediateNodes,
         uint _index
-    ) private returns (bool) {
+    ) internal returns (bool) {
         // Finds fee amount
         uint feeAmount = IBitcoinRelay(relay).getBlockHeaderFee(_blockNumber, 0);
         require(msg.value >= feeAmount, "CCExchangeRouter: paid fee is not sufficient");
@@ -444,7 +446,7 @@ contract CcExchangeRouterLogic is ICcExchangeRouter, CcExchangeRouterStorage,
     function _mintAndReduceFees(
         bytes memory _lockerLockingScript,
         bytes32 _txId
-    ) private returns (uint _remainedAmount) {
+    ) internal returns (uint _remainedAmount) {
 
         // Mints teleBTC for cc exchange router
         uint mintedAmount = ILockers(lockers).mint(

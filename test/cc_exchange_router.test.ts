@@ -126,15 +126,15 @@ describe("CcExchangeRouter", async () => {
         await mockBitcoinRelay.mock.checkTxProof.returns(true);
 
         // Mocks instant router contract
-        const instantRouterContract = await deployments.getArtifact(
-            "IInstantRouter"
-        );
-        mockInstantRouter = await deployMockContract(
-            deployer,
-            instantRouterContract.abi
-        );
+        // const instantRouterContract = await deployments.getArtifact(
+        //     "IInstantRouter"
+        // );
+        // mockInstantRouter = await deployMockContract(
+        //     deployer,
+        //     instantRouterContract.abi
+        // );
 
-        await mockInstantRouter.mock.payBackLoan.returns(true);
+        // await mockInstantRouter.mock.payBackLoan.returns(true);
 
         // Deploys teleBTC contract
         const teleBTCFactory = new TeleBTC__factory(deployer);
@@ -226,7 +226,7 @@ describe("CcExchangeRouter", async () => {
         await teleBTC.addBurner(lockers.address)
 
         await ccExchangeRouter.setLockers(lockers.address)
-        await ccExchangeRouter.setInstantRouter(mockInstantRouter.address)
+        // await ccExchangeRouter.setInstantRouter(mockInstantRouter.address)
     });
 
     const deployTeleportDAOToken = async (
