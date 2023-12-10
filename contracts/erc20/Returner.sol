@@ -57,7 +57,7 @@ contract Returner is Ownable, ReentrancyGuard, Pausable {
         );
     }
 
-    function sellTeleBTC(address account) nonReentrant whenNotPaused public payable {
+    function sellTeleBTC(address account) nonReentrant whenNotPaused public {
         require(account == msg.sender, "not owner");
         require(seller[account].tokenAmount != 0, "not seller");
         require(
@@ -71,7 +71,7 @@ contract Returner is Ownable, ReentrancyGuard, Pausable {
         seller[account].tokenAmount = 0;
     }
 
-    function refund(address account) nonReentrant whenNotPaused public payable {
+    function refund(address account) nonReentrant whenNotPaused public {
         require(account == msg.sender, "not owner");
         require(burner[account].tokenAmount != 0, "not burner");
         require(
