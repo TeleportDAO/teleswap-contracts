@@ -1,31 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.8.4;
 
-import "./interfaces/IBurnRouterStorage.sol";
+import "./interfaces/IBurnRouter.sol";
 
-contract BurnRouterStorage is IBurnRouterStorage {
-
-	// Structures
-
-    /// @notice Structure for recording cc burn requests
-    /// @param amount of tokens that user wants to burn
-    /// @param burntAmount that user will receive (after reducing fees from amount)
-    /// @param sender Address of user who requests burning
-    /// @param userScript Script hash of the user on Bitcoin
-    /// @param deadline of locker for executing the request
-    /// @param isTransferred True if the request has been processed
-    /// @param scriptType The script type of the user
-    /// @param requestIdOfLocker The index of the request for a specific locker
-	struct burnRequest {
-		uint amount;
-		uint burntAmount;
-		address sender;
-		bytes userScript;
-		uint deadline;
-		bool isTransferred;
-		ScriptTypes scriptType;
-		uint requestIdOfLocker;
-  	}
+abstract contract BurnRouterStorage is IBurnRouter {
 
     // Constants
     uint constant MAX_PROTOCOL_FEE = 10000;
