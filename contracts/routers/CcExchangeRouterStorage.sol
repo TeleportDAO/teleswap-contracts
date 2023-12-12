@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.8.4;
 
-import "./interfaces/ICcExchangeRouterStorage.sol";
+import "./interfaces/ICcExchangeRouter.sol";
 
-contract CcExchangeRouterStorage is ICcExchangeRouterStorage {
+abstract contract CcExchangeRouterStorage is ICcExchangeRouter {
 
     // Constants
     uint constant MAX_PROTOCOL_FEE = 10000;
@@ -22,4 +22,18 @@ contract CcExchangeRouterStorage is ICcExchangeRouterStorage {
     // Private variables
     mapping(bytes32 => ccExchangeRequest) internal ccExchangeRequests;
 
+    // New variables (filler)
+
+    address constant NATIVE_TOKEN = address(1);
+
+    // note: should be set after deplyment
+    uint public fillerWithdrawInterval;
+
+    mapping(bytes32 => mapping(address => FillerData)) public fillersData;
+    // ^ [txId][filler] to FillerData
+    mapping(bytes32 => mapping(address => PrefixFillSum)) public prefixFillSums;
+    // ^ [txId][token] to PrefixFillSum
+    mapping(bytes32 => FillData) public fillsData;
+    mapping(bytes32 => uint) public teleBtcAmount;
+    // ^ txId to remained teleBTC amount 
 }

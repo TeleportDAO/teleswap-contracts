@@ -9,7 +9,7 @@ import "../libraries/BurnRouterLib.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-contract BurnRouterLogic is IBurnRouter, BurnRouterStorage, 
+contract BurnRouterLogic is BurnRouterStorage, 
     OwnableUpgradeable, ReentrancyGuardUpgradeable {
     
     modifier nonZeroAddress(address _address) {

@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-contract CcTransferRouterLogic is ICcTransferRouter, CcTransferRouterStorage, 
+contract CcTransferRouterLogic is CcTransferRouterStorage, 
     OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     modifier nonZeroAddress(address _address) {
