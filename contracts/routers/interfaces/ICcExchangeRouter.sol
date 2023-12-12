@@ -108,11 +108,45 @@ interface ICcExchangeRouter {
         uint time
     );
 
-    /// @notice                     Emits when a cc exchange request gets done
-    /// @param user                 Exchange recipient address
-    /// @param speed                Speed of the request (normal or instant)
-    /// @param teleporter          Address of teleporter who submitted the request
-    /// @param teleporterFee        Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
+    /// @notice Emits when unused tokens withdrawn
+    /// @param amount of unused tokens
+    /// @param token that filler sent
+    /// @param filler Address of filler
+    /// @param fillIdx Index of filling
+    /// @param txId that filler filled
+    event FillTokensReturned(
+        uint amount,
+        address token,
+        address filler,
+        uint fillIdx,
+        bytes32 txId
+    );
+
+    /// @notice Emits when filler withdraws teleBTC
+    /// @param amount Total sent tokens
+    /// @param remainingAmount Amount of unused token
+    /// @param token that filler sent
+    /// @param filler Address of filler
+    /// @param fillIdx Index of filling
+    /// @param txId that filler filled
+    /// @param reqMintedTeleBtc Total teleBTC minted by txId
+    /// @param sentTeleBtc Share of this filler from total minted teleBTC
+    event FillTeleBtcSent(
+        uint amount,
+        uint remainingAmount,
+        address token,
+        address filler,
+        uint fillIdx,
+        bytes32 txId,
+        uint reqMintedTeleBtc,
+        uint sentTeleBtc
+    );
+
+    /// @notice Emits when a cc exchange request gets done
+    /// @param user Exchange recipient address
+    /// @param speed Speed of the request (normal or instant)
+    /// @param teleporter Address of teleporter who submitted the request
+    /// @param teleporterFee Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
     event CCExchange(
         bytes lockerLockingScript,
         uint lockerScriptType,
@@ -237,14 +271,6 @@ interface ICcExchangeRouter {
     function setFillerWithdrawInterval(uint _fillerWithdrawInterval) external;
 
     function ccExchange(
-        // bytes4 _version,
-        // bytes memory _vin,
-        // bytes calldata _vout,
-        // bytes4 _locktime,
-        // // ^ Bitcoin tx
-        // uint256 _blockNumber, // Bitcoin block number
-        // bytes calldata _intermediateNodes, // Merkle proof
-        // uint _index,
         TxAndProof memory _txAndProof,
         bytes calldata _lockerLockingScript
     ) external payable returns(bool);

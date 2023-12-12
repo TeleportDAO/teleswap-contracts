@@ -225,7 +225,6 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         );
     }
 
-    // TODO event
     /// @notice Fillers can withdraw their unused tokens
     /// @param _txId Bitcoin request which filling belongs to
     /// @return true if withdrawing was successful
@@ -258,6 +257,14 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 );
             }
             fillersData[_txId][_msgSender()].amount = 0;
+
+            emit FillTokensReturned(
+                fillerData.amount,
+                fillerData.token,
+                _msgSender(),
+                fillerData.index,
+                _txId
+            );
             return true;
         }
 
@@ -278,6 +285,14 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 );
             }
             fillsData[_txId].isWithdrawnLastFill = true;
+
+            emit FillTokensReturned(
+                fillData.remainingAmountOfLastFill,
+                fillerData.token,
+                _msgSender(),
+                fillerData.index,
+                _txId
+            );
             return true;
         }
 
@@ -301,6 +316,17 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 "CCExchangeRouter: can't transfer TeleBTC"
             );
             fillersData[_txId][_msgSender()].amount = 0;
+
+            emit FillTeleBtcSent(
+                fillerData.amount,
+                0,
+                fillerData.token,
+                _msgSender(),
+                fillerData.index,
+                _txId,
+                teleBtcAmount[_txId],
+                amount
+            );
             return true;
         }
 
@@ -313,6 +339,17 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 "CCExchangeRouter: can't transfer TeleBTC"
             );
             fillersData[_txId][_msgSender()].amount = 0;
+
+            emit FillTeleBtcSent(
+                fillerData.amount,
+                fillData.remainingAmountOfLastFill,
+                fillerData.token,
+                _msgSender(),
+                fillerData.index,
+                _txId,
+                teleBtcAmount[_txId],
+                amount
+            );
             return true;
         }
 
