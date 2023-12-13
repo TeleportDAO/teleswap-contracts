@@ -1,0 +1,418 @@
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.8.0 <0.8.4;
+
+import "@across-protocol/contracts-v2/contracts/interfaces/SpokePoolInterface.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
+import "./interfaces/IBurnRouter.sol";
+import "./BurnRouterStorage.sol";
+import "../lockers/interfaces/ILockers.sol";
+import "./EthBurnHandlerStorage.sol";
+import "./interfaces/IEthBurnHandlerLogic.sol";
+import "./interfaces/AcrossMessageHandler.sol";
+
+contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage, 
+    OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable, AcrossMessageHandler {
+
+    modifier nonZeroAddress(address _address) {
+        require(_address != address(0), "PolygonConnectorLogic: zero address");
+        _;
+    }
+
+    function initialize(
+        address _lockersProxy,
+        address _burnRouterProxy,
+        address _across,
+        uint256 _sourceChainId
+    ) public initializer {
+        OwnableUpgradeable.__Ownable_init();
+        ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
+        PausableUpgradeable.__Pausable_init();
+
+        lockersProxy = _lockersProxy;
+        burnRouterProxy = _burnRouterProxy;
+        across = _across;
+        sourceChainId = _sourceChainId;
+    }
+
+    /// @notice Setter for EthConnectorProxy
+    function setEthConnectorProxy(address _ethConnectorProxy) external override onlyOwner {
+        ethConnectorProxy = _ethConnectorProxy;
+    }
+
+    /// @notice Setter for LockersProxy
+    function setLockersProxy(address _lockersProxy) external override onlyOwner {
+        lockersProxy = _lockersProxy;
+    }
+
+    /// @notice Setter for BurnRouterProxy
+    function setBurnRouterProxy(address _burnRouterProxy) external override onlyOwner {
+        burnRouterProxy = _burnRouterProxy;
+    }
+
+    /// @notice Setter for Across
+    function setAcross(address _across) external override onlyOwner {
+        across = _across;
+    }
+
+    /// @notice Processes requests coming from Ethereum (using Across)
+    /// @dev Only Across can call this. Will be reverted if tokens have not been received fully yet.
+    /// @param _tokenSent Address of exchanging token
+    /// @param _amount Amount received by the contract (after reducing fees)
+    /// @param _fillCompleted True if all tokens have been received
+    /// @param _relayer Addres of relayer who submitted the request
+    /// @param _message that user sent (from Ethereum)
+    function handleAcrossMessage(
+        address _tokenSent,
+        uint256 _amount,
+        bool _fillCompleted,
+        address _relayer,
+        bytes memory _message
+    ) external nonReentrant override {
+        // Checks the msg origin and fill completion (full amount has been received)
+        require(msg.sender == across, "PolygonConnectorLogic: not across");
+
+        // FIXME: handle cases the fillCompleted is not true
+        require(_fillCompleted, "PolygonConnectorLogic: partial fill");
+
+        // Determines the function call
+        (string memory purpose, uint uniqueCounter) = abi.decode(_message, (string, uint));
+        emit MsgReceived(uniqueCounter, purpose, _message);
+
+        if (_isEqualString(purpose, "exchangeForBtcAcross")) {
+            _exchangeForBtcAcross(_tokenSent, _amount, _message);
+        }
+    }
+
+    /// @notice Cancels or withdraws user's bid
+    /// @dev User signs a message requesting for canceling or withdrawing a bid
+    /// @param _message The signed message
+    /// @param _v Part of user signature for 
+    ///           [_loc.txId, _loc.outputIdx, _loc.satoshiIdx,_bidIdx,_relayerFeePercentage]
+    function withdrawFundsToEth(
+        // address _token,
+        // uint _amount,
+        // int64 _relayerFeePercentage,
+        bytes memory _message,
+        uint8 _v, 
+        bytes32 _r, 
+        bytes32 _s
+    ) external nonReentrant override {
+
+        (
+            address _token, 
+            uint256 _amount, 
+            int64 _relayerFeePercentage
+        ) = abi.decode(
+            _message,
+            (
+                address,
+                uint256, 
+                int64
+            )
+        );
+
+        // Verifies the signature and finds the buyer
+        address user = _verifySig(
+            _message,
+            _r,
+            _s,
+            _v
+        );
+
+        // Checks that bid exists
+        require(
+            _amount > 0 && failedReqs[user][_token] >= _amount,
+            "PolygonConnectorLogic: low balance"
+        );
+
+        // Sends token back to the buyer
+        _sendTokenUsingAcross(
+            user,
+            _token,
+            _amount,
+            _relayerFeePercentage
+        );
+        
+        // Delets the bid
+        failedReqs[user][_token] -= _amount;
+    }
+
+
+    function reDoFailedCcExchangeAndBurn(
+        bytes memory _message,
+        uint8 _v, 
+        bytes32 _r, 
+        bytes32 _s
+    ) external nonReentrant override {
+
+        (
+            address _token, 
+            address _teleBtc,
+            uint256 _amount, 
+            address exchangeConnector,
+            uint256 minOutputAmount,
+            bytes memory userScript,
+            ScriptTypes scriptType,
+            bytes memory lockerLockingScript
+        ) = abi.decode(
+            _message,
+            (
+                address,
+                address,
+                uint256, 
+                address,
+                uint256,
+                bytes,
+                ScriptTypes,
+                bytes
+            )
+        );
+
+        // Verifies the signature and finds the buyer
+        address user = _verifySig(
+            _message,
+            _r,
+            _s,
+            _v
+        );
+
+        // Checks that bid exists
+        require(
+            _amount > 0 && failedReqs[user][_token] >= _amount,
+            "PolygonConnectorLogic: low balance"
+        );
+
+        uint[] memory amounts;
+        amounts[0] = _amount;
+        amounts[1] = minOutputAmount;
+
+
+        address[] memory path;
+        path[0] = _token;
+        path[1] = _teleBtc;
+
+        IERC20(path[0]).approve(burnRouterProxy, _amount);
+
+        try IBurnRouter(burnRouterProxy).ccExchangeAndBurn(
+            exchangeConnector, 
+            amounts, 
+            true, // Input token amount is fixed
+            path, 
+            (block.timestamp + 1), 
+            userScript, 
+            scriptType, 
+            lockerLockingScript
+        ) {
+            // Delets the bid
+            failedReqs[user][_token] -= _amount;
+        } catch {
+            // Removes spending allowance
+            IERC20(path[0]).approve(burnRouterProxy, 0);
+        }
+
+    }
+
+    
+    /// @notice Helper for exchanging token for BTC
+    function _exchangeForBtcAcross(
+        address _tokenSent,
+        uint256 _amount,
+        bytes memory _message
+    ) internal {
+
+        (
+            ,,
+            address user,
+            address exchangeConnector,
+            uint minOutputAmount,
+            address[] memory path,
+            bytes memory userScript,
+            ScriptTypes scriptType,
+            bytes memory lockerLockingScript
+        ) = abi.decode(
+            _message, 
+            (
+                string,
+                uint,
+                address,
+                address,
+                uint,
+                address[],
+                bytes,
+                ScriptTypes,
+                bytes
+            )
+        );
+
+        uint[] memory amounts;
+        amounts[0] = _amount;
+        amounts[1] = minOutputAmount;
+
+        IERC20(path[0]).approve(burnRouterProxy, _amount);
+        
+        try IBurnRouter(burnRouterProxy).ccExchangeAndBurn(
+            exchangeConnector, 
+            amounts, 
+            true, // Input token amount is fixed
+            path, 
+            (block.timestamp + 1), 
+            userScript, 
+            scriptType, 
+            lockerLockingScript
+        ) {
+            NewBurn(
+                user,
+                userScript,
+                scriptType,
+                _amount,
+                _tokenSent,
+                ILockers(lockersProxy).getLockerTargetAddress(lockerLockingScript),
+                BurnRouterStorage(burnRouterProxy).burnRequestCounter(
+                    ILockers(lockersProxy).getLockerTargetAddress(lockerLockingScript)
+                ) - 1
+            );
+        } catch {
+            // Removes spending allowance
+            IERC20(path[0]).approve(burnRouterProxy, 0);
+
+            // Saves token amount so user can withdraw it in future
+            failedReqs[user][_tokenSent] += _amount;
+            FailedBurn(
+                user,
+                userScript,
+                scriptType,
+                _amount,
+                _tokenSent
+            );
+        }
+    }
+
+    /// @notice Withdraws tokens in the emergency case
+    /// @dev Only owner can call this
+    function emergencyWithdraw(
+        address _token,
+        address _to,
+        uint _amount
+    ) external override onlyOwner {
+        if (_token == ETH_ADDR) 
+            _to.call{value: _amount}("");
+        else
+            IERC20(_token).transfer(_to, _amount);
+    }
+
+    /// @notice Sends tokens to Ethereum using Across
+    /// @dev This will be used for withdrawing funds
+    function _sendTokenUsingAcross(
+        address _user,
+        address _token,
+        uint _amount,
+        int64 _relayerFeePercentage
+    ) internal {
+        bytes memory nullData;
+        IERC20(_token).approve(
+            across, 
+            _amount
+        );
+
+        SpokePoolInterface(across).deposit(
+            _user,
+            _token,
+            _amount,
+            sourceChainId,
+            _relayerFeePercentage,
+            uint32(block.timestamp),
+            nullData,
+            115792089237316195423570985008687907853269984665640564039457584007913129639935
+        );
+    }
+
+    // TODO: move to a library
+    function _verifySig(
+        bytes memory message,
+        bytes32 r,
+        bytes32 s,
+        uint8 v
+    ) internal pure returns (address) {
+        // Compute the message hash
+        bytes32 messageHash = keccak256(message);
+
+        // Prefix the message hash as per the Ethereum signing standard
+        bytes32 ethSignedMessageHash = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n", uintToString(message.length), messageHash)
+        );
+
+        // Verify the message using ecrecover
+        address signer = ecrecover(ethSignedMessageHash, v, r, s);
+        require(signer != address(0), "PolygonConnectorLogic: Invalid sig");
+
+        return signer;
+    }
+
+    // TODO: move to a library
+    // Helper function to convert uint to string
+    function uintToString(uint v) private pure returns (string memory str) {
+        if (v == 0) {
+            return "0";
+        }
+        uint j = v;
+        uint length;
+        while (j != 0) {
+            length++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(length);
+        uint k = length;
+        while (v != 0) {
+            k = k-1;
+            uint8 temp = (48 + uint8(v - v / 10 * 10));
+            bytes1 b1 = bytes1(temp);
+            bstr[k] = b1;
+            v /= 10;
+        }
+        str = string(bstr);
+    }
+
+    /// @notice Verifies the signature of _msgHash
+    /// @return _signer Address of message signer (if signature is valid)
+    // function _verifySig(
+    //     bytes32 _msgHash, 
+    //     uint8 _v, 
+    //     bytes32 _r, 
+    //     bytes32 _s
+    // ) internal pure returns (address _signer) {
+    //     // Verify the message using ecrecover
+    //     _signer = ecrecover(_msgHash, _v, _r, _s);
+    //     require(_signer != address(0), "PolygonConnectorLogic: Invalid sig");
+    // }
+
+    // /// @notice Finds hash of the message that user should have signed
+    // function _hashMsg(
+    //     address _token,
+    //     uint _amount,
+    //     int64 _relayerFeePercentage
+    // ) internal pure returns (bytes32) {
+    //     return keccak256(
+    //         abi.encodePacked(
+    //             // FIXME: is it correct actually, since we must use message.length not messageHash.length
+    //             "\x19Ethereum Signed Message:\n32", 
+    //             keccak256(
+    //                 abi.encodePacked(
+    //                     _token,
+    //                     _amount,
+    //                     _relayerFeePercentage
+    //                 )
+    //             )
+    //         )
+    //     );
+    // }
+
+    /// @notice Checks if two strings are equal
+    function _isEqualString(string memory _a, string memory _b) internal pure returns (bool) {
+        return keccak256(abi.encodePacked(_a)) == keccak256(abi.encodePacked(_b));
+    }
+
+}
