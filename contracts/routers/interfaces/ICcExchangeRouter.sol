@@ -29,6 +29,15 @@ interface ICcExchangeRouter {
         uint speed;
     }
 
+    /// @notice Structure for recording cross-chain exchange requests
+    /// @param isTransferedToEth True if BTC to ETH exchange is processed successfully
+    /// @param remainedInputAmount Amount of obtained TELEBTC on target chain
+    struct extendedCcExchangeRequest {
+        uint chainId;
+        bool isTransferedToEth;
+        uint remainedInputAmount;
+    }
+    
     /// @notice Structure for passing tx and its inclusion proof
     /// @param version of the transaction containing the user request
     /// @param vin Inputs of the transaction containing the user request
@@ -46,8 +55,6 @@ interface ICcExchangeRouter {
         bytes intermediateNodes;
         uint index;
     }
-
-    // TODO add matic
 
     /// @notice Structure for storing filling requests
     /// @param startingTime First attemp to fill the request
@@ -82,6 +89,24 @@ interface ICcExchangeRouter {
     }
 
     // Events
+
+    event ExchangeTokenAdded (
+        address newExchangeToke
+    );
+
+    event ExchangeTokenRemoved (
+        address oldExchangeToke
+    );
+
+    event AcrossUpdated (
+        address oldAcross,
+        address newAcross
+    );
+
+    event BurnRouterUpdated (
+        address oldBurnRouter,
+        address newBurnRouter
+    );
 
 	event NewFillerWithdrawInterval(
         uint oldFillerWithdrawInterval, 
@@ -148,8 +173,6 @@ interface ICcExchangeRouter {
     /// @param teleporter Address of teleporter who submitted the request
     /// @param teleporterFee Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
     event CCExchange(
-        bytes lockerLockingScript,
-        uint lockerScriptType,
         address lockerTargetAddress,
         address indexed user,
         address[2] inputAndOutputToken,
@@ -169,8 +192,6 @@ interface ICcExchangeRouter {
     /// @param teleporter          Address of teleporter who submitted the request
     /// @param teleporterFee        Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
     event FailedCCExchange(
-        bytes lockerLockingScript,
-        uint lockerScriptType,
         address lockerTargetAddress,
         address indexed recipientAddress,
         address[2] inputAndOutputToken,
@@ -250,6 +271,16 @@ interface ICcExchangeRouter {
 
     function treasury() external view returns (address);
 
+    function isExchangeTokenSupported(address _exchangeToken) external view returns (bool);
+
+    function across() external view returns (address);
+
+    function acrossRelayerFee() external view returns (int64);
+
+    function burnRouter() external view returns (address);
+
+    function ethChainId() external view returns (uint);
+
     // State-changing functions
 
     function setStartingBlockNumber(uint _startingBlockNumber) external;
@@ -270,9 +301,14 @@ interface ICcExchangeRouter {
 
     function setFillerWithdrawInterval(uint _fillerWithdrawInterval) external;
 
+    function setAcross(address _across) external;
+
+    function setBurnRouter(address _burnRouter) external;
+
     function ccExchange(
         TxAndProof memory _txAndProof,
-        bytes calldata _lockerLockingScript
+        bytes calldata _lockerLockingScript,
+        int64 _acrossRelayerFee
     ) external payable returns(bool);
 
     function fillTx(
@@ -287,5 +323,24 @@ interface ICcExchangeRouter {
 
     function getTeleBtcForFill(
        bytes32 _txId
+    ) external returns (bool);
+
+    function addSupportedExchangeToken(address _token) external;
+
+    function removeSupportedExchangeToken(address _token) external;
+
+    function withdrawFailedCcExchange(
+        bytes memory _message,
+        bytes32 _r,
+        bytes32 _s,
+        uint8 _v,
+        bytes calldata _lockerLockingScript
+    ) external returns (bool);
+
+    function retryFailedCcExchange(
+        bytes memory _message,
+        bytes32 _r,
+        bytes32 _s,
+        uint8 _v
     ) external returns (bool);
 }

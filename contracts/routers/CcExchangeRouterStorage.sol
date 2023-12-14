@@ -17,7 +17,8 @@ abstract contract CcExchangeRouterStorage is ICcExchangeRouter {
     address public override lockers;
     address public override teleBTC;
     address public override treasury;
-    mapping(uint => address) public override exchangeConnector; // mapping from app id to exchange connector address 
+    mapping(uint => address) public override exchangeConnector; 
+    // ^ Mapping from app id to exchange connector address 
 
     // Private variables
     mapping(bytes32 => ccExchangeRequest) internal ccExchangeRequests;
@@ -35,5 +36,16 @@ abstract contract CcExchangeRouterStorage is ICcExchangeRouter {
     // ^ [txId][token] to PrefixFillSum
     mapping(bytes32 => FillData) public fillsData;
     mapping(bytes32 => uint) public teleBtcAmount;
-    // ^ txId to remained teleBTC amount 
+    // ^ txId to remained teleBTC amount
+
+    // New variables (Ethereum support)
+    
+    mapping(address => bool) public override isExchangeTokenSupported; 
+    // ^ Mapping to store supported exchange tokens
+    mapping(bytes32 => extendedCcExchangeRequest) public extendedCcExchangeRequests; 
+
+    address public override across;
+    int64 public override acrossRelayerFee;
+    address public override burnRouter;
+    uint public override ethChainId;
 }
