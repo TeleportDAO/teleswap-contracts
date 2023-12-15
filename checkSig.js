@@ -10,25 +10,13 @@ function signMessage(secretKey, message) {
         secretKey = '0x' + secretKey;
     }
 
-    const messageHex = web3.utils.asciiToHex(message);
-
-    // Hash the message using keccak256
-    const messageHash = web3.utils.sha3(messageHex);
-
-    // Ethereum specific message prefix
-    const prefix = "\x19Ethereum Signed Message:\n" + messageHex.length;
-
-    // console.log(web3.utils.asciiToHex(prefix) + messageHash.slice(2))
-
-    // const prefixedHash = web3.utils.sha3(web3.utils.asciiToHex(prefix) + messageHash.slice(2));
-
     prefixedHash = getEthSignedMessageHash(message)
 
+    console.log("prefixedHash")
     console.log(prefixedHash)
 
     // Sign the prefixed message hash
     const signature = ethUtil.ecsign(ethUtil.toBuffer(prefixedHash), ethUtil.toBuffer(secretKey));
-
 
     // Derive the Ethereum address from the secret key
     const address = '0x' + ethUtil.privateToAddress(ethUtil.toBuffer(secretKey)).toString('hex');
@@ -38,7 +26,7 @@ function signMessage(secretKey, message) {
     const s = '0x' + signature.s.toString('hex');
     const v = signature.v;
 
-    return { messageHex, messageHash, r, s, v, address };
+    return {r, s, v, address };
 }
 
 function uintToString(num) {
@@ -50,10 +38,17 @@ function getEthSignedMessageHash(message) {
     const messageHex = web3.utils.asciiToHex(message);
 
     // Calculate the hash of the message
-    const messageHash = ethUtil.keccak256(messageHex);
+    const messageHash = ethUtil.keccak256(message);
+
+    console.log("messageHex")
+    console.log(messageHex)
+
+    console.log("message.length")
+    console.log(message.length)
 
     // Ethereum specific message prefix
-    const prefix = "\x19Ethereum Signed Message:\n" + uintToString(message.length);
+    // const prefix = "\x19Ethereum Signed Message:\n" + uintToString(message.length);
+    const prefix = "\x19Ethereum Signed Message:\n" + "42";
 
     // Combine the prefix and the hash of the message
     const prefixedMessage = ethUtil.toBuffer(prefix).toString('hex') + messageHash.toString('hex');
@@ -70,5 +65,5 @@ const secretKey = '4c0883a6910297c2d8f2d0b72f27395abf0342c8d5a5e6bd69f5c6da5e448
 const message = 'Hello, blockchain world!';
 const result = signMessage(secretKey, message);
 
-console.log('Message Hash:', result.messageHash);
+// console.log('Message Hash:', result.messageHash);
 console.log('Signature Components:', result);
