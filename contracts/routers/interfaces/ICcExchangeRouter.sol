@@ -308,6 +308,7 @@ interface ICcExchangeRouter {
     function ccExchange(
         TxAndProof memory _txAndProof,
         bytes calldata _lockerLockingScript,
+        address[] memory _path,
         int64 _acrossRelayerFee
     ) external payable returns(bool);
 

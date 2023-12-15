@@ -45,6 +45,7 @@ abstract contract CcExchangeRouterStorage is ICcExchangeRouter {
     mapping(bytes32 => extendedCcExchangeRequest) public extendedCcExchangeRequests; 
 
     address public override across;
+    address public wrappedNativeToken;
     int64 public override acrossRelayerFee;
     address public override burnRouter;
     uint public override ethChainId;

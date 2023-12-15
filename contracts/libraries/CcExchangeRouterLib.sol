@@ -18,6 +18,7 @@ library CcExchangeRouterLib {
         mapping(bytes32 => ICcExchangeRouter.ccExchangeRequest) storage ccExchangeRequests,
         mapping(bytes32 => ICcExchangeRouter.extendedCcExchangeRequest) storage extendedCcExchangeRequests,
         address _teleBTC,
+        address _wrappedNativeToken,
         uint _maxProtocolFee,
         bytes memory _lockerLockingScript
     ) external returns (bytes32) {
@@ -66,10 +67,15 @@ library CcExchangeRouterLib {
         request.recipientAddress = RequestHelper.parseRecipientAddress(arbitraryData);
 
         // Note: we assume that the path length is two
-        address[] memory thePath = new address[](2);
-        thePath[0] = _teleBTC;
-        thePath[1] = exchangeToken;
-        request.path = thePath;
+        ccExchangeRequests[txId].path.push(_teleBTC);
+        ccExchangeRequests[txId].path.push(_teleBTC);
+        if (exchangeToken != _wrappedNativeToken) {
+            ccExchangeRequests[txId].path.push(exchangeToken);
+        }
+        // address[] memory thePath = new address[](2);
+        // thePath[0] = _teleBTC;
+        // thePath[1] = exchangeToken;
+        // request.path = thePath;
 
         request.deadline = RequestHelper.parseDeadline(arbitraryData);
 

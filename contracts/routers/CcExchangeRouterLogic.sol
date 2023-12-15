@@ -157,6 +157,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     function ccExchange(
         TxAndProof memory _txAndProof,
         bytes calldata _lockerLockingScript,
+        address[] memory _path,
         int64 _acrossRelayerFee
     ) external payable nonReentrant override virtual returns (bool) {
         // Basic checks
@@ -177,6 +178,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             ccExchangeRequests,
             extendedCcExchangeRequests,
             teleBTC,
+            wrappedNativeToken,
             MAX_PROTOCOL_FEE,
             _lockerLockingScript
         );
@@ -195,12 +197,25 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         ) {
             // Fills exchange request
             _fillCcExchange(_lockerLockingScript, txId, request);
+
+            // TODO: FILL FOR ETH REQUEST
         } else {
+            require(
+                exchangeConnector[ccExchangeRequests[txId].appId] != address(0), 
+                "CCExchange: invalid appId"
+            );
+
+            // Gets remained amount after reducing fees
+            extendedCcExchangeRequests[txId].remainedInputAmount = _mintAndReduceFees(
+                _lockerLockingScript, 
+                txId
+            );
+
             if (_chainId == chainId) {
                 // Normal exchange request or a request which has not been filled
-                _ccExchange(_lockerLockingScript, txId);
+                _ccExchange(_lockerLockingScript, txId, _path);
             } else {
-                _ccExchangeToEth(_lockerLockingScript, txId, _acrossRelayerFee);
+                _ccExchangeToEth(_lockerLockingScript, txId, _path, _acrossRelayerFee);
             }
         }
 
@@ -528,99 +543,28 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     /// @dev                             Mints teleBTC for user if exchanging is not successful
     /// @param _lockerLockingScript      Locker's locking script    
     /// @param _txId                     Id of the transaction containing the user request
-    function _ccExchange(bytes memory _lockerLockingScript, bytes32 _txId) internal {
-        // Gets remained amount after reducing fees
-        uint remainedInputAmount = _mintAndReduceFees(_lockerLockingScript, _txId);
-
+    function _ccExchange(
+        bytes memory _lockerLockingScript, 
+        bytes32 _txId,
+        address[] memory _path
+    ) internal {
         bool result;
         uint[] memory amounts;
-
-        // Gets exchange connector address
-        address _exchangeConnector = exchangeConnector[ccExchangeRequests[_txId].appId];
-        require(_exchangeConnector != address(0), "CCExchangeRouter: app id doesn't exist");
-
-        // Gives allowance to exchange connector to transfer from cc exchange router
-        ITeleBTC(teleBTC).approve(
-            _exchangeConnector,
-            remainedInputAmount
-        );
         
-        ccExchangeRequest memory exchangeReq = ccExchangeRequests[_txId];
+        (result, amounts) = _swap(
+            _lockerLockingScript,
+            ccExchangeRequests[_txId],
+            extendedCcExchangeRequests[_txId],
+            _txId,
+            ccExchangeRequests[_txId].recipientAddress,
+            _path
+        );
 
-        if (IExchangeConnector(_exchangeConnector).isPathValid(exchangeReq.path)) {
-            // Exchanges minted teleBTC for output token
-            (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
-                remainedInputAmount,
-                exchangeReq.outputAmount,
-                exchangeReq.path,
-                exchangeReq.recipientAddress,
-                exchangeReq.deadline,
-                exchangeReq.isFixedToken
-            );
-        } else {
-            // Exchanges minted teleBTC for output token via wrappedNativeToken
-            // note: path is [teleBTC, wrappedNativeToken, outputToken]
-            address[] memory _path = new address[](3);
-            _path[0] = exchangeReq.path[0];
-            _path[1] = IExchangeConnector(_exchangeConnector).wrappedNativeToken();
-            _path[2] = exchangeReq.path[1];
-
-            (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
-                remainedInputAmount,
-                exchangeReq.outputAmount,
-                _path,
-                exchangeReq.recipientAddress,
-                exchangeReq.deadline,
-                exchangeReq.isFixedToken
-            );
-        }
-
-        if (result) {
-            // Emits CCExchange if exchange was successful
-            emit CCExchange(
-                ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
-                exchangeReq.recipientAddress,
-                [exchangeReq.path[0], exchangeReq.path[1]], // [input token, output token]
-                [amounts[0], amounts[amounts.length-1]], // [input amount, output amount]
-                exchangeReq.speed,
-                _msgSender(), // Teleporter address
-                exchangeReq.fee,
-                _txId,
-                exchangeReq.appId
-            );
-
-            // Transfers rest of teleBTC to recipientAddress (if input amount is not fixed)
-            if (exchangeReq.isFixedToken == false) {
-                ITeleBTC(teleBTC).transfer(
-                    exchangeReq.recipientAddress,
-                    remainedInputAmount - amounts[0]
-                );
-            }
-        } else {
-            // Handles situation when exchange was not successful
-
-            // Revokes allowance
-            ITeleBTC(teleBTC).approve(
-                _exchangeConnector,
-                0
-            );
-
+        if (!result) {
             // Sends teleBTC to recipient if exchange wasn't successful
             ITeleBTC(teleBTC).transfer(
-                exchangeReq.recipientAddress,
-                remainedInputAmount
-            );
-
-            emit FailedCCExchange(
-                ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
-                exchangeReq.recipientAddress,
-                [exchangeReq.path[0], exchangeReq.path[1]], // [input token, output token]
-                [remainedInputAmount, 0],// [input amount, output amount]
-                exchangeReq.speed,
-                _msgSender(), // Teleporter address
-                exchangeReq.fee,
-                _txId,
-                exchangeReq.appId
+                ccExchangeRequests[_txId].recipientAddress,
+                extendedCcExchangeRequests[_txId].remainedInputAmount
             );
         }
     }
@@ -632,28 +576,19 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     function _ccExchangeToEth(
         bytes memory _lockerLockingScript, 
         bytes32 _txId,
+        address[] memory _path,
         int64 _acrossRelayerFee
     ) private {
-        // Gets remained amount after reducing fees
-        extendedCcExchangeRequests[_txId].remainedInputAmount = _mintAndReduceFees(
-            _lockerLockingScript, 
-            _txId
-        );
-
         bool result;
         uint[] memory amounts;
-
-        require(
-            exchangeConnector[ccExchangeRequests[_txId].appId] != address(0), 
-            "CCExchange: invalid appId"
-        );
         
         (result, amounts) = _swap(
             _lockerLockingScript,
             ccExchangeRequests[_txId],
             extendedCcExchangeRequests[_txId],
             _txId, 
-            address(this)
+            address(this),
+            _path
         );
 
         if (result) {
@@ -665,7 +600,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 ccExchangeRequests[_txId].path[1], 
                 amounts[amounts.length-1], 
                 ccExchangeRequests[_txId].recipientAddress,
-                acrossRelayerFee
+                _acrossRelayerFee
             );
         }
     }
@@ -675,10 +610,13 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         ccExchangeRequest memory _ccExchangeRequest,
         extendedCcExchangeRequest memory _extendedCcExchangeRequest,
         bytes32 _txId,
-        address _user
+        address _user,
+        address[] memory _path
     ) private returns (bool result, uint[] memory amounts) {
-
-        if (isExchangeTokenSupported[_ccExchangeRequest.path[1]]) {
+        if (
+            _extendedCcExchangeRequest.chainId == chainId ||
+            isExchangeTokenSupported[_ccExchangeRequest.path[_ccExchangeRequest.path.length - 1]]
+        ) {
             // ^ We should be able to send exchanged tokens to Ethereum
             // FIXME: in the case of failure TELEBTC will be stock in the contract, till its owner do something for it
 
@@ -688,14 +626,32 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 _extendedCcExchangeRequest.remainedInputAmount
             );
 
-            (result, amounts) = IExchangeConnector(exchangeConnector[_ccExchangeRequest.appId]).swap(
-                _extendedCcExchangeRequest.remainedInputAmount,
-                _ccExchangeRequest.outputAmount,
-                _ccExchangeRequest.path,
-                _user, // Sending exchanged tokens to contract
-                _ccExchangeRequest.deadline,
-                true
-            );
+            if (IExchangeConnector(exchangeConnector[_ccExchangeRequest.appId]).isPathValid(_ccExchangeRequest.path)) {
+                (result, amounts) = IExchangeConnector(exchangeConnector[_ccExchangeRequest.appId]).swap(
+                    _extendedCcExchangeRequest.remainedInputAmount,
+                    _ccExchangeRequest.outputAmount,
+                    _ccExchangeRequest.path,
+                    _user,
+                    _ccExchangeRequest.deadline,
+                    true
+                );
+            } else {
+                // Note: we only use the path provided by Teleporter if the default path
+                //       doesn't exist (default path = [teleBTC, wrappedNativeToken, exchangeToken])
+                require(
+                    _path[0] == teleBTC && 
+                    _path[_path.length - 1] == _ccExchangeRequest.path[_ccExchangeRequest.path.length - 1],
+                    "CcExchangeRouter: invalid path"
+                );
+                (result, amounts) = IExchangeConnector(exchangeConnector[_ccExchangeRequest.appId]).swap(
+                    _extendedCcExchangeRequest.remainedInputAmount,
+                    _ccExchangeRequest.outputAmount,
+                    _path,
+                    _ccExchangeRequest.recipientAddress,
+                    _ccExchangeRequest.deadline,
+                    true
+                );
+            }
         } else {
             result = false;
         }
@@ -704,7 +660,10 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             emit CCExchange(
                 ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
                 _ccExchangeRequest.recipientAddress,
-                [_ccExchangeRequest.path[0], _ccExchangeRequest.path[1]], // [input token, output token]
+                [
+                    _ccExchangeRequest.path[0], 
+                    _ccExchangeRequest.path[_ccExchangeRequest.path.length - 1]
+                ], // [input token, output token]
                 [amounts[0], amounts[amounts.length-1]], // [input amount, output amount]
                 _ccExchangeRequest.speed,
                 _msgSender(), // Teleporter address
@@ -722,7 +681,10 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             emit FailedCCExchange(
                 ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
                 _ccExchangeRequest.recipientAddress,
-                [_ccExchangeRequest.path[0], _ccExchangeRequest.path[1]], // [input token, output token]
+                [
+                    _ccExchangeRequest.path[0], 
+                    _ccExchangeRequest.path[_ccExchangeRequest.path.length - 1]
+                ], // [input token, output token]
                 [_extendedCcExchangeRequest.remainedInputAmount, 0], // [input amount, output amount]
                 _ccExchangeRequest.speed,
                 _msgSender(), // Teleporter address
