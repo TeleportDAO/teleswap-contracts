@@ -6,12 +6,11 @@ import "@teleportdao/btc-evm-bridge/contracts/libraries/BitcoinHelper.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../routers/interfaces/ICcExchangeRouter.sol";
-import "../libraries/RequestHelper.sol";
+import "../libraries/RequestParser.sol";
 
 library CcExchangeRouterLib {
 
-    /// @notice Stores exchange request if it's valid
-    /// @param _lockerLockingScript Locker's locking script
+    /// @notice Parses and stores exchange request if it's valid
     function ccExchangeHelper(
         address _relay,
         ICcExchangeRouter.TxAndProof memory _txAndProof,
@@ -34,11 +33,14 @@ library CcExchangeRouterLib {
             "CcExchangeRouterLib: already used"
         );
 
-        // Checks if transaction has been confirmed on Bitcoin
-        _isConfirmed(
-            _relay,
-            txId,
-            _txAndProof
+        // Checks if transaction has been finalized on Bitcoin
+        require(
+            _isConfirmed(
+                _relay,
+                txId,
+                _txAndProof
+            ),
+            "CcExchangeRouterLib: not finalized"
         );
 
         // Extracts value and opreturn data from request
@@ -49,44 +51,45 @@ library CcExchangeRouterLib {
             _lockerLockingScript
         );
 
-        require(arbitraryData.length == 79, "CcExchangeRouterLib: invalid len");
-
-        // Checks that input amount is not zero
+        /*  Exchange requests structure:
+            1) chainId (OLD: 1 BYTE): max 65535 chains, 2 byte
+            2) appId (OLD: 2 BYTE): max 256 apps, 1 byte
+            3) recipientAddress: EVM account, 20 byte
+            4) teleporterPercentageFee: between [0,10000], 2 byte
+            5) isFixedRate (OLD: SPEED): {0,1}, 1 byte
+            6) exchangeToken: token address, 20 byte
+            7) outputAmount: min expected output amount. assuming that the token supply is less than 10^18 
+               and token decimal is 18, 28 byte (>(10^18)*(10^18))
+            8) deadline: REMOVED
+            9) isFixedToken: REMOVED
+            TOTAL = 74 BYTE
+        */
+        require(arbitraryData.length == 74, "CcExchangeRouterLib: invalid len");
         require(request.inputAmount > 0, "CcExchangeRouterLib: zero input");
 
-        extendedCcExchangeRequests[txId].chainId = RequestHelper.parseChainId(arbitraryData);
+        extendedCcExchangeRequests[txId].chainId = RequestParser.parseChainId(arbitraryData);
+        request.appId = RequestParser.parseAppId(arbitraryData);
+        address exchangeToken = RequestParser.parseExchangeToken(arbitraryData);
+        request.outputAmount = RequestParser.parseExchangeOutputAmount(arbitraryData);
+        request.isFixedToken = true; // Note: we assume input amount is fixed
+        request.recipientAddress = RequestParser.parseRecipientAddress(arbitraryData);
 
-        request.appId = RequestHelper.parseAppId(arbitraryData);
-        
-        address exchangeToken = RequestHelper.parseExchangeToken(arbitraryData);
-        request.outputAmount = RequestHelper.parseExchangeOutputAmount(arbitraryData);
-
-        // Note: we assume that input amount is fixed
-        request.isFixedToken = true ;
-
-        request.recipientAddress = RequestHelper.parseRecipientAddress(arbitraryData);
-
-        // Note: we assume that the path length is two
+        // Note: default exchange path is: [teleBTC, wrappedNativeToken, exchangeToken]
+        //       since [teleBTC, wrappedNativeToken] pair exists and we assume most tokens have
+        //       pair with wrappedNativeToken
         ccExchangeRequests[txId].path.push(_teleBTC);
-        ccExchangeRequests[txId].path.push(_teleBTC);
+        ccExchangeRequests[txId].path.push(_wrappedNativeToken);
         if (exchangeToken != _wrappedNativeToken) {
             ccExchangeRequests[txId].path.push(exchangeToken);
         }
-        // address[] memory thePath = new address[](2);
-        // thePath[0] = _teleBTC;
-        // thePath[1] = exchangeToken;
-        // request.path = thePath;
 
-        request.deadline = RequestHelper.parseDeadline(arbitraryData);
-
-        // Calculates fee
-        uint percentageFee = RequestHelper.parsePercentageFee(arbitraryData);
-        require(percentageFee <= _maxProtocolFee, "CcExchangeRouterLib: wrong percentage fee");
-        request.fee = percentageFee*request.inputAmount/_maxProtocolFee;
-
+        // Calculates Teleporter fee
+        uint percentageFee = RequestParser.parsePercentageFee(arbitraryData);
+        require(percentageFee <= _maxProtocolFee, "CcExchangeRouterLib: wrong fee");
+        request.fee = percentageFee * request.inputAmount / _maxProtocolFee;
+        
         // Note: speed now determines floating rate (speed = 0) or fixed rate (speed = 1)
-        request.speed = RequestHelper.parseSpeed(arbitraryData);
-
+        request.speed = RequestParser.parseFixedRate(arbitraryData);
         request.isUsed = true;
 
         // Saves request
@@ -95,49 +98,17 @@ library CcExchangeRouterLib {
         return txId;
     }
 
+    /// @notice Verifies the signature of _msgHash
+    /// @return _signer Address of message signer (if signature is valid)
     function _verifySig(
-        bytes memory _message,
-        bytes32 _r,
+        bytes32 _msgHash, 
+        bytes32 _r, 
         bytes32 _s,
-        uint8 _v,
-        address _signer
-    ) internal pure returns (bool) {
-        // Compute the message hash
-        bytes32 messageHash = keccak256(_message);
-
-        // Prefix the message hash as per the Ethereum signing standard
-        bytes32 ethSignedMessageHash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n", uintToString(_message.length), messageHash)
-        );
-
+        uint8 _v
+    ) internal pure returns (address _signer) {
         // Verify the message using ecrecover
-        address signer = ecrecover(ethSignedMessageHash, _v, _r, _s);
-        require(signer != address(0), "CcExchangeRouterLib: Invalid sig");
-
-        return _signer == signer;
-    }
-
-    /// @notice Helper function to convert uint to string
-    function uintToString(uint v) private pure returns (string memory str) {
-        if (v == 0) {
-            return "0";
-        }
-        uint j = v;
-        uint length;
-        while (j != 0) {
-            length++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(length);
-        uint k = length;
-        while (v != 0) {
-            k = k-1;
-            uint8 temp = (48 + uint8(v - v / 10 * 10));
-            bytes1 b1 = bytes1(temp);
-            bstr[k] = b1;
-            v /= 10;
-        }
-        str = string(bstr);
+        _signer = ecrecover(_msgHash, _v, _r, _s);
+        require(_signer != address(0), "CcExchangeRouterLib: invalid sig");
     }
 
     /// @notice Checks inclusion of the transaction in the specified block

@@ -40,13 +40,14 @@ abstract contract CcExchangeRouterStorage is ICcExchangeRouter {
 
     // New variables (Ethereum support)
     
-    mapping(address => bool) public override isExchangeTokenSupported; 
+    mapping(address => bool) public override isTokenSupported; 
     // ^ Mapping to store supported exchange tokens
-    mapping(bytes32 => extendedCcExchangeRequest) public extendedCcExchangeRequests; 
-
+    mapping(uint => bool) public override isChainSupported; 
+    // ^ Mapping to store supported chainIds
+    mapping(bytes32 => extendedCcExchangeRequest) public extendedCcExchangeRequests;
+     
     address public override across;
     address public wrappedNativeToken;
     int64 public override acrossRelayerFee;
     address public override burnRouter;
-    uint public override ethChainId;
 }

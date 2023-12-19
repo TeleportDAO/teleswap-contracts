@@ -3,7 +3,7 @@ pragma solidity >=0.8.0 <0.8.4;
 
 import "./CcTransferRouterStorage.sol";
 import "./interfaces/ICcTransferRouter.sol";
-import "../libraries/RequestHelper.sol";
+import "../libraries/RequestParser.sol";
 import "../lockers/interfaces/ILockers.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "@teleportdao/btc-evm-bridge/contracts/libraries/BitcoinHelper.sol";
@@ -20,7 +20,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
         _;
     }
 
-    /// @notice                             Gives default params to initiate cc transfer router
+    /// @notice Gives default params to initiate cc transfer router
     /// @param _startingBlockNumber         Requests that are included in a block older than _startingBlockNumber cannot be executed
     /// @param _protocolPercentageFee       Percentage amount of protocol fee (min: %0.01)
     /// @param _chainId                     Id of the underlying chain
@@ -290,17 +290,17 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
         require(request.inputAmount > 0, "CCTransferRouter: input amount is zero");
 
         // Checks chain id and app id
-        require(RequestHelper.parseChainId(arbitraryData) == chainId, "CCTransferRouter: chain id is not correct");
-        require(RequestHelper.parseAppId(arbitraryData) == appId, "CCTransferRouter: app id is not correct");
+        require(RequestParser.parseChainId(arbitraryData) == chainId, "CCTransferRouter: chain id is not correct");
+        require(RequestParser.parseAppId(arbitraryData) == appId, "CCTransferRouter: app id is not correct");
 
         // Calculates fee
-        uint percentageFee = RequestHelper.parsePercentageFee(arbitraryData);
+        uint percentageFee = RequestParser.parsePercentageFee(arbitraryData);
         require(percentageFee <= MAX_PROTOCOL_FEE, "CCTransferRouter: percentage fee is out of range");
         request.fee = percentageFee*request.inputAmount/MAX_PROTOCOL_FEE;
 
         // Parses recipient address and request speed
-        request.recipientAddress = RequestHelper.parseRecipientAddress(arbitraryData);
-        request.speed = RequestHelper.parseSpeed(arbitraryData);
+        request.recipientAddress = RequestParser.parseRecipientAddress(arbitraryData);
+        request.speed = RequestParser.parseFixedRate(arbitraryData);
         require(request.speed == 0, "CCTransferRouter: speed is out of range");
 
         // Marks the request as used

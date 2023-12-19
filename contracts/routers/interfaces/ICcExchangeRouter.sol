@@ -90,20 +90,28 @@ interface ICcExchangeRouter {
 
     // Events
 
-    event ExchangeTokenAdded (
-        address newExchangeToke
+    event TokenAdded(
+        address newToken
     );
 
-    event ExchangeTokenRemoved (
-        address oldExchangeToke
+    event TokenRemoved(
+        address oldToken
     );
 
-    event AcrossUpdated (
+    event ChainAdded(
+        uint newChain
+    );
+
+    event ChainRemoved(
+        uint oldChain
+    );
+
+    event AcrossUpdated(
         address oldAcross,
         address newAcross
     );
 
-    event BurnRouterUpdated (
+    event BurnRouterUpdated(
         address oldBurnRouter,
         address newBurnRouter
     );
@@ -184,13 +192,12 @@ interface ICcExchangeRouter {
         uint appId
     );
 
-    /// @notice                     Emits when a cc exchange request fails
-    /// @dev                        In this case, instead of excahnging tokens,
-    ///                             we mint teleBTC and send it to the user
-    /// @param recipientAddress     Exchange recipient address
-    /// @param speed                Speed of the request (normal or instant)
-    /// @param teleporter          Address of teleporter who submitted the request
-    /// @param teleporterFee        Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
+    /// @notice Emits when a cc exchange request fails
+    /// @dev We mint teleBTC and send it to the user
+    /// @param recipientAddress User address
+    /// @param speed of the request (normal or instant)
+    /// @param teleporter Address of teleporter who submitted the request
+    /// @param teleporterFee Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
     event FailedCCExchange(
         address lockerTargetAddress,
         address indexed recipientAddress,
@@ -211,38 +218,38 @@ interface ICcExchangeRouter {
         address exchangeConnector
     );
 
-    /// @notice                     Emits when changes made to relay address
-    event NewRelay (
+    /// @notice Emits when relay contract updated
+    event NewRelay(
         address oldRelay, 
         address newRelay
     );
 
-    /// @notice                     Emits when changes made to InstantRouter address
-    event NewInstantRouter (
+    /// @notice Emits when instant router contract updated
+    event NewInstantRouter(
         address oldInstantRouter, 
         address newInstantRouter
     );
 
-    /// @notice                     Emits when changes made to Lockers address
-    event NewLockers (
+    /// @notice Emits when lockers contract updated
+    event NewLockers(
         address oldLockers, 
         address newLockers
     );
 
-    /// @notice                     Emits when changes made to TeleBTC address
-    event NewTeleBTC (
+    /// @notice Emits when telebtc contract updated
+    event NewTeleBTC(
         address oldTeleBTC, 
         address newTeleBTC
     );
 
-    /// @notice                     Emits when changes made to protocol percentage fee
-    event NewProtocolPercentageFee (
+    /// @notice Emits when protocol fee updated
+    event NewProtocolPercentageFee(
         uint oldProtocolPercentageFee, 
         uint newProtocolPercentageFee
     );
 
-    /// @notice                     Emits when changes made to Treasury address
-    event NewTreasury (
+    /// @notice Emits when treasury address updated
+    event NewTreasury(
         address oldTreasury, 
         address newTreasury
     );
@@ -267,19 +274,19 @@ interface ICcExchangeRouter {
 
     function teleBTC() external view returns (address);
 
-    function exchangeConnector(uint appId) external view returns (address);
+    function exchangeConnector(uint _appId) external view returns (address);
 
     function treasury() external view returns (address);
 
-    function isExchangeTokenSupported(address _exchangeToken) external view returns (bool);
+    function isTokenSupported(address _exchangeToken) external view returns (bool);
+
+    function isChainSupported(uint _chainId) external view returns (bool);
 
     function across() external view returns (address);
 
     function acrossRelayerFee() external view returns (int64);
 
     function burnRouter() external view returns (address);
-
-    function ethChainId() external view returns (uint);
 
     // State-changing functions
 
@@ -326,12 +333,19 @@ interface ICcExchangeRouter {
        bytes32 _txId
     ) external returns (bool);
 
-    function addSupportedExchangeToken(address _token) external;
+    function supportToken(address _token) external;
 
-    function removeSupportedExchangeToken(address _token) external;
+    function removeToken(address _token) external;
+
+    function supportChain(uint _chainId) external;
+
+    function removeChain(uint _chainId) external;
 
     function withdrawFailedCcExchange(
-        bytes memory _message,
+        bytes32 _txId,
+        uint8 _scriptType,
+        bytes memory _userScript,
+        int64 _acrossRelayerFee,
         bytes32 _r,
         bytes32 _s,
         uint8 _v,
@@ -339,7 +353,9 @@ interface ICcExchangeRouter {
     ) external returns (bool);
 
     function retryFailedCcExchange(
-        bytes memory _message,
+        bytes32 _txId,
+        uint256 _outputAmount,
+        int64 _acrossRelayerFee,
         bytes32 _r,
         bytes32 _s,
         uint8 _v
