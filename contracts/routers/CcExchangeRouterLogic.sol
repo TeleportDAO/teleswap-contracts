@@ -22,7 +22,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     using BytesLib for bytes;
 
     modifier nonZeroAddress(address _address) {
-        require(_address != address(0), "CCExchange: zero address");
+        require(_address != address(0), "ExchangeRouter: zero address");
         _;
     }
 
@@ -166,6 +166,11 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     /// @notice Executes a cross-chain exchange request after checking its merkle inclusion proof
     /// @dev Mints teleBTC for user if exchanging is not successful
     /// @param _lockerLockingScript Script hash of locker that user has sent BTC to it
+    /// @param _path (Optional) Exchange path from teleBTC to the output token. This is used if 
+    ///              the default path [teleBTC, wrappedNativeToken, outputToken] not exist or
+    ///              exchanging using this path fails
+    /// @param _acrossRelayerFee (Optional) Fee for transferring exchanged tokens to the destination chain.
+    ///                          This is used if the destination chain is not the current chain.
     /// @return true 
     function ccExchange(
         TxAndProof memory _txAndProof,
@@ -174,19 +179,18 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         int64 _acrossRelayerFee
     ) external payable nonReentrant override virtual returns (bool) {
         // Basic checks
-        require(_msgSender() == instantRouter, "CCExchange: invalid sender");
-        require(_txAndProof.blockNumber >= startingBlockNumber, "CCExchange: old request");
-        require(_txAndProof.locktime == bytes4(0), "CCExchange: non-zero locktime");
+        require(_msgSender() == instantRouter, "ExchangeRouter: invalid sender"); // Only Teleporter can submit requests
+        require(_txAndProof.blockNumber >= startingBlockNumber, "ExchangeRouter: old request");
+        require(_txAndProof.locktime == bytes4(0), "ExchangeRouter: non-zero locktime");
 
-        // Checks that given script hash is locker
+        // Checks that the given script hash is locker
         require(
             ILockers(lockers).isLocker(_lockerLockingScript),
-            "CCExchange: not locker"
+            "ExchangeRouter: not locker"
         );
 
         // Extracts information from the request
         bytes32 txId = CcExchangeRouterLib.ccExchangeHelper(
-            relay,
             _txAndProof,
             ccExchangeRequests,
             extendedCcExchangeRequests,
@@ -196,19 +200,41 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             _lockerLockingScript
         );
 
+        // Checks if transaction has been finalized on Bitcoin
+        require(
+            CcExchangeRouterLib._isConfirmed(
+                relay,
+                txId,
+                _txAndProof
+            ),
+            "ExchangeRouter: not finalized"
+        );
+
         uint _chainId = extendedCcExchangeRequests[txId].chainId;
         require(
             isChainSupported[_chainId],
-            "CCExchange: wrong chain id"
+            "ExchangeRouter: invalid chain id"
         );
 
         ccExchangeRequest memory request = ccExchangeRequests[txId];
+    
+        address _exchangeConnector = exchangeConnector[request.appId];
+        require(
+            _exchangeConnector != address(0), 
+            "ExchangeRouter: invalid appId"
+        );
+
+        // Finds remained amount after reducing fees
+        extendedCcExchangeRequests[txId].remainedInputAmount = _mintAndReduceFees(
+            _lockerLockingScript, 
+            txId
+        );
                 
         if (
             request.speed == 1 && 
             _canFill(
                 txId, 
-                request.path[request.path.length - 1], 
+                request.path[request.path.length - 1], // output token 
                 request.outputAmount
             )
         ) {
@@ -217,22 +243,22 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
 
             // TODO: FILL OTHER CHAINS REQUESTS
         } else {
-            require(
-                exchangeConnector[request.appId] != address(0), 
-                "CCExchange: invalid appId"
-            );
-
-            // Gets remained amount after reducing fees
-            extendedCcExchangeRequests[txId].remainedInputAmount = _mintAndReduceFees(
-                _lockerLockingScript, 
-                txId
-            );
-
             if (_chainId == chainId) { // Requests that belongs to the current chain
                 // Normal exchange request or a request which has not been filled
-                _ccExchange(_lockerLockingScript, txId, _path);
+                _ccExchange(
+                    _exchangeConnector, 
+                    _lockerLockingScript, 
+                    txId, 
+                    _path
+                );
             } else {
-                _ccExchangeToEth(_lockerLockingScript, txId, _path, _acrossRelayerFee);
+                _ccExchangeToEth(
+                    _exchangeConnector, 
+                    _lockerLockingScript, 
+                    txId, 
+                    _path, 
+                    _acrossRelayerFee
+                );
             }
         }
 
@@ -248,20 +274,20 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         address _token,
         uint _amount
     ) external override payable nonReentrant {
-        require (_amount > 0,  "CCExchange: zero amount");
+        require (_amount > 0,  "ExchangeRouter: zero amount");
         require (
             fillersData[_txId][_msgSender()].amount == 0, 
-            "CCExchange: already filled"
+            "ExchangeRouter: already filled"
         );
 
         PrefixFillSum storage _prefixFillSum = prefixFillSums[_txId][_token];
 
         if (_token == NATIVE_TOKEN) {
-            require(msg.value == _amount, "CCExchange: incorrect amount");
+            require(msg.value == _amount, "ExchangeRouter: incorrect amount");
         } else {
             require(
                 IERC20(_token).transferFrom(_msgSender(), address(this), _amount),
-                "CCExchange: no allowance"
+                "ExchangeRouter: no allowance"
             ); 
         }
 
@@ -310,7 +336,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         require (
             ccExchangeRequests[_txId].inputAmount > 0 || 
                 fillData.startingTime + fillerWithdrawInterval < block.timestamp, 
-            "CCExchange: req not processed nor time not passed"
+            "ExchangeRouter: req not processed nor time not passed"
         );
 
         FillerData memory fillerData = fillersData[_txId][_msgSender()];
@@ -320,12 +346,12 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             if (fillerData.token == NATIVE_TOKEN) {
                 require(
                     payable(_msgSender()).send(fillerData.amount), 
-                    "CCExchange: can't send Ether"
+                    "ExchangeRouter: can't send Ether"
                 );
             } else {
                 require(
                     IERC20(fillerData.token).transfer(_msgSender(), fillerData.amount), 
-                    "CCExchange: can't transfer token"
+                    "ExchangeRouter: can't transfer token"
                 );
             }
             fillersData[_txId][_msgSender()].amount = 0;
@@ -348,12 +374,12 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             if (fillerData.token == NATIVE_TOKEN) {
                 require(
                     payable(_msgSender()).send(fillData.remainingAmountOfLastFill), 
-                    "CCExchange: can't send Ether"
+                    "ExchangeRouter: can't send Ether"
                 );
             } else {
                 require(
                     IERC20(fillerData.token).transfer(_msgSender(), fillData.remainingAmountOfLastFill), 
-                    "CCExchange: can't transfer token"
+                    "ExchangeRouter: can't transfer token"
                 );
             }
             fillsData[_txId].isWithdrawnLastFill = true;
@@ -382,10 +408,11 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         
         if (fillData.lastUsedIdx > fillerData.index) {
             // ^ This filling has been fully used
-            uint amount = teleBtcAmount[_txId] * fillerData.amount / ccExchangeRequests[_txId].outputAmount;
+            uint amount = extendedCcExchangeRequests[_txId].remainedInputAmount 
+                * fillerData.amount / ccExchangeRequests[_txId].outputAmount;
             require(
                 ITeleBTC(teleBTC).transfer(_msgSender(), amount), 
-                "CCExchange: can't transfer TeleBTC"
+                "ExchangeRouter: can't transfer TeleBTC"
             );
             fillersData[_txId][_msgSender()].amount = 0;
 
@@ -396,7 +423,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 _msgSender(),
                 fillerData.index,
                 _txId,
-                teleBtcAmount[_txId],
+                extendedCcExchangeRequests[_txId].remainedInputAmount,
                 amount
             );
             return true;
@@ -405,10 +432,10 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         // We treat last used filling separately since part of it may only have been used
         if (fillData.lastUsedIdx == fillerData.index) {
             uint amount = (fillerData.amount - fillData.remainingAmountOfLastFill) 
-                * teleBtcAmount[_txId] / ccExchangeRequests[_txId].outputAmount;
+                * extendedCcExchangeRequests[_txId].remainedInputAmount / ccExchangeRequests[_txId].outputAmount;
             require(
                 ITeleBTC(teleBTC).transfer(_msgSender(), amount),
-                "CCExchange: can't transfer TeleBTC"
+                "ExchangeRouter: can't transfer TeleBTC"
             );
             fillersData[_txId][_msgSender()].amount = 0;
 
@@ -419,7 +446,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 _msgSender(),
                 fillerData.index,
                 _txId,
-                teleBtcAmount[_txId],
+                extendedCcExchangeRequests[_txId].remainedInputAmount,
                 amount
             );
             return true;
@@ -440,7 +467,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         uint8 _v,
         bytes calldata _lockerLockingScript
     ) external nonReentrant override returns (bool) {
-        require(_msgSender() == instantRouter, "CCExchange: invalid sender");
+        require(_msgSender() == instantRouter, "ExchangeRouter: invalid sender");
 
         /* Checks that:
            1. Request doesn't belong to the current chain
@@ -448,10 +475,10 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         */
         require(
             extendedCcExchangeRequests[_txId].chainId != chainId
-            && extendedCcExchangeRequests[_txId].isTransferedToEth == false,
-            "CCExchange: already processed"
+            && extendedCcExchangeRequests[_txId].isTransferredToEth == false,
+            "ExchangeRouter: already processed"
         );
-        extendedCcExchangeRequests[_txId].isTransferedToEth = true;
+        extendedCcExchangeRequests[_txId].isTransferredToEth = true;
 
         require(
             CcExchangeRouterLib._verifySig(
@@ -462,7 +489,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 _s,
                 _v
             ) == ccExchangeRequests[_txId].recipientAddress,
-            "CCExchange: invalid signer"
+            "ExchangeRouter: invalid signer"
         );
 
         // Burns teleBTC for user
@@ -491,7 +518,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         bytes32 _s,
         uint8 _v
     ) external nonReentrant override returns (bool) {
-        require(_msgSender() == instantRouter, "CCExchange: invalid sender");
+        require(_msgSender() == instantRouter, "ExchangeRouter: invalid sender");
 
         ccExchangeRequest memory exchangeReq = ccExchangeRequests[_txId];
 
@@ -501,10 +528,10 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         */
         require(
             extendedCcExchangeRequests[_txId].chainId != chainId
-            && extendedCcExchangeRequests[_txId].isTransferedToEth == false, 
-            "CCExchange: already processed"
+            && extendedCcExchangeRequests[_txId].isTransferredToEth == false, 
+            "ExchangeRouter: already processed"
         );
-        extendedCcExchangeRequests[_txId].isTransferedToEth = true;
+        extendedCcExchangeRequests[_txId].isTransferredToEth = true;
 
         require(
             CcExchangeRouterLib._verifySig(
@@ -515,7 +542,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 _s,
                 _v
             ) == exchangeReq.recipientAddress,
-            "CCExchange: invalid signer"
+            "ExchangeRouter: invalid signer"
         );
 
         // Exchanges teleBTC for desired exchange token
@@ -527,7 +554,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             block.timestamp,
             true // Input token is fixed
         );
-        require(result, "CCExchange: swap failed");
+        require(result, "ExchangeRouter: swap failed");
 
         // Sends exchanged tokens to ETH
         _sendTokenToEth(
@@ -580,6 +607,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     /// @notice Executes the exchange request
     /// @dev Mints teleBTC for user if exchanging is not successful
     function _ccExchange(
+        address _exchangeConnector,
         bytes memory _lockerLockingScript, 
         bytes32 _txId,
         address[] memory _path
@@ -588,12 +616,13 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         // uint[] memory amounts;
         
         (bool result, uint[] memory amounts) = _swap(
+            true,
             _lockerLockingScript,
             ccExchangeRequests[_txId],
             extendedCcExchangeRequests[_txId],
             _txId,
-            ccExchangeRequests[_txId].recipientAddress, // Sends tokens to the user
-            _path
+            _path,
+            _exchangeConnector
         );
 
         if (!result) {
@@ -610,22 +639,24 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     /// @param _lockerLockingScript      Locker's locking script    
     /// @param _txId                     Id of the transaction containing the user request
     function _ccExchangeToEth(
+        address _exchangeConnector,
         bytes memory _lockerLockingScript, 
         bytes32 _txId,
         address[] memory _path,
         int64 _acrossRelayerFee
     ) private {
         (bool result, uint[] memory amounts) = _swap(
+            false,
             _lockerLockingScript,
             ccExchangeRequests[_txId],
             extendedCcExchangeRequests[_txId],
             _txId, 
-            address(this), // Sends token to the contract
-            _path
+            _path,
+            _exchangeConnector
         );
 
         if (result) {
-            extendedCcExchangeRequests[_txId].isTransferedToEth = true;
+            extendedCcExchangeRequests[_txId].isTransferredToEth = true;
             
             // Sends exchanged tokens to ETH
             _sendTokenToEth(
@@ -639,36 +670,37 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     }
 
     function _swap(
+        bool _isCurrentChain,
         bytes memory _lockerLockingScript,
         ccExchangeRequest memory _ccExchangeRequest,
         extendedCcExchangeRequest memory _extendedCcExchangeRequest,
         bytes32 _txId,
-        address _user,
-        address[] memory _path
+        address[] memory _path,
+        address _exchangeConnector
     ) private returns (bool result, uint[] memory amounts) {
         if (
-            _extendedCcExchangeRequest.chainId == chainId ||
+            _isCurrentChain ||
             isTokenSupported[_ccExchangeRequest.path[_ccExchangeRequest.path.length - 1]]
         ) {
             // Either the destination chain should be the current chain or 
             // we should be able to send exchanged tokens to the destination chain
 
-            // Gives allowance to exchange connector to transfer from cc exchange router
+            // Gives allowance to exchange connector for swapping
             ITeleBTC(teleBTC).approve(
-                exchangeConnector[_ccExchangeRequest.appId],
+                _exchangeConnector,
                 _extendedCcExchangeRequest.remainedInputAmount
             );
 
             if (
-                IExchangeConnector(exchangeConnector[_ccExchangeRequest.appId]).isPathValid(_ccExchangeRequest.path)
+                IExchangeConnector(_exchangeConnector).isPathValid(_ccExchangeRequest.path)
             ) {
                 // Note: by default, we use the default path ([teleBTC, wrappedNativeToken, exchangeToken])
                 //       to exchange tokens 
-                (result, amounts) = IExchangeConnector(exchangeConnector[_ccExchangeRequest.appId]).swap(
+                (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
                     _extendedCcExchangeRequest.remainedInputAmount,
                     _ccExchangeRequest.outputAmount,
                     _ccExchangeRequest.path,
-                    _user,
+                    _isCurrentChain ? _ccExchangeRequest.recipientAddress : address(this),
                     block.timestamp,
                     true
                 );
@@ -680,7 +712,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                     _path[_path.length - 1] == _ccExchangeRequest.path[_ccExchangeRequest.path.length - 1],
                     "CcExchangeRouter: invalid path"
                 );
-                (result, amounts) = IExchangeConnector(exchangeConnector[_ccExchangeRequest.appId]).swap(
+                (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
                     _extendedCcExchangeRequest.remainedInputAmount,
                     _ccExchangeRequest.outputAmount,
                     _path,
@@ -698,7 +730,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
                 _ccExchangeRequest.recipientAddress,
                 [
-                    _ccExchangeRequest.path[0], 
+                    teleBTC, 
                     _ccExchangeRequest.path[_ccExchangeRequest.path.length - 1]
                 ], // [input token, output token]
                 [amounts[0], amounts[amounts.length-1]], // [input amount, output amount]
@@ -709,17 +741,11 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 _ccExchangeRequest.appId
             );
         } else { // Handles situation where exchange was not successful
-            // Revokes allowance of exchange connector
-            ITeleBTC(teleBTC).approve(
-                exchangeConnector[_ccExchangeRequest.appId],
-                0
-            );
-
             emit FailedCCExchange(
                 ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
                 _ccExchangeRequest.recipientAddress,
                 [
-                    _ccExchangeRequest.path[0], 
+                    teleBTC, 
                     _ccExchangeRequest.path[_ccExchangeRequest.path.length - 1]
                 ], // [input token, output token]
                 [_extendedCcExchangeRequest.remainedInputAmount, 0], // [input amount, output amount]
@@ -743,6 +769,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         uint256 _amount
     ) private view returns (bool) {
         PrefixFillSum memory _prefixFillSum = prefixFillSums[_txId][_token];
+
         if (
             block.timestamp <= fillsData[_txId].startingTime + fillerWithdrawInterval &&
             _prefixFillSum.currentIndex > 0 &&
@@ -754,50 +781,47 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         }
     }
 
-    /// @notice Executes an exchange request with filler
+    /// @notice Executes the exchange request with filler
     function _fillCcExchange(
         bytes memory _lockerLockingScript, 
         bytes32 _txId,
-        ccExchangeRequest memory request
+        ccExchangeRequest memory _request
     ) private {
-        // TODO add to doc
-        // Gets remained amount after reducing fees
-        uint remainedInputAmount = _mintAndReduceFees(_lockerLockingScript, _txId);
+        address outputToken = _request.path[_request.path.length - 1];
 
         FillData memory _txFillData;
-        _txFillData.reqToken = request.path[1];
+        _txFillData.reqToken = outputToken;
 
-        PrefixFillSum memory _prefixFillSum = prefixFillSums[_txId][request.path[1]];
-        _txFillData.lastUsedIdx = _findlastUsedIdxOfFill(_prefixFillSum, request.outputAmount);
+        PrefixFillSum memory _prefixFillSum = prefixFillSums[_txId][outputToken];
+        _txFillData.lastUsedIdx = _findlastUsedIdxOfFill(_prefixFillSum, _request.outputAmount);
         _txFillData.remainingAmountOfLastFill = _prefixFillSum.prefixSum[_txFillData.lastUsedIdx] 
-            - request.outputAmount;
+            - _request.outputAmount;
 
-        // Saves the filling data and available teleBTC amount
+        // Saves the filling data
         fillsData[_txId] = _txFillData;
-        teleBtcAmount[_txId] = remainedInputAmount;
         
-        if (request.path[1] == NATIVE_TOKEN) {
+        if (outputToken == NATIVE_TOKEN) {
             Address.sendValue(
-                payable(request.recipientAddress),
-                request.outputAmount
+                payable(_request.recipientAddress),
+                _request.outputAmount
             );
         } else {
-            IERC20(request.path[1]).transfer(
-                request.recipientAddress, 
-                request.outputAmount
+            IERC20(outputToken).transfer(
+                _request.recipientAddress, 
+                _request.outputAmount
             );
         }
 
         emit CCExchange(
             ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
-            request.recipientAddress,
-            [request.path[0], request.path[1]], // [input token, output token]
-            [remainedInputAmount, request.outputAmount], // [input amount, output amount]
-            request.speed,
+            _request.recipientAddress,
+            [teleBTC, outputToken], // [input token, output token]
+            [extendedCcExchangeRequests[_txId].remainedInputAmount, _request.outputAmount], // [input amount, output amount]
+            _request.speed,
             _msgSender(), // Teleporter address
-            request.fee,
+            _request.fee,
             _txId,
-            request.appId
+            _request.appId
         );
     }
 
@@ -886,7 +910,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     function _setProtocolPercentageFee(uint _protocolPercentageFee) private {
         require(
             MAX_PROTOCOL_FEE >= _protocolPercentageFee,
-            "CCExchange: fee is out of range"
+            "ExchangeRouter: fee is out of range"
         );
         emit NewProtocolPercentageFee(protocolPercentageFee, _protocolPercentageFee);
         protocolPercentageFee = _protocolPercentageFee;
@@ -896,7 +920,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     function _setStartingBlockNumber(uint _startingBlockNumber) private {
         require(
             _startingBlockNumber > startingBlockNumber,
-            "CCExchange: low startingBlockNumber"
+            "ExchangeRouter: low startingBlockNumber"
         );
         startingBlockNumber = _startingBlockNumber;
     }

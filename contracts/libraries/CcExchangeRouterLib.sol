@@ -12,7 +12,6 @@ library CcExchangeRouterLib {
 
     /// @notice Parses and stores exchange request if it's valid
     function ccExchangeHelper(
-        address _relay,
         ICcExchangeRouter.TxAndProof memory _txAndProof,
         mapping(bytes32 => ICcExchangeRouter.ccExchangeRequest) storage ccExchangeRequests,
         mapping(bytes32 => ICcExchangeRouter.extendedCcExchangeRequest) storage extendedCcExchangeRequests,
@@ -22,7 +21,7 @@ library CcExchangeRouterLib {
         bytes memory _lockerLockingScript
     ) external returns (bytes32) {
 
-        // Calculates transaction id
+        // Finds tx id
         bytes32 txId = BitcoinHelper.calculateTxId(
             _txAndProof.version, _txAndProof.vin, _txAndProof.vout, _txAndProof.locktime
         );
@@ -30,42 +29,33 @@ library CcExchangeRouterLib {
         // Checks that the request has not been processed before
         require(
             !ccExchangeRequests[txId].isUsed,
-            "CcExchangeRouterLib: already used"
+            "ExchangeRouterLib: already used"
         );
 
-        // Checks if transaction has been finalized on Bitcoin
-        require(
-            _isConfirmed(
-                _relay,
-                txId,
-                _txAndProof
-            ),
-            "CcExchangeRouterLib: not finalized"
-        );
-
-        // Extracts value and opreturn data from request
-        ICcExchangeRouter.ccExchangeRequest memory request; // Defines it to save gas
+        // Extracts value and OP_RETURN data from the request
+        ICcExchangeRouter.ccExchangeRequest memory request;
         bytes memory arbitraryData;
-        (request.inputAmount, arbitraryData) = BitcoinHelper.parseValueAndDataHavingLockingScriptBigPayload(
+        (request.inputAmount, arbitraryData) = BitcoinHelper.parseValueAndDataHavingLockingScriptSmallPayload(
             _txAndProof.vout, 
             _lockerLockingScript
         );
 
-        /*  Exchange requests structure:
-            1) chainId (OLD: 1 BYTE): max 65535 chains, 2 byte
-            2) appId (OLD: 2 BYTE): max 256 apps, 1 byte
-            3) recipientAddress: EVM account, 20 byte
-            4) teleporterPercentageFee: between [0,10000], 2 byte
-            5) isFixedRate (OLD: SPEED): {0,1}, 1 byte
-            6) exchangeToken: token address, 20 byte
-            7) outputAmount: min expected output amount. assuming that the token supply is less than 10^18 
-               and token decimal is 18, 28 byte (>(10^18)*(10^18))
+        /*  
+            Exchange requests structure:
+            1) chainId, 2 byte (OLD: 1 BYTE): max 65535 chains
+            2) appId, 1 byte (OLD: 2 BYTE): max 256 apps
+            3) recipientAddress, 20 byte: EVM account
+            4) teleporterPercentageFee, 2 byte: between [0,10000]
+            5) isFixedRate, 1 byte (OLD: SPEED): {0,1}
+            6) exchangeToken, 20 byte: token address
+            7) outputAmount, 28 byte: min expected output amount. Assuming that the token supply
+               is less than 10^18 and token decimal is 18 (> (10^18) * (10^18))
             8) deadline: REMOVED
             9) isFixedToken: REMOVED
             TOTAL = 74 BYTE
         */
-        require(arbitraryData.length == 74, "CcExchangeRouterLib: invalid len");
-        require(request.inputAmount > 0, "CcExchangeRouterLib: zero input");
+        require(arbitraryData.length == 74, "ExchangeRouterLib: invalid len");
+        require(request.inputAmount > 0, "ExchangeRouterLib: zero input");
 
         extendedCcExchangeRequests[txId].chainId = RequestParser.parseChainId(arbitraryData);
         request.appId = RequestParser.parseAppId(arbitraryData);
@@ -83,12 +73,12 @@ library CcExchangeRouterLib {
             ccExchangeRequests[txId].path.push(exchangeToken);
         }
 
-        // Calculates Teleporter fee
+        // Finds Teleporter fee
         uint percentageFee = RequestParser.parsePercentageFee(arbitraryData);
-        require(percentageFee <= _maxProtocolFee, "CcExchangeRouterLib: wrong fee");
+        require(percentageFee <= _maxProtocolFee, "ExchangeRouterLib: wrong fee");
         request.fee = percentageFee * request.inputAmount / _maxProtocolFee;
         
-        // Note: speed now determines floating rate (speed = 0) or fixed rate (speed = 1)
+        // Note: speed now determines floating-rate (speed = 0) or fixed-rate (speed = 1)
         request.speed = RequestParser.parseFixedRate(arbitraryData);
         request.isUsed = true;
 
@@ -108,7 +98,7 @@ library CcExchangeRouterLib {
     ) internal pure returns (address _signer) {
         // Verify the message using ecrecover
         _signer = ecrecover(_msgHash, _v, _r, _s);
-        require(_signer != address(0), "CcExchangeRouterLib: invalid sig");
+        require(_signer != address(0), "ExchangeRouterLib: invalid sig");
     }
 
     /// @notice Checks inclusion of the transaction in the specified block
@@ -120,10 +110,10 @@ library CcExchangeRouterLib {
         address _relay,
         bytes32 _txId,
         ICcExchangeRouter.TxAndProof memory _txAndProof
-    ) private returns (bool) {
+    ) internal returns (bool) {
         // Finds fee amount
         uint feeAmount = _getFinalizedBlockHeaderFee(_relay, _txAndProof.blockNumber);
-        require(msg.value >= feeAmount, "CcExchangeRouterLib: low fee");
+        require(msg.value >= feeAmount, "ExchangeRouterLib: low fee");
 
         // Calls relay contract
         bytes memory data = Address.functionCallWithValue(

@@ -15,7 +15,6 @@ library RequestParser {
 
     /// @notice Returns app id of the request
     /// @dev Determines the app that request belongs to (e.g. cc transfer app id is 0)
-    /// @param _arbitraryData Data written in Bitcoin tx
     function parseAppId(bytes memory _arbitraryData) internal pure returns (uint16 parsedValue) {
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 2, 2);
         assembly {
@@ -25,7 +24,6 @@ library RequestParser {
 
     /// @notice Returns recipient address
     /// @dev Minted TeleBTC or exchanged tokens will be sent to this address
-    /// @param _arbitraryData Data written in Bitcoin tx
     function parseRecipientAddress(bytes memory _arbitraryData) internal pure returns (address parsedValue) {
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 3, 22);
         assembly {
@@ -35,7 +33,6 @@ library RequestParser {
 
     /// @notice Returns percentage fee (from total minted TeleBTC)
     /// @dev This fee goes to Teleporter who submitted the request
-    /// @param _arbitraryData Data written in Bitcoin tx
     function parsePercentageFee(bytes memory _arbitraryData) internal pure returns (uint16 parsedValue) {
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 23, 24);
         assembly {
@@ -45,7 +42,6 @@ library RequestParser {
 
     /// @notice Determines type of the request
     /// @dev 0 for normal requests, 1 for fixed-rate requests
-    /// @param _arbitraryData Data written in Bitcoin tx
     function parseFixedRate(bytes memory _arbitraryData) internal pure returns (uint8 parsedValue) {
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 25, 25);
         assembly {
@@ -55,7 +51,6 @@ library RequestParser {
 
     /// @notice Returns address of exchange token
     /// @dev Minted TeleBTC will be exchanged for this token
-    /// @param _arbitraryData       Data written in Bitcoin tx
     function parseExchangeToken(bytes memory _arbitraryData) internal pure returns (address parsedValue){
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 26, 45);
         assembly {
@@ -64,7 +59,6 @@ library RequestParser {
     }
 
     /// @notice Returns min expected output (exchange) amount
-    /// @param _arbitraryData Data written in Bitcoin tx
     function parseExchangeOutputAmount(bytes memory _arbitraryData) internal pure returns (uint224 parsedValue){
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 46, 73);
         assembly {

@@ -35,8 +35,6 @@ abstract contract CcExchangeRouterStorage is ICcExchangeRouter {
     mapping(bytes32 => mapping(address => PrefixFillSum)) public prefixFillSums;
     // ^ [txId][token] to PrefixFillSum
     mapping(bytes32 => FillData) public fillsData;
-    mapping(bytes32 => uint) public teleBtcAmount;
-    // ^ txId to remained teleBTC amount
 
     // New variables (Ethereum support)
     

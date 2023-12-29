@@ -30,11 +30,11 @@ interface ICcExchangeRouter {
     }
 
     /// @notice Structure for recording cross-chain exchange requests
-    /// @param isTransferedToEth True if BTC to ETH exchange is processed successfully
+    /// @param isTransferredToEth True if BTC to ETH exchange is processed successfully
     /// @param remainedInputAmount Amount of obtained TELEBTC on target chain
     struct extendedCcExchangeRequest {
         uint chainId;
-        bool isTransferedToEth;
+        bool isTransferredToEth;
         uint remainedInputAmount;
     }
     
@@ -210,9 +210,9 @@ interface ICcExchangeRouter {
         uint appId
     );
 
-    /// @notice                      Emits when appId for an exchange connector is set
-    /// @param appId                 Assigned application id to exchange
-    /// @param exchangeConnector     Address of exchange connector contract
+    /// @notice Emits when appId for an exchange connector is set
+    /// @param appId Assigned application id to exchange
+    /// @param exchangeConnector Address of exchange connector contract
     event SetExchangeConnector(
         uint appId,
         address exchangeConnector
