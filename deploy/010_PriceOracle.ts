@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
-import config from 'config'
-import verify from "../helper-functions"
+import config from 'config';
+import verify from "../helper-functions";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts, network } = hre;
@@ -9,7 +9,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployer } = await getNamedAccounts();
 
     const acceptableDelay = config.get("acceptable_delay");
-    const tntToken = config.get("wrapped_matic")
+    const tntToken = config.get("wrapped_native_token")
 
     const deployedContract = await deploy("PriceOracle", {
         from: deployer,

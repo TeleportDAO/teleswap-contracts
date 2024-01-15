@@ -10,7 +10,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const lockersLib = await deployments.get("LockersLib")
     const lockersLogic = await deployments.get("LockersLogic")
-    const teleDAOToken = await deployments.get("ERC20");
+    const teleDAOToken = ZERO_ADD;
     const teleBTC = await deployments.get("TeleBTCProxy");
     const teleBTCLogic = await deployments.get("TeleBTCLogic");
     const exchangeConnector = await deployments.get("UniswapV2Connector");
@@ -63,7 +63,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     if (_teleBtcProxy == ZERO_ADD) {
         const initializeTx = await lockersProxyInstance.initialize(
             teleBTC.address,
-            teleDAOToken.address,
+            teleDAOToken,
             exchangeConnector.address,
             priceOracle.address,
             burnRouterProxy.address,
@@ -84,7 +84,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     if (_teleBtcLogic == ZERO_ADD) {
         const initializeTx = await lockersLogicInstance.initialize(
             teleBTC.address,
-            teleDAOToken.address,
+            teleDAOToken,
             exchangeConnector.address,
             priceOracle.address,
             burnRouterProxy.address,

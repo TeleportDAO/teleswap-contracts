@@ -62,7 +62,6 @@
 		"prepare": "husky install",
 		"deploy": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json",
 		"init_config": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json --deploy-scripts scripts/init-config",
-		"config_upgradables": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json --deploy-scripts scripts/config-upgradables",
 		"update_contracts": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json --deploy-scripts scripts/update-contracts",
 		"test": "hardhat test",
 		"lint": "commitlint --from=HEAD"
