@@ -32,10 +32,12 @@ interface ICcExchangeRouter {
     /// @notice Structure for recording cross-chain exchange requests
     /// @param isTransferredToEth True if BTC to ETH exchange is processed successfully
     /// @param remainedInputAmount Amount of obtained TELEBTC on target chain
+    /// @param acrossFeePercentage percentage of fee we have to give to across relayers to fill our request
     struct extendedCcExchangeRequest {
-        uint chainId;
+        uint chainId; //TODO be careful about chain id
         bool isTransferredToEth;
         uint remainedInputAmount;
+        uint acrossFeePercentage;
     }
     
     /// @notice Structure for passing tx and its inclusion proof

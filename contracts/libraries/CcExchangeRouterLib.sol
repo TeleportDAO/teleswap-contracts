@@ -51,13 +51,16 @@ library CcExchangeRouterLib {
             7) outputAmount, 28 byte: min expected output amount. Assuming that the token supply
                is less than 10^18 and token decimal is 18 (> (10^18) * (10^18))
             8) deadline: REMOVED
-            9) isFixedToken: REMOVED
-            TOTAL = 74 BYTE
+            9) isFixedToken: REMOVED 
+            10) acrossRelayerFeePercentage, 3 byte: will be multiply by 10^11, 10^18 means 100%, so the minimum 
+            amount of fee percentage is 10^-5%
+            TOTAL = 77 BYTE
         */
         require(arbitraryData.length == 74, "ExchangeRouterLib: invalid len");
         require(request.inputAmount > 0, "ExchangeRouterLib: zero input");
 
         extendedCcExchangeRequests[txId].chainId = RequestParser.parseChainId(arbitraryData);
+        extendedCcExchangeRequests[txId].acrossFeePercentage = RequestParser.parseaArossFeePercentage(arbitraryData); 
         request.appId = RequestParser.parseAppId(arbitraryData);
         address exchangeToken = RequestParser.parseExchangeToken(arbitraryData);
         request.outputAmount = RequestParser.parseExchangeOutputAmount(arbitraryData);
