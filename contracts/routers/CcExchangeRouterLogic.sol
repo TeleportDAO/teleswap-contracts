@@ -8,7 +8,7 @@ import "./interfaces/ICcExchangeRouter.sol";
 import "../connectors/interfaces/IExchangeConnector.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../lockers/interfaces/ILockers.sol";
-import "../libraries/CcExchangeRouterLib2.sol";
+import "../libraries/CcExchangeRouterLib.sol";
 import "@teleportdao/btc-evm-bridge/contracts/relay/interfaces/IBitcoinRelay.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
