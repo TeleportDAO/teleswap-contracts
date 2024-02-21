@@ -173,8 +173,7 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
             if (liquidityPool == address(0)) {
                 _path = thePath;
             } else {
-                uint neededInputAmount1;
-                (_result1, neededInputAmount1) = _checkExchangeConditions(
+                (bool _result1, uint neededInputAmount1) = _checkExchangeConditions(
                     _inputAmount,
                     _outputAmount,
                     _path,
@@ -182,8 +181,7 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
                     _isFixedToken
                 );
 
-                uint neededInputAmount2;
-                (_result2, neededInputAmount2) = _checkExchangeConditions(
+                (bool _result2, uint neededInputAmount2) = _checkExchangeConditions(
                     _inputAmount,
                     _outputAmount,
                     thePath,

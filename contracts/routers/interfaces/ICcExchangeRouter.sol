@@ -5,6 +5,11 @@ interface ICcExchangeRouter {
 
     // Structures
 
+    struct chainIdStruct {
+        uint middleChain;
+        uint destinationChain;
+    }
+
     /// @notice Structure for recording cross-chain exchange requests
     /// @param appId that user wants to use (which DEX)
     /// @param inputAmount Amount of locked BTC on source chain
@@ -286,8 +291,6 @@ interface ICcExchangeRouter {
 
     function across() external view returns (address);
 
-    function acrossRelayerFee() external view returns (int64);
-
     function burnRouter() external view returns (address);
 
     // State-changing functions
@@ -317,19 +320,16 @@ interface ICcExchangeRouter {
     function ccExchange(
         TxAndProof memory _txAndProof,
         bytes calldata _lockerLockingScript,
-        address[] memory _path,
-        int64 _acrossRelayerFee
+        address[] memory _path
     ) external payable returns(bool);
 
     function fillTx(
         bytes32 _txId,
+        address _recipient,
         address _token,
-        uint _amount
+        uint _amount,
+        uint _requestAmount
     ) external payable;
-
-    function returnUnusedFill(
-        bytes32 _txId
-    ) external returns (bool);
 
     function getTeleBtcForFill(
        bytes32 _txId
@@ -347,7 +347,7 @@ interface ICcExchangeRouter {
         bytes32 _txId,
         uint8 _scriptType,
         bytes memory _userScript,
-        int64 _acrossRelayerFee,
+        uint _acrossRelayerFee,
         bytes32 _r,
         bytes32 _s,
         uint8 _v,
@@ -357,7 +357,7 @@ interface ICcExchangeRouter {
     function retryFailedCcExchange(
         bytes32 _txId,
         uint256 _outputAmount,
-        int64 _acrossRelayerFee,
+        uint _acrossRelayerFee,
         bytes32 _r,
         bytes32 _s,
         uint8 _v

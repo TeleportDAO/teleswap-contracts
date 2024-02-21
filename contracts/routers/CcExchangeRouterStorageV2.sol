@@ -27,9 +27,10 @@ abstract contract CcExchangeRouterStorageV2 is ICcExchangeRouter {
      
     address public override across;
     address public wrappedNativeToken;
-    int64 public override acrossRelayerFee;
     address public override burnRouter;
 
     // New variables (path support)
     address public wmatic;
+
+    mapping(uint => chainIdStruct) chainIdMapping;
 }

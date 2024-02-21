@@ -8,7 +8,7 @@ import "./interfaces/ICcExchangeRouter.sol";
 import "../connectors/interfaces/IExchangeConnector.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../lockers/interfaces/ILockers.sol";
-import "../libraries/CcExchangeRouterLib.sol";
+import "../libraries/CcExchangeRouterLib2.sol";
 import "@teleportdao/btc-evm-bridge/contracts/relay/interfaces/IBitcoinRelay.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -172,11 +172,11 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         return chainIdMapping[chainId].destinationChain;
     }
 
-    function setMappingChainId(uint middleChain, uint destinationChain, uint mappedId) {
-        chainIdMapping[mappedId] = {
+    function setMappingChainId(uint middleChain, uint destinationChain, uint mappedId) public {
+        chainIdMapping[mappedId] = chainIdStruct(
             middleChain, 
             destinationChain
-        };
+        );
     }
 
     /// @notice Executes a cross-chain exchange request after checking its merkle inclusion proof
@@ -185,8 +185,6 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     /// @param _path (Optional) Exchange path from teleBTC to the output token. This is used if 
     ///              the default path [teleBTC, wrappedNativeToken, outputToken] not exist or
     ///              exchanging using this path fails
-    /// @param _acrossRelayerFee (Optional) Fee for transferring exchanged tokens to the destination chain.
-    ///                          This is used if the destination chain is not the current chain.
     /// @return true 
     function ccExchange(
         TxAndProof memory _txAndProof,
@@ -225,7 +223,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             "ExchangeRouter: not finalized"
         );
 
-        uint (middleChainId, destinationChainId) = extractChainId(extendedCcExchangeRequests[txId].chainId);
+        (uint middleChainId, uint destinationChainId) = extractChainId(extendedCcExchangeRequests[txId].chainId);
 
         require(middleChainId == chainId, "ExchangeRouter: wrong chain");
 
@@ -260,8 +258,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             _fillCcExchange(
                 _lockerLockingScript, 
                 txId, 
-                request, 
-                extendedCcExchangeRequests[txId].acrossFeePercentage
+                request
             );
 
         } else {
@@ -294,8 +291,10 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     /// @param _amount Requested exchanging amount
     function fillTx(
         bytes32 _txId,
+        address _recipient,
         address _token,
-        uint _amount
+        uint _amount,
+        uint _requestAmount
     ) external override payable nonReentrant {
         require (_amount > 0,  "ExchangeRouter: zero amount");
         require (
@@ -305,15 +304,6 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
 
         PrefixFillSum storage _prefixFillSum = prefixFillSums[_txId][_token];
 
-        if (_token == NATIVE_TOKEN) {
-            require(msg.value == _amount, "ExchangeRouter: incorrect amount");
-        } else {
-            require(
-                IERC20(_token).transferFrom(_msgSender(), address(this), _amount),
-                "ExchangeRouter: no allowance"
-            ); 
-        }
-
         if (_prefixFillSum.currentIndex == 0) {
             // ^ This is the first filling
             _prefixFillSum.prefixSum.push(0);
@@ -322,103 +312,123 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
 
         // Stores the filling info
         uint index = _prefixFillSum.currentIndex;
-        fillersData[_txId][_msgSender()] = FillerData(_prefixFillSum.currentIndex, _token, _amount);
 
-        // Updates the cumulative filling
-        _prefixFillSum.prefixSum.push(_prefixFillSum.prefixSum[index - 1] + _amount);
-        _prefixFillSum.currentIndex += 1;
+        if (_requestAmount > _prefixFillSum.prefixSum[index]) {
+            uint fillAmount = _requestAmount - _prefixFillSum.prefixSum[index];
 
-        if (fillsData[_txId].startingTime == 0) {  
-            // ^ No one has filled before
-            fillsData[_txId].startingTime = block.timestamp;
+            if (_token == NATIVE_TOKEN) {
+                require(msg.value >= fillAmount, "ExchangeRouter: incorrect amount");
+                (bool sentToRecipient, bytes memory data1) = _recipient.call{value: fillAmount}("");
+                (bool sentToFiller, bytes memory data2) = _msgSender().call{value: fillAmount}("");
+                require(
+                    sentToRecipient == true && sentToFiller == true,
+                    "ExchangeRouter: failed to transfer native token"
+                );
+            } else {
+                require(
+                    IERC20(_token).transferFrom(_msgSender(), _recipient, fillAmount),
+                    "ExchangeRouter: no allowance"
+                ); 
+            }
 
-            emit FillStarted(
+            fillersData[_txId][_msgSender()] = FillerData(_prefixFillSum.currentIndex, _token, fillAmount);
+
+            // Updates the cumulative filling
+            _prefixFillSum.prefixSum.push(_prefixFillSum.prefixSum[index - 1] + fillAmount);
+            _prefixFillSum.currentIndex += 1;
+
+            if (fillsData[_txId].startingTime == 0) {  
+                // ^ No one has filled before
+                fillsData[_txId].startingTime = block.timestamp;
+
+                emit FillStarted(
+                    _txId, 
+                    block.timestamp
+                );
+            }
+
+            emit NewFill(
+                _msgSender(),
                 _txId, 
-                block.timestamp
+                _token,
+                fillAmount
             );
         }
-
-        emit NewFill(
-            _msgSender(),
-            _txId, 
-            _token,
-            _amount
-        );
     }
 
     /// @notice Fillers can withdraw their unused tokens
     /// @param _txId Bitcoin request which filling belongs to
     /// @return true if withdrawing was successful
-    function returnUnusedFill(
-        bytes32 _txId
-    ) external override nonReentrant returns (bool) {
-        FillData memory fillData = fillsData[_txId];
+    // function returnUnusedFill(
+    //     bytes32 _txId
+    // ) external override nonReentrant returns (bool) {
+    //     FillData memory fillData = fillsData[_txId];
 
-        // To withdraw tokens, either request should have been processed or 
-        // deadline for processing should has been passed
-        require (
-            ccExchangeRequests[_txId].inputAmount > 0 || 
-                fillData.startingTime + fillerWithdrawInterval < block.timestamp, 
-            "ExchangeRouter: req not processed nor time not passed"
-        );
+    //     // To withdraw tokens, either request should have been processed or 
+    //     // deadline for processing should has been passed
+    //     require (
+    //         ccExchangeRequests[_txId].inputAmount > 0 || 
+    //             fillData.startingTime + fillerWithdrawInterval < block.timestamp, 
+    //         "ExchangeRouter: req not processed nor time not passed"
+    //     );
 
-        FillerData memory fillerData = fillersData[_txId][_msgSender()];
+    //     FillerData memory fillerData = fillersData[_txId][_msgSender()];
         
-        // To withdraw token, either token should be wrong or token should have not been used
-        if (fillData.reqToken != fillerData.token || fillData.lastUsedIdx < fillerData.index) {
-            if (fillerData.token == NATIVE_TOKEN) {
-                require(
-                    payable(_msgSender()).send(fillerData.amount), 
-                    "ExchangeRouter: can't send Ether"
-                );
-            } else {
-                require(
-                    IERC20(fillerData.token).transfer(_msgSender(), fillerData.amount), 
-                    "ExchangeRouter: can't transfer token"
-                );
-            }
-            fillersData[_txId][_msgSender()].amount = 0;
+    //     // To withdraw token, either token should be wrong or token should have not been used
+    //     if (fillData.reqToken != fillerData.token || fillData.lastUsedIdx < fillerData.index) {
+    //         if (fillerData.token == NATIVE_TOKEN) {
+    //             require(
+    //                 payable(_msgSender()).send(fillerData.amount), 
+    //                 "ExchangeRouter: can't send Ether"
+    //             );
+    //         } else {
+    //             require(
+    //                 IERC20(fillerData.token).transfer(_msgSender(), fillerData.amount), 
+    //                 "ExchangeRouter: can't transfer token"
+    //             );
+    //         }
+    //         fillersData[_txId][_msgSender()].amount = 0;
 
-            emit FillTokensReturned(
-                fillerData.amount,
-                fillerData.token,
-                _msgSender(),
-                fillerData.index,
-                _txId
-            );
-            return true;
-        }
+    //         emit FillTokensReturned(
+    //             fillerData.amount,
+    //             fillerData.token,
+    //             _msgSender(),
+    //             fillerData.index,
+    //             _txId
+    //         );
+    //         return true;
+    //     }
 
-        // Last used filling may used partially, so filler can withdraw remaining amount
-        if (
-            fillData.lastUsedIdx == fillerData.index && 
-            fillsData[_txId].isWithdrawnLastFill == false
-        ) {
-            if (fillerData.token == NATIVE_TOKEN) {
-                require(
-                    payable(_msgSender()).send(fillData.remainingAmountOfLastFill), 
-                    "ExchangeRouter: can't send Ether"
-                );
-            } else {
-                require(
-                    IERC20(fillerData.token).transfer(_msgSender(), fillData.remainingAmountOfLastFill), 
-                    "ExchangeRouter: can't transfer token"
-                );
-            }
-            fillsData[_txId].isWithdrawnLastFill = true;
+    //     // Last used filling may used partially, so filler can withdraw remaining amount
+    //     if (
+    //         fillData.lastUsedIdx == fillerData.index && 
+    //         fillsData[_txId].isWithdrawnLastFill == false
+    //     ) {
+    //         if (fillerData.token == NATIVE_TOKEN) {
+    //             require(
+    //                 payable(_msgSender()).send(fillData.remainingAmountOfLastFill), 
+    //                 "ExchangeRouter: can't send Ether"
+    //             );
+    //         } else {
+    //             require(
+    //                 IERC20(fillerData.token).transfer(_msgSender(), fillData.remainingAmountOfLastFill), 
+    //                 "ExchangeRouter: can't transfer token"
+    //             );
+    //         }
+    //         fillsData[_txId].isWithdrawnLastFill = true;
 
-            emit FillTokensReturned(
-                fillData.remainingAmountOfLastFill,
-                fillerData.token,
-                _msgSender(),
-                fillerData.index,
-                _txId
-            );
-            return true;
-        }
+    //         emit FillTokensReturned(
+    //             fillData.remainingAmountOfLastFill,
+    //             fillerData.token,
+    //             _msgSender(),
+    //             fillerData.index,
+    //             _txId
+    //         );
+    //         return true;
+    //     }
 
-        return false;
-    }
+    //     return false;
+    // }
 
     /// @notice Filler whose tokens has been used gets teleBTC
     /// @param _txId Bitcoin request which filling belongs to
@@ -484,7 +494,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         bytes32 _txId,
         uint8 _scriptType,
         bytes memory _userScript,
-        int64 _acrossRelayerFee,
+        uint _acrossRelayerFee,
         bytes32 _r,
         bytes32 _s,
         uint8 _v,
@@ -536,7 +546,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     function retryFailedCcExchange(
         bytes32 _txId,
         uint256 _outputAmount,
-        int64 _acrossRelayerFee,
+        uint _acrossRelayerFee,
         bytes32 _r,
         bytes32 _s,
         uint8 _v
@@ -609,7 +619,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         address _token,
         uint _amount,
         address _user,
-        int64 _acrossRelayerFee
+        uint _acrossRelayerFee
     ) private {
         IERC20(_token).approve(
             across, 
@@ -620,7 +630,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             _token,
             _amount,
             extractDestinationChainId(_chainId),
-            _acrossRelayerFee,
+            int64(uint64(_acrossRelayerFee)),
             uint32(block.timestamp),
             "0x", // Null data
             115792089237316195423570985008687907853269984665640564039457584007913129639935
@@ -649,20 +659,20 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         );
 
         if (!result) {
-            address[2] alterPath1 = [teleBTC, _path[_path.lengthe - 1]];
-            address[2] alterPath2 = [teleBTC, wmatic, _path[_path.lengthe - 1]];
-            if (IExchangeConnector(_exchangeConnector).isPathValid(alterPath1) ||
-                IExchangeConnector(_exchangeConnector).isPathValid(alterPath2)) {
-                (bool result, uint[] memory amounts) = _swap(
-                    true,
-                    _lockerLockingScript,
-                    ccExchangeRequests[_txId],
-                    extendedCcExchangeRequests[_txId],
-                    _txId,
-                    alterPath1,
-                    _exchangeConnector
-                );
-            } else {    
+            address[] memory alterPath1 = new address[](2);
+            alterPath1[0] = teleBTC;
+            alterPath1[1] = _path[_path.length - 1];
+
+            (bool result, uint[] memory amounts) = _swap(
+                true,
+                _lockerLockingScript,
+                ccExchangeRequests[_txId],
+                extendedCcExchangeRequests[_txId],
+                _txId,
+                alterPath1,
+                _exchangeConnector
+            );
+            if (!result) {
                 // Sends teleBTC to recipient if exchange wasn't successful
                 ITeleBTC(teleBTC).transfer(
                     ccExchangeRequests[_txId].recipientAddress,
@@ -681,7 +691,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         bytes memory _lockerLockingScript, 
         bytes32 _txId,
         address[] memory _path,
-        int64 _acrossRelayerFee, // TODO be max not exact
+        uint _acrossRelayerFee, // TODO be max not exact
         uint chainId
     ) private {
         (bool result, uint[] memory amounts) = _swap(
@@ -708,7 +718,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             // send telebtc to polygon address
             ITeleBTC(teleBTC).transfer(
                 ccExchangeRequests[_txId].recipientAddress, 
-                extendedCcExchangeRequests[txId].remainedInputAmount
+                extendedCcExchangeRequests[_txId].remainedInputAmount
             );
         }
     }
@@ -816,8 +826,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     function _fillCcExchange(
         bytes memory _lockerLockingScript, 
         bytes32 _txId,
-        ccExchangeRequest memory _request,
-        uint _acrossRelayerFee
+        ccExchangeRequest memory _request
     ) private {
         address outputToken = _request.path[_request.path.length - 1];
 
@@ -832,7 +841,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         // Saves the filling data
         fillsData[_txId] = _txFillData;
         
-        uint _chainId = extendedCcExchangeRequests[txId].chainId;
+        uint _chainId = extendedCcExchangeRequests[_txId].chainId;
         if (_chainId == chainId) {
             if (outputToken == NATIVE_TOKEN) {
                 Address.sendValue(
@@ -851,7 +860,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 _request.path[_request.path.length - 1], 
                 _request.outputAmount, 
                 _request.recipientAddress,
-                _acrossRelayerFee
+                extendedCcExchangeRequests[_txId].acrossFeePercentage
             );
         }
 
