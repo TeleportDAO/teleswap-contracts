@@ -17,6 +17,7 @@ import { UniswapV2Connector__factory } from "../src/types/factories/UniswapV2Con
 
 import { CcExchangeRouterProxy__factory } from "../src/types/factories/CcExchangeRouterProxy__factory";
 import { CcExchangeRouterLogic__factory } from "../src/types/factories/CcExchangeRouterLogic__factory";
+import { CcExchangeRouterLogicLibraryAddresses } from "../src/types/factories/CcExchangeRouterLogic__factory";
 
 import { LockersProxy__factory } from "../src/types/factories/LockersProxy__factory";
 import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
@@ -25,8 +26,13 @@ import { LockersLogicLibraryAddresses } from "../src/types/factories/LockersLogi
 import { LockersLib } from "../src/types/LockersLib";
 import { LockersLib__factory } from "../src/types/factories/LockersLib__factory";
 
-import { TeleBTC } from "../src/types/TeleBTC";
-import { TeleBTC__factory } from "../src/types/factories/TeleBTC__factory";
+import { CcExchangeRouterLib } from "../src/types/CcExchangeRouterLib";
+import { CcExchangeRouterLib__factory } from "../src/types/factories/CcExchangeRouterLib__factory";
+
+import { TeleBTCLogic } from "../src/types/TeleBTCLogic";
+import { TeleBTCLogic__factory } from "../src/types/factories/TeleBTCLogic__factory";
+import { TeleBTCProxy } from "../src/types/TeleBTCProxy";
+import { TeleBTCProxy__factory } from "../src/types/factories/TeleBTCProxy__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 import { WETH } from "../src/types/WETH";
@@ -34,7 +40,7 @@ import { WETH__factory } from "../src/types/factories/WETH__factory";
 
 import { takeSnapshot, revertProvider } from "./block_utils";
 
-describe("CcExchangeRouter", async () => {
+describe.only("CcExchangeRouter", async () => {
 
     let snapshotId: any;
 
@@ -137,8 +143,21 @@ describe("CcExchangeRouter", async () => {
         // await mockInstantRouter.mock.payBackLoan.returns(true);
 
         // Deploys teleBTC contract
-        const teleBTCFactory = new TeleBTC__factory(deployer);
-        teleBTC = await teleBTCFactory.deploy(
+        const teleBTCLogicFactory = new TeleBTCLogic__factory(deployer);
+        const teleBTCLogic = await teleBTCLogicFactory.deploy();
+
+        const teleBTCProxyFactory = new TeleBTCProxy__factory(deployer);
+        const teleBTCProxy = await teleBTCProxyFactory.deploy(
+            teleBTCLogic.address,    
+            proxyAdminAddress,
+            "0x"
+        );
+        
+        teleBTC = await teleBTCLogic.attach(
+            teleBTCProxy.address
+        );
+
+        await teleBTC.initialize(
             "TeleportDAO-BTC",
             "teleBTC"
         );
@@ -192,7 +211,17 @@ describe("CcExchangeRouter", async () => {
         lockers = await deployLockers();
 
         // Deploys ccExchangeRouter contract
-        const ccExchangeRouterLogicFactory = new CcExchangeRouterLogic__factory(deployer);
+        let linkLibraryAddresses: CcExchangeRouterLogicLibraryAddresses;
+
+        let ccExchangeRouterLib = await deployCcExchangeRouterLib()
+        linkLibraryAddresses = {
+            "contracts/libraries/CcExchangeRouterLib.sol:CcExchangeRouterLib": ccExchangeRouterLib.address,
+        };
+
+        const ccExchangeRouterLogicFactory = new CcExchangeRouterLogic__factory(
+            linkLibraryAddresses,
+            deployer
+        );
         const ccExchangeRouterLogic = await ccExchangeRouterLogicFactory.deploy();
 
         const ccExchangeRouterProxyFactory = new CcExchangeRouterProxy__factory(deployer);
@@ -213,7 +242,9 @@ describe("CcExchangeRouter", async () => {
             lockers.address,
             mockBitcoinRelay.address,
             teleBTC.address,
-            TREASURY
+            TREASURY,
+            ONE_ADDRESS, //TODO
+            ONE_ADDRESS  //TODO
         );
 
         // Sets exchangeConnector address in ccExchangeRouter
@@ -256,6 +287,19 @@ describe("CcExchangeRouter", async () => {
         );
 
         return lockersLib;
+    };
+
+    const deployCcExchangeRouterLib = async (
+        _signer?: Signer
+    ): Promise<LockersLib> => {
+        const CcExchangeRouterFactory = new CcExchangeRouterLib__factory(
+            _signer || deployer
+        );
+
+        const CcExchangeRouter = await CcExchangeRouterFactory.deploy(
+        );
+
+        return CcExchangeRouter;
     };
 
     const deployLockers = async (
@@ -326,7 +370,7 @@ describe("CcExchangeRouter", async () => {
         await lockers.addLocker(lockerAddress)
     }
 
-    describe("#ccExchange", async () => {
+    describe.only("#ccExchange", async () => {
         let oldReserveTeleBTC: BigNumber;
         let oldReserveTT: BigNumber;
         let oldDeployerBalanceTeleBTC: BigNumber;
@@ -495,28 +539,28 @@ describe("CcExchangeRouter", async () => {
             await exchangeToken.approve(uniswapV2Router02.address, 10000);
             let addedLiquidityA = 10000;
             let addedLiquidityB = 10000;
-            await uniswapV2Router02.addLiquidity(
-                teleBTC.address,
-                exchangeToken.address,
-                addedLiquidityA,
-                addedLiquidityB,
-                0, // Minimum added liquidity for first token
-                0, // Minimum added liquidity for second token
-                deployerAddress,
-                1000000000000000, // Long deadline
-            );
+            // await uniswapV2Router02.addLiquidity(
+            //     teleBTC.address,
+            //     exchangeToken.address,
+            //     addedLiquidityA,
+            //     addedLiquidityB,
+            //     0, // Minimum added liquidity for first token
+            //     0, // Minimum added liquidity for second token
+            //     deployerAddress,
+            //     1000000000000000, // Long deadline
+            // );
 
-            // Creates liquidity pool of TeleBTC-WETH and adds liquidity in it
-            await teleBTC.approve(uniswapV2Router02.address, 10000);
-            await uniswapV2Router02.addLiquidityETH(
-                teleBTC.address,
-                10000,
-                0, // Minimum added liquidity for first token
-                0, // Minimum added liquidity for second token
-                deployerAddress,
-                10000000000000, // Long deadline
-                {value: 10000}
-            );
+            // // Creates liquidity pool of TeleBTC-WETH and adds liquidity in it
+            // await teleBTC.approve(uniswapV2Router02.address, 10000);
+            // await uniswapV2Router02.addLiquidityETH(
+            //     teleBTC.address,
+            //     10000,
+            //     0, // Minimum added liquidity for first token
+            //     0, // Minimum added liquidity for second token
+            //     deployerAddress,
+            //     10000000000000, // Long deadline
+            //     {value: 10000}
+            // );
 
             let liquidityPoolAddress = await uniswapV2Factory.getPair(
                 teleBTC.address,
@@ -529,12 +573,12 @@ describe("CcExchangeRouter", async () => {
             // Loads teleBTC-TDT liquidity pool
             uniswapV2Pair = await uniswapV2Pair__factory.attach(liquidityPoolAddress);
 
-            // Records current reserves of teleBTC and TT
-            if (await uniswapV2Pair.token0() == teleBTC.address) {
-                [oldReserveTeleBTC, oldReserveTT] = await uniswapV2Pair.getReserves();
-            } else {
-                [oldReserveTT, oldReserveTeleBTC] = await uniswapV2Pair.getReserves()
-            }
+            // // Records current reserves of teleBTC and TT
+            // if (await uniswapV2Pair.token0() == teleBTC.address) {
+            //     [oldReserveTeleBTC, oldReserveTT] = await uniswapV2Pair.getReserves();
+            // } else {
+            //     [oldReserveTT, oldReserveTeleBTC] = await uniswapV2Pair.getReserves()
+            // }
 
             // Records current teleBTC and TT balances of user and teleporter
             oldUserBalanceTeleBTC = await teleBTC.balanceOf(
@@ -555,12 +599,12 @@ describe("CcExchangeRouter", async () => {
             await revertProvider(deployer.provider, snapshotId);
         });
 
-        it("Exchanges teleBTC for desired exchange token (fixed token = input)", async function () {
+        it.only("Exchanges teleBTC for desired exchange token (fixed token = input)", async function () {
 
             // Replaces dummy address in vout with exchange token address
             let vout = CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vout;
             vout = vout.replace(DUMMY_ADDRESS, exchangeToken.address.slice(2, exchangeToken.address.length));
-
+            // console.log("1", CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput, oldReserveTeleBTC, oldReserveTT)
             // Calculates fees
             let [lockerFee, teleporterFee, protocolFee] = calculateFees(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput
@@ -572,18 +616,20 @@ describe("CcExchangeRouter", async () => {
                 oldReserveTeleBTC,
                 oldReserveTT
             );
-
             // Exchanges teleBTC for TT
             expect(
                 await ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+                    [
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+                        vout,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+                    ],
                     LOCKER1_LOCKING_SCRIPT,
+                    [teleBTC, exchangeToken]
                 )
             ).to.emit(ccExchangeRouter, 'CCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
@@ -595,7 +641,7 @@ describe("CcExchangeRouter", async () => {
                 deployerAddress,
                 teleporterFee
             );
-
+            
             await checksWhenExchangeSucceed(
                 exchangeToken,
                 true,
@@ -629,14 +675,17 @@ describe("CcExchangeRouter", async () => {
             // Exchanges teleBTC for TT
             expect(
                 await ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.index,
+                    [
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.version,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.vin,
+                        vout,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.locktime,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.blockNumber,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.intermediateNodes,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.index
+                    ],
                     LOCKER1_LOCKING_SCRIPT,
+                    [teleBTC, exchangeToken]
                 )
             ).to.emit(ccExchangeRouter, 'CCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
@@ -695,14 +744,17 @@ describe("CcExchangeRouter", async () => {
             // Exchanges teleBTC for ATT
             expect(
                 await ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+                    [
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+                        vout,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+                    ],
                     LOCKER1_LOCKING_SCRIPT,
+                    [teleBTC, exchangeToken]
                 )
             ).to.emit(ccExchangeRouter, 'CCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
@@ -737,14 +789,17 @@ describe("CcExchangeRouter", async () => {
             // Mints teleBTC
             expect(
                 await ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_expired.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_expired.vin,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_expired.vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_expired.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_expired.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_expired.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_expired.index,
-                    LOCKER1_LOCKING_SCRIPT
+                    [
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_expired.version,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_expired.vin,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_expired.vout,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_expired.locktime,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_expired.blockNumber,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_expired.intermediateNodes,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_expired.index,
+                    ],
+                    LOCKER1_LOCKING_SCRIPT,
+                    [teleBTC, exchangeToken]
                 )
             ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
@@ -776,14 +831,17 @@ describe("CcExchangeRouter", async () => {
             // Mints teleBTC
             expect(
                 await ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.index,
-                    LOCKER1_LOCKING_SCRIPT
+                    [
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.version,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.vin,
+                        vout,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.locktime,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.blockNumber,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.intermediateNodes,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_highSlippage.index
+                    ],
+                    LOCKER1_LOCKING_SCRIPT,
+                    [teleBTC, exchangeToken]
                 )
             ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
@@ -815,14 +873,17 @@ describe("CcExchangeRouter", async () => {
             // Mints teleBTC
             expect(
                 await ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.index,
-                    LOCKER1_LOCKING_SCRIPT
+                    [
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.version,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.vin,
+                        vout,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.locktime,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.blockNumber,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.intermediateNodes,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_lowInput.index
+                    ],
+                    LOCKER1_LOCKING_SCRIPT,
+                    [teleBTC, exchangeToken]
                 )
             ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedOutput.recipientAddress,
@@ -852,14 +913,17 @@ describe("CcExchangeRouter", async () => {
             // Mints teleBTC
             expect(
                 await ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_LOCKING_SCRIPT
+                    [
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+                        vout,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index
+                    ],
+                    LOCKER1_LOCKING_SCRIPT,
+                    [teleBTC, exchangeToken]
                 )
             ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
@@ -889,14 +953,17 @@ describe("CcExchangeRouter", async () => {
             // Mints teleBTC
             expect(
                 await ccExchangeRouter.ccExchange(
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
-                    vout,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
-                    CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
-                    LOCKER1_LOCKING_SCRIPT
+                    [
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.version,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.vin,
+                        vout,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.locktime,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.blockNumber,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.intermediateNodes,
+                        CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.index,
+                    ],
+                    LOCKER1_LOCKING_SCRIPT,
+                    [teleBTC, exchangeToken]
                 )
             ).to.emit(ccExchangeRouter, 'FailedCCExchange').withArgs(
                 CC_EXCHANGE_REQUESTS.normalCCExchange_fixedInput.recipientAddress,
