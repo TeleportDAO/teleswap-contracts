@@ -13,10 +13,10 @@ import "../lockers/interfaces/ILockers.sol";
 import "./EthBurnHandlerStorage.sol";
 import "./interfaces/IEthBurnHandlerLogic.sol";
 import "./interfaces/AcrossMessageHandler.sol";
+import "hardhat/console.sol";
 
 contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage, 
     OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable, AcrossMessageHandler {
-
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "PolygonConnectorLogic: zero address");
         _;
@@ -26,6 +26,7 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
         address _lockersProxy,
         address _burnRouterProxy,
         address _across,
+        address _acrossV3,
         uint256 _sourceChainId
     ) public initializer {
         OwnableUpgradeable.__Ownable_init();
@@ -35,6 +36,7 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
         lockersProxy = _lockersProxy;
         burnRouterProxy = _burnRouterProxy;
         across = _across;
+        acrossV3 = _acrossV3;
         sourceChainId = _sourceChainId;
     }
 
@@ -58,6 +60,11 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
         across = _across;
     }
 
+    /// @notice Setter for AcrossV3
+    function setAcrossV3(address _acrossV3) external override onlyOwner {
+        acrossV3 = _acrossV3;
+    }
+
     /// @notice Processes requests coming from Ethereum (using Across)
     /// @dev Only Across can call this. Will be reverted if tokens have not been received fully yet.
     /// @param _tokenSent Address of exchanging token
@@ -75,15 +82,35 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
         // Checks the msg origin and fill completion (full amount has been received)
         require(msg.sender == across, "PolygonConnectorLogic: not across");
 
-        // FIXME: handle cases the fillCompleted is not true
-        require(_fillCompleted, "PolygonConnectorLogic: partial fill");
+        // // FIXME: handle cases the fillCompleted is not true
+        // require(_fillCompleted, "PolygonConnectorLogic: partial fill");
 
         // Determines the function call
         (string memory purpose, uint uniqueCounter) = abi.decode(_message, (string, uint));
         emit MsgReceived(uniqueCounter, purpose, _message);
 
         if (_isEqualString(purpose, "exchangeForBtcAcross")) {
-            _exchangeForBtcAcross(_tokenSent, _amount, _message);
+            _exchangeForBtcAcross(_amount, _message, _tokenSent);
+        }
+    }
+
+    /// @notice Process requests coming from Ethereum (using Across V3)
+    function handleV3AcrossMessage(
+        address _tokenSent,
+        uint256 _amount,
+        address _relayer, 
+        bytes memory _message
+    ) external nonReentrant override {
+        // Checks the msg origin and fill completion (full amount has been received)
+        require(msg.sender == acrossV3, "PolyConnectorLogic: not acrossV3");
+
+        // Determines the function call
+        (string memory purpose, uint uniqueCounter) = abi.decode(_message, (string, uint));
+        emit MsgReceived(uniqueCounter, purpose, _message);
+
+        // TODO change to require
+        if (_isEqualString(purpose, "exchangeForBtcAcross")) {
+            _exchangeForBtcAcross(_amount, _message, _tokenSent);
         }
     }
 
@@ -129,6 +156,7 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
             "PolygonConnectorLogic: low balance"
         );
 
+        // TODO test onchain 
         // Sends token back to the buyer
         _sendTokenUsingAcross(
             user,
@@ -137,10 +165,10 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
             _relayerFeePercentage
         );
         
+        // TODO emit event
         // Delets the bid
         failedReqs[user][_token] -= _amount;
     }
-
 
     function reDoFailedCcExchangeAndBurn(
         bytes memory _message,
@@ -148,27 +176,29 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
         bytes32 _r, 
         bytes32 _s
     ) external nonReentrant override {
-
+        // TODO remove telebtc of path, remove telebtc
         (
             address _token, 
-            address _teleBtc,
+            // address _teleBtc,
             uint256 _amount, 
             address exchangeConnector,
             uint256 minOutputAmount,
             bytes memory userScript,
             ScriptTypes scriptType,
-            bytes memory lockerLockingScript
+            bytes memory lockerLockingScript,
+            address[] memory path
         ) = abi.decode(
             _message,
             (
                 address,
-                address,
+                // address,
                 uint256, 
                 address,
                 uint256,
                 bytes,
                 ScriptTypes,
-                bytes
+                bytes,
+                address[]
             )
         );
 
@@ -186,18 +216,14 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
             "PolygonConnectorLogic: low balance"
         );
 
-        uint[] memory amounts;
+        failedReqs[user][_token] -= _amount;
+
+        uint[] memory amounts = new uint[](2);
         amounts[0] = _amount;
         amounts[1] = minOutputAmount;
 
-
-        address[] memory path;
-        path[0] = _token;
-        path[1] = _teleBtc;
-
         IERC20(path[0]).approve(burnRouterProxy, _amount);
-
-        try IBurnRouter(burnRouterProxy).ccExchangeAndBurn(
+        IBurnRouter(burnRouterProxy).ccExchangeAndBurn(
             exchangeConnector, 
             amounts, 
             true, // Input token amount is fixed
@@ -205,25 +231,30 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
             (block.timestamp + 1), 
             userScript, 
             scriptType, 
-            lockerLockingScript
-        ) {
-            // Delets the bid
-            failedReqs[user][_token] -= _amount;
-        } catch {
-            // Removes spending allowance
-            IERC20(path[0]).approve(burnRouterProxy, 0);
-        }
-
+            lockerLockingScript,
+            0
+        );
+        emit NewBurn(
+            user,
+            userScript,
+            scriptType,
+            _amount,
+            _token,
+            ILockers(lockersProxy).getLockerTargetAddress(lockerLockingScript),
+            BurnRouterStorage(burnRouterProxy).burnRequestCounter(
+                ILockers(lockersProxy).getLockerTargetAddress(lockerLockingScript)
+            ) - 1
+        );
     }
 
     
     /// @notice Helper for exchanging token for BTC
     function _exchangeForBtcAcross(
-        address _tokenSent,
         uint256 _amount,
-        bytes memory _message
+        bytes memory _message,
+        address _tokenSent
     ) internal {
-
+        //TODO third party fee uint8
         (
             ,,
             address user,
@@ -232,7 +263,8 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
             address[] memory path,
             bytes memory userScript,
             ScriptTypes scriptType,
-            bytes memory lockerLockingScript
+            bytes memory lockerLockingScript,
+            uint thirdParty
         ) = abi.decode(
             _message, 
             (
@@ -244,11 +276,12 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
                 address[],
                 bytes,
                 ScriptTypes,
-                bytes
+                bytes,
+                uint
             )
         );
 
-        uint[] memory amounts;
+        uint[] memory amounts = new uint[](2);
         amounts[0] = _amount;
         amounts[1] = minOutputAmount;
 
@@ -262,9 +295,10 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
             (block.timestamp + 1), 
             userScript, 
             scriptType, 
-            lockerLockingScript
+            lockerLockingScript,
+            thirdParty
         ) {
-            NewBurn(
+            emit NewBurn(
                 user,
                 userScript,
                 scriptType,
@@ -281,7 +315,7 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
 
             // Saves token amount so user can withdraw it in future
             failedReqs[user][_tokenSent] += _amount;
-            FailedBurn(
+            emit FailedBurn(
                 user,
                 userScript,
                 scriptType,
@@ -342,7 +376,7 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
 
         // Prefix the message hash as per the Ethereum signing standard
         bytes32 ethSignedMessageHash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n", uintToString(message.length), messageHash)
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
         );
 
         // Verify the message using ecrecover
@@ -413,6 +447,10 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
     /// @notice Checks if two strings are equal
     function _isEqualString(string memory _a, string memory _b) internal pure returns (bool) {
         return keccak256(abi.encodePacked(_a)) == keccak256(abi.encodePacked(_b));
+    }
+
+    //TODO? remove
+    receive() external payable {
     }
 
 }

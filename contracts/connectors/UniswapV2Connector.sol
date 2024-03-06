@@ -2,9 +2,9 @@
 pragma solidity >=0.8.0 <0.8.4;
 
 import "./interfaces/IExchangeConnector.sol";
-import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
+import "../uniswap/v2-periphery/interfaces/IUniswapV2Router02.sol";
+import "../uniswap/v2-core/interfaces/IUniswapV2Pair.sol";
+import "../uniswap/v2-core/interfaces/IUniswapV2Factory.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -165,39 +165,16 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         if (_path.length == 2) {
             address liquidityPool = IUniswapV2Factory(liquidityPoolFactory).getPair(_path[0], _path[1]);
 
-            address[] memory thePath = new address[](3);
-            thePath[0] = _path[0];
-            thePath[1] = wrappedNativeToken;
-            thePath[2] = _path[1];
-
             if (liquidityPool == address(0)) {
+                address[] memory thePath = new address[](3);
+
+                thePath[0] = _path[0];
+                thePath[1] = wrappedNativeToken;
+                thePath[2] = _path[1];
+
                 _path = thePath;
-            } else {
-                (bool _result1, uint neededInputAmount1) = _checkExchangeConditions(
-                    _inputAmount,
-                    _outputAmount,
-                    _path,
-                    _deadline,
-                    _isFixedToken
-                );
-
-                (bool _result2, uint neededInputAmount2) = _checkExchangeConditions(
-                    _inputAmount,
-                    _outputAmount,
-                    thePath,
-                    _deadline,
-                    _isFixedToken
-                );
-
-                if (_result1 == false)
-                    _path = thePath;
-                else if (_result2 == true) {
-                    if (neededInputAmount2 < neededInputAmount1)
-                        _path = thePath;
-                }
-
             }
-        } 
+        }
 
         uint neededInputAmount;
         (_result, neededInputAmount) = _checkExchangeConditions(

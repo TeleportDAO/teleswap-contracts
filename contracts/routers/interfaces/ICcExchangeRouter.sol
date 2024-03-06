@@ -43,6 +43,7 @@ interface ICcExchangeRouter {
         bool isTransferredToEth;
         uint remainedInputAmount;
         uint acrossFeePercentage;
+        uint thirdParty;
     }
     
     /// @notice Structure for passing tx and its inclusion proof
@@ -261,6 +262,21 @@ interface ICcExchangeRouter {
         address newTreasury
     );
 
+    /// @notice                     Emits when changes made to third party address
+	event NewThirdPartyAddress(
+		uint thirdPartyId,
+		address oldThirdPartyAddress, 
+		address newThirdPartyAddress
+	);
+
+	/// @notice                     Emits when changes made to third party fee
+	event NewThirdPartyFee(
+		uint thirdPartyId,
+		uint oldThirdPartyFee, 
+		uint newThirdPartyFee
+	);
+
+
     // Read-only functions
     
     function isRequestUsed(bytes32 _txId) external view returns (bool);
@@ -317,23 +333,27 @@ interface ICcExchangeRouter {
 
     function setBurnRouter(address _burnRouter) external;
 
+    function setThirdPartyAddress(uint _thirdPartyId, address _thirdPartyAddress) external;
+
+	function setThirdPartyFee(uint _thirdPartyId, uint _thirdPartyFee) external;
+
     function ccExchange(
         TxAndProof memory _txAndProof,
         bytes calldata _lockerLockingScript,
         address[] memory _path
     ) external payable returns(bool);
 
-    function fillTx(
-        bytes32 _txId,
-        address _recipient,
-        address _token,
-        uint _amount,
-        uint _requestAmount
-    ) external payable;
+    // function fillTx(
+    //     bytes32 _txId,
+    //     address _recipient,
+    //     address _token,
+    //     uint _amount,
+    //     uint _requestAmount
+    // ) external payable;
 
-    function getTeleBtcForFill(
-       bytes32 _txId
-    ) external returns (bool);
+    // function getTeleBtcForFill(
+    //    bytes32 _txId
+    // ) external returns (bool);
 
     function supportToken(address _token) external;
 

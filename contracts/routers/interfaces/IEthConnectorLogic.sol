@@ -67,8 +67,9 @@ interface IEthConnectorLogic {
         bytes memory _userScript,
         ScriptTypes _scriptType,
         bytes calldata _lockerLockingScript,
-        int64 _relayerFeePercentage
-	) external;
+        int64 _relayerFeePercentage,
+        uint thirdParty
+	) external payable;
 
     function emergencyWithdraw(
         address _token,

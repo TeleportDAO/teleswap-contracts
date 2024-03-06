@@ -139,6 +139,21 @@ interface IBurnRouter {
         address newBitcoinFeeOracle
     );
 
+	/// @notice                     Emits when changes made to third party address
+	event NewThirdPartyAddress(
+		uint thirdPartyId,
+		address oldThirdPartyAddress, 
+		address newThirdPartyAddress
+	);
+
+	/// @notice                     Emits when changes made to third party fee
+	event NewThirdPartyFee(
+		uint thirdPartyId,
+		uint oldThirdPartyFee, 
+		uint newThirdPartyFee
+	);
+
+
 	// Read-only functions
 
 	function isTransferred(address _lockerTargetAddress, uint _index) external view returns (bool);
@@ -187,11 +202,16 @@ interface IBurnRouter {
 
 	function setBitcoinFeeOracle(address _bitcoinFeeOracle) external;
 
+	function setThirdPartyAddress(uint _thirdPartyId, address _thirdPartyAddress) external;
+
+	function setThirdPartyFee(uint _thirdPartyId, uint _thirdPartyFee) external;
+
 	function ccBurn(
 		uint _amount, 
 		bytes calldata _userScript,
 		ScriptTypes _scriptType,
-		bytes calldata _lockerLockingScript
+		bytes calldata _lockerLockingScript,
+		uint thirdParty
 	) external returns (uint);
 
     function ccExchangeAndBurn(
@@ -202,7 +222,8 @@ interface IBurnRouter {
         uint256 _deadline, 
         bytes memory _userScript,
         ScriptTypes _scriptType,
-        bytes calldata _lockerLockingScript
+        bytes calldata _lockerLockingScript,
+		uint thirdParty
 	) external returns (uint);
 
 	function burnProof(

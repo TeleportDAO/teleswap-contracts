@@ -6,8 +6,11 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+// import "../libraries/AddressLib.sol";
+import "../libraries/BurnRouterLib.sol";
 import "./EthConnectorStorage.sol";
 import "./interfaces/IEthConnectorLogic.sol";
+import "hardhat/console.sol";
 
 contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage, 
     OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
@@ -154,12 +157,14 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
         bytes memory _userScript,
         ScriptTypes _scriptType,
         bytes calldata _lockerLockingScript,
-        int64 _relayerFeePercentage
-	) external override nonReentrant() {
+        int64 _relayerFeePercentage,
+        uint thirdParty
+	) external payable override nonReentrant() {
 
         _checkRequest(_token, _amounts, _path);
 
         // Sends msg to Polygon
+        
         bytes memory message = abi.encode(
             "exchangeForBtcAcross",
             uniqueCounter,
@@ -169,13 +174,14 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
             _path, 
             _userScript,
             _scriptType,
-            _lockerLockingScript
+            _lockerLockingScript,
+            thirdParty
         );
-
+        
         emit MsgSent(
             uniqueCounter,
             "putBidAcross",
-            abi.encode(message),
+            message,
             _token,
             _amounts[0]
         );
@@ -202,7 +208,6 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
             require(msg.value == _amount, "EthManagerLogic: wrong value");
             _token = wrappedNativeToken;
         } else {
-            // Prevents sending ETH
             require(msg.value == 0, "EthManagerLogic: wrong value");
 
             // Transfers tokens from user to contract
@@ -256,10 +261,12 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
             "EthManagerLogic: low amount"
         );
 
+        //TODO remove this check
         require(
             _path[_path.length - 1] == polygonTeleBTC, 
             "EthManagerLogic: invalid path"
         );
+
         require(_amounts.length == 2, "EthManagerLogic: wrong amounts");
     }
 

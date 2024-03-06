@@ -11,4 +11,11 @@ interface AcrossMessageHandler {
         address relayer,
         bytes memory message
     ) external;
+
+    function handleV3AcrossMessage(
+        address tokenSent,
+        uint256 amount,
+        address relayer,
+        bytes memory message
+    ) external;
 }

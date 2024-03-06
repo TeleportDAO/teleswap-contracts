@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../routers/interfaces/ICcExchangeRouter.sol";
 import "../libraries/RequestParser.sol";
-
+import "hardhat/console.sol";
 library CcExchangeRouterLib {
 
     /// @notice Parses and stores exchange request if it's valid
@@ -35,7 +35,10 @@ library CcExchangeRouterLib {
         // Extracts value and OP_RETURN data from the request
         ICcExchangeRouter.ccExchangeRequest memory request;
         bytes memory arbitraryData;
-        (request.inputAmount, arbitraryData) = BitcoinHelper.parseValueAndDataHavingLockingScriptSmallPayload(
+        
+        console.logBytes(_txAndProof.vout);
+        console.logBytes(_lockerLockingScript);
+        (request.inputAmount, arbitraryData) = BitcoinHelper.parseValueAndDataHavingLockingScriptBigPayload(
             _txAndProof.vout, 
             _lockerLockingScript
         );
@@ -47,20 +50,27 @@ library CcExchangeRouterLib {
             3) recipientAddress, 20 byte: EVM account
             4) teleporterPercentageFee, 2 byte: between [0,10000]
             5) isFixedRate, 1 byte (OLD: SPEED): {0,1}
-            6) exchangeToken, 20 byte: token address
-            7) outputAmount, 28 byte: min expected output amount. Assuming that the token supply
-               is less than 10^18 and token decimal is 18 (> (10^18) * (10^18))
-            8) deadline: REMOVED
-            9) isFixedToken: REMOVED 
-            10) acrossRelayerFeePercentage, 3 byte: will be multiply by 10^11, 10^18 means 100%, so the minimum 
+            6) thirdParty, 1 byte: max 256 third parties, default is 0 for no third party
+            7) exchangeToken, 20 byte: token address
+            8) outputAmount, 14 byte: min expected output amount. Assuming that the token supply
+               is less than 10^15 and token decimal is 18 (> (10^18) * (10^18))
+            9) deadline: REMOVED
+            10) isFixedToken: REMOVED 
+            11) acrossRelayerFeePercentage, 3 byte: will be multiply by 10^11, 10^18 means 100%, so the minimum 
             amount of fee percentage is 10^-5%
-            TOTAL = 77 BYTE
+            
+            TOTAL = 64 BYTE
         */
+        //TODO fix 64 BYTE
+        // why arbitraryData.length = 0?
+        console.log(arbitraryData.length, request.inputAmount);
         require(arbitraryData.length == 74, "ExchangeRouterLib: invalid len");
         require(request.inputAmount > 0, "ExchangeRouterLib: zero input");
 
         extendedCcExchangeRequests[txId].chainId = RequestParser.parseChainId(arbitraryData);
-        extendedCcExchangeRequests[txId].acrossFeePercentage = RequestParser.parseaArossFeePercentage(arbitraryData); 
+        extendedCcExchangeRequests[txId].acrossFeePercentage = RequestParser.parseaArossFeePercentage(arbitraryData);
+        extendedCcExchangeRequests[txId].thirdParty = RequestParser.parseThirdPartyId(arbitraryData);
+        
         request.appId = RequestParser.parseAppId(arbitraryData);
         address exchangeToken = RequestParser.parseExchangeToken(arbitraryData);
         request.outputAmount = RequestParser.parseExchangeOutputAmount(arbitraryData);
@@ -98,7 +108,7 @@ library CcExchangeRouterLib {
         bytes32 _r, 
         bytes32 _s,
         uint8 _v
-    ) internal pure returns (address _signer) {
+    ) public pure returns (address _signer) {
         // Verify the message using ecrecover
         _signer = ecrecover(_msgHash, _v, _r, _s);
         require(_signer != address(0), "ExchangeRouterLib: invalid sig");

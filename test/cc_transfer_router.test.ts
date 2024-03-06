@@ -737,7 +737,7 @@
 //             ).to.revertedWith("CCTransferRouter: speed is out of range");
 //         })
 
-//         it.only("Reverts if msg.value is lower than relay fee", async function () {
+//         it("Reverts if msg.value is lower than relay fee", async function () {
 //             await setRelayReturn(true);
 //             await mockBitcoinRelay.mock.getBlockHeaderFee.returns(1); // Sets fee of using relay
 //             //TODO fix chain id

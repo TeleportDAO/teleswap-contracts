@@ -33,4 +33,8 @@ abstract contract CcExchangeRouterStorageV2 is ICcExchangeRouter {
     address public wmatic;
 
     mapping(uint => chainIdStruct) chainIdMapping;
+
+    // third party
+    mapping(uint => uint) public thirdPartyFee;
+    mapping(uint => address) public thirdPartyAddress;
 }

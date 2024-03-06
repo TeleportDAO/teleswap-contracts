@@ -54,6 +54,8 @@ interface IEthBurnHandlerLogic {
 
     function setAcross(address _across) external;
 
+    function setAcrossV3(address _acrossV3) external;
+
     function setEthConnectorProxy(address _ethConnectorProxy) external;
 
     function setBurnRouterProxy(address _burnRouterProxy) external;

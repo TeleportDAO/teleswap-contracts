@@ -2,6 +2,7 @@
 pragma solidity >=0.8.0 <0.8.4;
 
 import "./CcTransferRouterStorage.sol";
+import "./CcTransferRouterStorageV2.sol";
 import "./interfaces/ICcTransferRouter.sol";
 import "../libraries/RequestParser.sol";
 import "../lockers/interfaces/ILockers.sol";
@@ -11,9 +12,9 @@ import "@teleportdao/btc-evm-bridge/contracts/relay/interfaces/IBitcoinRelay.sol
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-
+import "hardhat/console.sol";
 contract CcTransferRouterLogic is CcTransferRouterStorage, 
-    OwnableUpgradeable, ReentrancyGuardUpgradeable {
+    OwnableUpgradeable, ReentrancyGuardUpgradeable, CcTransferRouterStorageV2 {
 
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "CCTransferRouter: address is zero");
@@ -101,6 +102,21 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
         _setTreasury(_treasury);
     }
 
+    /// @notice                             Setter for third party address
+    /// @dev                                Only owner can call this
+    /// @param _thirdPartyAddress           third party address
+    function setThirdPartyAddress(uint _thirdPartyId, address _thirdPartyAddress) external override onlyOwner {
+        _setThirdPartyAddress(_thirdPartyId, _thirdPartyAddress);
+    }
+
+    /// @notice                             Setter for third party fee
+    /// @dev                                Only owner can call this
+    /// @param _thirdPartyFee               third party fee
+    function setThirdPartyFee(uint _thirdPartyId, uint _thirdPartyFee) external override onlyOwner {
+        _setThirdPartyFee(_thirdPartyId, _thirdPartyFee);
+    }
+
+
     /// @notice                             Internal setter for protocol percentage fee
     /// @param _protocolPercentageFee       Percentage amount of protocol fee
     function _setProtocolPercentageFee(uint _protocolPercentageFee) private {
@@ -156,6 +172,21 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
         treasury = _treasury;
     }
 
+    /// @notice                             Internal setter for third party address
+    /// @param _thirdPartyAddress           third party address
+    function _setThirdPartyAddress(uint _thirdPartyId, address _thirdPartyAddress) private {
+        emit NewThirdPartyAddress(_thirdPartyId, thirdPartyAddress[_thirdPartyId], _thirdPartyAddress);
+        thirdPartyAddress[_thirdPartyId] = _thirdPartyAddress;
+    }
+
+    /// @notice                             Internal setter for third party fee
+    /// @param _thirdPartyFee               third party fee
+    function _setThirdPartyFee(uint _thirdPartyId, uint _thirdPartyFee) private {
+        emit NewThirdPartyFee(_thirdPartyId, thirdPartyFee[_thirdPartyId], _thirdPartyFee);
+        thirdPartyFee[_thirdPartyId] = _thirdPartyFee;
+    }
+
+
     /// @notice                             Check if the request has been executed before
     /// @dev                                This is to avoid re-submitting a used request
     /// @param _txId                        The txId of request on the source chain
@@ -163,6 +194,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
     function isRequestUsed(bytes32 _txId) external view override returns (bool) {
         return ccTransferRequests[_txId].isUsed ? true : false;
     }
+    
 
     /// @notice                             Executes the cross chain transfer request
     /// @dev                                Validates the transfer request, then,
@@ -219,11 +251,12 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
         );
 
         // Normal cc transfer request
-        (uint receivedAmount, uint _protocolFee, uint _teleporterFee) = _sendTeleBTC(
+        (uint receivedAmount, uint _protocolFee, uint _teleporterFee, uint _thirdPartyFee) = _sendTeleBTC(
             _lockerLockingScript, 
             txId
         );
         emit CCTransfer(
+            txId,
             _lockerLockingScript,
             0,
             ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
@@ -235,7 +268,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
             _teleporterFee,
             0,
             _protocolFee,
-            txId
+            _thirdPartyFee
         );
         return true;
     }
@@ -247,10 +280,11 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
     function _sendTeleBTC(bytes memory _lockerLockingScript, bytes32 _txId) private returns (
         uint _remainedAmount,
         uint _protocolFee, 
-        uint _teleporterFee
+        uint _teleporterFee,
+        uint _thirdPartyFee
     ) {
         // Gets remained amount after reducing fees
-        (_remainedAmount, _protocolFee, _teleporterFee) = _mintAndReduceFees(_lockerLockingScript, _txId);
+        (_remainedAmount, _protocolFee, _teleporterFee, _thirdPartyFee) = _mintAndReduceFees(_lockerLockingScript, _txId);
 
         // Transfers rest of tokens to recipient
         ITeleBTC(teleBTC).transfer(
@@ -269,7 +303,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
         bytes memory _vout,
         bytes32 _txId
     ) private {
-
+        //TODO add third party?
         require(
             ILockers(lockers).isLocker(_lockerLockingScript),
             "CCTransferRouter: no locker with the given locking script exists"
@@ -302,6 +336,8 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
         request.recipientAddress = RequestParser.parseRecipientAddress(arbitraryData);
         request.speed = RequestParser.parseFixedRate(arbitraryData);
         require(request.speed == 0, "CCTransferRouter: speed is out of range");
+
+        thirdParty[_txId] = RequestParser.parseThirdPartyId(arbitraryData);
 
         // Marks the request as used
         request.isUsed = true;
@@ -353,7 +389,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
     function _mintAndReduceFees(
         bytes memory _lockerLockingScript,
         bytes32 _txId
-    ) private returns (uint _remainedAmount, uint _protocolFee, uint _teleporterFee) {
+    ) private returns (uint _remainedAmount, uint _protocolFee, uint _teleporterFee, uint _thirdPartyFee) {
 
         // Mints teleBTC for cc transfer router
         // Lockers contract gets locker's fee
@@ -366,6 +402,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
         // Calculates fees
         _protocolFee = ccTransferRequests[_txId].inputAmount*protocolPercentageFee/MAX_PROTOCOL_FEE;
         _teleporterFee = ccTransferRequests[_txId].fee;
+        _thirdPartyFee = ccTransferRequests[_txId].inputAmount*thirdPartyFee[thirdParty[_txId]]/MAX_PROTOCOL_FEE;
 
         // Pays Teleporter fee
         if (_teleporterFee > 0) {
@@ -377,7 +414,13 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
             ITeleBTC(teleBTC).transfer(treasury, _protocolFee);
         }
 
-        _remainedAmount = mintedAmount - _protocolFee - _teleporterFee;
+        // Pays third party fee
+        if (_thirdPartyFee > 0) {
+            ITeleBTC(teleBTC).transfer(thirdPartyAddress[thirdParty[_txId]], _protocolFee);
+        }
+
+
+        _remainedAmount = mintedAmount - _protocolFee - _teleporterFee - _thirdPartyFee;
     }
 
     receive() external payable {}

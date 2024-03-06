@@ -547,7 +547,8 @@ contract LockersLogic is LockersStorageStructure, ILockers,
             neededTeleBTC,
             theLiquidatingLocker.lockerRescueScript,
             theLiquidatingLocker.lockerRescueType,
-            theLiquidatingLocker.lockerLockingScript
+            theLiquidatingLocker.lockerLockingScript,
+            0
         );
 
         Address.sendValue(payable(_msgSender()), _collateralAmount);

@@ -35,6 +35,7 @@ interface ICcTransferRouter {
 	/// @param protocolFee         	Amount of fee that is paid to the protocol
 	/// @param bitcoinTxId         	Address of teleporter who submitted the request
 	event CCTransfer(
+		bytes32 bitcoinTxId,
 		bytes indexed lockerLockingScript,
 		uint lockerScriptType,
 		address lockerTargetAddress,
@@ -46,7 +47,7 @@ interface ICcTransferRouter {
 		uint teleporterFee,
 		uint relayFee,
 		uint protocolFee,
-		bytes32 bitcoinTxId
+		uint thirdPartyFee
 	);
 
 	/// @notice                     Emits when changes made to relay address
@@ -85,6 +86,22 @@ interface ICcTransferRouter {
         address newTreasury
     );
 
+	/// @notice                     Emits when changes made to third party address
+	event NewThirdPartyAddress(
+		uint thirdPartyId,
+		address oldThirdPartyAddress, 
+		address newThirdPartyAddress
+	);
+
+	/// @notice                     Emits when changes made to third party fee
+	event NewThirdPartyFee(
+		uint thirdPartyId,
+		uint oldThirdPartyFee, 
+		uint newThirdPartyFee
+	);
+
+
+
 	// Read-only functions
 
 	function isRequestUsed(bytes32 _txId) external view returns (bool);
@@ -122,6 +139,10 @@ interface ICcTransferRouter {
 	function setTreasury(address _treasury) external;
 
 	function setProtocolPercentageFee(uint _protocolPercentageFee) external;
+
+	function setThirdPartyAddress(uint _thirdPartyId, address _thirdPartyAddress) external;
+
+	function setThirdPartyFee(uint _thirdPartyId, uint _thirdPartyFee) external;
 
 	function ccTransfer(
 		// Bitcoin tx
