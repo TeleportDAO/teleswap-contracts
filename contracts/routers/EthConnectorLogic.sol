@@ -269,5 +269,4 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
 
         require(_amounts.length == 2, "EthManagerLogic: wrong amounts");
     }
-
 }

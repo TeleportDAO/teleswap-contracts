@@ -8,6 +8,7 @@ import "../uniswap/v2-core/interfaces/IUniswapV2Factory.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "hardhat/console.sol";
 
 contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
 
@@ -110,7 +111,6 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         address _inputToken,
         address _outputToken
     ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (bool, uint) {
-
         // Checks that the liquidity pool exists
         address liquidityPool = IUniswapV2Factory(liquidityPoolFactory).getPair(_inputToken, _outputToken);
 
@@ -161,7 +161,6 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         uint256 _deadline,
         bool _isFixedToken
     ) external nonReentrant nonZeroAddress(_to) override returns (bool _result, uint[] memory _amounts) {
-        
         if (_path.length == 2) {
             address liquidityPool = IUniswapV2Factory(liquidityPoolFactory).getPair(_path[0], _path[1]);
 
@@ -188,7 +187,6 @@ contract UniswapV2Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         if (_result) {
             // Gets tokens from user
             IERC20(_path[0]).transferFrom(_msgSender(), address(this), neededInputAmount);
-
             // Gives allowance to exchange router
             IERC20(_path[0]).approve(exchangeRouter, neededInputAmount);
 

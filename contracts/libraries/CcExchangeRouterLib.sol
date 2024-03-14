@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "../routers/interfaces/ICcExchangeRouter.sol";
 import "../libraries/RequestParser.sol";
 import "hardhat/console.sol";
+
 library CcExchangeRouterLib {
 
     /// @notice Parses and stores exchange request if it's valid
@@ -36,9 +37,7 @@ library CcExchangeRouterLib {
         ICcExchangeRouter.ccExchangeRequest memory request;
         bytes memory arbitraryData;
         
-        console.logBytes(_txAndProof.vout);
-        console.logBytes(_lockerLockingScript);
-        (request.inputAmount, arbitraryData) = BitcoinHelper.parseValueAndDataHavingLockingScriptBigPayload(
+        (request.inputAmount, arbitraryData) = BitcoinHelper.parseValueAndDataHavingLockingScriptSmallPayload(
             _txAndProof.vout, 
             _lockerLockingScript
         );
@@ -61,10 +60,7 @@ library CcExchangeRouterLib {
             
             TOTAL = 64 BYTE
         */
-        //TODO fix 64 BYTE
-        // why arbitraryData.length = 0?
-        console.log(arbitraryData.length, request.inputAmount);
-        require(arbitraryData.length == 74, "ExchangeRouterLib: invalid len");
+        require(arbitraryData.length == 64, "ExchangeRouterLib: invalid len");
         require(request.inputAmount > 0, "ExchangeRouterLib: zero input");
 
         extendedCcExchangeRequests[txId].chainId = RequestParser.parseChainId(arbitraryData);
@@ -77,14 +73,13 @@ library CcExchangeRouterLib {
         request.isFixedToken = true; // Note: we assume input amount is fixed
         request.recipientAddress = RequestParser.parseRecipientAddress(arbitraryData);
 
-        // Note: default exchange path is: [teleBTC, wrappedNativeToken, exchangeToken]
-        //       since [teleBTC, wrappedNativeToken] pair exists and we assume most tokens have
-        //       pair with wrappedNativeToken
-        ccExchangeRequests[txId].path.push(_teleBTC);
-        ccExchangeRequests[txId].path.push(_wrappedNativeToken);
-        if (exchangeToken != _wrappedNativeToken) {
-            ccExchangeRequests[txId].path.push(exchangeToken);
-        }
+        // Note: default exchange path is: [teleBTC, exchangeToken]
+        request.path = new address[](2);
+        request.path[0] = _teleBTC;
+        // ccExchangeRequests[txId].path.push(_wrappedNativeToken);
+        // if (exchangeToken != _wrappedNativeToken) {
+            request.path[1] = exchangeToken;
+        // }
 
         // Finds Teleporter fee
         uint percentageFee = RequestParser.parsePercentageFee(arbitraryData);
@@ -108,7 +103,7 @@ library CcExchangeRouterLib {
         bytes32 _r, 
         bytes32 _s,
         uint8 _v
-    ) public pure returns (address _signer) {
+    ) public view returns (address _signer) {
         // Verify the message using ecrecover
         _signer = ecrecover(_msgHash, _v, _r, _s);
         require(_signer != address(0), "ExchangeRouterLib: invalid sig");

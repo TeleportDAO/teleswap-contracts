@@ -186,7 +186,6 @@ describe("EthBurnHandler", async () => {
 
         EthBurnHandlerWithMockedAccross = await deployEthBurnHandler();
 
-        //TODO fix
         await EthBurnHandlerWithMockedAccross.initialize(
             mockLockers.address,
             burnRouter.address,

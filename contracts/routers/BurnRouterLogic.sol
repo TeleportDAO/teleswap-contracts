@@ -48,7 +48,6 @@ contract BurnRouterLogic is BurnRouterStorage,
     ) public initializer {
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
-
         _setStartingBlockNumber(_startingBlockNumber);
         _setRelay(_relay);
         _setLockers(_lockers);
@@ -179,25 +178,14 @@ contract BurnRouterLogic is BurnRouterStorage,
             "BurnRouterLogic: transferFrom failed"
         );
 
-        (uint burntAmount, address lockerTargetAddress) = _ccBurn(
+        (uint burntAmount) = _ccBurn(
+            0,
+            address(0),
             _amount, 
             _userScript, 
             _scriptType, 
             _lockerLockingScript,
             thirdParty
-        );
-
-        emit CCBurn(
-            _msgSender(),
-            _userScript,
-            _scriptType,
-            0, // no input token
-            address(0), // no input token
-            _amount,
-            burntAmount,
-            lockerTargetAddress,
-            burnRequests[lockerTargetAddress][burnRequests[lockerTargetAddress].length - 1].requestIdOfLocker, // index of request
-            burnRequests[lockerTargetAddress][burnRequests[lockerTargetAddress].length - 1].deadline
         );
 
         return burntAmount;
@@ -445,7 +433,6 @@ contract BurnRouterLogic is BurnRouterStorage,
         );
     }
 
-    //TODO add third party to events
     /// @notice Burns the exchanged teleBTC
     function _ccExchangeAndBurn(
         uint _inputAmount,
@@ -456,7 +443,9 @@ contract BurnRouterLogic is BurnRouterStorage,
         bytes calldata _lockerLockingScript,
         uint thirdParty
     ) private returns (uint) {
-        (uint burntAmount, address lockerTargetAddress) = _ccBurn(
+        (uint burntAmount) = _ccBurn(
+            _inputAmount,
+            _inputToken,
             _exchangedTeleBTC, 
             _userScript, 
             _scriptType, 
@@ -464,32 +453,20 @@ contract BurnRouterLogic is BurnRouterStorage,
             thirdParty
         );
 
-        emit CCBurn(
-            _msgSender(),
-            _userScript,
-            _scriptType,
-            _inputAmount,
-            _inputToken,
-            _exchangedTeleBTC,
-            burntAmount,
-            lockerTargetAddress,
-            burnRequests[lockerTargetAddress][burnRequests[lockerTargetAddress].length - 1].requestIdOfLocker, // index of request
-            burnRequests[lockerTargetAddress][burnRequests[lockerTargetAddress].length - 1].deadline
-        );
-
         return burntAmount;
     }
 
     /// @notice Burns teleBTC and records the burn request
     /// @return _burntAmount Amount of BTC that user receives
-    /// @return _lockerTargetAddress Address of locker that will execute the request
     function _ccBurn(
+        uint _inputAmount,
+        address _inputToken,
         uint _amount,
         bytes memory _userScript,
         ScriptTypes _scriptType,
         bytes calldata _lockerLockingScript,
         uint thirdParty
-    ) private returns (uint _burntAmount, address _lockerTargetAddress) {
+    ) private returns (uint _burntAmount) {
         // Checks validity of user script
         _checkScriptType(_userScript, _scriptType);
 
@@ -500,14 +477,16 @@ contract BurnRouterLogic is BurnRouterStorage,
         );
 
         // Gets the target address of locker
-        _lockerTargetAddress = ILockers(lockers).getLockerTargetAddress(_lockerLockingScript);
-        uint remainingAmount = _getFees(_amount, thirdParty);
+        (uint remainingAmount, uint protocolFee, uint thirdPartyFee) = _getFees(_amount, thirdParty);
         // Burns remained teleBTC
         ITeleBTC(teleBTC).approve(lockers, remainingAmount);
 
         // Reduces the Bitcoin fee to find the amount that user receives (called burntAmount)
         _burntAmount = (ILockers(lockers).burn(_lockerLockingScript, remainingAmount)) 
             * (remainingAmount - bitcoinFee) / remainingAmount;
+        
+        address _lockerTargetAddress = ILockers(lockers).getLockerTargetAddress(_lockerLockingScript);
+
         _saveBurnRequest(
             _amount,
             _burntAmount,
@@ -515,6 +494,21 @@ contract BurnRouterLogic is BurnRouterStorage,
             _scriptType,
             BurnRouterLib.lastSubmittedHeight(relay),
             _lockerTargetAddress
+        );
+        
+        emit CCBurn(
+            _inputAmount,
+            _inputToken,
+            _amount,
+            _msgSender(),
+            _userScript,
+            _scriptType,
+            _burntAmount,
+            _lockerTargetAddress,
+            burnRequests[_lockerTargetAddress][burnRequests[_lockerTargetAddress].length - 1].requestIdOfLocker, // index of request
+            burnRequests[_lockerTargetAddress][burnRequests[_lockerTargetAddress].length - 1].deadline,
+            protocolFee,
+            thirdPartyFee
         );
     }
 
@@ -689,35 +683,35 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @notice Checks inclusion of the transaction in the specified block
     /// @dev Calls the relay contract to check Merkle inclusion proof
     /// @param _amount The amount to be burnt
-    /// @return Remaining amount after reducing fees
+    /// @return remainingAmount amount after reducing fees
+    /// @return _protocolFee fee of protocol
+    /// @return _thirdPartyFee fee of third party
     function _getFees(
         uint _amount,
         uint _thirdParty
-    ) private returns (uint) {
+    ) private returns (uint remainingAmount, uint _protocolFee, uint _thirdPartyFee) {
         // Calculates protocol fee
-        uint protocolFee = _amount * protocolPercentageFee / MAX_PROTOCOL_FEE;
-        uint thirdPartyFee = _amount * thirdPartyFee[_thirdParty] / MAX_PROTOCOL_FEE;
+        _protocolFee = _amount * protocolPercentageFee / MAX_PROTOCOL_FEE;
+        _thirdPartyFee = _amount * thirdPartyFee[_thirdParty] / MAX_PROTOCOL_FEE;
         // note: to avoid dust, we require _amount to be greater than (2  * bitcoinFee)
-        require(_amount > protocolFee + 2 * bitcoinFee, "BurnRouterLogic: low amount");
+        require(_amount > _protocolFee + 2 * bitcoinFee, "BurnRouterLogic: low amount");
        
-        uint remainingAmount = _amount - protocolFee - thirdPartyFee;
+        remainingAmount = _amount - _protocolFee - _thirdPartyFee;
         // Transfers protocol fee
-        if (protocolFee > 0) {
+        if (_protocolFee > 0) {
             require(
-                ITeleBTC(teleBTC).transfer(treasury, protocolFee),
+                ITeleBTC(teleBTC).transfer(treasury, _protocolFee),
                 "BurnRouterLogic: fee transfer failed"
             );
         }
 
         // Transfers third party fee
-        if (thirdPartyFee > 0) {
+        if (_thirdPartyFee > 0) {
             require(
-                ITeleBTC(teleBTC).transfer(thirdPartyAddress[_thirdParty], protocolFee),
+                ITeleBTC(teleBTC).transfer(thirdPartyAddress[_thirdParty], _thirdPartyFee),
                 "BurnRouterLogic: third party fee transfer failed"
             );
         }
-
-        return remainingAmount;
     }
 
     /// @notice Internal setter for relay contract address

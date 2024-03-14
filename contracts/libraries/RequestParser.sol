@@ -3,7 +3,6 @@ pragma solidity >=0.8.0 <0.8.4;
 
 /// @notice Library for parsing cc transfer and cc exchange requests
 library RequestParser {
-    // TODO check returns and bytes length
     /// @notice Returns chain id of the request
     /// @param _arbitraryData Data written in Bitcoin tx
     function parseChainId(bytes memory _arbitraryData) internal pure returns (uint16 parsedValue) {
@@ -51,7 +50,7 @@ library RequestParser {
 
     /// @notice Returns id of third party
     /// @dev 0 for no third party
-    function parseThirdPartyId(bytes memory _arbitraryData) internal pure returns (uint parsedValue){
+    function parseThirdPartyId(bytes memory _arbitraryData) internal pure returns (uint8 parsedValue){
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 26, 26);
         assembly {
             parsedValue := mload(add(slicedBytes, 1))
@@ -68,10 +67,10 @@ library RequestParser {
     }
 
     /// @notice Returns min expected output (exchange) amount
-    function parseExchangeOutputAmount(bytes memory _arbitraryData) internal pure returns (uint224 parsedValue){
+    function parseExchangeOutputAmount(bytes memory _arbitraryData) internal pure returns (uint112 parsedValue){
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 47, 60);
         assembly {
-            parsedValue := mload(add(slicedBytes, 28))
+            parsedValue := mload(add(slicedBytes, 14))
         }
     }
 

@@ -108,7 +108,6 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
         (string memory purpose, uint uniqueCounter) = abi.decode(_message, (string, uint));
         emit MsgReceived(uniqueCounter, purpose, _message);
 
-        // TODO change to require
         if (_isEqualString(purpose, "exchangeForBtcAcross")) {
             _exchangeForBtcAcross(_amount, _message, _tokenSent);
         }
@@ -254,7 +253,6 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
         bytes memory _message,
         address _tokenSent
     ) internal {
-        //TODO third party fee uint8
         (
             ,,
             address user,

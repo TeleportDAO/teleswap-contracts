@@ -303,7 +303,6 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
         bytes memory _vout,
         bytes32 _txId
     ) private {
-        //TODO add third party?
         require(
             ILockers(lockers).isLocker(_lockerLockingScript),
             "CCTransferRouter: no locker with the given locking script exists"
@@ -318,7 +317,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
             _lockerLockingScript
         );
 
-        require(arbitraryData.length == 26, "CCTransferRouter: invalid len");
+        require(arbitraryData.length == 27, "CCTransferRouter: invalid len");
 
         // Checks that input amount is not zero
         require(request.inputAmount > 0, "CCTransferRouter: input amount is zero");
@@ -403,7 +402,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
         _protocolFee = ccTransferRequests[_txId].inputAmount*protocolPercentageFee/MAX_PROTOCOL_FEE;
         _teleporterFee = ccTransferRequests[_txId].fee;
         _thirdPartyFee = ccTransferRequests[_txId].inputAmount*thirdPartyFee[thirdParty[_txId]]/MAX_PROTOCOL_FEE;
-
+        
         // Pays Teleporter fee
         if (_teleporterFee > 0) {
             ITeleBTC(teleBTC).transfer(_msgSender(), _teleporterFee);
@@ -416,7 +415,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
 
         // Pays third party fee
         if (_thirdPartyFee > 0) {
-            ITeleBTC(teleBTC).transfer(thirdPartyAddress[thirdParty[_txId]], _protocolFee);
+            ITeleBTC(teleBTC).transfer(thirdPartyAddress[thirdParty[_txId]], _thirdPartyFee);
         }
 
 

@@ -41,16 +41,18 @@ interface IBurnRouter {
 	/// @param requestIdOfLocker Index of request between Locker's burn requests
 	/// @param deadline of Locker for executing the request (in terms of Bitcoin blocks)
   	event CCBurn(
-		address indexed userTargetAddress,
-		bytes userScript,
-		ScriptTypes scriptType,
 		uint inputAmount,
 		address inputToken,
 		uint teleBTCAmount, 
+		address indexed userTargetAddress,
+		bytes userScript,
+		ScriptTypes scriptType,
 		uint burntAmount,
 		address lockerTargetAddress,
 		uint requestIdOfLocker,
-		uint indexed deadline
+		uint indexed deadline,
+		uint protocolFee,
+		uint thirdPartyFee
 	);
 
 	/// @notice Emits when a burn proof is provided

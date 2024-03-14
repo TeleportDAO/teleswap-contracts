@@ -35,15 +35,17 @@ interface ICcExchangeRouter {
     }
 
     /// @notice Structure for recording cross-chain exchange requests
-    /// @param isTransferredToEth True if BTC to ETH exchange is processed successfully
+    /// @param isTransferredToOtherChain True if BTC to ETH exchange is processed successfully
     /// @param remainedInputAmount Amount of obtained TELEBTC on target chain
     /// @param acrossFeePercentage percentage of fee we have to give to across relayers to fill our request
     struct extendedCcExchangeRequest {
-        uint chainId; //TODO be careful about chain id
-        bool isTransferredToEth;
+        uint chainId;
+        bool isTransferredToOtherChain;
         uint remainedInputAmount;
         uint acrossFeePercentage;
         uint thirdParty;
+        uint protocolFee;
+        uint thirdPartyFee;
     }
     
     /// @notice Structure for passing tx and its inclusion proof
@@ -95,6 +97,14 @@ interface ICcExchangeRouter {
         uint[] prefixSum;
         uint currentIndex;
     }
+
+//TODO delete
+    // /// @notice Structure for showing Fees
+    // struct Fees {
+    //     uint teleporterFee,
+    //     uint protocolFee,
+    //     uint thirdPartyFee
+    // }
 
     // Events
 
@@ -187,7 +197,7 @@ interface ICcExchangeRouter {
     /// @param user Exchange recipient address
     /// @param speed Speed of the request (normal or instant)
     /// @param teleporter Address of teleporter who submitted the request
-    /// @param teleporterFee Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
+    /// @param fees [teleporter fee, protocol fee, third party fee]
     event CCExchange(
         address lockerTargetAddress,
         address indexed user,
@@ -195,7 +205,7 @@ interface ICcExchangeRouter {
         uint[2] inputAndOutputAmount,
         uint indexed speed,
         address indexed teleporter,
-        uint teleporterFee,
+        uint[3] fees,
         bytes32 bitcoinTxId,
         uint appId
     );
@@ -205,7 +215,7 @@ interface ICcExchangeRouter {
     /// @param recipientAddress User address
     /// @param speed of the request (normal or instant)
     /// @param teleporter Address of teleporter who submitted the request
-    /// @param teleporterFee Amount of fee that is paid to Teleporter (tx, relayer and teleporter fees)
+    /// @param fees [teleporter fee, protocol fee, third party fee]
     event FailedCCExchange(
         address lockerTargetAddress,
         address indexed recipientAddress,
@@ -213,7 +223,7 @@ interface ICcExchangeRouter {
         uint[2] inputAndOutputAmount,
         uint indexed speed,
         address indexed teleporter,
-        uint teleporterFee,
+        uint[3] fees,
         bytes32 bitcoinTxId,
         uint appId
     );
@@ -276,6 +286,13 @@ interface ICcExchangeRouter {
 		uint newThirdPartyFee
 	);
 
+    /// @notice                     Emits when changes made to chain id mapping
+    event NewChainIdMapping(
+        uint mappedId,
+        uint middleChain,
+        uint destinationChain
+    );
+
 
     // Read-only functions
     
@@ -327,7 +344,7 @@ interface ICcExchangeRouter {
 
 	function setProtocolPercentageFee(uint _protocolPercentageFee) external;
 
-    function setFillerWithdrawInterval(uint _fillerWithdrawInterval) external;
+    // function setFillerWithdrawInterval(uint _fillerWithdrawInterval) external;
 
     function setAcross(address _across) external;
 
@@ -337,6 +354,8 @@ interface ICcExchangeRouter {
 
 	function setThirdPartyFee(uint _thirdPartyId, uint _thirdPartyFee) external;
 
+    function setChainIdMapping(uint _mappedId, uint _middleChain, uint _destinationChain) external;
+    
     function ccExchange(
         TxAndProof memory _txAndProof,
         bytes calldata _lockerLockingScript,
