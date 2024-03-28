@@ -4,26 +4,30 @@ pragma solidity >=0.8.0 <0.8.4;
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 import "@teleportdao/teleordinal/contracts/TeleOrdinalLib.sol";
 
-interface IEthBurnHandlerLogic {
+interface IPolyConnectorLogic {
 
     // Events
     
    	event NewBurn(
+        address exchangeConnector,
+		address inputToken,
+		uint inputAmount,
 		address indexed userTargetAddress,
 		bytes userScript,
 		ScriptTypes scriptType,
-		uint inputAmount,
-		address inputToken,
 		address lockerTargetAddress,
-		uint requestIdOfLocker
+		uint requestIdOfLocker,
+        address[] path
 	);
 
    	event FailedBurn(
+		address exchangeConnector,
+		address inputToken,
+		uint inputAmount,
 		address indexed userTargetAddress,
 		bytes userScript,
 		ScriptTypes scriptType,
-		uint inputAmount,
-		address inputToken
+        address[] path
 	);
 
     event MsgReceived(
@@ -72,7 +76,7 @@ interface IEthBurnHandlerLogic {
         bytes32 _s
     ) external;
 
-    function reDoFailedCcExchangeAndBurn(
+    function retryExchangeAndBurn(
         bytes memory _message,
         uint8 _v, 
         bytes32 _r, 

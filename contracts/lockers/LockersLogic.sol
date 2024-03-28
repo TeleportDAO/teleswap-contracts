@@ -544,7 +544,7 @@ contract LockersLogic is LockersStorageStructure, ILockers,
 
         // Burns TeleBTC for locker rescue script
         IERC20(teleBTC).approve(ccBurnRouter, neededTeleBTC);
-        IBurnRouter(ccBurnRouter).ccBurn(
+        IBurnRouter(ccBurnRouter).unwrap(
             neededTeleBTC,
             theLiquidatingLocker.lockerRescueScript,
             theLiquidatingLocker.lockerRescueType,

@@ -3,7 +3,7 @@ pragma solidity >=0.8.0 <0.8.4;
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-contract EthBurnHandlerProxy is TransparentUpgradeableProxy {
+contract PolyConnectorProxy is TransparentUpgradeableProxy {
     
     constructor(
         address _logic,

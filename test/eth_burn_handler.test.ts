@@ -15,8 +15,8 @@ import { TeleBTCProxy__factory } from "../src/types/factories/TeleBTCProxy__fact
 import { ERC20 } from "../src/types/ERC20";
 import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 
-import { EthBurnHandlerProxy__factory } from "../src/types/factories/EthBurnHandlerProxy__factory";
-import { EthBurnHandlerLogic__factory } from "../src/types/factories/EthBurnHandlerLogic__factory";
+import { PolyConnectorProxy__factory } from "../src/types/factories/PolyConnectorProxy__factory";
+import { PolyConnectorLogic__factory } from "../src/types/factories/PolyConnectorLogic__factory";
 
 import { BurnRouterLib } from "../src/types/BurnRouterLib";
 import { BurnRouterLib__factory } from "../src/types/factories/BurnRouterLib__factory";
@@ -33,7 +33,7 @@ const abiUtils = new Web3().eth.abi
 const web3 = new Web3();
 const provider = waffle.provider;
 
-describe("EthBurnHandler", async () => {
+describe("PolyConnector", async () => {
     let snapshotId: any;
 
     // Accounts
@@ -52,8 +52,8 @@ describe("EthBurnHandler", async () => {
     let inputToken: ERC20;
     let inputTokenSigner1: ERC20;
     let TeleBTCSigner1: TeleBTC;
-    let EthBurnHandler: Contract;
-    let EthBurnHandlerWithMockedAccross: Contract;
+    let PolyConnector: Contract;
+    let PolyConnectorWithMockedAccross: Contract;
     let burnRouterLib: BurnRouterLib;
     let burnRouter: Contract;
 
@@ -174,9 +174,9 @@ describe("EthBurnHandler", async () => {
             BITCOIN_FEE
         );
         
-        EthBurnHandler = await deployEthBurnHandler();
+        PolyConnector = await deployPolyConnector();
 
-        await EthBurnHandler.initialize(
+        await PolyConnector.initialize(
             mockLockers.address,
             burnRouter.address,
             acrossAddress,
@@ -184,9 +184,9 @@ describe("EthBurnHandler", async () => {
             137
         );
 
-        EthBurnHandlerWithMockedAccross = await deployEthBurnHandler();
+        PolyConnectorWithMockedAccross = await deployPolyConnector();
 
-        await EthBurnHandlerWithMockedAccross.initialize(
+        await PolyConnectorWithMockedAccross.initialize(
             mockLockers.address,
             burnRouter.address,
             signer1Address,
@@ -225,9 +225,9 @@ describe("EthBurnHandler", async () => {
 
         await setLockersBurnReturn(burntAmount);
 
-        // Connects signer1 and signer2 to EthBurnHandler
-        // EthBurnHandlerSigner = await EthBurnHandler.connect(signer1);
-        // EthBurnHandlerSigner = await EthBurnHandler.connect(signer2);
+        // Connects signer1 and signer2 to PolyConnector
+        // PolyConnectorSigner = await PolyConnector.connect(signer1);
+        // PolyConnectorSigner = await PolyConnector.connect(signer2);
     });
 
     async function moveBlocks(amount: number) {
@@ -323,27 +323,27 @@ describe("EthBurnHandler", async () => {
 
     };
 
-    const deployEthBurnHandler = async (
+    const deployPolyConnector = async (
         _signer?: Signer
     ): Promise<Contract> => {
-        const EthBurnHandlerLogicFactory = new EthBurnHandlerLogic__factory(
+        const PolyConnectorLogicFactory = new PolyConnectorLogic__factory(
             _signer || deployer
         );
 
-        const EthBurnHandlerLogic = await EthBurnHandlerLogicFactory.deploy();
+        const PolyConnectorLogic = await PolyConnectorLogicFactory.deploy();
 
         // Deploys lockers proxy
-        const EthBurnHandlerProxyFactory = new EthBurnHandlerProxy__factory(
+        const PolyConnectorProxyFactory = new PolyConnectorProxy__factory(
             _signer || deployer
         );
-        const EthBurnHandlerProxy = await EthBurnHandlerProxyFactory.deploy(
-            EthBurnHandlerLogic.address,
+        const PolyConnectorProxy = await PolyConnectorProxyFactory.deploy(
+            PolyConnectorLogic.address,
             proxyAdminAddress,
             "0x"
         )
 
-        return await EthBurnHandlerLogic.attach(
-            EthBurnHandlerProxy.address
+        return await PolyConnectorLogic.attach(
+            PolyConnectorProxy.address
         );
 
     };
@@ -399,9 +399,9 @@ describe("EthBurnHandler", async () => {
         USER_SCRIPT: any,
         USER_SCRIPT_TYPE: any
     ): Promise<number> {
-        // Gives allowance to EthBurnHandler
+        // Gives allowance to PolyConnector
         await TeleBTCSigner1.approve(
-            EthBurnHandler.address,
+            PolyConnector.address,
             _userRequestedAmount
         );
 
@@ -419,7 +419,7 @@ describe("EthBurnHandler", async () => {
         await setLockersGetLockerTargetAddress();
 
         // Burns eleBTC
-        await EthBurnHandlerSigner.ccBurn(
+        await PolyConnectorSigner.ccBurn(
             _userRequestedAmount,
             USER_SCRIPT,
             USER_SCRIPT_TYPE,
@@ -444,7 +444,7 @@ describe("EthBurnHandler", async () => {
 
         // Provide proof that the locker has paid the burnt amount to the user(s)
         await expect(
-            await EthBurnHandlerSigner.burnProof(
+            await PolyConnectorSigner.burnProof(
                 CC_BURN_REQUESTS.burnProof_valid.version,
                 CC_BURN_REQUESTS.burnProof_valid.vin,
                 CC_BURN_REQUESTS.burnProof_valid.vout,
@@ -456,7 +456,7 @@ describe("EthBurnHandler", async () => {
                 [0],
                 [0]
             )
-        ).to.emit(EthBurnHandler, "PaidCCBurn")
+        ).to.emit(PolyConnector, "PaidCCBurn")
     }
 
     describe("#setters", async () => {
@@ -471,58 +471,58 @@ describe("EthBurnHandler", async () => {
 
         //write test setEthConnectorProxy and getEthConnectorProxy
         it("should set and get the EthConnectorProxy", async () => {
-            await EthBurnHandler.setEthConnectorProxy(mockExchangeConnector.address);
-            expect(await EthBurnHandler.ethConnectorProxy()).to.equal(mockExchangeConnector.address);
+            await PolyConnector.setEthConnectorProxy(mockExchangeConnector.address);
+            expect(await PolyConnector.ethConnectorProxy()).to.equal(mockExchangeConnector.address);
         });
 
         //write test setEthConnectorProxy that only owner can change
         it("should not set the EthConnectorProxy if not owner", async () => {
-            await expect(EthBurnHandler.connect(signer1).setEthConnectorProxy(mockExchangeConnector.address)).to.be.revertedWith("Ownable: caller is not the owner");
+            await expect(PolyConnector.connect(signer1).setEthConnectorProxy(mockExchangeConnector.address)).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
         //write test setLockerProxy and getLockerProxy
         it("should set and get the LockerProxy", async () => {
-            await EthBurnHandler.setLockersProxy(mockLockers.address);
-            expect(await EthBurnHandler.lockersProxy()).to.equal(mockLockers.address);
+            await PolyConnector.setLockersProxy(mockLockers.address);
+            expect(await PolyConnector.lockersProxy()).to.equal(mockLockers.address);
         });
 
         //write test setLockerProxy that only owner can change
         it("should not set the LockerProxy if not owner", async () => {
-            await expect(EthBurnHandler.connect(signer1).setLockersProxy(mockLockers.address)).to.be.revertedWith("Ownable: caller is not the owner");
+            await expect(PolyConnector.connect(signer1).setLockersProxy(mockLockers.address)).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
         //write test setBurnRouter and getBurnRouter
 
         it("should set and get the BurnRouter", async () => {
-            await EthBurnHandler.setBurnRouterProxy(burnRouter.address);
-            expect(await EthBurnHandler.burnRouterProxy()).to.equal(burnRouter.address);
+            await PolyConnector.setBurnRouterProxy(burnRouter.address);
+            expect(await PolyConnector.burnRouterProxy()).to.equal(burnRouter.address);
         });
 
         //write test setBurnRouter that only owner can change
         it("should not set the BurnRouter if not owner", async () => {
-            await expect(EthBurnHandler.connect(signer1).setBurnRouterProxy(burnRouter.address)).to.be.revertedWith("Ownable: caller is not the owner");
+            await expect(PolyConnector.connect(signer1).setBurnRouterProxy(burnRouter.address)).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
         //write test setAcross and getAcross
         it("should set and get the Across", async () => {
-            await EthBurnHandler.setAcross(mockAcross.address);
-            expect(await EthBurnHandler.across()).to.equal(mockAcross.address);
+            await PolyConnector.setAcross(mockAcross.address);
+            expect(await PolyConnector.across()).to.equal(mockAcross.address);
         });
 
         //write test setAcross that only owner can change  
         it("should not set the Across if not owner", async () => {
-            await expect(EthBurnHandler.connect(signer1).setAcross(mockAcross.address)).to.be.revertedWith("Ownable: caller is not the owner");
+            await expect(PolyConnector.connect(signer1).setAcross(mockAcross.address)).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
         //write test setAcrossV3 and getAcrossV3
         it("should set and get the AcrossV3", async () => {
-            await EthBurnHandler.setAcrossV3(mockAcross.address);
-            expect(await EthBurnHandler.acrossV3()).to.equal(mockAcross.address);
+            await PolyConnector.setAcrossV3(mockAcross.address);
+            expect(await PolyConnector.acrossV3()).to.equal(mockAcross.address);
         });
 
         //write test setAcrossV3 that only owner can change
         it("should not set the AcrossV3 if not owner", async () => {
-            await expect(EthBurnHandler.connect(signer1).setAcrossV3(mockAcross.address)).to.be.revertedWith("Ownable: caller is not the owner");
+            await expect(PolyConnector.connect(signer1).setAcrossV3(mockAcross.address)).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
 
@@ -578,18 +578,18 @@ describe("EthBurnHandler", async () => {
             await setLockersBurnReturn(burntAmount);
             
             await inputToken.transfer(
-                EthBurnHandler.address,
+                PolyConnector.address,
                 requestAmount
             );
             
             await expect(
-                EthBurnHandler.connect(acrossSinger).handleV3AcrossMessage(
+                PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
                     inputToken.address,
                     requestAmount,
                     signer1Address,
                     message
                 )
-            ).to.emit(EthBurnHandler, "NewBurn").withArgs(
+            ).to.emit(PolyConnector, "NewBurn").withArgs(
                 signer1Address,
                 USER_SCRIPT_P2PKH,
                 USER_SCRIPT_P2PKH_TYPE,
@@ -629,7 +629,7 @@ describe("EthBurnHandler", async () => {
             ])
 
             await expect(
-                EthBurnHandler.connect(signer1).handleV3AcrossMessage(
+                PolyConnector.connect(signer1).handleV3AcrossMessage(
                     inputToken.address,
                     requestAmount,
                     signer1Address,
@@ -666,13 +666,13 @@ describe("EthBurnHandler", async () => {
             ])
 
             await expect(
-                EthBurnHandler.connect(acrossSinger).handleV3AcrossMessage(
+                PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
                     inputToken.address,
                     requestAmount,
                     signer1Address,
                     message
                 )
-            ).to.not.emit(EthBurnHandler, "NewBurn");
+            ).to.not.emit(PolyConnector, "NewBurn");
         });
 
         //write test that fail if ccExchangeAndBurn fails
@@ -706,13 +706,13 @@ describe("EthBurnHandler", async () => {
             await setSwap(false, [requestAmount, telebtcAmount])
 
             await expect(
-                EthBurnHandler.connect(acrossSinger).handleV3AcrossMessage(
+                PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
                     inputToken.address,
                     requestAmount,
                     signer1Address,
                     message
                 )
-            ).to.emit(EthBurnHandler, "FailedBurn").withArgs(
+            ).to.emit(PolyConnector, "FailedBurn").withArgs(
                 signer1Address,
                 USER_SCRIPT_P2PKH,
                 USER_SCRIPT_P2PKH_TYPE,
@@ -765,7 +765,7 @@ describe("EthBurnHandler", async () => {
 
             await setSwap(false, [requestAmount, telebtcAmount])
 
-            await EthBurnHandler.connect(acrossSinger).handleV3AcrossMessage(
+            await PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
                 inputToken.address,
                 requestAmount,
                 signer1Address,
@@ -773,11 +773,11 @@ describe("EthBurnHandler", async () => {
             )
         
             await expect(
-                await EthBurnHandler.failedReqs(signer1Address, inputToken.address)
+                await PolyConnector.failedReqs(signer1Address, inputToken.address)
             ).to.equal(BigNumber.from(requestAmount))
 
             await inputToken.transfer(
-                EthBurnHandler.address,
+                PolyConnector.address,
                 requestAmount
             );
 
@@ -827,13 +827,13 @@ describe("EthBurnHandler", async () => {
                 await setSwap(true, [requestAmount, telebtcAmount])
 
                 await expect(
-                    EthBurnHandler.connect(signer1).reDoFailedCcExchangeAndBurn(
+                    PolyConnector.connect(signer1).retryExchangeAndBurn(
                         reDoMessage,
                         rsv.v,
                         rsv.r,
                         rsv.s
                     )
-                ).to.emit(EthBurnHandler, "NewBurn").withArgs(
+                ).to.emit(PolyConnector, "NewBurn").withArgs(
                     signer1Address,
                     USER_SCRIPT_P2PKH,
                     USER_SCRIPT_P2PKH_TYPE,
@@ -844,7 +844,7 @@ describe("EthBurnHandler", async () => {
                 );
 
                 await expect(
-                    await EthBurnHandler.failedReqs(signer1Address, inputToken.address)
+                    await PolyConnector.failedReqs(signer1Address, inputToken.address)
                 ).to.equal(0)
             }
         
@@ -875,7 +875,7 @@ describe("EthBurnHandler", async () => {
 
             await setSwap(false, [requestAmount, telebtcAmount])
 
-            await EthBurnHandler.connect(acrossSinger).handleV3AcrossMessage(
+            await PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
                 inputToken.address,
                 requestAmount,
                 signer1Address,
@@ -883,7 +883,7 @@ describe("EthBurnHandler", async () => {
             )
 
             await inputToken.transfer(
-                EthBurnHandler.address,
+                PolyConnector.address,
                 requestAmount
             );
 
@@ -922,7 +922,7 @@ describe("EthBurnHandler", async () => {
                 await setSwap(true, [requestAmount, telebtcAmount])
 
                 await expect(
-                    EthBurnHandler.connect(signer1).reDoFailedCcExchangeAndBurn(
+                    PolyConnector.connect(signer1).retryExchangeAndBurn(
                         reDoMessage,
                         rsv.v,
                         rsv.r,
@@ -958,7 +958,7 @@ describe("EthBurnHandler", async () => {
 
             await setSwap(false, [requestAmount, telebtcAmount])
 
-            await EthBurnHandler.connect(acrossSinger).handleV3AcrossMessage(
+            await PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
                 inputToken.address,
                 requestAmount,
                 signer1Address,
@@ -966,7 +966,7 @@ describe("EthBurnHandler", async () => {
             )
 
             await inputToken.transfer(
-                EthBurnHandler.address,
+                PolyConnector.address,
                 requestAmount
             );
 
@@ -1005,7 +1005,7 @@ describe("EthBurnHandler", async () => {
                 await setSwap(true, [requestAmount, telebtcAmount])
 
                 await expect(
-                    EthBurnHandler.connect(signer1).reDoFailedCcExchangeAndBurn(
+                    PolyConnector.connect(signer1).retryExchangeAndBurn(
                         reDoMessage,
                         rsv.v,
                         rsv.r,
@@ -1041,7 +1041,7 @@ describe("EthBurnHandler", async () => {
 
             await setSwap(false, [requestAmount, telebtcAmount])
 
-            await EthBurnHandler.connect(acrossSinger).handleV3AcrossMessage(
+            await PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
                 inputToken.address,
                 requestAmount,
                 signer1Address,
@@ -1049,11 +1049,11 @@ describe("EthBurnHandler", async () => {
             )
         
             await expect(
-                await EthBurnHandler.failedReqs(signer1Address, inputToken.address)
+                await PolyConnector.failedReqs(signer1Address, inputToken.address)
             ).to.equal(BigNumber.from(requestAmount))
 
             await inputToken.transfer(
-                EthBurnHandler.address,
+                PolyConnector.address,
                 requestAmount
             );
 
@@ -1103,13 +1103,13 @@ describe("EthBurnHandler", async () => {
                 await setSwap(true, [requestAmount, telebtcAmount])
 
                 await expect(
-                    EthBurnHandler.connect(signer1).reDoFailedCcExchangeAndBurn(
+                    PolyConnector.connect(signer1).retryExchangeAndBurn(
                         reDoMessage,
                         rsv.v,
                         rsv.r,
                         rsv.s
                     )
-                ).to.emit(EthBurnHandler, "NewBurn").withArgs(
+                ).to.emit(PolyConnector, "NewBurn").withArgs(
                     signer1Address,
                     USER_SCRIPT_P2PKH,
                     USER_SCRIPT_P2PKH_TYPE,
@@ -1120,7 +1120,7 @@ describe("EthBurnHandler", async () => {
                 );
 
                 await expect(
-                    await EthBurnHandler.failedReqs(signer1Address, inputToken.address)
+                    await PolyConnector.failedReqs(signer1Address, inputToken.address)
                 ).to.equal(10)
             }
         });
@@ -1150,7 +1150,7 @@ describe("EthBurnHandler", async () => {
 
         //     await setSwap(false, [requestAmount, telebtcAmount])
         //     await mockAcross.mock.deposit.returns()
-        //     await EthBurnHandlerWithMockedAccross.connect(signer1).handleV3AcrossMessage(
+        //     await PolyConnectorWithMockedAccross.connect(signer1).handleV3AcrossMessage(
         //         inputToken.address,
         //         requestAmount,
         //         signer1Address,
@@ -1158,11 +1158,11 @@ describe("EthBurnHandler", async () => {
         //     )
             
         //     await expect(
-        //         await EthBurnHandlerWithMockedAccross.failedReqs(signer1Address, inputToken.address)
+        //         await PolyConnectorWithMockedAccross.failedReqs(signer1Address, inputToken.address)
         //     ).to.equal(BigNumber.from(requestAmount))
 
         //     await inputToken.transfer(
-        //         EthBurnHandlerWithMockedAccross.address,
+        //         PolyConnectorWithMockedAccross.address,
         //         requestAmount
         //     );
 
@@ -1190,7 +1190,7 @@ describe("EthBurnHandler", async () => {
         //         rsv = await parseSignatureToRSV(signature) 
         //         await setSwap(true, [requestAmount, telebtcAmount])
                 
-        //         await EthBurnHandlerWithMockedAccross.connect(signer1).withdrawFundsToEth(
+        //         await PolyConnectorWithMockedAccross.connect(signer1).withdrawFundsToEth(
         //             reDoMessage,
         //             rsv.v,
         //             rsv.r,
@@ -1198,7 +1198,7 @@ describe("EthBurnHandler", async () => {
         //         )
 
         //         await expect(
-        //             await EthBurnHandlerWithMockedAccross.failedReqs(signer1Address, inputToken.address)
+        //             await PolyConnectorWithMockedAccross.failedReqs(signer1Address, inputToken.address)
         //         ).to.equal(0)
         //     }
         
@@ -1229,7 +1229,7 @@ describe("EthBurnHandler", async () => {
 
             await setSwap(false, [requestAmount, telebtcAmount])
             await mockAcross.mock.deposit.returns()
-            await EthBurnHandlerWithMockedAccross.connect(signer1).handleV3AcrossMessage(
+            await PolyConnectorWithMockedAccross.connect(signer1).handleV3AcrossMessage(
                 inputToken.address,
                 requestAmount,
                 signer1Address,
@@ -1237,11 +1237,11 @@ describe("EthBurnHandler", async () => {
             )
             
             await expect(
-                await EthBurnHandlerWithMockedAccross.failedReqs(signer1Address, inputToken.address)
+                await PolyConnectorWithMockedAccross.failedReqs(signer1Address, inputToken.address)
             ).to.equal(BigNumber.from(requestAmount))
 
             await inputToken.transfer(
-                EthBurnHandlerWithMockedAccross.address,
+                PolyConnectorWithMockedAccross.address,
                 requestAmount
             );
 
@@ -1270,7 +1270,7 @@ describe("EthBurnHandler", async () => {
                 await setSwap(true, [requestAmount, telebtcAmount])
                 
                 await expect (
-                    EthBurnHandlerWithMockedAccross.connect(signer1).withdrawFundsToEth(
+                    PolyConnectorWithMockedAccross.connect(signer1).withdrawFundsToEth(
                         reDoMessage,
                         rsv.v,
                         rsv.r,
@@ -1306,7 +1306,7 @@ describe("EthBurnHandler", async () => {
 
             await setSwap(false, [requestAmount, telebtcAmount])
             await mockAcross.mock.deposit.returns()
-            await EthBurnHandlerWithMockedAccross.connect(signer1).handleV3AcrossMessage(
+            await PolyConnectorWithMockedAccross.connect(signer1).handleV3AcrossMessage(
                 inputToken.address,
                 requestAmount,
                 signer1Address,
@@ -1314,11 +1314,11 @@ describe("EthBurnHandler", async () => {
             )
             
             await expect(
-                await EthBurnHandlerWithMockedAccross.failedReqs(signer1Address, inputToken.address)
+                await PolyConnectorWithMockedAccross.failedReqs(signer1Address, inputToken.address)
             ).to.equal(BigNumber.from(requestAmount))
 
             await inputToken.transfer(
-                EthBurnHandlerWithMockedAccross.address,
+                PolyConnectorWithMockedAccross.address,
                 requestAmount
             );
 
@@ -1347,7 +1347,7 @@ describe("EthBurnHandler", async () => {
                 await setSwap(true, [requestAmount, telebtcAmount])
                 
                 await expect (
-                    EthBurnHandlerWithMockedAccross.connect(signer1).withdrawFundsToEth(
+                    PolyConnectorWithMockedAccross.connect(signer1).withdrawFundsToEth(
                         reDoMessage,
                         rsv.v,
                         rsv.r,
@@ -1383,7 +1383,7 @@ describe("EthBurnHandler", async () => {
 
         //     await setSwap(false, [requestAmount, telebtcAmount])
         //     await mockAcross.mock.deposit.returns()
-        //     await EthBurnHandlerWithMockedAccross.connect(signer1).handleV3AcrossMessage(
+        //     await PolyConnectorWithMockedAccross.connect(signer1).handleV3AcrossMessage(
         //         inputToken.address,
         //         requestAmount,
         //         signer1Address,
@@ -1391,11 +1391,11 @@ describe("EthBurnHandler", async () => {
         //     )
             
         //     await expect(
-        //         await EthBurnHandlerWithMockedAccross.failedReqs(signer1Address, inputToken.address)
+        //         await PolyConnectorWithMockedAccross.failedReqs(signer1Address, inputToken.address)
         //     ).to.equal(BigNumber.from(requestAmount))
 
         //     await inputToken.transfer(
-        //         EthBurnHandlerWithMockedAccross.address,
+        //         PolyConnectorWithMockedAccross.address,
         //         requestAmount
         //     );
 
@@ -1423,7 +1423,7 @@ describe("EthBurnHandler", async () => {
         //         rsv = await parseSignatureToRSV(signature) 
         //         await setSwap(true, [requestAmount, telebtcAmount])
                 
-        //         await EthBurnHandlerWithMockedAccross.connect(signer1).withdrawFundsToEth(
+        //         await PolyConnectorWithMockedAccross.connect(signer1).withdrawFundsToEth(
         //             reDoMessage,
         //             rsv.v,
         //             rsv.r,
@@ -1431,7 +1431,7 @@ describe("EthBurnHandler", async () => {
         //         )
 
         //         await expect(
-        //             await EthBurnHandlerWithMockedAccross.failedReqs(signer1Address, inputToken.address)
+        //             await PolyConnectorWithMockedAccross.failedReqs(signer1Address, inputToken.address)
         //         ).to.equal(10)
         //     }
         // });
@@ -1442,22 +1442,22 @@ describe("EthBurnHandler", async () => {
         //write test that handle emergency withdraw
         it("should handle emergency withdraw token", async () => {
             await inputToken.transfer(
-                EthBurnHandler.address,
+                PolyConnector.address,
                 requestAmount
             );
 
             await expect (
-                await inputToken.balanceOf(EthBurnHandler.address)
+                await inputToken.balanceOf(PolyConnector.address)
             ).to.be.equal(requestAmount)
 
-            await EthBurnHandler.emergencyWithdraw(
+            await PolyConnector.emergencyWithdraw(
                 inputToken.address,
                 signer1Address,
                 requestAmount
             )
 
             await expect (
-                await inputToken.balanceOf(EthBurnHandler.address)
+                await inputToken.balanceOf(PolyConnector.address)
             ).to.be.equal(0)
 
             await expect (
@@ -1468,7 +1468,7 @@ describe("EthBurnHandler", async () => {
 
         it("should handle emergency withdraw eth", async () => {
             let tx = {
-                to: EthBurnHandler.address,
+                to: PolyConnector.address,
                 value: 100
             };
             await signer1.sendTransaction(tx);
@@ -1477,10 +1477,10 @@ describe("EthBurnHandler", async () => {
             beforeBalance.add(100)
 
             await expect (
-                await provider.getBalance(EthBurnHandler.address)
+                await provider.getBalance(PolyConnector.address)
             ).to.be.equal(100)
 
-            await EthBurnHandler.emergencyWithdraw(
+            await PolyConnector.emergencyWithdraw(
                 "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
                 signer1Address,
                 100
@@ -1491,7 +1491,7 @@ describe("EthBurnHandler", async () => {
         // write test that only owner can emergency withdraw
         it("should not handle emergency withdraw if not owner", async () => {
             await expect (
-                EthBurnHandler.connect(signer1).emergencyWithdraw(
+                PolyConnector.connect(signer1).emergencyWithdraw(
                     inputToken.address,
                     signer1Address,
                     requestAmount

@@ -19,7 +19,7 @@ abstract contract CcExchangeRouterStorageV2 is ICcExchangeRouter {
 
     // New variables (Ethereum support)
     
-    mapping(address => bool) public override isTokenSupported; 
+    mapping (uint => mapping (address => bool)) public override isTokenSupported; 
     // ^ Mapping to store supported exchange tokens
     mapping(uint => bool) public override isChainSupported; 
     // ^ Mapping to store supported chainIds
@@ -32,7 +32,7 @@ abstract contract CcExchangeRouterStorageV2 is ICcExchangeRouter {
     // New variables (path support)
     address public wmatic;
 
-    mapping(uint => chainIdStruct) chainIdMapping;
+    mapping(uint => chainIdStruct) public chainIdMapping;
 
     // third party
     mapping(uint => uint) public thirdPartyFee;

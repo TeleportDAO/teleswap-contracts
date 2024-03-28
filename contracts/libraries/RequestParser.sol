@@ -30,19 +30,19 @@ library RequestParser {
         }
     }
 
-    /// @notice Returns percentage fee (from total minted TeleBTC)
+    /// @notice Returns network fee
     /// @dev This fee goes to Teleporter who submitted the request
-    function parsePercentageFee(bytes memory _arbitraryData) internal pure returns (uint16 parsedValue) {
-        bytes memory slicedBytes = sliceBytes(_arbitraryData, 23, 24);
+    function parseNetworkFee(bytes memory _arbitraryData) internal pure returns (uint24 parsedValue) {
+        bytes memory slicedBytes = sliceBytes(_arbitraryData, 23, 25);
         assembly {
-            parsedValue := mload(add(slicedBytes, 2))
+            parsedValue := mload(add(slicedBytes, 3))
         }
     }
 
     /// @notice Determines type of the request
     /// @dev 0 for normal requests, 1 for fixed-rate requests
-    function parseFixedRate(bytes memory _arbitraryData) internal pure returns (uint8 parsedValue) {
-        bytes memory slicedBytes = sliceBytes(_arbitraryData, 25, 25);
+    function parseSpeed(bytes memory _arbitraryData) internal pure returns (uint8 parsedValue) {
+        bytes memory slicedBytes = sliceBytes(_arbitraryData, 26, 26);
         assembly {
             parsedValue := mload(add(slicedBytes, 1))
         }
@@ -51,7 +51,7 @@ library RequestParser {
     /// @notice Returns id of third party
     /// @dev 0 for no third party
     function parseThirdPartyId(bytes memory _arbitraryData) internal pure returns (uint8 parsedValue){
-        bytes memory slicedBytes = sliceBytes(_arbitraryData, 26, 26);
+        bytes memory slicedBytes = sliceBytes(_arbitraryData, 27, 27);
         assembly {
             parsedValue := mload(add(slicedBytes, 1))
         }
@@ -60,7 +60,7 @@ library RequestParser {
     /// @notice Returns address of exchange token
     /// @dev Minted TeleBTC will be exchanged for this token
     function parseExchangeToken(bytes memory _arbitraryData) internal pure returns (address parsedValue){
-        bytes memory slicedBytes = sliceBytes(_arbitraryData, 27, 46);
+        bytes memory slicedBytes = sliceBytes(_arbitraryData, 28, 47);
         assembly {
             parsedValue := mload(add(slicedBytes, 20))
         }
@@ -68,7 +68,7 @@ library RequestParser {
 
     /// @notice Returns min expected output (exchange) amount
     function parseExchangeOutputAmount(bytes memory _arbitraryData) internal pure returns (uint112 parsedValue){
-        bytes memory slicedBytes = sliceBytes(_arbitraryData, 47, 60);
+        bytes memory slicedBytes = sliceBytes(_arbitraryData, 48, 61);
         assembly {
             parsedValue := mload(add(slicedBytes, 14))
         }
@@ -77,7 +77,7 @@ library RequestParser {
     /// @notice Returns across percentage fee 
     /// @dev This fee goes to across relayers
     function parseaArossFeePercentage(bytes memory _arbitraryData) internal pure returns (uint24 parsedValue) {
-        bytes memory slicedBytes = sliceBytes(_arbitraryData, 61, 63);
+        bytes memory slicedBytes = sliceBytes(_arbitraryData, 62, 64);
         assembly {
             parsedValue := mload(add(slicedBytes, 3))
         }

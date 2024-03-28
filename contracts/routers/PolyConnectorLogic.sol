@@ -10,12 +10,12 @@ import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 import "./interfaces/IBurnRouter.sol";
 import "./BurnRouterStorage.sol";
 import "../lockers/interfaces/ILockers.sol";
-import "./EthBurnHandlerStorage.sol";
-import "./interfaces/IEthBurnHandlerLogic.sol";
+import "./PolyConnectorStorage.sol";
+import "./interfaces/IPolyConnectorLogic.sol";
 import "./interfaces/AcrossMessageHandler.sol";
 import "hardhat/console.sol";
 
-contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage, 
+contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage, 
     OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable, AcrossMessageHandler {
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "PolygonConnectorLogic: zero address");
@@ -113,15 +113,12 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
         }
     }
 
-    /// @notice Cancels or withdraws user's bid
+    /// @notice Withdraws user's bid
     /// @dev User signs a message requesting for canceling or withdrawing a bid
     /// @param _message The signed message
     /// @param _v Part of user signature for 
     ///           [_loc.txId, _loc.outputIdx, _loc.satoshiIdx,_bidIdx,_relayerFeePercentage]
     function withdrawFundsToEth(
-        // address _token,
-        // uint _amount,
-        // int64 _relayerFeePercentage,
         bytes memory _message,
         uint8 _v, 
         bytes32 _r, 
@@ -169,16 +166,14 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
         failedReqs[user][_token] -= _amount;
     }
 
-    function reDoFailedCcExchangeAndBurn(
+    function retryExchangeAndBurn(
         bytes memory _message,
         uint8 _v, 
         bytes32 _r, 
         bytes32 _s
     ) external nonReentrant override {
-        // TODO remove telebtc of path, remove telebtc
         (
             address _token, 
-            // address _teleBtc,
             uint256 _amount, 
             address exchangeConnector,
             uint256 minOutputAmount,
@@ -190,7 +185,6 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
             _message,
             (
                 address,
-                // address,
                 uint256, 
                 address,
                 uint256,
@@ -222,27 +216,32 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
         amounts[1] = minOutputAmount;
 
         IERC20(path[0]).approve(burnRouterProxy, _amount);
-        IBurnRouter(burnRouterProxy).ccExchangeAndBurn(
+        IBurnRouter(burnRouterProxy).swapAndUnwrap(
             exchangeConnector, 
             amounts, 
             true, // Input token amount is fixed
             path, 
-            (block.timestamp + 1), 
+            block.timestamp, 
             userScript, 
             scriptType, 
             lockerLockingScript,
             0
         );
+
+        address lockerTargetAddress = ILockers(lockersProxy).getLockerTargetAddress(lockerLockingScript);
+        
         emit NewBurn(
+            exchangeConnector,
+            _token,
+            _amount,
             user,
             userScript,
             scriptType,
-            _amount,
-            _token,
-            ILockers(lockersProxy).getLockerTargetAddress(lockerLockingScript),
+            lockerTargetAddress,
             BurnRouterStorage(burnRouterProxy).burnRequestCounter(
-                ILockers(lockersProxy).getLockerTargetAddress(lockerLockingScript)
-            ) - 1
+                lockerTargetAddress
+            ) - 1,
+            path
         );
     }
 
@@ -285,27 +284,29 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
 
         IERC20(path[0]).approve(burnRouterProxy, _amount);
         
-        try IBurnRouter(burnRouterProxy).ccExchangeAndBurn(
+        try IBurnRouter(burnRouterProxy).swapAndUnwrap(
             exchangeConnector, 
             amounts, 
             true, // Input token amount is fixed
             path, 
-            (block.timestamp + 1), 
+            block.timestamp, 
             userScript, 
             scriptType, 
             lockerLockingScript,
             thirdParty
         ) {
             emit NewBurn(
+                exchangeConnector,
+                _tokenSent,
+                _amount,
                 user,
                 userScript,
                 scriptType,
-                _amount,
-                _tokenSent,
                 ILockers(lockersProxy).getLockerTargetAddress(lockerLockingScript),
                 BurnRouterStorage(burnRouterProxy).burnRequestCounter(
                     ILockers(lockersProxy).getLockerTargetAddress(lockerLockingScript)
-                ) - 1
+                ) - 1,
+                path
             );
         } catch {
             // Removes spending allowance
@@ -314,11 +315,13 @@ contract EthBurnHandlerLogic is IEthBurnHandlerLogic, EthBurnHandlerStorage,
             // Saves token amount so user can withdraw it in future
             failedReqs[user][_tokenSent] += _amount;
             emit FailedBurn(
+                exchangeConnector,
+                _tokenSent,
+                _amount,
                 user,
                 userScript,
                 scriptType,
-                _amount,
-                _tokenSent
+                path
             );
         }
     }

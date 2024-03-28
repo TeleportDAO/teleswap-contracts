@@ -29,30 +29,29 @@ interface IBurnRouter {
 
   	// Events
 
+	//TODO fix comments
 	/// @notice Emits when a burn request gets submitted
-    /// @param userTargetAddress Address of the user
-    /// @param userScript Script of user on Bitcoin
-    /// @param scriptType Script type of the user (for bitcoin address)
-    /// @param inputAmount Amount of input token (0 if input token is teleBTC)
-    /// @param inputToken Address of token that will be exchanged for teleBTC (address(0) if input token is teleBTC)
-	/// @param teleBTCAmount amount of teleBTC that user sent OR Amount of teleBTC after exchanging
-    /// @param burntAmount that user will receive (after reducing fees)
-	/// @param lockerTargetAddress Address of Locker
-	/// @param requestIdOfLocker Index of request between Locker's burn requests
-	/// @param deadline of Locker for executing the request (in terms of Bitcoin blocks)
-  	event CCBurn(
-		uint inputAmount,
-		address inputToken,
-		uint teleBTCAmount, 
-		address indexed userTargetAddress,
+    // / @param userTargetAddress Address of the user
+    // / @param userScript Script of user on Bitcoin
+    // / @param scriptType Script type of the user (for bitcoin address)
+    // / @param inputAmount Amount of input token (0 if input token is teleBTC)
+    // / @param inputToken Address of token that will be exchanged for teleBTC (address(0) if input token is teleBTC)
+	// / @param teleBTCAmount amount of teleBTC that user sent OR Amount of teleBTC after exchanging
+    // / @param burntAmount that user will receive (after reducing fees)
+	// / @param lockerTargetAddress Address of Locker
+	// / @param requestIdOfLocker Index of request between Locker's burn requests
+	// / @param deadline of Locker for executing the request (in terms of Bitcoin blocks)
+  	event NewUnwrap(
 		bytes userScript,
 		ScriptTypes scriptType,
-		uint burntAmount,
 		address lockerTargetAddress,
+		address indexed userTargetAddress,
 		uint requestIdOfLocker,
 		uint indexed deadline,
-		uint protocolFee,
-		uint thirdPartyFee
+		uint thirdPartyId,
+		address[2] tokens,
+		uint[3] amounts,
+		uint[4] fees
 	);
 
 	/// @notice Emits when a burn proof is provided
@@ -60,7 +59,7 @@ interface IBurnRouter {
     /// @param requestIdOfLocker Index of paid request of among Locker's requests
     /// @param bitcoinTxId The hash of tx that paid a burn request
 	/// @param bitcoinTxOutputIndex The output index in tx
-	event PaidCCBurn(
+	event PaidUnwrap(
 		address indexed lockerTargetAddress,
 		uint requestIdOfLocker,
 		bytes32 bitcoinTxId,
@@ -129,16 +128,16 @@ interface IBurnRouter {
         uint newSlasherPercentageFee
     );
 
-	/// @notice Emits when bitcoin fee is updated
-    event NewBitcoinFee(
-        uint oldBitcoinFee, 
-        uint newBitcoinFee
+	/// @notice Emits when network fee is updated
+    event NewNetworkFee(
+        uint oldNetworkFee, 
+        uint newNetworkFee
     );
 
-	/// @notice Emits when bitcoin fee oracle is updated
-    event NewBitcoinFeeOracle(
-        address oldBitcoinFeeOracle, 
-        address newBitcoinFeeOracle
+	/// @notice Emits when network fee oracle is updated
+    event NewNetworkFeeOracle(
+        address oldNetworkFeeOracle, 
+        address newNetworkFeeOracle
     );
 
 	/// @notice                     Emits when changes made to third party address
@@ -200,15 +199,15 @@ interface IBurnRouter {
 
 	function setSlasherPercentageReward(uint _slasherPercentageReward) external;
 
-	function setBitcoinFee(uint _bitcoinFee) external;
+	function setNetworkFee(uint _networkFee) external;
 
-	function setBitcoinFeeOracle(address _bitcoinFeeOracle) external;
+	function setNetworkFeeOracle(address _networkFeeOracle) external;
 
 	function setThirdPartyAddress(uint _thirdPartyId, address _thirdPartyAddress) external;
 
 	function setThirdPartyFee(uint _thirdPartyId, uint _thirdPartyFee) external;
 
-	function ccBurn(
+	function unwrap(
 		uint _amount, 
 		bytes calldata _userScript,
 		ScriptTypes _scriptType,
@@ -216,7 +215,7 @@ interface IBurnRouter {
 		uint thirdParty
 	) external returns (uint);
 
-    function ccExchangeAndBurn(
+    function swapAndUnwrap(
         address _exchangeConnector,
         uint[] calldata _amounts,
         bool _isFixedToken,

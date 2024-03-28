@@ -1020,7 +1020,7 @@ describe("CcTransferRouter", async () => {
 
     });
 
-    describe("#third party", async () => {
+    describe.only("#third party", async () => {
 
         beforeEach(async () => {
             beginning = await takeSnapshot(signer1.provider);

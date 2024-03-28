@@ -19,7 +19,7 @@ interface ICcExchangeRouter {
     /// @param fee Amount of fee that is paid to Teleporter (for tx, relayer and teleporter fees)
     /// @param isUsed True if tx has been submitted before
     /// @param path Exchange path from input token to output token
-    /// @param deadline for exchanging tokens
+    /// @param deadline for exchanging tokens (not used anymore)
     /// @param speed of the request (normal or instant)
     struct ccExchangeRequest {
         uint appId;
@@ -37,15 +37,16 @@ interface ICcExchangeRouter {
     /// @notice Structure for recording cross-chain exchange requests
     /// @param isTransferredToOtherChain True if BTC to ETH exchange is processed successfully
     /// @param remainedInputAmount Amount of obtained TELEBTC on target chain
-    /// @param acrossFeePercentage percentage of fee we have to give to across relayers to fill our request
+    /// @param bridgeFee percentage of fee we have to give to across relayers to fill our request
     struct extendedCcExchangeRequest {
         uint chainId;
         bool isTransferredToOtherChain;
         uint remainedInputAmount;
-        uint acrossFeePercentage;
+        uint bridgeFee;
         uint thirdParty;
         uint protocolFee;
         uint thirdPartyFee;
+        uint lockerFee;
     }
     
     /// @notice Structure for passing tx and its inclusion proof
@@ -97,22 +98,15 @@ interface ICcExchangeRouter {
         uint[] prefixSum;
         uint currentIndex;
     }
-
-//TODO delete
-    // /// @notice Structure for showing Fees
-    // struct Fees {
-    //     uint teleporterFee,
-    //     uint protocolFee,
-    //     uint thirdPartyFee
-    // }
-
     // Events
 
     event TokenAdded(
+        uint chainId,
         address newToken
     );
 
     event TokenRemoved(
+        uint chainId,
         address oldToken
     );
 
@@ -197,17 +191,18 @@ interface ICcExchangeRouter {
     /// @param user Exchange recipient address
     /// @param speed Speed of the request (normal or instant)
     /// @param teleporter Address of teleporter who submitted the request
-    /// @param fees [teleporter fee, protocol fee, third party fee]
-    event CCExchange(
+    /// @param fees [teleporter fee, protocol fee, third party fee] TODO
+    event NewWrapAndSwap(
         address lockerTargetAddress,
         address indexed user,
         address[2] inputAndOutputToken,
         uint[2] inputAndOutputAmount,
         uint indexed speed,
         address indexed teleporter,
-        uint[3] fees,
         bytes32 bitcoinTxId,
-        uint appId
+        uint appId,
+        uint thirdPartyId,
+        uint[5] fees
     );
 
     /// @notice Emits when a cc exchange request fails
@@ -216,16 +211,17 @@ interface ICcExchangeRouter {
     /// @param speed of the request (normal or instant)
     /// @param teleporter Address of teleporter who submitted the request
     /// @param fees [teleporter fee, protocol fee, third party fee]
-    event FailedCCExchange(
+    event FailedWrapAndSwap(
         address lockerTargetAddress,
         address indexed recipientAddress,
         address[2] inputAndOutputToken,
         uint[2] inputAndOutputAmount,
         uint indexed speed,
         address indexed teleporter,
-        uint[3] fees,
         bytes32 bitcoinTxId,
-        uint appId
+        uint appId,
+        uint thirdPartyId,
+        uint[5] fees
     );
 
     /// @notice Emits when appId for an exchange connector is set
@@ -318,7 +314,7 @@ interface ICcExchangeRouter {
 
     function treasury() external view returns (address);
 
-    function isTokenSupported(address _exchangeToken) external view returns (bool);
+    function isTokenSupported(uint chainId, address _exchangeToken) external view returns (bool);
 
     function isChainSupported(uint _chainId) external view returns (bool);
 
@@ -356,7 +352,7 @@ interface ICcExchangeRouter {
 
     function setChainIdMapping(uint _mappedId, uint _middleChain, uint _destinationChain) external;
     
-    function ccExchange(
+    function wrapAndSwap(
         TxAndProof memory _txAndProof,
         bytes calldata _lockerLockingScript,
         address[] memory _path
@@ -374,15 +370,15 @@ interface ICcExchangeRouter {
     //    bytes32 _txId
     // ) external returns (bool);
 
-    function supportToken(address _token) external;
+    function supportToken(uint chainId, address _token) external;
 
-    function removeToken(address _token) external;
+    function removeToken(uint chainId, address _token) external;
 
     function supportChain(uint _chainId) external;
 
     function removeChain(uint _chainId) external;
 
-    function withdrawFailedCcExchange(
+    function withdrawFailedWrapAndSwap(
         bytes32 _txId,
         uint8 _scriptType,
         bytes memory _userScript,
@@ -393,7 +389,7 @@ interface ICcExchangeRouter {
         bytes calldata _lockerLockingScript
     ) external returns (bool);
 
-    function retryFailedCcExchange(
+    function retryFailedWrapAndSwap(
         bytes32 _txId,
         uint256 _outputAmount,
         uint _acrossRelayerFee,
