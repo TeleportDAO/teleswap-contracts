@@ -571,6 +571,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         bytes32 _txId,
         uint256 _outputAmount,
         uint _acrossRelayerFee,
+        address[] memory path,
         bytes32 _r,
         bytes32 _s,
         uint8 _v
@@ -591,7 +592,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         require(
             CcExchangeRouterLib._verifySig(
                 _hashMsg(
-                    abi.encodePacked(_txId, _outputAmount, _acrossRelayerFee)
+                    abi.encodePacked(_txId, _outputAmount, _acrossRelayerFee, path)
                 ),
                 _r,
                 _s,
@@ -604,7 +605,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         (bool result, uint[] memory amounts) = IExchangeConnector(exchangeConnector[exchangeReq.appId]).swap(
             extendedCcExchangeRequests[_txId].remainedInputAmount,
             _outputAmount,
-            exchangeReq.path,
+            path,
             address(this), // Sends tokens to this contract
             block.timestamp,
             true // Input token is fixed
@@ -614,7 +615,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         // Sends exchanged tokens to ETH
         _sendTokenToOtherChain(
             extendedCcExchangeRequests[_txId].chainId,
-            exchangeReq.path[exchangeReq.path.length - 1], 
+            path[path.length - 1], 
             amounts[amounts.length - 1], 
             exchangeReq.recipientAddress,
             _acrossRelayerFee

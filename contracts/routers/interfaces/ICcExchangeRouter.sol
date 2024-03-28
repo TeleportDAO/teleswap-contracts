@@ -393,6 +393,7 @@ interface ICcExchangeRouter {
         bytes32 _txId,
         uint256 _outputAmount,
         uint _acrossRelayerFee,
+        address[] memory path,
         bytes32 _r,
         bytes32 _s,
         uint8 _v
