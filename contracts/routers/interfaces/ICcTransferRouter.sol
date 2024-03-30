@@ -19,6 +19,24 @@ interface ICcTransferRouter {
 		bool isUsed;
 	}
 
+	/// @notice Structure for passing tx and its inclusion proof
+    /// @param version of the transaction containing the user request
+    /// @param vin Inputs of the transaction containing the user request
+    /// @param vout Outputs of the transaction containing the user request
+    /// @param locktime of the transaction containing the user request
+    /// @param blockNumber Height of the block containing the user request
+    /// @param intermediateNodes Merkle inclusion proof for transaction containing the user request
+    /// @param index of transaction containing the user request in the block
+    struct TxAndProof {
+        bytes4 version;
+        bytes vin;
+        bytes vout;
+        bytes4 locktime;
+        uint256 blockNumber;
+        bytes intermediateNodes;
+        uint index;
+    }
+
 	// Events
 
 	/// @notice                    	Emits when a cc transfer request gets done
@@ -141,16 +159,7 @@ interface ICcTransferRouter {
 	function setThirdPartyFee(uint _thirdPartyId, uint _thirdPartyFee) external;
 
 	function wrap(
-		// Bitcoin tx
-		bytes4 _version,
-		bytes memory _vin,
-		bytes calldata _vout,
-		bytes4 _locktime,
-		// Bitcoin block number
-		uint256 _blockNumber,
-		// Merkle proof
-		bytes calldata _intermediateNodes,
-		uint _index,
+		TxAndProof memory _txAndProof,
 		bytes calldata _lockerLockingScript
 	) external payable returns (bool);
 }

@@ -201,51 +201,35 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
     ///                                     if speed is 1, the request is instant
     ///                                     which pays back the loan,
     ///                                     if the speed is 0, it is a normal transfer
-    /// @param _version                     Version of the Bitcoin transaction
-    /// @param _vin                         Transaction inputs
-    /// @param _vout                        Transaction outputs
-    /// @param _locktime                    Bitcoin transaction locktime
-    /// @param _blockNumber                 The block number of the request tx
-    /// @param _intermediateNodes           Merkle proof for tx
-    /// @param _index                       Index of tx in the block
     /// @param _lockerLockingScript         Locking script of locker that user has sent BTC to it
     /// @return                             True if the transfer is successful
     function wrap(
-        // Bitcoin tx
-        bytes4 _version,
-        bytes memory _vin,
-        bytes calldata _vout,
-        bytes4 _locktime,
-        // Bitcoin block number
-        uint256 _blockNumber,
-        // Merkle proof
-        bytes calldata _intermediateNodes,
-        uint _index,
+        TxAndProof memory _txAndProof,
         bytes calldata _lockerLockingScript
     ) external payable nonReentrant override returns (bool) {
         require(_msgSender() == instantRouter, "CCTransferRouter: invalid sender");
-        require(_blockNumber >= startingBlockNumber, "CCTransferRouter: request is too old");
+        require(_txAndProof.blockNumber >= startingBlockNumber, "CCTransferRouter: request is too old");
 
         // Finds txId on the source chain
-        bytes32 txId = BitcoinHelper.calculateTxId(_version, _vin, _vout, _locktime);
+        bytes32 txId = BitcoinHelper.calculateTxId(_txAndProof.version, _txAndProof.vin, _txAndProof.vout, _txAndProof.locktime);
         
         require(
             !ccTransferRequests[txId].isUsed,
             "CCTransferRouter: request has been used before"
         );
 
-        require(_locktime == bytes4(0), "CCTransferRouter: lock time is non -zero");
+        require(_txAndProof.locktime == bytes4(0), "CCTransferRouter: lock time is non -zero");
 
         // Extracts information from the request
-        _saveCCTransferRequest(_lockerLockingScript, _vout, txId);
+        _saveCCTransferRequest(_lockerLockingScript, _txAndProof.vout, txId);
 
         // Checks if tx has been confirmed on source chain
         require(
             _isConfirmed(
                 txId,
-                _blockNumber,
-                _intermediateNodes,
-                _index
+                _txAndProof.blockNumber,
+                _txAndProof.intermediateNodes,
+                _txAndProof.index
             ),
             "CCTransferRouter: transaction has not been finalized yet"
         );
@@ -302,6 +286,19 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
         bytes memory _vout,
         bytes32 _txId
     ) private {
+
+        /*  
+            transfer requests structure:
+            1) chainId, 2 byte: max 65535 chains
+            2) appId, 1 byte: max 256 apps
+            3) recipientAddress, 20 byte: EVM account
+            4) networkFee, 3 byte: between [0,10000]
+            5) SPEED, 1 byte: {0,1}
+            6) thirdParty, 1 byte: max 256 third parties, default is 0 for no third party
+            
+            TOTAL = 28 BYTE
+        */
+
         require(
             ILockers(lockers).isLocker(_lockerLockingScript),
             "CCTransferRouter: no locker with the given locking script exists"
@@ -316,7 +313,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
             _lockerLockingScript
         );
 
-        require(arbitraryData.length == 27, "CCTransferRouter: invalid len");
+        require(arbitraryData.length == 28, "CCTransferRouter: invalid len");
 
         // Checks that input amount is not zero
         require(request.inputAmount > 0, "CCTransferRouter: input amount is zero");

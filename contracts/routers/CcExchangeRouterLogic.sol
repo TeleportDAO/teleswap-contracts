@@ -668,8 +668,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         bytes32 _txId,
         address[] memory _path
     ) internal {
-        // bool result;
-        // uint[] memory amounts;
+        // try swapping with path provided by teleporter
         (bool result, uint[] memory amounts) = _swap(
             chainId,
             _lockerLockingScript,
@@ -681,22 +680,11 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         );
 
         if (!result) {
-            (bool result, uint[] memory amounts) = _swap(
-                chainId,
-                _lockerLockingScript,
-                ccExchangeRequests[_txId],
-                extendedCcExchangeRequests[_txId],
-                _txId,
-                ccExchangeRequests[_txId].path,
-                _exchangeConnector
+            // Sends teleBTC to recipient if exchange wasn't successful
+            ITeleBTC(teleBTC).transfer(
+                ccExchangeRequests[_txId].recipientAddress,
+                extendedCcExchangeRequests[_txId].remainedInputAmount
             );
-            if (!result) {
-                // Sends teleBTC to recipient if exchange wasn't successful
-                ITeleBTC(teleBTC).transfer(
-                    ccExchangeRequests[_txId].recipientAddress,
-                    extendedCcExchangeRequests[_txId].remainedInputAmount
-                );
-            }
         }
     }
 
@@ -709,7 +697,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         bytes memory _lockerLockingScript, 
         bytes32 _txId,
         address[] memory _path,
-        uint _acrossRelayerFee, // TODO be max not exact
+        uint _acrossRelayerFee, // TODO fix in future: teleporter sets across relayer fee and use this as maximum amount of it
         uint _chainId
     ) private {
         (bool result, uint[] memory amounts) = _swap(
@@ -721,7 +709,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             _path,
             _exchangeConnector
         );
-        
+
         if (result) { // if swap is successfull, user will get desired tokens on destination chain
             extendedCcExchangeRequests[_txId].isTransferredToOtherChain = true;
             // Send exchanged tokens to ETH
@@ -730,7 +718,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 _path[_path.length - 1], 
                 amounts[amounts.length-1], 
                 ccExchangeRequests[_txId].recipientAddress,
-                _acrossRelayerFee // TODO fix in future
+                _acrossRelayerFee
             );
         } else { // if swap fails, someone needs to call:
         // withdrawFailedCcExchange: to burn minted telebtc and user gets them back
@@ -782,6 +770,17 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                     block.timestamp,
                     true
                 );
+
+                if (!result) {
+                    (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
+                        _extendedCcExchangeRequest.remainedInputAmount,
+                        _ccExchangeRequest.outputAmount,
+                        _ccExchangeRequest.path,
+                        _ccExchangeRequest.recipientAddress,
+                        block.timestamp,
+                        true
+                    );
+                }
             }
         } else {
             result = false;
@@ -928,12 +927,10 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     /// @notice Mints teleBTC by calling lockers contract
     /// @param _lockerLockingScript Locker's locking script
     /// @param _txId The transaction ID of the request
-    /// @return _remainedAmount Amount of teleBTC that user receives 
-    ///                         after reducing all fees (protocol, locker, teleporter)
     function _mintAndReduceFees(
         bytes memory _lockerLockingScript,
         bytes32 _txId
-    ) private returns (uint _remainedAmount, uint _protocolFee, uint _thirdPartyFee, uint _lockerFee) {
+    ) private {
 
         // Mints teleBTC for cc exchange router
         uint mintedAmount = ILockers(lockers).mint(
@@ -954,16 +951,20 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         }
 
         // Pays protocol fee
-        if (_protocolFee > 0) {
-            ITeleBTC(teleBTC).transfer(treasury, _protocolFee);
+        if (extendedCcExchangeRequests[_txId].protocolFee > 0) {
+            ITeleBTC(teleBTC).transfer(treasury, extendedCcExchangeRequests[_txId].protocolFee);
         }
 
         // Pays third party fee
-        if (_thirdPartyFee > 0) {
-            ITeleBTC(teleBTC).transfer(thirdPartyAddress[extendedCcExchangeRequests[_txId].thirdParty], _thirdPartyFee);
+        if (extendedCcExchangeRequests[_txId].thirdPartyFee > 0) {
+            ITeleBTC(teleBTC).transfer(thirdPartyAddress[extendedCcExchangeRequests[_txId].thirdParty], extendedCcExchangeRequests[_txId].thirdPartyFee);
         }
 
-        extendedCcExchangeRequests[_txId].remainedInputAmount = mintedAmount - _protocolFee - networkFee - _thirdPartyFee;
+        extendedCcExchangeRequests[_txId].remainedInputAmount = 
+        mintedAmount 
+        - extendedCcExchangeRequests[_txId].protocolFee 
+        - networkFee 
+        - extendedCcExchangeRequests[_txId].thirdPartyFee;
     }
 
     // /// @notice Internal setter for filler withdraw interval
