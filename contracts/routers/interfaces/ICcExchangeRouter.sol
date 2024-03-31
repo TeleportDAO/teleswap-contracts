@@ -188,10 +188,16 @@ interface ICcExchangeRouter {
     );
 
     /// @notice Emits when a cc exchange request gets done
+    /// @param lockerTargetAddress Address of Locker
     /// @param user Exchange recipient address
+    /// @param inputAndOutputToken [inputToken, outputToken]
+    /// @param inputAndOutputAmount [inputAmount, outputAmount]
     /// @param speed Speed of the request (normal or instant)
     /// @param teleporter Address of teleporter who submitted the request
-    /// @param fees [teleporter fee, protocol fee, third party fee] TODO
+    /// @param bitcoinTxId The transaction ID of request on Bitcoin 
+    /// @param appId Assigned application id to exchange
+    /// @param thirdPartyId Id of third party
+    /// @param fees [network fee, locker fee, protocol fee, third party fee, bridge fee]
     event NewWrapAndSwap(
         address lockerTargetAddress,
         address indexed user,
@@ -207,10 +213,16 @@ interface ICcExchangeRouter {
 
     /// @notice Emits when a cc exchange request fails
     /// @dev We mint teleBTC and send it to the user
-    /// @param recipientAddress User address
-    /// @param speed of the request (normal or instant)
+    /// @param lockerTargetAddress Address of Locker
+    /// @param recipientAddress Exchange recipient address
+    /// @param inputAndOutputToken [inputToken, outputToken]
+    /// @param inputAndOutputAmount [inputAmount, outputAmount]
+    /// @param speed Speed of the request (normal or instant)
     /// @param teleporter Address of teleporter who submitted the request
-    /// @param fees [teleporter fee, protocol fee, third party fee]
+    /// @param bitcoinTxId The transaction ID of request on Bitcoin 
+    /// @param appId Assigned application id to exchange
+    /// @param thirdPartyId Id of third party
+    /// @param fees [network fee, locker fee, protocol fee, third party fee, bridge fee]    
     event FailedWrapAndSwap(
         address lockerTargetAddress,
         address indexed recipientAddress,

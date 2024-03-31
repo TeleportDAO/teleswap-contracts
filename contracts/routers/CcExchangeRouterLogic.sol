@@ -203,6 +203,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
 
     /// @notice Executes a cross-chain exchange request after checking its merkle inclusion proof
     /// @dev Mints teleBTC for user if exchanging is not successful
+    /// @param _txAndProof Transaction and merkle proof data
     /// @param _lockerLockingScript Script hash of locker that user has sent BTC to it
     /// @param _path (Optional) Exchange path from teleBTC to the output token. This is used if 
     ///              the default path [teleBTC, wrappedNativeToken, outputToken] not exist or
@@ -511,6 +512,14 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     // }
 
     /// @notice ETH user whose request failed can redeem teleBTC for native BTC
+    /// @param _txId The transaction ID of request on Bitcoin
+    /// @param _scriptType Script type of the user script
+    /// @param _userScript Script hash of the user on Bitcoin
+    /// @param _acrossRelayerFee Fee that user pays to across relayer
+    /// @param _r Signature r
+    /// @param _s Signature s
+    /// @param _v Signature v
+    /// @param _lockerLockingScript Script hash of locker that user has sent BTC to it
     /// @return
     function withdrawFailedWrapAndSwap(
         bytes32 _txId,
@@ -565,8 +574,13 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
 
     /// @notice ETH user whose exchange request failed can retry 
     ///         to exchange teleBTC for the desired token
-
-    //TODO add path?
+    /// @param _txId The transaction ID of request on Bitcoin
+    /// @param _outputAmount Amount of output token
+    /// @param _acrossRelayerFee Fee that user pays to across relayer
+    /// @param path Exchange path from teleBTC to the output token
+    /// @param _r Signature r
+    /// @param _s Signature s
+    /// @param _v Signature v
     function retryFailedWrapAndSwap(
         bytes32 _txId,
         uint256 _outputAmount,
@@ -688,6 +702,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         }
     }
 
+    //TODO remove name of across?
     /// @notice                          Executes a normal cross-chain exchange request
     /// @dev                             Mints teleBTC for user if exchanging is not successful
     /// @param _lockerLockingScript      Locker's locking script    

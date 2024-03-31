@@ -149,6 +149,8 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
     /// @param _userScript User script hash
     /// @param _scriptType User script type
     /// @param _lockerLockingScript	of locker that should execute the burn request
+    /// @param _relayerFeePercentage Fee percentage for relayer
+    /// @param thirdParty Id of third party
     function exchangeForBtcAcross(
         address _token,
         address _exchangeConnector,

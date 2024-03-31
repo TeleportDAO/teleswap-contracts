@@ -114,10 +114,12 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
     }
 
     /// @notice Withdraws user's bid
-    /// @dev User signs a message requesting for canceling or withdrawing a bid
+    /// @dev User signs a message requesting for withdrawing a bid
     /// @param _message The signed message
-    /// @param _v Part of user signature for 
-    ///           [_loc.txId, _loc.outputIdx, _loc.satoshiIdx,_bidIdx,_relayerFeePercentage]
+    /// @param _v Signature v
+    /// @param _r Signature r
+    /// @param _s Signature s
+
     function withdrawFundsToEth(
         bytes memory _message,
         uint8 _v, 
@@ -165,6 +167,14 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
         // Delets the bid
         failedReqs[user][_token] -= _amount;
     }
+
+    //TODO retrySwapAndBurn
+    /// @notice Retry failed exchange and burn requests
+    /// @dev User signs a message for retrying its request
+    /// @param _message The signed message
+    /// @param _v Signature v
+    /// @param _r Signature r
+    /// @param _s Signature s
 
     function retryExchangeAndBurn(
         bytes memory _message,
@@ -411,6 +421,7 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
         str = string(bstr);
     }
 
+    //TODO delete?
     /// @notice Verifies the signature of _msgHash
     /// @return _signer Address of message signer (if signature is valid)
     // function _verifySig(

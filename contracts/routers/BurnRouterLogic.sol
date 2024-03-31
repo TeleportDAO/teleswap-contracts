@@ -164,6 +164,7 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @param _userScript User script hash
     /// @param _scriptType User script type
     /// @param _lockerLockingScript	of locker that should execute the burn request
+    /// @param thirdParty Third party id 
     /// @return Amount of BTC that user receives
     function unwrap(
         uint _amount,
@@ -199,6 +200,7 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @param _isFixedToken True if input token amount is fixed
     /// @param _path of exchanging inputToken to teleBTC
     /// @param _deadline of exchanging
+    /// @param thirdParty Third party id 
     /// @return Amount of BTC that user receives
     function swapAndUnwrap(
         address _exchangeConnector,

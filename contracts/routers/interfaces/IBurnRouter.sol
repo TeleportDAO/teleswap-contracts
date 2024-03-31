@@ -29,18 +29,18 @@ interface IBurnRouter {
 
   	// Events
 
-	//TODO fix comments
 	/// @notice Emits when a burn request gets submitted
-    // / @param userTargetAddress Address of the user
-    // / @param userScript Script of user on Bitcoin
-    // / @param scriptType Script type of the user (for bitcoin address)
-    // / @param inputAmount Amount of input token (0 if input token is teleBTC)
-    // / @param inputToken Address of token that will be exchanged for teleBTC (address(0) if input token is teleBTC)
-	// / @param teleBTCAmount amount of teleBTC that user sent OR Amount of teleBTC after exchanging
-    // / @param burntAmount that user will receive (after reducing fees)
-	// / @param lockerTargetAddress Address of Locker
-	// / @param requestIdOfLocker Index of request between Locker's burn requests
-	// / @param deadline of Locker for executing the request (in terms of Bitcoin blocks)
+    /// @param userScript Script of user on Bitcoin
+    /// @param scriptType Script type of the user (for bitcoin address)
+	/// @param lockerTargetAddress Address of Locker
+	/// @param userTargetAddress Address of the user on EVM
+	/// @param requestIdOfLocker Index of request between Locker's burn requests
+	/// @param deadline of Locker for executing the request (in terms of Bitcoin blocks)
+	/// @param thirdPartyId Id of third party
+	/// @param inputAndOutputToken [inputToken, outputToken]
+	/// @param amounts [inputAmount, teleBTCAmount, burntAmount]
+	/// @param fees [network fee, locker fee, protocol fee, third party fee]
+	
   	event NewUnwrap(
 		bytes userScript,
 		ScriptTypes scriptType,
@@ -49,7 +49,7 @@ interface IBurnRouter {
 		uint requestIdOfLocker,
 		uint indexed deadline,
 		uint thirdPartyId,
-		address[2] tokens,
+		address[2] inputAndOutputToken,
 		uint[3] amounts,
 		uint[4] fees
 	);

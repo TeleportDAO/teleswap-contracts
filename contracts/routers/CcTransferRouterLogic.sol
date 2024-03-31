@@ -201,6 +201,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
     ///                                     if speed is 1, the request is instant
     ///                                     which pays back the loan,
     ///                                     if the speed is 0, it is a normal transfer
+    /// @param _txAndProof                  Transaction and merkle proof data
     /// @param _lockerLockingScript         Locking script of locker that user has sent BTC to it
     /// @return                             True if the transfer is successful
     function wrap(
@@ -292,7 +293,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
             1) chainId, 2 byte: max 65535 chains
             2) appId, 1 byte: max 256 apps
             3) recipientAddress, 20 byte: EVM account
-            4) networkFee, 3 byte: between [0,10000]
+            4) networkFee, 3 byte
             5) SPEED, 1 byte: {0,1}
             6) thirdParty, 1 byte: max 256 third parties, default is 0 for no third party
             
