@@ -76,7 +76,7 @@ interface IPolyConnectorLogic {
         bytes32 _s
     ) external;
 
-    function retryExchangeAndBurn(
+    function retrySwapAndUnwrap(
         bytes memory _message,
         uint8 _v, 
         bytes32 _r, 

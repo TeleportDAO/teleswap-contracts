@@ -702,7 +702,6 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         }
     }
 
-    //TODO remove name of across?
     /// @notice                          Executes a normal cross-chain exchange request
     /// @dev                             Mints teleBTC for user if exchanging is not successful
     /// @param _lockerLockingScript      Locker's locking script    
@@ -736,9 +735,9 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 _acrossRelayerFee
             );
         } else { // if swap fails, someone needs to call:
-        // withdrawFailedCcExchange: to burn minted telebtc and user gets them back
+        // withdrawFailedWrapAndSwap: to burn minted telebtc and user gets them back
         // or
-        // retryFailedCcExchange: to retry swap and send swapped tokens to other chain
+        // retryFailedWrapAndSwap: to retry swap and send swapped tokens to other chain
         // on current chain
             ITeleBTC(teleBTC).approve(
                 _exchangeConnector,

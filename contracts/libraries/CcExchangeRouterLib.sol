@@ -80,8 +80,7 @@ library CcExchangeRouterLib {
         // Finds Teleporter fee
         uint networkFee = RequestParser.parseNetworkFee(arbitraryData);
 
-        //TODO
-        // require(percentageFee <= _maxProtocolFee, "ExchangeRouterLib: wrong fee");
+        require(networkFee <= request.inputAmount, "ExchangeRouterLib: wrong fee");
         request.fee = networkFee;
         
         // Note: speed now determines using fillers to speed up filling request (speed = 1) or not

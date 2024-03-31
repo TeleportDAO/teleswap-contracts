@@ -163,12 +163,10 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
             _relayerFeePercentage
         );
         
-        // TODO emit event
         // Delets the bid
         failedReqs[user][_token] -= _amount;
     }
 
-    //TODO retrySwapAndBurn
     /// @notice Retry failed exchange and burn requests
     /// @dev User signs a message for retrying its request
     /// @param _message The signed message
@@ -176,7 +174,7 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
     /// @param _r Signature r
     /// @param _s Signature s
 
-    function retryExchangeAndBurn(
+    function retrySwapAndUnwrap(
         bytes memory _message,
         uint8 _v, 
         bytes32 _r, 
@@ -421,48 +419,9 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
         str = string(bstr);
     }
 
-    //TODO delete?
-    /// @notice Verifies the signature of _msgHash
-    /// @return _signer Address of message signer (if signature is valid)
-    // function _verifySig(
-    //     bytes32 _msgHash, 
-    //     uint8 _v, 
-    //     bytes32 _r, 
-    //     bytes32 _s
-    // ) internal pure returns (address _signer) {
-    //     // Verify the message using ecrecover
-    //     _signer = ecrecover(_msgHash, _v, _r, _s);
-    //     require(_signer != address(0), "PolygonConnectorLogic: Invalid sig");
-    // }
-
-    // /// @notice Finds hash of the message that user should have signed
-    // function _hashMsg(
-    //     address _token,
-    //     uint _amount,
-    //     int64 _relayerFeePercentage
-    // ) internal pure returns (bytes32) {
-    //     return keccak256(
-    //         abi.encodePacked(
-    //             // FIXME: is it correct actually, since we must use message.length not messageHash.length
-    //             "\x19Ethereum Signed Message:\n32", 
-    //             keccak256(
-    //                 abi.encodePacked(
-    //                     _token,
-    //                     _amount,
-    //                     _relayerFeePercentage
-    //                 )
-    //             )
-    //         )
-    //     );
-    // }
-
     /// @notice Checks if two strings are equal
     function _isEqualString(string memory _a, string memory _b) internal pure returns (bool) {
         return keccak256(abi.encodePacked(_a)) == keccak256(abi.encodePacked(_b));
-    }
-
-    //TODO? remove
-    receive() external payable {
     }
 
 }

@@ -251,7 +251,6 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
             [_networkFee, _lockerFee, _protocolFee, _thirdPartyFee],
             thirdParty[txId],
             chainId
-            // TODO ccTransferRequests[txId].speed, speed is zero always
         );
         return true;
     }
@@ -325,8 +324,8 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
 
         // Calculates fee
         uint networkFee = RequestParser.parseNetworkFee(arbitraryData);
-        //TODO
-        // require(percentageFee <= MAX_PROTOCOL_FEE, "CCTransferRouter: percentage fee is out of range");
+        
+        require(networkFee <= request.inputAmount, "ExchangeRouterLib: wrong fee");
         request.fee = networkFee;
 
         // Parses recipient address and request speed
@@ -398,7 +397,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
 
         // Calculates fees
         _protocolFee = ccTransferRequests[_txId].inputAmount*protocolPercentageFee/MAX_PROTOCOL_FEE;
-        _networkFee = ccTransferRequests[_txId].fee; // TODO network fee
+        _networkFee = ccTransferRequests[_txId].fee;
         _thirdPartyFee = ccTransferRequests[_txId].inputAmount*thirdPartyFee[thirdParty[_txId]]/MAX_PROTOCOL_FEE;
         _lockerFee = ccTransferRequests[_txId].inputAmount - mintedAmount;
         
