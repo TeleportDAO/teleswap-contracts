@@ -8,7 +8,6 @@ import "../connectors/interfaces/IExchangeConnector.sol";
 import "../libraries/BurnRouterLib.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "hardhat/console.sol";
 import "./BurnRouterStorageV2.sol";
 
 contract BurnRouterLogic is BurnRouterStorage, 
@@ -48,16 +47,16 @@ contract BurnRouterLogic is BurnRouterStorage,
     ) public initializer {
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
-        _setStartingBlockNumber(_startingBlockNumber);
-        _setRelay(_relay);
-        _setLockers(_lockers);
-        _setTreasury(_treasury);
-        _setTeleBTC(_teleBTC);
-        _setTransferDeadline(_transferDeadline);
-        _setProtocolPercentageFee(_protocolPercentageFee);
-        _setSlasherPercentageReward(_slasherPercentageReward);
-        _setNetworkFee(_networkFee);
-        _setNetworkFeeOracle(owner());
+        setStartingBlockNumber(_startingBlockNumber);
+        setRelay(_relay);
+        setLockers(_lockers);
+        setTreasury(_treasury);
+        setTeleBTC(_teleBTC);
+        setTransferDeadline(_transferDeadline);
+        setProtocolPercentageFee(_protocolPercentageFee);
+        setSlasherPercentageReward(_slasherPercentageReward);
+        setNetworkFee(_networkFee);
+        setNetworkFeeOracle(owner());
     }
 
     receive() external payable {}
@@ -75,86 +74,110 @@ contract BurnRouterLogic is BurnRouterStorage,
     }
 
     /// @notice Setter for starting block number
-    function setStartingBlockNumber(uint _startingBlockNumber) external override onlyOwner {
-        _setStartingBlockNumber(_startingBlockNumber);
+    function setStartingBlockNumber(uint _startingBlockNumber) public override onlyOwner {
+        require(
+            _startingBlockNumber > startingBlockNumber,
+            "BurnRouterLogic: low startingBlockNumber"
+        );
+        startingBlockNumber = _startingBlockNumber;
     }
 
     /// @notice Updates relay contract address
     /// @dev Only owner can call this
     /// @param _relay The new relay contract address
-    function setRelay(address _relay) external override onlyOwner {
-        _setRelay(_relay);
+    function setRelay(address _relay) public override onlyOwner {
+        emit NewRelay(relay, _relay);
+        relay = _relay;
     }
 
     /// @notice Updates lockers contract address
     /// @dev Only owner can call this
     /// @param _lockers The new lockers contract address
-    function setLockers(address _lockers) external override onlyOwner {
-        _setLockers(_lockers);
+    function setLockers(address _lockers) public override onlyOwner {
+        emit NewLockers(lockers, _lockers);
+        lockers = _lockers;
     }
 
     /// @notice Updates teleBTC contract address
     /// @dev Only owner can call this
     /// @param _teleBTC The new teleBTC contract address
-    function setTeleBTC(address _teleBTC) external override onlyOwner {
-        _setTeleBTC(_teleBTC);
+    function setTeleBTC(address _teleBTC) public override onlyOwner {
+        emit NewTeleBTC(teleBTC, _teleBTC);
+        teleBTC = _teleBTC;
     }
 
     /// @notice Updates protocol treasury address
     /// @dev Only owner can call this
     /// @param _treasury The new treasury address
-    function setTreasury(address _treasury) external override onlyOwner {
-        _setTreasury(_treasury);
+    function setTreasury(address _treasury) public override onlyOwner {
+        emit NewTreasury(treasury, _treasury);
+        treasury = _treasury;
     }
 
     /// @notice Updates deadline of executing burn requests
     /// @dev Only owner can call this
     ///      Deadline should be greater than relay finalization parameter
     /// @param _transferDeadline The new transfer deadline
-    function setTransferDeadline(uint _transferDeadline) external override {
-        _setTransferDeadline(_transferDeadline);
+    function setTransferDeadline(uint _transferDeadline) public override {
+        uint _finalizationParameter = BurnRouterLib.finalizationParameter(relay);
+        require(
+            _msgSender() == owner() || transferDeadline < _finalizationParameter, 
+            "BurnRouterLogic: no permit"
+        );
+        // Gives lockers enough time to pay cc burn requests
+        require(_transferDeadline > _finalizationParameter, "BurnRouterLogic: low deadline");
+        emit NewTransferDeadline(transferDeadline, _transferDeadline);
+        transferDeadline = _transferDeadline;
     }
 
     /// @notice Updates protocol percentage fee for burning tokens
     /// @dev Only owner can call this
     /// @param _protocolPercentageFee The new protocol percentage fee
-    function setProtocolPercentageFee(uint _protocolPercentageFee) external override onlyOwner {
-        _setProtocolPercentageFee(_protocolPercentageFee);
+    function setProtocolPercentageFee(uint _protocolPercentageFee) public override onlyOwner {
+        require(MAX_PROTOCOL_FEE >= _protocolPercentageFee, "BurnRouterLogic: invalid fee");
+        emit NewProtocolPercentageFee(protocolPercentageFee, _protocolPercentageFee);
+        protocolPercentageFee = _protocolPercentageFee;
     }
 
     /// @notice Updates slasher percentage reward for disputing lockers
     /// @dev Only owner can call this
     /// @param _slasherPercentageReward The new slasher percentage reward
-    function setSlasherPercentageReward(uint _slasherPercentageReward) external override onlyOwner {
-        _setSlasherPercentageReward(_slasherPercentageReward);
+    function setSlasherPercentageReward(uint _slasherPercentageReward) public override onlyOwner {
+        require(MAX_SLASHER_REWARD >= _slasherPercentageReward, "BurnRouterLogic: invalid reward");
+        emit NewSlasherPercentageFee(slasherPercentageReward, _slasherPercentageReward);
+        slasherPercentageReward = _slasherPercentageReward;
     }
 
     /// @notice Updates Bitcoin oracle
     /// @dev Only owner can call this
     /// @param _networkFeeOracle Address of oracle who can update burn fee
-    function setNetworkFeeOracle(address _networkFeeOracle) external override onlyOwner {
-        _setNetworkFeeOracle(_networkFeeOracle);
+    function setNetworkFeeOracle(address _networkFeeOracle) public override onlyOwner {
+        emit NewNetworkFeeOracle(bitcoinFeeOracle, _networkFeeOracle);
+        bitcoinFeeOracle = _networkFeeOracle;
     }
 
     /// @notice Updates Bitcoin transaction fee
     /// @dev Only owner can call this
     /// @param _networkFee The new Bitcoin transaction fee
-    function setNetworkFee(uint _networkFee) external override onlyOracle(msg.sender) {
-        _setNetworkFee(_networkFee);
+    function setNetworkFee(uint _networkFee) public override onlyOracle(msg.sender) {
+        emit NewNetworkFee(bitcoinFee, _networkFee);
+        bitcoinFee = _networkFee;
     }
 
     /// @notice                             Setter for third party address
     /// @dev                                Only owner can call this
     /// @param _thirdPartyAddress           third party address
-    function setThirdPartyAddress(uint _thirdPartyId, address _thirdPartyAddress) external override onlyOwner {
-        _setThirdPartyAddress(_thirdPartyId, _thirdPartyAddress);
+    function setThirdPartyAddress(uint _thirdPartyId, address _thirdPartyAddress) public override onlyOwner {
+        emit NewThirdPartyAddress(_thirdPartyId, thirdPartyAddress[_thirdPartyId], _thirdPartyAddress);
+        thirdPartyAddress[_thirdPartyId] = _thirdPartyAddress;
     }
 
     /// @notice                             Setter for third party fee
     /// @dev                                Only owner can call this
     /// @param _thirdPartyFee               third party fee
-    function setThirdPartyFee(uint _thirdPartyId, uint _thirdPartyFee) external override onlyOwner {
-        _setThirdPartyFee(_thirdPartyId, _thirdPartyFee);
+    function setThirdPartyFee(uint _thirdPartyId, uint _thirdPartyFee) public override onlyOwner {
+        emit NewThirdPartyFee(_thirdPartyId, thirdPartyFee[_thirdPartyId], _thirdPartyFee);
+        thirdPartyFee[_thirdPartyId] = _thirdPartyFee;
     }
 
     /// @notice Records users burn request
@@ -390,27 +413,19 @@ contract BurnRouterLogic is BurnRouterStorage,
         // Finds input tx id and checks its inclusion
         bytes32 _inputTxId = BitcoinHelper.calculateTxId(_versions[0], _inputVin, _inputVout, _locktimes[0]);
 
-        BurnRouterLib.disputeLockerHelper(
+        BurnRouterLib.disputeAndSlashLockerHelper(
+            _lockerLockingScript,
+            _versions,
+            [_inputVin, _outputVin, _outputVout],
             isUsedAsBurnProof,
             transferDeadline,
             relay,
             startingBlockNumber,
             _inputTxId,
-            _versions,
             _locktimes,
             _inputIntermediateNodes,
             _indexesAndBlockNumbers
         );     
-
-        BurnRouterLib.slashLockerHelper(
-            _lockerLockingScript,
-            _versions[1],
-            _inputVin,
-            _indexesAndBlockNumbers[0],
-            _outputVin, 
-            _outputVout,
-            _locktimes[1]
-        );
 
         // Slashes locker
         _slashLockerForDispute(
@@ -700,93 +715,6 @@ contract BurnRouterLogic is BurnRouterStorage,
                 "BurnRouterLogic: network fee transfer failed"
             );
         }
-    }
-
-    /// @notice Internal setter for relay contract address
-    function _setRelay(address _relay) private nonZeroAddress(_relay) {
-        emit NewRelay(relay, _relay);
-        relay = _relay;
-    }
-
-    /// @notice                             Internal setter for lockers contract address
-    /// @param _lockers                     The new lockers contract address
-    function _setLockers(address _lockers) private nonZeroAddress(_lockers) {
-        emit NewLockers(lockers, _lockers);
-        lockers = _lockers;
-    }
-
-    /// @notice Internal setter for teleBTC contract address
-    function _setTeleBTC(address _teleBTC) private nonZeroAddress(_teleBTC) {
-        emit NewTeleBTC(teleBTC, _teleBTC);
-        teleBTC = _teleBTC;
-    }
-
-    /// @notice Internal setter for protocol treasury address
-    function _setTreasury(address _treasury) private nonZeroAddress(_treasury) {
-        emit NewTreasury(treasury, _treasury);
-        treasury = _treasury;
-    }
-
-    /// @notice Internal setter for deadline of executing burn requests
-    function _setTransferDeadline(uint _transferDeadline) private {
-        uint _finalizationParameter = BurnRouterLib.finalizationParameter(relay);
-        require(
-            _msgSender() == owner() || transferDeadline < _finalizationParameter, 
-            "BurnRouterLogic: no permit"
-        );
-        // Gives lockers enough time to pay cc burn requests
-        require(_transferDeadline > _finalizationParameter, "BurnRouterLogic: low deadline");
-        emit NewTransferDeadline(transferDeadline, _transferDeadline);
-        transferDeadline = _transferDeadline;
-    }
-
-    /// @notice Internal setter for protocol percentage fee for burning tokens
-    function _setProtocolPercentageFee(uint _protocolPercentageFee) private {
-        require(MAX_PROTOCOL_FEE >= _protocolPercentageFee, "BurnRouterLogic: invalid fee");
-        emit NewProtocolPercentageFee(protocolPercentageFee, _protocolPercentageFee);
-        protocolPercentageFee = _protocolPercentageFee;
-    }
-
-    /// @notice Internal setter for starting block number
-    function _setStartingBlockNumber(uint _startingBlockNumber) private {
-        require(
-            _startingBlockNumber > startingBlockNumber,
-            "BurnRouterLogic: low startingBlockNumber"
-        );
-        startingBlockNumber = _startingBlockNumber;
-    }
-
-    /// @notice Internal setter for slasher percentage reward for disputing lockers
-    function _setSlasherPercentageReward(uint _slasherPercentageReward) private {
-        require(MAX_SLASHER_REWARD >= _slasherPercentageReward, "BurnRouterLogic: invalid reward");
-        emit NewSlasherPercentageFee(slasherPercentageReward, _slasherPercentageReward);
-        slasherPercentageReward = _slasherPercentageReward;
-    }
-
-    /// @notice Internal setter for Bitcoin transaction fee
-    function _setNetworkFee(uint _networkFee) private {
-        emit NewNetworkFee(bitcoinFee, _networkFee);
-        bitcoinFee = _networkFee;
-    }
-
-    /// @notice Internal setter for Bitcoin fee oracle
-    function _setNetworkFeeOracle(address _networkFeeOracle) private {
-        emit NewNetworkFeeOracle(bitcoinFeeOracle, _networkFeeOracle);
-        bitcoinFeeOracle = _networkFeeOracle;
-    }
-
-    /// @notice                             Internal setter for third party address
-    /// @param _thirdPartyAddress           third party address
-    function _setThirdPartyAddress(uint _thirdPartyId, address _thirdPartyAddress) private {
-        emit NewThirdPartyAddress(_thirdPartyId, thirdPartyAddress[_thirdPartyId], _thirdPartyAddress);
-        thirdPartyAddress[_thirdPartyId] = _thirdPartyAddress;
-    }
-
-    /// @notice                             Internal setter for third party fee
-    /// @param _thirdPartyFee               third party fee
-    function _setThirdPartyFee(uint _thirdPartyId, uint _thirdPartyFee) private {
-        emit NewThirdPartyFee(_thirdPartyId, thirdPartyFee[_thirdPartyId], _thirdPartyFee);
-        thirdPartyFee[_thirdPartyId] = _thirdPartyFee;
     }
 
 }

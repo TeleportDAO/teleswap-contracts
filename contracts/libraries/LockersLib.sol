@@ -8,18 +8,18 @@ import "../erc20/interfaces/ITeleBTC.sol";
 import "../types/DataTypes.sol";
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 import "../routers/interfaces/IBurnRouter.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 
 library LockersLib {
 
-    using SafeERC20 for IERC20;
-
-    function requestToBecomeLockerValidation(
+    function requestToBecomeLocker(
         mapping(address => DataTypes.locker) storage lockersMapping,
         DataTypes.lockersLibParam memory libParams,
         address theLockerTargetAddress,
         uint _lockedTDTAmount,
-        uint _lockedNativeTokenAmount
+        uint _lockedNativeTokenAmount,
+        bytes calldata _candidateLockingScript,
+        ScriptTypes _lockerRescueType,
+        bytes calldata _lockerRescueScript
     ) external {
 
         require(
@@ -46,17 +46,6 @@ library LockersLib {
             theLockerTargetAddress == address(0),
             "Lockers: used locking script"
         );
-
-    }
-
-    function requestToBecomeLocker(
-        mapping(address => DataTypes.locker) storage lockersMapping,
-        bytes calldata _candidateLockingScript,
-        uint _lockedTDTAmount,
-        uint _lockedNativeTokenAmount,
-        ScriptTypes _lockerRescueType,
-        bytes calldata _lockerRescueScript
-    ) external {
 
         DataTypes.locker memory locker_;
         locker_.lockerLockingScript = _candidateLockingScript;
@@ -208,7 +197,6 @@ library LockersLib {
             = theLocker.reservedNativeTokenForSlash + neededNativeTokenForSlash;
 
         
-        payable(_rewardRecipient).transfer(rewardInNativeToken);
     }
 
     function slashIdleLocker(
@@ -216,10 +204,8 @@ library LockersLib {
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
         uint _rewardAmount,
-        uint _amount,
-        address _rewardRecipient,
-        address _recipient
-    ) external returns (uint rewardAmountInNativeToken, uint equivalentNativeToken) {
+        uint _amount
+    ) external returns (uint equivalentNativeToken) {
 
         require(
             theLocker.isLocker,
@@ -242,11 +228,6 @@ library LockersLib {
         theLocker.nativeTokenLockedAmount
         = theLocker.nativeTokenLockedAmount - equivalentNativeToken;
 
-        // Transfers TNT to user
-        payable(_recipient).transfer(equivalentNativeToken*_amount/(_amount + _rewardAmount));
-        // Transfers TNT to slasher
-        uint rewardAmountInNativeToken = equivalentNativeToken - (equivalentNativeToken*_amount/(_amount + _rewardAmount));
-        payable(_rewardRecipient).transfer(rewardAmountInNativeToken);
     }
 
     function maximumBuyableCollateral(
@@ -292,9 +273,14 @@ library LockersLib {
     }
 
     function addToCollateral(
+        uint value,
         DataTypes.locker storage theLocker,
         uint _addingNativeTokenAmount
     ) external {
+        require(
+            value == _addingNativeTokenAmount,
+            "Lockers: msg value"
+        );
 
         require(
             theLocker.isLocker,
@@ -367,6 +353,38 @@ library LockersLib {
             ITeleBTC(libParams.teleBTC).decimals(),
             libConstants.NativeToken,
             libParams.teleBTC
+        );
+    }
+
+
+    /// @notice                             Get how much the locker can mint
+    /// @dev                                Net minted amount is total minted minus total burnt for the locker
+    /// @return theLockerCapacity           The net minted of the locker
+    function getLockerCapacity(
+        DataTypes.locker storage theLocker,
+        DataTypes.lockersLibConstants memory libConstants,
+        DataTypes.lockersLibParam memory libParams,
+        uint netMinted,
+        uint amount
+    ) public view returns (uint theLockerCapacity) {
+        uint _lockerCollateralInTeleBTC = lockerCollateralInTeleBTC(
+            theLocker,
+            libConstants,
+            libParams
+        )*libConstants.OneHundredPercent/libParams.collateralRatio;
+
+
+        if (_lockerCollateralInTeleBTC > netMinted) {
+            theLockerCapacity =  _lockerCollateralInTeleBTC - netMinted;
+        } else {
+            theLockerCapacity = 0;
+        }
+
+
+
+        require(
+            theLockerCapacity >= amount,
+            "Lockers: insufficient capacity"
         );
     }
 

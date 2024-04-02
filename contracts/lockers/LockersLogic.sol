@@ -44,17 +44,17 @@ contract LockersLogic is LockersStorageStructure, ILockers,
             "Lockers: amount is zero"
         );
 
-        _setTeleportDAOToken(_TeleportDAOToken);
-        _setTeleBTC(_teleBTC);
-        _setCCBurnRouter(_ccBurnRouter);
-        _setExchangeConnector(_exchangeConnector);
-        _setPriceOracle(_priceOracle);
-        _setMinRequiredTDTLockedAmount(_minRequiredTDTLockedAmount);
-        _setMinRequiredTNTLockedAmount(_minRequiredTNTLockedAmount);
-        _setCollateralRatio(_collateralRatio);
-        _setLiquidationRatio(_liquidationRatio);
-        _setLockerPercentageFee(_lockerPercentageFee);
-        _setPriceWithDiscountRatio(_priceWithDiscountRatio);
+        setTeleportDAOToken(_TeleportDAOToken);
+        setTeleBTC(_teleBTC);
+        setCCBurnRouter(_ccBurnRouter);
+        setExchangeConnector(_exchangeConnector);
+        setPriceOracle(_priceOracle);
+        setMinRequiredTDTLockedAmount(_minRequiredTDTLockedAmount);
+        setMinRequiredTNTLockedAmount(_minRequiredTNTLockedAmount);
+        setCollateralRatio(_collateralRatio);
+        setLiquidationRatio(_liquidationRatio);
+        setLockerPercentageFee(_lockerPercentageFee);
+        setPriceWithDiscountRatio(_priceWithDiscountRatio);
 
         libConstants.OneHundredPercent = ONE_HUNDRED_PERCENT;
         libConstants.HealthFactor = HEALTH_FACTOR;
@@ -166,79 +166,124 @@ contract LockersLogic is LockersStorageStructure, ILockers,
     /// @notice                       Changes teleportDAO token in lockers 
     /// @dev                          Only current owner can call this
     /// @param _tdtTokenAddress       The new teleportDAO token address
-    function setTeleportDAOToken(address _tdtTokenAddress) external override onlyOwner {
-        _setTeleportDAOToken(_tdtTokenAddress);
+    function setTeleportDAOToken(address _tdtTokenAddress) public override onlyOwner nonZeroAddress(_tdtTokenAddress) {
+        emit NewTeleportDAOToken(TeleportDAOToken, _tdtTokenAddress);
+        TeleportDAOToken = _tdtTokenAddress;
+        libParams.teleportDAOToken = TeleportDAOToken; 
     }
 
     /// @notice                       Changes percentage fee of locker
     /// @dev                          Only current owner can call this
     /// @param _lockerPercentageFee   The new locker percentage fee
-    function setLockerPercentageFee(uint _lockerPercentageFee) external override onlyOwner {
-        _setLockerPercentageFee(_lockerPercentageFee);
+    function setLockerPercentageFee(uint _lockerPercentageFee) public override onlyOwner {
+        require(_lockerPercentageFee <= MAX_LOCKER_FEE, "Lockers: invalid locker fee");
+        emit NewLockerPercentageFee(lockerPercentageFee, _lockerPercentageFee);
+        lockerPercentageFee = _lockerPercentageFee;
+        libParams.lockerPercentageFee = lockerPercentageFee;
     }
 
     /// @notice                          Changes price with discount ratio
     /// @dev                             Only current owner can call this
     /// @param _priceWithDiscountRatio   The new price with discount ratioo
-    function setPriceWithDiscountRatio(uint _priceWithDiscountRatio) external override onlyOwner {
-        _setPriceWithDiscountRatio(_priceWithDiscountRatio);
+    function setPriceWithDiscountRatio(uint _priceWithDiscountRatio) public override onlyOwner {
+        require(
+            _priceWithDiscountRatio <= ONE_HUNDRED_PERCENT,
+            "Lockers: less than 100%"
+        );
+        emit NewPriceWithDiscountRatio(priceWithDiscountRatio, _priceWithDiscountRatio);
+        
+        priceWithDiscountRatio= _priceWithDiscountRatio;
+        libParams.priceWithDiscountRatio = priceWithDiscountRatio;
     }
 
     /// @notice         Changes the required TDT token bond amount to become locker
     /// @dev            Only current owner can call this
     /// @param _minRequiredTDTLockedAmount   The new required TDT token bond amount
-    function setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) external override onlyOwner {
-        _setMinRequiredTDTLockedAmount(_minRequiredTDTLockedAmount);
+    function setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) public override onlyOwner {
+        emit NewMinRequiredTDTLockedAmount(minRequiredTDTLockedAmount, _minRequiredTDTLockedAmount);
+        minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
+        libParams.minRequiredTDTLockedAmount = minRequiredTDTLockedAmount;
     }
 
     /// @notice         Changes the required native token bond amount to become locker
     /// @dev            Only current owner can call this
     ///                 It should be a non-zero value
     /// @param _minRequiredTNTLockedAmount   The new required native token bond amount
-    function setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) external override onlyOwner {
-        _setMinRequiredTNTLockedAmount(_minRequiredTNTLockedAmount);
+    function setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) public override onlyOwner {
+        require(
+            _minRequiredTNTLockedAmount != 0,
+            "Lockers: amount is zero"
+        );
+        emit NewMinRequiredTNTLockedAmount(minRequiredTNTLockedAmount, _minRequiredTNTLockedAmount);
+        minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
+        libParams.minRequiredTNTLockedAmount = minRequiredTNTLockedAmount;
     }
 
     /// @notice                 Changes the price oracle
     /// @dev                    Only current owner can call this
     /// @param _priceOracle     The new price oracle
-    function setPriceOracle(address _priceOracle) external override nonZeroAddress(_priceOracle) onlyOwner {
-        _setPriceOracle(_priceOracle);
+    function setPriceOracle(address _priceOracle) public override nonZeroAddress(_priceOracle) onlyOwner {
+        emit NewPriceOracle(priceOracle, _priceOracle);
+        priceOracle = _priceOracle;
+        libParams.priceOracle = priceOracle;
     }
 
     /// @notice                Changes cc burn router contract
     /// @dev                   Only current owner can call this
     /// @param _ccBurnRouter   The new cc burn router contract address
-    function setCCBurnRouter(address _ccBurnRouter) external override nonZeroAddress(_ccBurnRouter) onlyOwner {
-        _setCCBurnRouter(_ccBurnRouter);
+    function setCCBurnRouter(address _ccBurnRouter) public override nonZeroAddress(_ccBurnRouter) onlyOwner {
+        emit NewCCBurnRouter(ccBurnRouter, _ccBurnRouter);
+        emit BurnerRemoved(ccBurnRouter);
+        burners[ccBurnRouter] = false;
+        ccBurnRouter = _ccBurnRouter;
+        libParams.ccBurnRouter = ccBurnRouter;
+        emit BurnerAdded(ccBurnRouter);
+        burners[ccBurnRouter] = true;
     }
 
     /// @notice                    Changes exchange connector contract address
     /// @dev                       Only owner can call this
     /// @param _exchangeConnector  The new exchange router contract address
-    function setExchangeConnector(address _exchangeConnector) external override nonZeroAddress(_exchangeConnector) onlyOwner {
-        _setExchangeConnector(_exchangeConnector);
+    function setExchangeConnector(address _exchangeConnector) public override nonZeroAddress(_exchangeConnector) onlyOwner {
+        emit NewExchangeConnector(exchangeConnector, _exchangeConnector);
+        exchangeConnector = _exchangeConnector;
+        libParams.exchangeConnector = exchangeConnector;
     }
 
     /// @notice                 Changes wrapped token contract address
     /// @dev                    Only owner can call this
     /// @param _teleBTC         The new wrapped token contract address
-    function setTeleBTC(address _teleBTC) external override nonZeroAddress(_teleBTC) onlyOwner {
-        _setTeleBTC(_teleBTC);
+    function setTeleBTC(address _teleBTC) public override nonZeroAddress(_teleBTC) onlyOwner {
+        emit NewTeleBTC(teleBTC, _teleBTC);
+        teleBTC = _teleBTC;
+        libParams.teleBTC = teleBTC;
     }
 
     /// @notice                     Changes collateral ratio
     /// @dev                        Only owner can call this
     /// @param _collateralRatio     The new collateral ratio
-    function setCollateralRatio(uint _collateralRatio) external override onlyOwner {
-        _setCollateralRatio(_collateralRatio);
+    function setCollateralRatio(uint _collateralRatio) public override onlyOwner {
+        require(_collateralRatio > liquidationRatio, "Lockers: must CR > LR");
+        emit NewCollateralRatio(collateralRatio, _collateralRatio);
+        collateralRatio = _collateralRatio;
+        libParams.collateralRatio = collateralRatio;
     }
 
     /// @notice                     Changes liquidation ratio
     /// @dev                        Only owner can call this
     /// @param _liquidationRatio    The new liquidation ratio
-    function setLiquidationRatio(uint _liquidationRatio) external override onlyOwner { 
-        _setLiquidationRatio(_liquidationRatio);
+    function setLiquidationRatio(uint _liquidationRatio) public override onlyOwner { 
+        // require(
+        //     _liquidationRatio >= ONE_HUNDRED_PERCENT,
+        //     "Lockers: problem in CR and LR"
+        // );
+        require(
+            collateralRatio > _liquidationRatio,
+            "Lockers: must CR > LR"
+        );
+        emit NewLiquidationRatio(liquidationRatio, _liquidationRatio);
+        liquidationRatio = _liquidationRatio;
+        libParams.liquidationRatio = liquidationRatio;
     }
 
     /// @notice                                 Adds user to candidates list
@@ -260,26 +305,20 @@ contract LockersLogic is LockersStorageStructure, ILockers,
         bytes calldata _lockerRescueScript
     ) external override payable nonReentrant returns (bool) {
 
-        LockersLib.requestToBecomeLockerValidation(
+        LockersLib.requestToBecomeLocker(
                 lockersMapping,
                 libParams,
                 lockerTargetAddress[_candidateLockingScript],
                 _lockedTDTAmount,
-                _lockedNativeTokenAmount
+                _lockedNativeTokenAmount,
+                _candidateLockingScript,
+                _lockerRescueType,
+                _lockerRescueScript
             );
         
         IERC20(libParams.teleportDAOToken).safeTransferFrom(_msgSender(), address(this), _lockedTDTAmount);
 
         totalNumberOfCandidates = totalNumberOfCandidates + 1;
-
-        LockersLib.requestToBecomeLocker(
-                lockersMapping,
-                _candidateLockingScript,
-                _lockedTDTAmount,
-                _lockedNativeTokenAmount,
-                _lockerRescueType,
-                _lockerRescueScript
-            );
 
         emit RequestAddLocker(
             _msgSender(),
@@ -410,9 +449,48 @@ contract LockersLogic is LockersStorageStructure, ILockers,
 
     /// @notice                       Removes a locker from lockers list
     /// @dev                          Only locker can call this function
+    ///                               Checks that net minted TeleBTC of locker is zero
+    ///                               Sends back available bond of locker (in TDT and TNT)
     /// @return                       True if locker is removed successfully
     function selfRemoveLocker() external override nonReentrant returns (bool) {
-        _removeLocker(_msgSender());
+        DataTypes.locker memory _removingLocker = lockersMapping[_msgSender()];
+
+        require(
+            _removingLocker.isLocker,
+            "Lockers: no locker"
+        );
+
+        require(
+            !isLockerActive(_msgSender()),
+            "Lockers: still active"
+        );
+
+        require(
+            _removingLocker.netMinted == 0,
+            "Lockers: 0 net minted"
+        );
+
+        require(
+            _removingLocker.slashingTeleBTCAmount == 0,
+            "Lockers: 0 slashing TBTC"
+        );
+
+        // Removes locker from lockersMapping
+
+        delete lockerTargetAddress[lockersMapping[_msgSender()].lockerLockingScript];
+        delete lockersMapping[_msgSender()];
+        totalNumberOfLockers = totalNumberOfLockers - 1;
+
+        // Sends back TDT and TNT collateral
+        IERC20(TeleportDAOToken).safeTransfer(_msgSender(), _removingLocker.TDTLockedAmount);
+        Address.sendValue(payable(_msgSender()), _removingLocker.nativeTokenLockedAmount);
+
+        emit LockerRemoved(
+            _msgSender(),
+            _removingLocker.lockerLockingScript,
+            _removingLocker.TDTLockedAmount,
+            _removingLocker.nativeTokenLockedAmount
+        );
         return true;
     }
 
@@ -439,15 +517,19 @@ contract LockersLogic is LockersStorageStructure, ILockers,
             "Lockers: message sender is not ccBurn"
         );
 
-        (uint rewardAmountInNativeToken, uint equivalentNativeToken) = LockersLib.slashIdleLocker(
+        (uint equivalentNativeToken) = LockersLib.slashIdleLocker(
             lockersMapping[_lockerTargetAddress],
             libConstants,
             libParams,
             _rewardAmount,
-            _amount,
-            _rewardRecipient,
-            _recipient
+            _amount
         );
+
+        // Transfers TNT to user
+        payable(_recipient).transfer(equivalentNativeToken*_amount/(_amount + _rewardAmount));
+        // Transfers TNT to slasher
+        uint rewardAmountInNativeToken = equivalentNativeToken - (equivalentNativeToken*_amount/(_amount + _rewardAmount));
+        payable(_rewardRecipient).transfer(rewardAmountInNativeToken);
 
         emit LockerSlashed(
             _lockerTargetAddress,
@@ -493,6 +575,8 @@ contract LockersLogic is LockersStorageStructure, ILockers,
             _amount,
             _rewardRecipient
         );
+
+        payable(_rewardRecipient).transfer(rewardInNativeToken);
 
         emit LockerSlashed(
             _lockerTargetAddress,
@@ -605,13 +689,8 @@ contract LockersLogic is LockersStorageStructure, ILockers,
         address _lockerTargetAddress,
         uint _addingNativeTokenAmount
     ) external override payable nonReentrant returns (bool) {
-
-        require(
-            msg.value == _addingNativeTokenAmount,
-            "Lockers: msg value"
-        );
-
         LockersLib.addToCollateral(
+            msg.value,
             lockersMapping[_lockerTargetAddress],
             _addingNativeTokenAmount
         );
@@ -683,11 +762,14 @@ contract LockersLogic is LockersStorageStructure, ILockers,
 
         address _lockerTargetAddress = lockerTargetAddress[_lockerLockingScript];
 
-        uint theLockerCapacity = getLockerCapacity(_lockerTargetAddress);
-
-        require(
-            theLockerCapacity >= _amount,
-            "Lockers: insufficient capacity"
+        require(_lockerTargetAddress != address(0), "Lockers: address is zero");
+        
+        uint theLockerCapacity = LockersLib.getLockerCapacity(
+            lockersMapping[_lockerTargetAddress],
+            libConstants,
+            libParams,
+            lockersMapping[_lockerTargetAddress].netMinted,
+            _amount
         );
 
         require(
@@ -791,32 +873,11 @@ contract LockersLogic is LockersStorageStructure, ILockers,
         }
     }
 
-    /// @notice                             Get how much the locker can mint
-    /// @dev                                Net minted amount is total minted minus total burnt for the locker
-    /// @param _lockerTargetAddress         Address of locker on the target chain
-    /// @return                             The net minted of the locker
-    function getLockerCapacity(
-        address _lockerTargetAddress
-    ) public override view nonZeroAddress(_lockerTargetAddress) returns (uint) {
-        uint _lockerCollateralInTeleBTC = LockersLib.lockerCollateralInTeleBTC(
-            lockersMapping[_lockerTargetAddress],
-            libConstants,
-            libParams
-        )*ONE_HUNDRED_PERCENT/collateralRatio;
-
-        if (_lockerCollateralInTeleBTC > lockersMapping[_lockerTargetAddress].netMinted) {
-            return _lockerCollateralInTeleBTC - lockersMapping[_lockerTargetAddress].netMinted;
-        } else {
-            return 0;
-        }
-    }
-
     /**
      * @dev         Returns the price of one native token (1*10^18) in teleBTC
      * @return uint The price of one unit of collateral token (native token in teleBTC)
      */
     function priceOfOneUnitOfCollateralInBTC() public override view returns (uint) {
-
         return LockersLib.priceOfOneUnitOfCollateralInBTC(
             libConstants,
             libParams
@@ -836,164 +897,6 @@ contract LockersLogic is LockersStorageStructure, ILockers,
     /// @return bool
     function isBurner(address account) public override view nonZeroAddress(account) returns (bool) {
         return burners[account];
-    }
-
-    // *************** Private functions ***************
-
-    /// @notice                       Removes a locker from lockers list
-    /// @dev                          Checks that net minted TeleBTC of locker is zero
-    ///                               Sends back available bond of locker (in TDT and TNT)
-    /// @param _lockerTargetAddress   Target address of locker to be removed
-    function _removeLocker(address _lockerTargetAddress) private {
-
-        require(
-            lockersMapping[_lockerTargetAddress].isLocker,
-            "Lockers: no locker"
-        );
-
-        require(
-            !isLockerActive(_lockerTargetAddress),
-            "Lockers: still active"
-        );
-
-        require(
-            lockersMapping[_lockerTargetAddress].netMinted == 0,
-            "Lockers: 0 net minted"
-        );
-
-        require(
-            lockersMapping[_lockerTargetAddress].slashingTeleBTCAmount == 0,
-            "Lockers: 0 slashing TBTC"
-        );
-
-        DataTypes.locker memory _removingLocker = lockersMapping[_lockerTargetAddress];
-
-        // Removes locker from lockersMapping
-
-        delete lockerTargetAddress[lockersMapping[_lockerTargetAddress].lockerLockingScript];
-        delete lockersMapping[_lockerTargetAddress];
-        totalNumberOfLockers = totalNumberOfLockers - 1;
-
-        // Sends back TDT and TNT collateral
-        IERC20(TeleportDAOToken).safeTransfer(_lockerTargetAddress, _removingLocker.TDTLockedAmount);
-        Address.sendValue(payable(_lockerTargetAddress), _removingLocker.nativeTokenLockedAmount);
-
-        emit LockerRemoved(
-            _lockerTargetAddress,
-            _removingLocker.lockerLockingScript,
-            _removingLocker.TDTLockedAmount,
-            _removingLocker.nativeTokenLockedAmount
-        );
-
-    }
-
-    /// @notice                     Internal setter for teleportDAO token of lockers
-    /// @param _tdtTokenAddress     The new teleportDAO token address
-    function _setTeleportDAOToken(address _tdtTokenAddress) private nonZeroAddress(_tdtTokenAddress) {
-        emit NewTeleportDAOToken(TeleportDAOToken, _tdtTokenAddress);
-        TeleportDAOToken = _tdtTokenAddress;
-        libParams.teleportDAOToken = TeleportDAOToken;
-    }
-
-    /// @notice                       Internal setter for percentage fee of locker
-    /// @param _lockerPercentageFee   The new locker percentage fee
-    function _setLockerPercentageFee(uint _lockerPercentageFee) private {
-        require(_lockerPercentageFee <= MAX_LOCKER_FEE, "Lockers: invalid locker fee");
-        emit NewLockerPercentageFee(lockerPercentageFee, _lockerPercentageFee);
-        lockerPercentageFee = _lockerPercentageFee;
-        libParams.lockerPercentageFee = lockerPercentageFee;
-    }
-
-    function _setPriceWithDiscountRatio(uint _priceWithDiscountRatio) private {
-        require(
-            _priceWithDiscountRatio <= ONE_HUNDRED_PERCENT,
-            "Lockers: less than 100%"
-        );
-        emit NewPriceWithDiscountRatio(priceWithDiscountRatio, _priceWithDiscountRatio);
-        
-        priceWithDiscountRatio= _priceWithDiscountRatio;
-        libParams.priceWithDiscountRatio = priceWithDiscountRatio;
-    }
-
-    /// @notice         Internal setter for the required bond amount to become locker
-    /// @param _minRequiredTDTLockedAmount   The new required bond amount
-    function _setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) private {
-        emit NewMinRequiredTDTLockedAmount(minRequiredTDTLockedAmount, _minRequiredTDTLockedAmount);
-        minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
-        libParams.minRequiredTDTLockedAmount = minRequiredTDTLockedAmount;
-    }
-
-    /// @notice         Internal setter for the required bond amount to become locker
-    /// @param _minRequiredTNTLockedAmount   The new required bond amount
-    function _setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) private {
-        require(
-            _minRequiredTNTLockedAmount != 0,
-            "Lockers: amount is zero"
-        );
-        emit NewMinRequiredTNTLockedAmount(minRequiredTNTLockedAmount, _minRequiredTNTLockedAmount);
-        minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
-        libParams.minRequiredTNTLockedAmount = minRequiredTNTLockedAmount;
-    }
-
-    /// @notice                 Internal setter for the price oracle
-    /// @param _priceOracle     The new price oracle
-    function _setPriceOracle(address _priceOracle) private nonZeroAddress(_priceOracle) {
-        emit NewPriceOracle(priceOracle, _priceOracle);
-        priceOracle = _priceOracle;
-        libParams.priceOracle = priceOracle;
-    }
-
-    /// @notice                Internal setter for cc burn router contract
-    /// @param _ccBurnRouter   The new cc burn router contract address
-    function _setCCBurnRouter(address _ccBurnRouter) private nonZeroAddress(_ccBurnRouter) {
-        emit NewCCBurnRouter(ccBurnRouter, _ccBurnRouter);
-        emit BurnerRemoved(ccBurnRouter);
-        burners[ccBurnRouter] = false;
-        ccBurnRouter = _ccBurnRouter;
-        libParams.ccBurnRouter = ccBurnRouter;
-        emit BurnerAdded(ccBurnRouter);
-        burners[ccBurnRouter] = true;
-    }
-
-    /// @notice                 Internal setter for exchange router contract address and updates wrapped avax addresses
-    /// @param _exchangeConnector  The new exchange router contract address
-    function _setExchangeConnector(address _exchangeConnector) private nonZeroAddress(_exchangeConnector) {
-        emit NewExchangeConnector(exchangeConnector, _exchangeConnector);
-        exchangeConnector = _exchangeConnector;
-        libParams.exchangeConnector = exchangeConnector;
-    }
-
-    /// @notice                 Internal setter for wrapped token contract address
-    /// @param _teleBTC         The new wrapped token contract address
-    function _setTeleBTC(address _teleBTC) private nonZeroAddress(_teleBTC) {
-        emit NewTeleBTC(teleBTC, _teleBTC);
-        teleBTC = _teleBTC;
-        libParams.teleBTC = teleBTC;
-    }
-
-    /// @notice                     Internal setter for collateral ratio
-    /// @param _collateralRatio     The new collateral ratio
-    function _setCollateralRatio(uint _collateralRatio) private {
-        require(_collateralRatio > liquidationRatio, "Lockers: must CR > LR");
-        emit NewCollateralRatio(collateralRatio, _collateralRatio);
-        collateralRatio = _collateralRatio;
-        libParams.collateralRatio = collateralRatio;
-    }
-
-    /// @notice                     Internal setter for liquidation ratio
-    /// @param _liquidationRatio    The new liquidation ratio
-    function _setLiquidationRatio(uint _liquidationRatio) private {
-        // require(
-        //     _liquidationRatio >= ONE_HUNDRED_PERCENT,
-        //     "Lockers: problem in CR and LR"
-        // );
-        require(
-            collateralRatio > _liquidationRatio,
-            "Lockers: must CR > LR"
-        );
-        emit NewLiquidationRatio(liquidationRatio, _liquidationRatio);
-        liquidationRatio = _liquidationRatio;
-        libParams.liquidationRatio = liquidationRatio;
     }
 
 }

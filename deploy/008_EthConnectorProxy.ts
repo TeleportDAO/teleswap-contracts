@@ -10,14 +10,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const ccExchangeRouterLogic = await deployments.get("EthCcExchangeRouterLogic")
+    const ethConnectorLogic = await deployments.get("EthConnectorLogic")
 
-    const deployedContract = await deploy("EthCcExchangeRouterProxy", {
+    const deployedContract = await deploy("EthConnectorProxy", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            ccExchangeRouterLogic.address,
+            ethConnectorLogic.address,
             deployer,
             "0x"
         ],
@@ -27,14 +27,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await verify(
             deployedContract.address, 
             [
-                ccExchangeRouterLogic.address,
+                ethConnectorLogic.address,
                 deployer,
                 "0x"
             ], 
-            "contracts/routers/EthCcExchangeRouterProxy.sol:EthCcExchangeRouterProxy"
+            "contracts/routers/EthConnectorProxy.sol:EthConnectorProxy"
         )
     }
 };
 
 export default func;
-func.tags = ["EthCcExchangeRouterProxy"];
+func.tags = ["EthConnectorProxy"];

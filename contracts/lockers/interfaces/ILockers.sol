@@ -192,8 +192,6 @@ interface ILockers is ILockersStorage {
 
     function isLockerActive(address _lockerTargetAddress) external view returns (bool);
 
-    function getLockerCapacity(address _lockerTargetAddress) external view returns (uint);
-
     function priceOfOneUnitOfCollateralInBTC() external view returns (uint);
 
     function isMinter(address account) external view returns(bool);

@@ -9,30 +9,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const ccExchangeRouterLib = await deploy("CcExchangeRouterLib", {
-        from: deployer,
-        log: true,
-        skipIfAlreadyDeployed: true,
-    })
-
-    const deployedContract = await deploy("CcExchangeRouterLogic", {
+    const deployedContract = await deploy("EthConnectorLogic", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [],
-        libraries: {
-            "CcExchangeRouterLib": ccExchangeRouterLib.address
-        },
     });
 
     if (network.name != "hardhat" && process.env.ETHERSCAN_API_KEY && process.env.VERIFY_OPTION == "1") {
         await verify(
             deployedContract.address, 
             [], 
-            "contracts/routers/CcExchangeRouterLogic.sol:CcExchangeRouterLogic"
+            "contracts/routers/EthConnectorLogic.sol:EthConnectorLogic"
         )
     }
 };
 
 export default func;
-func.tags = ["CcExchangeRouterLogic"];
+func.tags = ["EthConnectorLogic"];

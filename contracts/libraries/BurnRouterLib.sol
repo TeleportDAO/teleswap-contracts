@@ -64,13 +64,15 @@ library BurnRouterLib {
         burnRequests[_lockerTargetAddress][_index].isTransferred = true;
     }
 
-    function disputeLockerHelper(
+    function disputeAndSlashLockerHelper(
+        bytes memory _lockerLockingScript,
+        bytes4[] memory _versions, // [inputTxVersion, outputTxVersion]
+        bytes[3] memory _inputOutputVinVout, // [_inputVin, _outputVin, _outputVout]
         mapping(bytes32 => bool) storage _isUsedAsBurnProof,
         uint _transferDeadline,
         address _relay,
         uint _startingBlockNumber,
         bytes32 _inputTxId,
-        bytes4[] memory _versions, // [inputTxVersion, outputTxVersion]
         bytes4[] memory _locktimes, // [inputTxLocktime, outputTxLocktime]
         bytes memory _inputIntermediateNodes,
         uint[] memory _indexesAndBlockNumbers // [inputIndex, inputTxIndex, inputTxBlockNumber]
@@ -115,6 +117,25 @@ library BurnRouterLib {
             lastSubmittedHeight(_relay) > _transferDeadline + _indexesAndBlockNumbers[2],
             "BurnRouterLogic: deadline not passed"
         ); 
+
+        // Extracts outpoint id and index from input tx
+        (bytes32 _outpointId, uint _outpointIndex) = BitcoinHelper.extractOutpoint(
+            _inputOutputVinVout[0],
+            _indexesAndBlockNumbers[0] // Index of malicious input in input tx
+        );
+
+        // Checks that "outpoint tx id == output tx id"
+        require(
+            _outpointId == BitcoinHelper.calculateTxId(_versions[1], _inputOutputVinVout[1], _inputOutputVinVout[2], _locktimes[1]),
+            "BurnRouterLogic: wrong output tx"
+        );
+
+        // Checks that _outpointIndex of _outpointId belongs to locker locking script
+        require(
+            keccak256(BitcoinHelper.getLockingScript(_inputOutputVinVout[2], _outpointIndex)) ==
+            keccak256(_lockerLockingScript),
+            "BurnRouterLogic: not for locker"
+        );
     }
 
     function slashLockerHelper(
@@ -204,6 +225,7 @@ library BurnRouterLib {
             feeAmount
         );
 
+        //TODO?
         // Sends extra ETH back to msg.sender
         Address.sendValue(payable(msg.sender), msg.value - feeAmount);
 

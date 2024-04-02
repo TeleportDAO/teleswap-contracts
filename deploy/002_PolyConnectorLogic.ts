@@ -9,7 +9,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const deployedContract = await deploy("EthCcExchangeRouterLogic", {
+    const deployedContract = await deploy("PolyConnectorLogic", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
@@ -20,10 +20,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await verify(
             deployedContract.address, 
             [], 
-            "contracts/routers/EthCcExchangeRouterLogic.sol:EthCcExchangeRouterLogic"
+            "contracts/routers/PolyConnectorLogic.sol:PolyConnectorLogic"
         )
     }
 };
 
 export default func;
-func.tags = ["EthCcExchangeRouterLogic"];
+func.tags = ["PolyConnectorLogic"];
