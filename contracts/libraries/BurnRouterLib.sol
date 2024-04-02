@@ -3,6 +3,7 @@ pragma solidity >=0.8.0 <0.8.4;
 
 import "@teleportdao/btc-evm-bridge/contracts/relay/interfaces/IBitcoinRelay.sol";
 import "@teleportdao/btc-evm-bridge/contracts/libraries/BitcoinHelper.sol";
+import "../lockers/interfaces/ILockers.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../routers/BurnRouterStorage.sol";
@@ -114,7 +115,61 @@ library BurnRouterLib {
             lastSubmittedHeight(_relay) > _transferDeadline + _indexesAndBlockNumbers[2],
             "BurnRouterLogic: deadline not passed"
         ); 
+    }
 
+    function slashLockerHelper(
+        bytes memory _lockerLockingScript,
+        bytes4 _version,
+        bytes memory _inputVin,
+        uint _index,
+        bytes memory _outputVin,
+        bytes memory _outputVout,
+        bytes4 _locktime
+    ) external {
+        // Extracts outpoint id and index from input tx
+        (bytes32 _outpointId, uint _outpointIndex) = BitcoinHelper.extractOutpoint(
+            _inputVin,
+            _index // Index of malicious input in input tx
+        );
+
+        // Checks that "outpoint tx id == output tx id"
+        require(
+            _outpointId == BitcoinHelper.calculateTxId(_version, _outputVin, _outputVout, _locktime),
+            "BurnRouterLogic: wrong output tx"
+        );
+
+        // Checks that _outpointIndex of _outpointId belongs to locker locking script
+        require(
+            keccak256(BitcoinHelper.getLockingScript(_outputVout, _outpointIndex)) ==
+            keccak256(_lockerLockingScript),
+            "BurnRouterLogic: not for locker"
+        );
+
+    }
+
+    function burnProofHelper(
+        uint256 _blockNumber,
+        uint256 startingBlockNumber,
+        bytes4 _locktime,
+        address lockers,
+        bytes memory _lockerLockingScript,
+        uint _burnReqIndexesLength,
+        uint _voutIndexesLength
+    ) external {
+        require(_blockNumber >= startingBlockNumber, "BurnRouterLogic: old request");
+        // Checks that locker's tx doesn't have any locktime
+        require(_locktime == bytes4(0), "BurnRouterLogic: non-zero lock time");
+
+        // Checks if the locking script is valid
+        require(
+            ILockers(lockers).isLocker(_lockerLockingScript),
+            "BurnRouterLogic: not locker"
+        );
+
+        require(
+            _burnReqIndexesLength == _voutIndexesLength,
+            "BurnRouterLogic: wrong indexes"
+        );
     }
 
     /// @notice Checks inclusion of the transaction in the specified block
@@ -153,6 +208,15 @@ library BurnRouterLib {
         Address.sendValue(payable(msg.sender), msg.value - feeAmount);
 
         return abi.decode(data, (bool));
+    }
+
+    /// @notice Checks the user hash script to be valid (based on its type)
+    function checkScriptType(bytes memory _userScript, ScriptTypes _scriptType) external pure {
+        if (_scriptType == ScriptTypes.P2PK || _scriptType == ScriptTypes.P2WSH || _scriptType == ScriptTypes.P2TR) {
+            require(_userScript.length == 32, "BurnRouterLogic: invalid script");
+        } else {
+            require(_userScript.length == 20, "BurnRouterLogic: invalid script");
+        }
     }
 
     function lastSubmittedHeight(address _relay) public view returns (uint) {

@@ -2,12 +2,17 @@
 pragma solidity >=0.8.0 <0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../oracle/interfaces/IPriceOracle.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../types/DataTypes.sol";
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
+import "../routers/interfaces/IBurnRouter.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 library LockersLib {
+
+    using SafeERC20 for IERC20;
 
     function requestToBecomeLockerValidation(
         mapping(address => DataTypes.locker) storage lockersMapping,
@@ -158,7 +163,8 @@ library LockersLib {
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
         uint _rewardAmount,
-        uint _amount
+        uint _amount,
+        address _rewardRecipient
     ) external returns (uint rewardInNativeToken, uint neededNativeTokenForSlash) {
 
         require(
@@ -200,6 +206,9 @@ library LockersLib {
 
         theLocker.reservedNativeTokenForSlash
             = theLocker.reservedNativeTokenForSlash + neededNativeTokenForSlash;
+
+        
+        payable(_rewardRecipient).transfer(rewardInNativeToken);
     }
 
     function slashIdleLocker(
@@ -207,8 +216,10 @@ library LockersLib {
         DataTypes.lockersLibConstants memory libConstants,
         DataTypes.lockersLibParam memory libParams,
         uint _rewardAmount,
-        uint _amount
-    ) external returns (uint equivalentNativeToken) {
+        uint _amount,
+        address _rewardRecipient,
+        address _recipient
+    ) external returns (uint rewardAmountInNativeToken, uint equivalentNativeToken) {
 
         require(
             theLocker.isLocker,
@@ -230,6 +241,12 @@ library LockersLib {
         // Updates locker's bond (in TNT)
         theLocker.nativeTokenLockedAmount
         = theLocker.nativeTokenLockedAmount - equivalentNativeToken;
+
+        // Transfers TNT to user
+        payable(_recipient).transfer(equivalentNativeToken*_amount/(_amount + _rewardAmount));
+        // Transfers TNT to slasher
+        uint rewardAmountInNativeToken = equivalentNativeToken - (equivalentNativeToken*_amount/(_amount + _rewardAmount));
+        payable(_rewardRecipient).transfer(rewardAmountInNativeToken);
     }
 
     function maximumBuyableCollateral(

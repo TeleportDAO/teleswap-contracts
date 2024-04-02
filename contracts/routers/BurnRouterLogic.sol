@@ -257,19 +257,14 @@ contract BurnRouterLogic is BurnRouterStorage,
         uint[] memory _burnReqIndexes,
         uint[] memory _voutIndexes
     ) external payable nonReentrant override returns (bool) {
-        require(_blockNumber >= startingBlockNumber, "BurnRouterLogic: old request");
-        // Checks that locker's tx doesn't have any locktime
-        require(_locktime == bytes4(0), "BurnRouterLogic: non-zero lock time");
-
-        // Checks if the locking script is valid
-        require(
-            ILockers(lockers).isLocker(_lockerLockingScript),
-            "BurnRouterLogic: not locker"
-        );
-
-        require(
-            _burnReqIndexes.length == _voutIndexes.length,
-            "BurnRouterLogic: wrong indexes"
+        BurnRouterLib.burnProofHelper(
+            _blockNumber,
+            startingBlockNumber,
+            _locktime,
+            lockers,
+            _lockerLockingScript,
+            _burnReqIndexes.length,
+            _voutIndexes.length
         );
 
         // Checks inclusion of transaction
@@ -407,23 +402,14 @@ contract BurnRouterLogic is BurnRouterStorage,
             _indexesAndBlockNumbers
         );     
 
-        // Extracts outpoint id and index from input tx
-        (bytes32 _outpointId, uint _outpointIndex) = BitcoinHelper.extractOutpoint(
+        BurnRouterLib.slashLockerHelper(
+            _lockerLockingScript,
+            _versions[1],
             _inputVin,
-            _indexesAndBlockNumbers[0] // Index of malicious input in input tx
-        );
-
-        // Checks that "outpoint tx id == output tx id"
-        require(
-            _outpointId == BitcoinHelper.calculateTxId(_versions[1], _outputVin, _outputVout, _locktimes[1]),
-            "BurnRouterLogic: wrong output tx"
-        );
-
-        // Checks that _outpointIndex of _outpointId belongs to locker locking script
-        require(
-            keccak256(BitcoinHelper.getLockingScript(_outputVout, _outpointIndex)) ==
-            keccak256(_lockerLockingScript),
-            "BurnRouterLogic: not for locker"
+            _indexesAndBlockNumbers[0],
+            _outputVin, 
+            _outputVout,
+            _locktimes[1]
         );
 
         // Slashes locker
@@ -470,7 +456,7 @@ contract BurnRouterLogic is BurnRouterStorage,
         uint thirdParty
     ) private returns (uint _burntAmount) {
         // Checks validity of user script
-        _checkScriptType(_userScript, _scriptType);
+        BurnRouterLib.checkScriptType(_userScript, _scriptType);
 
         // Checks if the given locking script is locker
         require(
@@ -645,15 +631,6 @@ contract BurnRouterLogic is BurnRouterStorage,
                     );
                 }
             }
-        }
-    }
-
-    /// @notice Checks the user hash script to be valid (based on its type)
-    function _checkScriptType(bytes memory _userScript, ScriptTypes _scriptType) private pure {
-        if (_scriptType == ScriptTypes.P2PK || _scriptType == ScriptTypes.P2WSH || _scriptType == ScriptTypes.P2TR) {
-            require(_userScript.length == 32, "BurnRouterLogic: invalid script");
-        } else {
-            require(_userScript.length == 20, "BurnRouterLogic: invalid script");
         }
     }
 

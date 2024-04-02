@@ -295,7 +295,6 @@ contract LockersLogic is LockersStorageStructure, ILockers,
     /// @dev                          A user who is still a candidate can revoke his/her request
     /// @return                       True if candidate is removed successfully
     function revokeRequest() external override nonReentrant returns (bool) {
-
         require(
             lockersMapping[_msgSender()].isCandidate,
             "Lockers: no req"
@@ -440,19 +439,15 @@ contract LockersLogic is LockersStorageStructure, ILockers,
             "Lockers: message sender is not ccBurn"
         );
 
-        uint equivalentNativeToken = LockersLib.slashIdleLocker(
+        (uint rewardAmountInNativeToken, uint equivalentNativeToken) = LockersLib.slashIdleLocker(
             lockersMapping[_lockerTargetAddress],
             libConstants,
             libParams,
             _rewardAmount,
-            _amount
+            _amount,
+            _rewardRecipient,
+            _recipient
         );
-
-        // Transfers TNT to user
-        payable(_recipient).transfer(equivalentNativeToken*_amount/(_amount + _rewardAmount));
-        // Transfers TNT to slasher
-        uint rewardAmountInNativeToken = equivalentNativeToken - (equivalentNativeToken*_amount/(_amount + _rewardAmount));
-        payable(_rewardRecipient).transfer(rewardAmountInNativeToken);
 
         emit LockerSlashed(
             _lockerTargetAddress,
@@ -495,10 +490,9 @@ contract LockersLogic is LockersStorageStructure, ILockers,
             libConstants,
             libParams,
             _rewardAmount,
-            _amount
+            _amount,
+            _rewardRecipient
         );
-
-        payable(_rewardRecipient).transfer(rewardInNativeToken);
 
         emit LockerSlashed(
             _lockerTargetAddress,
