@@ -9,7 +9,8 @@
   "usdc_token": "0xE097d6B3100777DC31B34dC2c58fB524C2e76921",
   "acceptable_delay": 7200,
   "chain_id": 137,
-  "treasury": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
+  "treasury": "0x4234c3aBeA751301579448594D3EA2398452a982",
+  "across": "0x4589Fbf26C6a456f075b5628178AF68abE03C5fF",
   "chain_link_oracles": {
     "matic_usd": "0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada",
     "btc_usd": "0x007A22900a3B98143368Bd5906f8E17e9867581b",
