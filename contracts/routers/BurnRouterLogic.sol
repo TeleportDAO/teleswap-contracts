@@ -9,6 +9,7 @@ import "../libraries/BurnRouterLib.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./BurnRouterStorageV2.sol";
+import "hardhat/console.sol";
 
 contract BurnRouterLogic is BurnRouterStorage, 
     OwnableUpgradeable, ReentrancyGuardUpgradeable, BurnRouterStorageV2 {
@@ -55,8 +56,8 @@ contract BurnRouterLogic is BurnRouterStorage,
         setTransferDeadline(_transferDeadline);
         setProtocolPercentageFee(_protocolPercentageFee);
         setSlasherPercentageReward(_slasherPercentageReward);
-        setNetworkFee(_networkFee);
         setNetworkFeeOracle(owner());
+        setNetworkFee(_networkFee);
     }
 
     receive() external payable {}
@@ -203,8 +204,8 @@ contract BurnRouterLogic is BurnRouterStorage,
         );
 
         (uint burntAmount) = _unwrap(
-            address(0),
-            0,
+            teleBTC,
+            _amount,
             _amount, 
             _userScript, 
             _scriptType, 
@@ -499,7 +500,7 @@ contract BurnRouterLogic is BurnRouterStorage,
             _lockerTargetAddress
         );
         
-        address[2] memory tokens = [_inputToken, teleBTC];
+        address inputToken = _inputToken;
         uint[3] memory amounts = [_inputAmount, _amount, _burntAmount];
         uint[4] memory fees = [bitcoinFee, remainingAmount - _burntAmount, protocolFee, thirdPartyFee];
 
@@ -511,7 +512,7 @@ contract BurnRouterLogic is BurnRouterStorage,
             burnRequests[_lockerTargetAddress][burnRequests[_lockerTargetAddress].length - 1].requestIdOfLocker, // index of request
             burnRequests[_lockerTargetAddress][burnRequests[_lockerTargetAddress].length - 1].deadline,
             thirdParty,
-            tokens,
+            inputToken,
             amounts,
             fees
         );

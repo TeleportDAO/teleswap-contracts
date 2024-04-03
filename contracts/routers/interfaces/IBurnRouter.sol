@@ -37,7 +37,7 @@ interface IBurnRouter {
 	/// @param requestIdOfLocker Index of request between Locker's burn requests
 	/// @param deadline of Locker for executing the request (in terms of Bitcoin blocks)
 	/// @param thirdPartyId Id of third party
-	/// @param inputAndOutputToken [inputToken, outputToken]
+	/// @param inputToken inputToken address
 	/// @param amounts [inputAmount, teleBTCAmount, burntAmount]
 	/// @param fees [network fee, locker fee, protocol fee, third party fee]
 	
@@ -49,7 +49,7 @@ interface IBurnRouter {
 		uint requestIdOfLocker,
 		uint indexed deadline,
 		uint thirdPartyId,
-		address[2] inputAndOutputToken,
+		address inputToken,
 		uint[3] amounts,
 		uint[4] fees
 	);
