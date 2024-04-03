@@ -86,7 +86,7 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @notice Updates relay contract address
     /// @dev Only owner can call this
     /// @param _relay The new relay contract address
-    function setRelay(address _relay) public override onlyOwner {
+    function setRelay(address _relay) public override onlyOwner nonZeroAddress(_relay) {
         emit NewRelay(relay, _relay);
         relay = _relay;
     }
@@ -94,7 +94,7 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @notice Updates lockers contract address
     /// @dev Only owner can call this
     /// @param _lockers The new lockers contract address
-    function setLockers(address _lockers) public override onlyOwner {
+    function setLockers(address _lockers) public override onlyOwner nonZeroAddress(_lockers) {
         emit NewLockers(lockers, _lockers);
         lockers = _lockers;
     }
@@ -102,7 +102,7 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @notice Updates teleBTC contract address
     /// @dev Only owner can call this
     /// @param _teleBTC The new teleBTC contract address
-    function setTeleBTC(address _teleBTC) public override onlyOwner {
+    function setTeleBTC(address _teleBTC) public override onlyOwner nonZeroAddress(_teleBTC) {
         emit NewTeleBTC(teleBTC, _teleBTC);
         teleBTC = _teleBTC;
     }
@@ -110,7 +110,7 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @notice Updates protocol treasury address
     /// @dev Only owner can call this
     /// @param _treasury The new treasury address
-    function setTreasury(address _treasury) public override onlyOwner {
+    function setTreasury(address _treasury) public override onlyOwner nonZeroAddress(_treasury) {
         emit NewTreasury(treasury, _treasury);
         treasury = _treasury;
     }
