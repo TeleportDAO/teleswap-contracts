@@ -147,6 +147,13 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         _setThirdPartyFee(_thirdPartyId, _thirdPartyFee);
     }
 
+    /// @notice                             Setter for wrappedNativeToken
+    /// @dev                                Only owner can call this
+    /// @param _wrappedNativeToken          wrappedNativeToken address
+    function setWrappedNativeToken(address _wrappedNativeToken) external override onlyOwner {
+        _setWrappedNativeToken(_wrappedNativeToken);
+    }
+
     /// @notice                             Setter for chain id mapping
     /// @dev                                Only owner can call this
     function setChainIdMapping(uint _mappedId, uint _middleChain, uint _destinationChain) external override onlyOwner {
@@ -192,13 +199,6 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
 
     function extractDestinationChainId(uint chainId) public view returns (uint) {
         return chainIdMapping[chainId].destinationChain;
-    }
-
-    function setMappingChainId(uint middleChain, uint destinationChain, uint mappedId) public {
-        chainIdMapping[mappedId] = chainIdStruct(
-            middleChain, 
-            destinationChain
-        );
     }
 
     /// @notice Executes a cross-chain exchange request after checking its merkle inclusion proof
@@ -1060,6 +1060,13 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     function _setThirdPartyFee(uint _thirdPartyId, uint _thirdPartyFee) private {
         emit NewThirdPartyFee(_thirdPartyId, thirdPartyFee[_thirdPartyId], _thirdPartyFee);
         thirdPartyFee[_thirdPartyId] = _thirdPartyFee;
+    }
+
+    /// @notice                             Internal setter for wrappedNativeToken
+    /// @param _wrappedNativeToken          wrappedNativeToken address
+    function _setWrappedNativeToken(address _wrappedNativeToken) private {
+        emit NewWrappedNativeToken(wrappedNativeToken, _wrappedNativeToken);
+        wrappedNativeToken = _wrappedNativeToken;
     }
 
     /// @notice                             Internal setter for chain id mapping

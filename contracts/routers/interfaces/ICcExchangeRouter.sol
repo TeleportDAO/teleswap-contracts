@@ -301,6 +301,11 @@ interface ICcExchangeRouter {
         uint destinationChain
     );
 
+    /// @notice                     Emits when changes made to wrapped native token
+    event NewWrappedNativeToken(
+        address oldWrappedNativeToken,
+        address newWrappedNativeToken
+    );
 
     // Read-only functions
     
@@ -361,6 +366,8 @@ interface ICcExchangeRouter {
     function setThirdPartyAddress(uint _thirdPartyId, address _thirdPartyAddress) external;
 
 	function setThirdPartyFee(uint _thirdPartyId, uint _thirdPartyFee) external;
+
+    function setWrappedNativeToken(address _wrappedNativeToken) external;
 
     function setChainIdMapping(uint _mappedId, uint _middleChain, uint _destinationChain) external;
     

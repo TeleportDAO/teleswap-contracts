@@ -29,12 +29,14 @@ abstract contract CcExchangeRouterStorageV2 is ICcExchangeRouter {
     address public wrappedNativeToken;
     address public override burnRouter;
 
-    // New variables (path support)
-    address public wmatic;
-
     mapping(uint => chainIdStruct) public chainIdMapping;
 
-    // third party
+    // third party 
+    // other applications can use our smart contracts as a third party, 
+    // an id will be assigned to them
+    // and they will receive a third party fee for each transaction that is sent by them
+    // this fee will be send to their third party address
+
     mapping(uint => uint) public thirdPartyFee;
     mapping(uint => address) public thirdPartyAddress;
 }
