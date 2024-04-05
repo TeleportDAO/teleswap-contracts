@@ -23,6 +23,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const burnRouterProxy = await deployments.get("BurnRouterProxy");
     const ccExchangeRouterLogic = await deployments.get("CcExchangeRouterLogic");
     const ccExchangeRouterProxy = await deployments.get("CcExchangeRouterProxy");
+    const ccExchangeRouterLib = await deployments.get("CcExchangeRouterLib");
 
     const minTDTLockedAmount = 0;
     const startingBlockHeight = config.get("starting_block_height");
@@ -40,6 +41,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const bitcoinFee = config.get("cc_burn.bitcoin_fee");
     const transferDeadLine = config.get("cc_burn.transfer_deadLine");
     const chainID = config.get("chain_id");
+    const across = config.get("across");
 
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Initialize Lockers ...")
@@ -202,7 +204,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     logger.color('blue').bold().log("Initialize CcExchangeRouter ...")
 
     const ccExchangeRouterLogicFactory = await ethers.getContractFactory(
-        "CcExchangeRouterLogic"
+        "CcExchangeRouterLogic",
+        {
+            libraries: {
+                CcExchangeRouterLib: ccExchangeRouterLib.address
+            }
+        }
     );
     const ccExchangeRouterProxyInstance = await ccExchangeRouterLogicFactory.attach(
         ccExchangeRouterProxy.address
@@ -220,7 +227,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             lockersProxy.address,
             bitcoinRelay,
             teleBTC.address,
-            treasuryAddress
+            treasuryAddress,
+            across,
+            burnRouterProxy.address
         );
         await initializeTxProxy.wait(1);
         console.log("Initialize CcExchangeRouterProxy: ", initializeTxProxy.hash);
@@ -235,7 +244,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             lockersProxy.address,
             bitcoinRelay,
             teleBTC.address,
-            treasuryAddress
+            treasuryAddress,
+            across,
+            burnRouterProxy.address
         )
         await initializeTxLogic.wait(1);
         console.log("Initialize CcExchangeRouterLogic: ", initializeTxLogic.hash);
