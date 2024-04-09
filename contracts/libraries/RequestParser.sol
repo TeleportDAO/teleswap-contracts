@@ -76,7 +76,7 @@ library RequestParser {
 
     /// @notice Returns across percentage fee 
     /// @dev This fee goes to across relayers
-    function parseaArossFeePercentage(bytes memory _arbitraryData) internal pure returns (uint24 parsedValue) {
+    function parseArossFeePercentage(bytes memory _arbitraryData) internal pure returns (uint24 parsedValue) {
         bytes memory slicedBytes = sliceBytes(_arbitraryData, 62, 64);
         assembly {
             parsedValue := mload(add(slicedBytes, 3))

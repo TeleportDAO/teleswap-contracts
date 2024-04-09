@@ -303,18 +303,16 @@
 //         // Sets mock contracts outputs
 //         await setRelayLastSubmittedHeight(burnReqBlockNumber);
 //         await setLockersIsLocker(true);
-//         let _burntAmount: number;
 //         let protocolFee = Math.floor(_userRequestedAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
-//         _burntAmount = _userRequestedAmount.toNumber() - protocolFee;
-//         await setLockersBurnReturn(_burntAmount);
-//         let burntAmount = _burntAmount * (_burntAmount - BITCOIN_FEE) / _burntAmount; 
+//         let burntAmount = _userRequestedAmount.toNumber() - protocolFee - BITCOIN_FEE;
+//         await setLockersBurnReturn(burntAmount);
 //         // first burntAmount should have been
 //         // burntAmount - lockerFee but in this case we have assumed lockerFee = 0
 
 //         await setLockersGetLockerTargetAddress();
 
 //         // Burns TeleBTC
-//         await burnRouterSigner1.ccBurn(
+//         await burnRouterSigner1.unwrap(
 //             _userRequestedAmount,
 //             USER_SCRIPT,
 //             USER_SCRIPT_TYPE,
@@ -352,10 +350,10 @@
 //                 [0],
 //                 [0]
 //             )
-//         ).to.emit(burnRouter, "PaidCCBurn")
+//         ).to.emit(burnRouter, "PaidUnwrap")
 //     }
 
-//     describe("#ccBurn", async () => {
+//     describe("#unwrap", async () => {
 
 //         beforeEach(async () => {
 //             // Gives allowance to burnRouter to burn tokens
@@ -376,7 +374,7 @@
 //             await setLockersIsLocker(true);
 
 //             await expect(
-//                 burnRouterSigner1.ccBurn(
+//                 burnRouterSigner1.unwrap(
 //                     userRequestedAmount,
 //                     USER_SCRIPT_P2PKH + "00",
 //                     USER_SCRIPT_P2PKH_TYPE,
@@ -386,7 +384,7 @@
 //             ).to.revertedWith("BurnRouterLogic: invalid script")
 
 //             await expect(
-//                 burnRouterSigner1.ccBurn(
+//                 burnRouterSigner1.unwrap(
 //                     userRequestedAmount,
 //                     USER_SCRIPT_P2PKH,
 //                     4,
@@ -413,41 +411,35 @@
 
 //             // Finds amount of teleBTC that user should receive on Bitcoin
 //             let protocolFee = Math.floor(userRequestedAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
-//             let _burntAmount = userRequestedAmount.toNumber() - protocolFee;
-//             await setLockersBurnReturn(_burntAmount);
-
-//             let burntAmount = _burntAmount * (_burntAmount - BITCOIN_FEE) / _burntAmount; 
+//             let burntAmount = userRequestedAmount.toNumber() - protocolFee - BITCOIN_FEE;
+//             await setLockersBurnReturn(burntAmount);
 //             // first burntAmount should have been
 //             // burntAmount - lockerFee but in this case we have assumed lockerFee = 0
 
-//             ;
 //             await setLockersGetLockerTargetAddress();
 
 //             let prevBalanceSigner1 = await teleBTC.balanceOf(signer1Address);
 
 //             // Burns teleBTC
-
 //             await expect(
-//                 await burnRouterSigner1.ccBurn(
+//                 await burnRouterSigner1.unwrap(
 //                     userRequestedAmount,
 //                     USER_SCRIPT_P2PKH,
 //                     USER_SCRIPT_P2PKH_TYPE,
 //                     LOCKER1_LOCKING_SCRIPT,
 //                     0
 //                 )
-//             ).to.emit(burnRouter, "CCBurn").withArgs(
-//                 0,
-//                 ZERO_ADDRESS,
-//                 userRequestedAmount,
-//                 signer1Address,
+//             ).to.emit(burnRouter, "NewUnwrap").withArgs(
 //                 USER_SCRIPT_P2PKH,
 //                 USER_SCRIPT_P2PKH_TYPE,
-//                 burntAmount, 
-//                 ONE_ADDRESS,
+//                 LOCKER_TARGET_ADDRESS,
+//                 signer1Address,
 //                 0,
 //                 lastSubmittedHeight + TRANSFER_DEADLINE,
-//                 protocolFee,
-//                 0
+//                 0,
+//                 teleBTC.address,
+//                 [userRequestedAmount, userRequestedAmount, burntAmount],
+//                 [BITCOIN_FEE, 0, protocolFee, 0]
 //             );
 
 //             let newBalanceSigner1 = await teleBTC.balanceOf(signer1Address);
@@ -488,7 +480,7 @@
 
 //             // Burns teleBTC
 //             await expect(
-//                 burnRouterSigner1.ccBurn(
+//                 burnRouterSigner1.unwrap(
 //                     BITCOIN_FEE - 1,
 //                     USER_SCRIPT_P2PKH,
 //                     USER_SCRIPT_P2PKH_TYPE,
@@ -513,7 +505,7 @@
 //             );
 
 //             await expect(
-//                 burnRouterSigner1.ccBurn(
+//                 burnRouterSigner1.unwrap(
 //                     userRequestedAmount,
 //                     USER_SCRIPT_P2PKH,
 //                     USER_SCRIPT_P2PKH_TYPE,
@@ -528,7 +520,7 @@
 //             await setLockersIsLocker(false);
 
 //             await expect(
-//                 burnRouterSigner1.ccBurn(
+//                 burnRouterSigner1.unwrap(
 //                     userRequestedAmount,
 //                     USER_SCRIPT_P2PKH,
 //                     USER_SCRIPT_P2PKH_TYPE,
@@ -540,13 +532,13 @@
 
 //     });
 
-//     describe("#ccExchangeAndBurn", async () => {
+//     describe("#swapAndUnwrap", async () => {
 
 //         let inputTokenAmount = 100;
 //         let lastSubmittedHeight = 100;
 //         let protocolFee = Math.floor(userRequestedAmount.toNumber() * PROTOCOL_PERCENTAGE_FEE / 10000);
 //         let _burntAmount = userRequestedAmount.toNumber() - protocolFee;
-//         let burntAmount = _burntAmount * (_burntAmount - BITCOIN_FEE) / _burntAmount; 
+//         let burntAmount = _burntAmount - BITCOIN_FEE; 
 //         // ^ burntAmount should be (burntAmount - lockerFee) but here we assumed lockerFee = 0
 
 //         beforeEach(async () => {
@@ -570,7 +562,7 @@
 //             await setRelayLastSubmittedHeight(lastSubmittedHeight);
 //             await setLockersIsLocker(true);
 //             await setLockersGetLockerTargetAddress();
-//             await setLockersBurnReturn(_burntAmount); // Sets amount of teleBTC that user receives on Bitcoin
+//             await setLockersBurnReturn(burntAmount); // Sets amount of teleBTC that user receives on Bitcoin
 
 //             snapshotId = await takeSnapshot(signer1.provider);
 //         });
@@ -587,7 +579,7 @@
 
 //             // Exchanges input token then burns teleBTC
 //             await expect(
-//                 await burnRouterSigner1.ccExchangeAndBurn(
+//                 await burnRouterSigner1.swapAndUnwrap(
 //                     mockExchangeConnector.address,
 //                     [inputTokenAmount, userRequestedAmount],
 //                     false, // output token amount is fixed
@@ -598,19 +590,17 @@
 //                     LOCKER1_LOCKING_SCRIPT,
 //                     0
 //                 )
-//             ).to.emit(burnRouter, "CCBurn").withArgs(
-//                 inputTokenAmount,
-//                 inputToken.address,
-//                 userRequestedAmount,
-//                 signer1Address,
+//             ).to.emit(burnRouter, "NewUnwrap").withArgs(
 //                 USER_SCRIPT_P2PKH,
 //                 USER_SCRIPT_P2PKH_TYPE,
-//                 burntAmount, 
-//                 ONE_ADDRESS,
+//                 LOCKER_TARGET_ADDRESS,
+//                 signer1Address,
 //                 0,
 //                 lastSubmittedHeight + TRANSFER_DEADLINE,
-//                 protocolFee,
-//                 0
+//                 0,
+//                 inputToken.address,
+//                 [inputTokenAmount, userRequestedAmount, burntAmount],
+//                 [BITCOIN_FEE, 0, protocolFee, 0]
 //             );
 
 //             let newBalanceSigner1 = await inputToken.balanceOf(signer1Address);
@@ -636,7 +626,7 @@
 
 //         it("Reverts since exchange path is invalid", async function () {
 //             await expect(
-//                 burnRouterSigner1.ccExchangeAndBurn(
+//                 burnRouterSigner1.swapAndUnwrap(
 //                     mockExchangeConnector.address,
 //                     [inputTokenAmount, userRequestedAmount],
 //                     false, // output token amount is fixed
@@ -652,7 +642,7 @@
 
 //         it("Reverts since amounts is wrong", async function () {
 //             await expect(
-//                 burnRouterSigner1.ccExchangeAndBurn(
+//                 burnRouterSigner1.swapAndUnwrap(
 //                     mockExchangeConnector.address,
 //                     [inputTokenAmount, userRequestedAmount, userRequestedAmount],
 //                     false, // output token amount is fixed
@@ -669,7 +659,7 @@
 //         it("Reverts since exchange failed", async function () {
 //             await setSwap(false, [inputTokenAmount, userRequestedAmount.toNumber()])
 //             await expect(
-//                 burnRouterSigner1.ccExchangeAndBurn(
+//                 burnRouterSigner1.swapAndUnwrap(
 //                     mockExchangeConnector.address,
 //                     [inputTokenAmount, userRequestedAmount],
 //                     false, // output token amount is fixed
@@ -686,7 +676,7 @@
 //         it("Reverts since exchanged teleBTC is low", async function () {
 //             await setSwap(true, [inputTokenAmount, 2 * BITCOIN_FEE - 1])
 //             await expect(
-//                 burnRouterSigner1.ccExchangeAndBurn(
+//                 burnRouterSigner1.swapAndUnwrap(
 //                     mockExchangeConnector.address,
 //                     [inputTokenAmount, userRequestedAmount],
 //                     false, // output token amount is fixed
@@ -746,7 +736,7 @@
 //                     [0],
 //                     [0]
 //                 )
-//             ).to.emit(burnRouter, "PaidCCBurn").withArgs(
+//             ).to.emit(burnRouter, "PaidUnwrap").withArgs(
 //                 LOCKER_TARGET_ADDRESS,
 //                 0,
 //                 CC_BURN_REQUESTS.burnProof_valid.txId,
@@ -811,7 +801,7 @@
 //                     [1], // Burn req index
 //                     [0]
 //                 )
-//             ).to.emit(burnRouter, "PaidCCBurn").withArgs(
+//             ).to.emit(burnRouter, "PaidUnwrap").withArgs(
 //                 LOCKER_TARGET_ADDRESS,
 //                 1,
 //                 CC_BURN_REQUESTS.burnProof_validP2WPKH.txId,
@@ -845,7 +835,7 @@
 //                     [0],
 //                     [0]
 //                 )
-//             ).to.emit(burnRouter, "PaidCCBurn").withArgs(
+//             ).to.emit(burnRouter, "PaidUnwrap").withArgs(
 //                 LOCKER_TARGET_ADDRESS,
 //                 0,
 //                 CC_BURN_REQUESTS.burnProof_validWithoutChange.txId,
@@ -1032,7 +1022,7 @@
 //                     [1],
 //                     [1]
 //                 )
-//             ).to.not.emit(burnRouter, "PaidCCBurn");
+//             ).to.not.emit(burnRouter, "PaidUnwrap");
 
 //             expect(
 //                 await burnRouterSigner2.isTransferred(LOCKER_TARGET_ADDRESS, 0)
@@ -1076,7 +1066,7 @@
 //                     [0],
 //                     [0]
 //                 )
-//             ).to.not.emit(burnRouter, "PaidCCBurn");
+//             ).to.not.emit(burnRouter, "PaidUnwrap");
 //         })
 
 //         it("Doesn't accept burn proof since deadline is passed", async function () {
@@ -1099,7 +1089,7 @@
 //                     [0],
 //                     [0]
 //                 )
-//             ).to.not.emit(burnRouter, "PaidCCBurn");
+//             ).to.not.emit(burnRouter, "PaidUnwrap");
 
 //             await expect(
 //                 await burnRouterSigner2.isTransferred(LOCKER_TARGET_ADDRESS, 0)
@@ -1543,9 +1533,9 @@
 
 //         it("Sets bitcoin fee", async function () {
 //             await expect(
-//                 burnRouter.setBitcoinFee(100)
+//                 burnRouter.setNetworkFee(100)
 //             ).to.emit(
-//                 burnRouter, "NewBitcoinFee"
+//                 burnRouter, "NewNetworkFee"
 //             ).withArgs(BITCOIN_FEE, 100);
 
 
@@ -1662,10 +1652,8 @@
 //             // Finds amount of teleBTC that user should receive on Bitcoin
 //             let protocolFee = Math.floor(userRequestedAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
 //             let thirdPartyFee = Math.floor(userRequestedAmount.toNumber()*THIRD_PARTY_PERCENTAGE_FEE/10000);
-//             let _burntAmount = userRequestedAmount.toNumber() - protocolFee - thirdPartyFee;
-//             await setLockersBurnReturn(_burntAmount);
-
-//             let burntAmount = _burntAmount * (_burntAmount - BITCOIN_FEE) / _burntAmount; 
+//             let burntAmount = userRequestedAmount.toNumber() - protocolFee - thirdPartyFee - BITCOIN_FEE;
+//             await setLockersBurnReturn(burntAmount);
 //             // first burntAmount should have been
 //             // burntAmount - lockerFee but in this case we have assumed lockerFee = 0
 
@@ -1681,26 +1669,24 @@
 //             // Burns teleBTC
 
 //             await expect(
-//                 await burnRouterSigner1.ccBurn(
+//                 await burnRouterSigner1.unwrap(
 //                     userRequestedAmount,
 //                     USER_SCRIPT_P2PKH,
 //                     USER_SCRIPT_P2PKH_TYPE,
 //                     LOCKER1_LOCKING_SCRIPT,
 //                     1
 //                 )
-//             ).to.emit(burnRouter, "CCBurn").withArgs(
-//                 0,
-//                 ZERO_ADDRESS,
-//                 userRequestedAmount,
-//                 signer1Address,
+//             ).to.emit(burnRouter, "NewUnwrap").withArgs(
 //                 USER_SCRIPT_P2PKH,
 //                 USER_SCRIPT_P2PKH_TYPE,
-//                 burntAmount, 
-//                 ONE_ADDRESS,
+//                 LOCKER_TARGET_ADDRESS,
+//                 signer1Address,
 //                 0,
 //                 lastSubmittedHeight + TRANSFER_DEADLINE,
-//                 protocolFee,
-//                 thirdPartyFee
+//                 1,
+//                 teleBTC.address,
+//                 [userRequestedAmount, userRequestedAmount, burntAmount],
+//                 [BITCOIN_FEE, 0, protocolFee, thirdPartyFee]
 //             );
 
 //             let newBalanceSigner1 = await teleBTC.balanceOf(signer1Address);
@@ -1746,10 +1732,9 @@
 //             // Finds amount of teleBTC that user should receive on Bitcoin
 //             let protocolFee = Math.floor(userRequestedAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
 //             let thirdPartyFee = Math.floor(userRequestedAmount.toNumber()*THIRD_PARTY_PERCENTAGE_FEE/10000);
-//             let _burntAmount = userRequestedAmount.toNumber() - protocolFee - thirdPartyFee;
-//             await setLockersBurnReturn(_burntAmount);
+//             let burntAmount = userRequestedAmount.toNumber() - protocolFee - thirdPartyFee - BITCOIN_FEE;
+//             await setLockersBurnReturn(burntAmount);
 
-//             let burntAmount = _burntAmount * (_burntAmount - BITCOIN_FEE) / _burntAmount; 
 //             // first burntAmount should have been
 //             // burntAmount - lockerFee but in this case we have assumed lockerFee = 0
 
@@ -1765,26 +1750,24 @@
 //             // Burns teleBTC
 
 //             await expect(
-//                 await burnRouterSigner1.ccBurn(
+//                 await burnRouterSigner1.unwrap(
 //                     userRequestedAmount,
 //                     USER_SCRIPT_P2PKH,
 //                     USER_SCRIPT_P2PKH_TYPE,
 //                     LOCKER1_LOCKING_SCRIPT,
 //                     1
 //                 )
-//             ).to.emit(burnRouter, "CCBurn").withArgs(
-//                 0,
-//                 ZERO_ADDRESS,
-//                 userRequestedAmount,
-//                 signer1Address,
+//             ).to.emit(burnRouter, "NewUnwrap").withArgs(
 //                 USER_SCRIPT_P2PKH,
 //                 USER_SCRIPT_P2PKH_TYPE,
-//                 burntAmount, 
-//                 ONE_ADDRESS,
+//                 LOCKER_TARGET_ADDRESS,
+//                 signer1Address,
 //                 0,
 //                 lastSubmittedHeight + TRANSFER_DEADLINE,
-//                 protocolFee,
-//                 thirdPartyFee
+//                 1,
+//                 teleBTC.address,
+//                 [userRequestedAmount, userRequestedAmount, burntAmount],
+//                 [BITCOIN_FEE, 0, protocolFee, thirdPartyFee]
 //             );
 
 //             let newBalanceSigner1 = await teleBTC.balanceOf(signer1Address);
@@ -1830,10 +1813,8 @@
 //             // Finds amount of teleBTC that user should receive on Bitcoin
 //             let protocolFee = Math.floor(userRequestedAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
 //             let thirdPartyFee = Math.floor(userRequestedAmount.toNumber()*NEW_THIRD_PARTY_PERCENTAGE_FEE/10000);
-//             let _burntAmount = userRequestedAmount.toNumber() - protocolFee - thirdPartyFee;
-//             await setLockersBurnReturn(_burntAmount);
-
-//             let burntAmount = _burntAmount * (_burntAmount - BITCOIN_FEE) / _burntAmount; 
+//             let burntAmount = userRequestedAmount.toNumber() - protocolFee - thirdPartyFee - BITCOIN_FEE;
+//             await setLockersBurnReturn(burntAmount);
 //             // first burntAmount should have been
 //             // burntAmount - lockerFee but in this case we have assumed lockerFee = 0
 
@@ -1849,26 +1830,24 @@
 //             // Burns teleBTC
 
 //             await expect(
-//                 await burnRouterSigner1.ccBurn(
+//                 await burnRouterSigner1.unwrap(
 //                     userRequestedAmount,
 //                     USER_SCRIPT_P2PKH,
 //                     USER_SCRIPT_P2PKH_TYPE,
 //                     LOCKER1_LOCKING_SCRIPT,
 //                     1
 //                 )
-//             ).to.emit(burnRouter, "CCBurn").withArgs(
-//                 0,
-//                 ZERO_ADDRESS,
-//                 userRequestedAmount,
-//                 signer1Address,
+//             ).to.emit(burnRouter, "NewUnwrap").withArgs(
 //                 USER_SCRIPT_P2PKH,
 //                 USER_SCRIPT_P2PKH_TYPE,
-//                 burntAmount, 
-//                 ONE_ADDRESS,
+//                 LOCKER_TARGET_ADDRESS,
+//                 signer1Address,
 //                 0,
 //                 lastSubmittedHeight + TRANSFER_DEADLINE,
-//                 protocolFee,
-//                 thirdPartyFee
+//                 1,
+//                 teleBTC.address,
+//                 [userRequestedAmount, userRequestedAmount, burntAmount],
+//                 [BITCOIN_FEE, 0, protocolFee, thirdPartyFee]
 //             );
 
 //             let newBalanceSigner1 = await teleBTC.balanceOf(signer1Address);

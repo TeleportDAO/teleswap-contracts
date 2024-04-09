@@ -404,17 +404,12 @@ contract BurnRouterLogic is BurnRouterStorage,
         bytes memory _inputIntermediateNodes,
         uint[] memory _indexesAndBlockNumbers // [inputIndex, inputTxIndex, inputTxBlockNumber]
     ) external payable nonReentrant onlyOwner override {
-        
-        // Checks if the locking script is valid
-        require(
-            ILockers(lockers).isLocker(_lockerLockingScript),
-            "BurnRouterLogic: not locker"
-        );
 
         // Finds input tx id and checks its inclusion
         bytes32 _inputTxId = BitcoinHelper.calculateTxId(_versions[0], _inputVin, _inputVout, _locktimes[0]);
 
         BurnRouterLib.disputeAndSlashLockerHelper(
+            lockers,
             _lockerLockingScript,
             _versions,
             [_inputVin, _outputVin, _outputVout],
@@ -472,13 +467,7 @@ contract BurnRouterLogic is BurnRouterStorage,
         uint thirdParty
     ) private returns (uint _burntAmount) {
         // Checks validity of user script
-        BurnRouterLib.checkScriptType(_userScript, _scriptType);
-
-        // Checks if the given locking script is locker
-        require(
-            ILockers(lockers).isLocker(_lockerLockingScript),
-            "BurnRouterLogic: not locker"
-        );
+        BurnRouterLib.checkScriptTypeAndLocker(_userScript, _scriptType, lockers, _lockerLockingScript);
 
         // Gets the target address of locker
         (uint remainingAmount, uint protocolFee, uint thirdPartyFee) = _getFees(_amount, thirdParty);

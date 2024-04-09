@@ -237,6 +237,9 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             relay
         );
 
+        // last element of path must be equal to request exchange token
+        require (ccExchangeRequests[txId].path[1] == _path[_path.length - 1], "ExchangeRouter: wrong path");
+
         // extract the middle chain Id (the chain user is sending the request to) 
         // and destination chain Id (the final chain that user gets its token on it) from chainId
         (uint middleChainId, uint destinationChainId) = extractChainId(extendedCcExchangeRequests[txId].chainId);
@@ -248,6 +251,12 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             isChainSupported[destinationChainId],
             "ExchangeRouter: invalid chain id"
         );
+
+        if (middleChainId == destinationChainId)
+            require(
+                extendedCcExchangeRequests[txId].bridgeFee == 0,
+                "ExchangeRouter: invalid brdige fee"
+            );
 
         ccExchangeRequest memory request = ccExchangeRequests[txId];
     
@@ -684,13 +693,15 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     ) internal {
         // try swapping with path provided by teleporter
         (bool result, uint[] memory amounts) = _swap(
-            chainId,
-            _lockerLockingScript,
-            ccExchangeRequests[_txId],
-            extendedCcExchangeRequests[_txId],
-            _txId,
-            _path,
-            _exchangeConnector
+            ICcExchangeRouter.swapArguments(
+                chainId,
+                _lockerLockingScript,
+                ccExchangeRequests[_txId],
+                extendedCcExchangeRequests[_txId],
+                _txId,
+                _path,
+                _exchangeConnector
+            )
         );
 
         if (!result) {
@@ -715,13 +726,15 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         uint _chainId
     ) private {
         (bool result, uint[] memory amounts) = _swap(
-            _chainId,
-            _lockerLockingScript,
-            ccExchangeRequests[_txId],
-            extendedCcExchangeRequests[_txId],
-            _txId, 
-            _path,
-            _exchangeConnector
+            ICcExchangeRouter.swapArguments(
+                _chainId,
+                _lockerLockingScript,
+                ccExchangeRequests[_txId],
+                extendedCcExchangeRequests[_txId],
+                _txId, 
+                _path,
+                _exchangeConnector
+            )
         );
 
         if (result) { // if swap is successfull, user will get desired tokens on destination chain
@@ -747,50 +760,51 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     }
 
     function _swap(
-        uint destinationChainId,
-        bytes memory _lockerLockingScript,
-        ccExchangeRequest memory _ccExchangeRequest,
-        extendedCcExchangeRequest memory _extendedCcExchangeRequest,
-        bytes32 _txId,
-        address[] memory _path,
-        address _exchangeConnector
+        ICcExchangeRouter.swapArguments memory swapArguments
+        // uint destinationChainId,
+        // bytes memory _lockerLockingScript,
+        // ccExchangeRequest memory _ccExchangeRequest,
+        // extendedCcExchangeRequest memory _extendedCcExchangeRequest,
+        // bytes32 _txId,
+        // address[] memory _path,
+        // address _exchangeConnector
     ) private returns (bool result, uint[] memory amounts) {
         if (
-            destinationChainId == chainId ||
-            isTokenSupported[destinationChainId][_path[_path.length - 1]]
+            swapArguments.destinationChainId == chainId ||
+            isTokenSupported[swapArguments.destinationChainId][swapArguments._path[swapArguments._path.length - 1]]
         ) {
             // Either the destination chain should be the current chain or 
             // we should be able to send exchanged tokens to the destination chain
 
             // Gives allowance to exchange connector for swapping
             ITeleBTC(teleBTC).approve(
-                _exchangeConnector,
-                _extendedCcExchangeRequest.remainedInputAmount
+                swapArguments._exchangeConnector,
+                swapArguments._extendedCcExchangeRequest.remainedInputAmount
             );
             
             if (
-                IExchangeConnector(_exchangeConnector).isPathValid(_path)
+                IExchangeConnector(swapArguments._exchangeConnector).isPathValid(swapArguments._path)
             ) {
                 require(
-                    _path[0] == teleBTC &&
-                    _path[_path.length - 1] == _ccExchangeRequest.path[_ccExchangeRequest.path.length - 1],
+                    swapArguments._path[0] == teleBTC &&
+                    swapArguments._path[swapArguments._path.length - 1] == swapArguments._ccExchangeRequest.path[swapArguments._ccExchangeRequest.path.length - 1],
                     "CcExchangeRouter: invalid path"
                 );
-                (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
-                    _extendedCcExchangeRequest.remainedInputAmount,
-                    _ccExchangeRequest.outputAmount,
-                    _path,
-                    _ccExchangeRequest.recipientAddress,
+                (result, amounts) = IExchangeConnector(swapArguments._exchangeConnector).swap(
+                    swapArguments._extendedCcExchangeRequest.remainedInputAmount,
+                    swapArguments._ccExchangeRequest.outputAmount,
+                    swapArguments._path,
+                    swapArguments._ccExchangeRequest.recipientAddress,
                     block.timestamp,
                     true
                 );
 
                 if (!result) {
-                    (result, amounts) = IExchangeConnector(_exchangeConnector).swap(
-                        _extendedCcExchangeRequest.remainedInputAmount,
-                        _ccExchangeRequest.outputAmount,
-                        _ccExchangeRequest.path,
-                        _ccExchangeRequest.recipientAddress,
+                    (result, amounts) = IExchangeConnector(swapArguments._exchangeConnector).swap(
+                        swapArguments._extendedCcExchangeRequest.remainedInputAmount,
+                        swapArguments._ccExchangeRequest.outputAmount,
+                        swapArguments._ccExchangeRequest.path,
+                        swapArguments._ccExchangeRequest.recipientAddress,
                         block.timestamp,
                         true
                     );
@@ -800,45 +814,57 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             result = false;
         }
 
-        uint[5] memory fees = [
-            _ccExchangeRequest.fee, 
-            _extendedCcExchangeRequest.lockerFee, 
-            _extendedCcExchangeRequest.protocolFee, 
-            _extendedCcExchangeRequest.thirdPartyFee, 
-            _extendedCcExchangeRequest.bridgeFee
-        ];
-
         if (result) {
+
+            uint bridgeFee = (amounts[amounts.length-1] * swapArguments._extendedCcExchangeRequest.bridgeFee) / MAX_BRIDGE_FEE;
+            
+            uint[5] memory fees = [
+                swapArguments._ccExchangeRequest.fee, 
+                swapArguments._extendedCcExchangeRequest.lockerFee, 
+                swapArguments._extendedCcExchangeRequest.protocolFee, 
+                swapArguments._extendedCcExchangeRequest.thirdPartyFee, 
+                bridgeFee
+            ];
+
             emit NewWrapAndSwap(
-                ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
-                _ccExchangeRequest.recipientAddress,
+                ILockers(lockers).getLockerTargetAddress(swapArguments._lockerLockingScript),
+                swapArguments._ccExchangeRequest.recipientAddress,
                 [
                     teleBTC, 
-                    _path[_path.length - 1]
+                    swapArguments._path[swapArguments._path.length - 1]
                 ], // [input token, output token]
-                [amounts[0], amounts[amounts.length-1]], // [input amount, output amount]
-                _ccExchangeRequest.speed,
+                [amounts[0], amounts[amounts.length-1] - bridgeFee], // [input amount, output amount]
+                swapArguments._ccExchangeRequest.speed,
                 _msgSender(), // Teleporter address
-                _txId,
-                _ccExchangeRequest.appId,
-                _extendedCcExchangeRequest.thirdParty,
-                fees
+                swapArguments._txId,
+                swapArguments._ccExchangeRequest.appId,
+                swapArguments._extendedCcExchangeRequest.thirdParty,
+                fees,
+                swapArguments.destinationChainId
             );
         } else { // Handles situation where exchange was not successful
+            uint[5] memory fees = [
+                swapArguments._ccExchangeRequest.fee, 
+                swapArguments._extendedCcExchangeRequest.lockerFee, 
+                swapArguments._extendedCcExchangeRequest.protocolFee, 
+                swapArguments._extendedCcExchangeRequest.thirdPartyFee, 
+                0
+            ];
             emit FailedWrapAndSwap(
-                ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
-                _ccExchangeRequest.recipientAddress,
+                ILockers(lockers).getLockerTargetAddress(swapArguments._lockerLockingScript),
+                swapArguments._ccExchangeRequest.recipientAddress,
                 [
                     teleBTC, 
-                    _path[_path.length - 1]
+                    swapArguments._path[swapArguments._path.length - 1]
                 ], // [input token, output token]
-                [_extendedCcExchangeRequest.remainedInputAmount, 0], // [input amount, output amount]
-                _ccExchangeRequest.speed,
+                [swapArguments._extendedCcExchangeRequest.remainedInputAmount, 0], // [input amount, output amount]
+                swapArguments._ccExchangeRequest.speed,
                 _msgSender(), // Teleporter address
-                _txId,
-                _ccExchangeRequest.appId,
-                _extendedCcExchangeRequest.thirdParty,
-                fees
+                swapArguments._txId,
+                swapArguments._ccExchangeRequest.appId,
+                swapArguments._extendedCcExchangeRequest.thirdParty,
+                fees,
+                swapArguments.destinationChainId
             );
         }
     }

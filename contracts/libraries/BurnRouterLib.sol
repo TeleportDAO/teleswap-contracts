@@ -65,6 +65,7 @@ library BurnRouterLib {
     }
 
     function disputeAndSlashLockerHelper(
+        address lockers,
         bytes memory _lockerLockingScript,
         bytes4[] memory _versions, // [inputTxVersion, outputTxVersion]
         bytes[3] memory _inputOutputVinVout, // [_inputVin, _outputVin, _outputVout]
@@ -77,7 +78,12 @@ library BurnRouterLib {
         bytes memory _inputIntermediateNodes,
         uint[] memory _indexesAndBlockNumbers // [inputIndex, inputTxIndex, inputTxBlockNumber]
     ) external {
-        
+        // Checks if the locking script is valid
+        require(
+            ILockers(lockers).isLocker(_lockerLockingScript),
+            "BurnRouterLogic: not locker"
+        );
+
         // Checks input array sizes
         require(
             _versions.length == 2 &&
@@ -233,12 +239,18 @@ library BurnRouterLib {
     }
 
     /// @notice Checks the user hash script to be valid (based on its type)
-    function checkScriptType(bytes memory _userScript, ScriptTypes _scriptType) external pure {
+    function checkScriptTypeAndLocker(bytes memory _userScript, ScriptTypes _scriptType, address lockers, bytes calldata _lockerLockingScript) external view {
         if (_scriptType == ScriptTypes.P2PK || _scriptType == ScriptTypes.P2WSH || _scriptType == ScriptTypes.P2TR) {
             require(_userScript.length == 32, "BurnRouterLogic: invalid script");
         } else {
             require(_userScript.length == 20, "BurnRouterLogic: invalid script");
         }
+
+        // Checks if the given locking script is locker
+        require(
+            ILockers(lockers).isLocker(_lockerLockingScript),
+            "BurnRouterLogic: not locker"
+        );
     }
 
     function lastSubmittedHeight(address _relay) public view returns (uint) {

@@ -325,7 +325,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
         // Calculates fee
         uint networkFee = RequestParser.parseNetworkFee(arbitraryData);
         
-        require(networkFee <= request.inputAmount, "ExchangeRouterLib: wrong fee");
+        require(networkFee <= request.inputAmount, "CCTransferRouter: wrong fee");
         request.fee = networkFee;
 
         // Parses recipient address and request speed

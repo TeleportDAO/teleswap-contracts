@@ -4,6 +4,9 @@ pragma solidity >=0.8.0 <0.8.4;
 import "./interfaces/ICcExchangeRouter.sol";
 
 abstract contract CcExchangeRouterStorageV2 is ICcExchangeRouter {
+    // Constants
+    uint constant MAX_BRIDGE_FEE = 10**18;
+
     // New variables (filler)
 
     address constant NATIVE_TOKEN = address(1);

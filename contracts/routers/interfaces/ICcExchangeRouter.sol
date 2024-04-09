@@ -32,6 +32,7 @@ interface ICcExchangeRouter {
         address[] path;
         uint deadline;
         uint speed;
+        uint destinationChain;
     }
 
     /// @notice Structure for recording cross-chain exchange requests
@@ -98,6 +99,18 @@ interface ICcExchangeRouter {
         uint[] prefixSum;
         uint currentIndex;
     }
+
+    /// @notice Structure for passing arguments to swap function
+    struct swapArguments {
+        uint destinationChainId;
+        bytes _lockerLockingScript;
+        ccExchangeRequest _ccExchangeRequest;
+        extendedCcExchangeRequest _extendedCcExchangeRequest;
+        bytes32 _txId;
+        address[] _path;
+        address _exchangeConnector;
+    }
+
     // Events
 
     event TokenAdded(
@@ -198,6 +211,7 @@ interface ICcExchangeRouter {
     /// @param appId Assigned application id to exchange
     /// @param thirdPartyId Id of third party
     /// @param fees [network fee, locker fee, protocol fee, third party fee, bridge fee]
+    /// @param destinationChainId chain id of destination 
     event NewWrapAndSwap(
         address lockerTargetAddress,
         address indexed user,
@@ -208,7 +222,8 @@ interface ICcExchangeRouter {
         bytes32 bitcoinTxId,
         uint appId,
         uint thirdPartyId,
-        uint[5] fees
+        uint[5] fees,
+        uint destinationChainId
     );
 
     /// @notice Emits when a cc exchange request fails
@@ -222,7 +237,8 @@ interface ICcExchangeRouter {
     /// @param bitcoinTxId The transaction ID of request on Bitcoin 
     /// @param appId Assigned application id to exchange
     /// @param thirdPartyId Id of third party
-    /// @param fees [network fee, locker fee, protocol fee, third party fee, bridge fee]    
+    /// @param fees [network fee, locker fee, protocol fee, third party fee, bridge fee]   
+    /// @param destinationChainId chain id of destination 
     event FailedWrapAndSwap(
         address lockerTargetAddress,
         address indexed recipientAddress,
@@ -233,7 +249,8 @@ interface ICcExchangeRouter {
         bytes32 bitcoinTxId,
         uint appId,
         uint thirdPartyId,
-        uint[5] fees
+        uint[5] fees,
+        uint destinationChainId
     );
 
     /// @notice Emits when appId for an exchange connector is set

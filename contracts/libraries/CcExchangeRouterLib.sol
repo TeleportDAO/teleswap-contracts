@@ -63,7 +63,7 @@ library CcExchangeRouterLib {
         require(request.inputAmount > 0, "ExchangeRouterLib: zero input");
 
         extendedCcExchangeRequests[txId].chainId = RequestParser.parseChainId(arbitraryData);
-        extendedCcExchangeRequests[txId].bridgeFee = RequestParser.parseaArossFeePercentage(arbitraryData);
+        extendedCcExchangeRequests[txId].bridgeFee = uint(RequestParser.parseArossFeePercentage(arbitraryData)) * (10**11);
         extendedCcExchangeRequests[txId].thirdParty = RequestParser.parseThirdPartyId(arbitraryData);
         
         request.appId = RequestParser.parseAppId(arbitraryData);
