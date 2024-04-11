@@ -105,14 +105,24 @@ library CcExchangeRouterLib {
     /// @notice Verifies the signature of _msgHash
     /// @return _signer Address of message signer (if signature is valid)
     function _verifySig(
-        bytes32 _msgHash, 
-        bytes32 _r, 
-        bytes32 _s,
-        uint8 _v
-    ) public view returns (address _signer) {
+        bytes memory message,
+        bytes32 r,
+        bytes32 s,
+        uint8 v
+    ) internal pure returns (address) {
+        // Compute the message hash
+        bytes32 messageHash = keccak256(message);
+
+        // Prefix the message hash as per the Ethereum signing standard
+        bytes32 ethSignedMessageHash = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
+        );
+
         // Verify the message using ecrecover
-        _signer = ecrecover(_msgHash, _v, _r, _s);
-        require(_signer != address(0), "ExchangeRouterLib: invalid sig");
+        address signer = ecrecover(ethSignedMessageHash, v, r, s);
+        require(signer != address(0), "PolygonConnectorLogic: Invalid sig");
+
+        return signer;
     }
 
     /// @notice Checks inclusion of the transaction in the specified block

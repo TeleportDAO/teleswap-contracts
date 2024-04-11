@@ -562,7 +562,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         extendedCcExchangeRequests[_txId].isTransferredToOtherChain = true;
 
         require(
-            _verifySig2(
+            CcExchangeRouterLib._verifySig(
                 _message,
                 _r,
                 _s,
@@ -630,7 +630,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         extendedCcExchangeRequests[_txId].isTransferredToOtherChain = true;
         
         require(
-            _verifySig2(
+            CcExchangeRouterLib._verifySig(
                 _message,
                 _r,
                 _s,
@@ -660,39 +660,6 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         // );
 
         // return true;
-    }
-
-    function _verifySig2(
-        bytes memory message,
-        bytes32 r,
-        bytes32 s,
-        uint8 v
-    ) internal pure returns (address) {
-        // Compute the message hash
-        bytes32 messageHash = keccak256(message);
-
-        // Prefix the message hash as per the Ethereum signing standard
-        bytes32 ethSignedMessageHash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
-        );
-
-        // Verify the message using ecrecover
-        address signer = ecrecover(ethSignedMessageHash, v, r, s);
-        require(signer != address(0), "PolygonConnectorLogic: Invalid sig");
-
-        return signer;
-    }
-
-    /// @notice Finds hash of the message that user should have signed
-    function _hashMsg(
-        bytes memory _data
-    ) internal view returns (bytes32) {
-        return keccak256(
-            abi.encodePacked(
-                "\x19Ethereum Signed Message:\n32", 
-                keccak256(_data)
-            )
-        );
     }
 
     /// @notice Sends tokens to the destination using across
