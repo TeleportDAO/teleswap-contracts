@@ -683,6 +683,7 @@ contract BurnRouterLogic is BurnRouterStorage,
         require(_amount > _protocolFee + 2 * bitcoinFee, "BurnRouterLogic: low amount");
        
         remainingAmount = _amount - _protocolFee - _thirdPartyFee - bitcoinFee;
+
         // Transfers protocol fee
         if (_protocolFee > 0) {
             require(

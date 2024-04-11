@@ -415,10 +415,7 @@ interface ICcExchangeRouter {
     function removeChain(uint _chainId) external;
 
     function withdrawFailedWrapAndSwap(
-        bytes32 _txId,
-        uint8 _scriptType,
-        bytes memory _userScript,
-        uint _acrossRelayerFee,
+        bytes memory _message,
         bytes32 _r,
         bytes32 _s,
         uint8 _v,
@@ -426,10 +423,7 @@ interface ICcExchangeRouter {
     ) external returns (bool);
 
     function retryFailedWrapAndSwap(
-        bytes32 _txId,
-        uint256 _outputAmount,
-        uint _acrossRelayerFee,
-        address[] memory path,
+        bytes memory _message,
         bytes32 _r,
         bytes32 _s,
         uint8 _v

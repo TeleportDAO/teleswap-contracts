@@ -521,20 +521,14 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     // }
 
     /// @notice ETH user whose request failed can redeem teleBTC for native BTC
-    /// @param _txId The transaction ID of request on Bitcoin
-    /// @param _scriptType Script type of the user script
-    /// @param _userScript Script hash of the user on Bitcoin
-    /// @param _acrossRelayerFee Fee that user pays to across relayer
+    /// @param _message abi encode of txId, scriptType, userScript and acrossRelayerFee
     /// @param _r Signature r
     /// @param _s Signature s
     /// @param _v Signature v
     /// @param _lockerLockingScript Script hash of locker that user has sent BTC to it
     /// @return
     function withdrawFailedWrapAndSwap(
-        bytes32 _txId,
-        uint8 _scriptType,
-        bytes memory _userScript,
-        uint _acrossRelayerFee,
+        bytes memory _message, 
         bytes32 _r,
         bytes32 _s,
         uint8 _v,
@@ -544,6 +538,22 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
            1. Request doesn't belong to the current chain
            2. Request execution has been failed
         */
+
+        (
+            bytes32 _txId,
+            uint8 _scriptType,
+            bytes memory _userScript,
+            uint _acrossRelayerFee
+        ) = abi.decode(
+            _message,
+            (
+                bytes32,
+                uint8,
+                bytes,
+                uint
+            )
+        );
+
         require(
             extendedCcExchangeRequests[_txId].chainId != chainId
             && extendedCcExchangeRequests[_txId].isTransferredToOtherChain == false,
@@ -552,10 +562,8 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         extendedCcExchangeRequests[_txId].isTransferredToOtherChain = true;
 
         require(
-            CcExchangeRouterLib._verifySig(
-                _hashMsg(
-                    abi.encode(_txId, _scriptType, _userScript, _acrossRelayerFee)
-                ),
+            _verifySig2(
+                _message,
                 _r,
                 _s,
                 _v
@@ -583,22 +591,31 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
 
     /// @notice ETH user whose exchange request failed can retry 
     ///         to exchange teleBTC for the desired token
-    /// @param _txId The transaction ID of request on Bitcoin
-    /// @param _outputAmount Amount of output token
-    /// @param _acrossRelayerFee Fee that user pays to across relayer
-    /// @param path Exchange path from teleBTC to the output token
+    /// @param _message abi encode of txId, outputAmount, acrossRelayerFee and Exchange path
     /// @param _r Signature r
     /// @param _s Signature s
     /// @param _v Signature v
     function retryFailedWrapAndSwap(
-        bytes32 _txId,
-        uint256 _outputAmount,
-        uint _acrossRelayerFee,
-        address[] memory path,
+        bytes memory _message,
         bytes32 _r,
         bytes32 _s,
         uint8 _v
     ) external nonReentrant override returns (bool) {
+        (
+            bytes32 _txId,
+            uint256 _outputAmount,
+            uint _acrossRelayerFee,
+            address[] memory path
+        ) = abi.decode(
+            _message,
+            (
+                bytes32,
+                uint256,
+                uint,
+                address[]
+            )
+        );
+
         ccExchangeRequest memory exchangeReq = ccExchangeRequests[_txId];
 
         /* Checks that:
@@ -611,12 +628,10 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             "ExchangeRouter: already processed"
         );
         extendedCcExchangeRequests[_txId].isTransferredToOtherChain = true;
-
+        
         require(
-            CcExchangeRouterLib._verifySig(
-                _hashMsg(
-                    abi.encodePacked(_txId, _outputAmount, _acrossRelayerFee, path)
-                ),
+            _verifySig2(
+                _message,
                 _r,
                 _s,
                 _v
@@ -625,26 +640,47 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         );
 
         // Exchanges teleBTC for desired exchange token
-        (bool result, uint[] memory amounts) = IExchangeConnector(exchangeConnector[exchangeReq.appId]).swap(
-            extendedCcExchangeRequests[_txId].remainedInputAmount,
-            _outputAmount,
-            path,
-            address(this), // Sends tokens to this contract
-            block.timestamp,
-            true // Input token is fixed
-        );
-        require(result, "ExchangeRouter: swap failed");
+        // (bool result, uint[] memory amounts) = IExchangeConnector(exchangeConnector[exchangeReq.appId]).swap(
+        //     extendedCcExchangeRequests[_txId].remainedInputAmount,
+        //     _outputAmount,
+        //     path,
+        //     address(this), // Sends tokens to this contract
+        //     block.timestamp,
+        //     true // Input token is fixed
+        // );
+        // require(result, "ExchangeRouter: swap failed");
 
-        // Sends exchanged tokens to ETH
-        _sendTokenToOtherChain(
-            extendedCcExchangeRequests[_txId].chainId,
-            path[path.length - 1], 
-            amounts[amounts.length - 1], 
-            exchangeReq.recipientAddress,
-            _acrossRelayerFee
+        // // Sends exchanged tokens to ETH
+        // _sendTokenToOtherChain(
+        //     extendedCcExchangeRequests[_txId].chainId,
+        //     path[path.length - 1], 
+        //     amounts[amounts.length - 1], 
+        //     exchangeReq.recipientAddress,
+        //     _acrossRelayerFee
+        // );
+
+        // return true;
+    }
+
+    function _verifySig2(
+        bytes memory message,
+        bytes32 r,
+        bytes32 s,
+        uint8 v
+    ) internal pure returns (address) {
+        // Compute the message hash
+        bytes32 messageHash = keccak256(message);
+
+        // Prefix the message hash as per the Ethereum signing standard
+        bytes32 ethSignedMessageHash = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
         );
 
-        return true;
+        // Verify the message using ecrecover
+        address signer = ecrecover(ethSignedMessageHash, v, r, s);
+        require(signer != address(0), "PolygonConnectorLogic: Invalid sig");
+
+        return signer;
     }
 
     /// @notice Finds hash of the message that user should have signed
