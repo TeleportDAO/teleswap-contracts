@@ -260,16 +260,17 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
         bytes memory _message,
         address _tokenSent
     ) internal {
+        IPolyConnectorLogic.exchangeForBtcArguments memory arguments;
         (
             ,,
-            address user,
-            address exchangeConnector,
-            uint minOutputAmount,
-            address[] memory path,
-            bytes memory userScript,
-            ScriptTypes scriptType,
-            bytes memory lockerLockingScript,
-            uint thirdParty
+            arguments.user,
+            arguments.exchangeConnector,
+            arguments.minOutputAmount,
+            arguments.path,
+            arguments.userScript,
+            arguments.scriptType,
+            arguments.lockerLockingScript,
+            arguments.thirdParty
         ) = abi.decode(
             _message, 
             (
@@ -288,48 +289,48 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
 
         uint[] memory amounts = new uint[](2);
         amounts[0] = _amount;
-        amounts[1] = minOutputAmount;
+        amounts[1] = arguments.minOutputAmount;
 
-        IERC20(path[0]).approve(burnRouterProxy, _amount);
+        IERC20(arguments.path[0]).approve(burnRouterProxy, _amount);
         
         try IBurnRouter(burnRouterProxy).swapAndUnwrap(
-            exchangeConnector, 
+            arguments.exchangeConnector, 
             amounts, 
             true, // Input token amount is fixed
-            path, 
+            arguments.path, 
             block.timestamp, 
-            userScript, 
-            scriptType, 
-            lockerLockingScript,
-            thirdParty
+            arguments.userScript, 
+            arguments.scriptType, 
+            arguments.lockerLockingScript,
+            arguments.thirdParty
         ) {
             emit NewBurn(
-                exchangeConnector,
+                arguments.exchangeConnector,
                 _tokenSent,
                 _amount,
-                user,
-                userScript,
-                scriptType,
-                ILockers(lockersProxy).getLockerTargetAddress(lockerLockingScript),
+                arguments.user,
+                arguments.userScript,
+                arguments.scriptType,
+                ILockers(lockersProxy).getLockerTargetAddress(arguments.lockerLockingScript),
                 BurnRouterStorage(burnRouterProxy).burnRequestCounter(
-                    ILockers(lockersProxy).getLockerTargetAddress(lockerLockingScript)
+                    ILockers(lockersProxy).getLockerTargetAddress(arguments.lockerLockingScript)
                 ) - 1,
-                path
+                arguments.path
             );
         } catch {
             // Removes spending allowance
-            IERC20(path[0]).approve(burnRouterProxy, 0);
+            IERC20(arguments.path[0]).approve(burnRouterProxy, 0);
 
             // Saves token amount so user can withdraw it in future
-            failedReqs[user][_tokenSent] += _amount;
+            failedReqs[arguments.user][_tokenSent] += _amount;
             emit FailedBurn(
-                exchangeConnector,
+                arguments.exchangeConnector,
                 _tokenSent,
                 _amount,
-                user,
-                userScript,
-                scriptType,
-                path
+                arguments.user,
+                arguments.userScript,
+                arguments.scriptType,
+                arguments.path
             );
         }
     }

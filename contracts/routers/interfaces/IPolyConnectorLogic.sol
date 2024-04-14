@@ -6,6 +6,18 @@ import "@teleportdao/teleordinal/contracts/TeleOrdinalLib.sol";
 
 interface IPolyConnectorLogic {
 
+    /// @notice Structure for _exchangeForBtcAcross function
+    struct exchangeForBtcArguments {
+        address user;
+        address exchangeConnector;
+        uint minOutputAmount;
+        address[] path;
+        bytes userScript;
+        ScriptTypes scriptType;
+        bytes lockerLockingScript;
+        uint thirdParty;
+    }
+
     // Events
     
    	event NewBurn(
