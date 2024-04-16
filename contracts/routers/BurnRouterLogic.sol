@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.8.4;
 
-import "./interfaces/IBurnRouter.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
-import "../lockers/interfaces/ILockers.sol";
+import "../lockersManager/interfaces/ILockersManager.sol";
 import "../connectors/interfaces/IExchangeConnector.sol";
 import "../libraries/BurnRouterLib.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./BurnRouterStorageV2.sol";
-import "hardhat/console.sol";
 
 contract BurnRouterLogic is BurnRouterStorage, 
     OwnableUpgradeable, ReentrancyGuardUpgradeable, BurnRouterStorageV2 {
@@ -305,7 +303,7 @@ contract BurnRouterLogic is BurnRouterStorage,
         );
 
         // Get the target address of the locker from its locking script
-        address _lockerTargetAddress = ILockers(lockers).getLockerTargetAddress(_lockerLockingScript);
+        address _lockerTargetAddress = ILockersManager(lockers).getLockerTargetAddress(_lockerLockingScript);
 
         // Checks the paid burn requests
         uint paidOutputCounter = _checkPaidBurnRequests(
@@ -341,12 +339,12 @@ contract BurnRouterLogic is BurnRouterStorage,
     ) external nonReentrant onlyOwner override {
         // Checks if the locking script is valid
         require(
-            ILockers(lockers).isLocker(_lockerLockingScript),
+            ILockersManager(lockers).isLocker(_lockerLockingScript),
             "BurnRouterLogic: not locker"
         );
 
         // Get the target address of the locker from its locking script
-        address _lockerTargetAddress = ILockers(lockers).getLockerTargetAddress(_lockerLockingScript);
+        address _lockerTargetAddress = ILockersManager(lockers).getLockerTargetAddress(_lockerLockingScript);
 
         // Goes through provided indexes of burn requests to see if locker should be slashed
         for (uint i = 0; i < _indices.length; i++) {
@@ -361,7 +359,7 @@ contract BurnRouterLogic is BurnRouterStorage,
             );
 
             // Slashes locker and sends the slashed amount to the user
-            ILockers(lockers).slashIdleLocker(
+            ILockersManager(lockers).slashIdleLocker(
                 _lockerTargetAddress,
                 burnRequests[_lockerTargetAddress][_indices[i]].amount*slasherPercentageReward/MAX_SLASHER_REWARD, // Slasher reward
                 _msgSender(), // Slasher address
@@ -476,9 +474,9 @@ contract BurnRouterLogic is BurnRouterStorage,
         ITeleBTC(teleBTC).approve(lockers, remainingAmount);
 
         // Reduces the Bitcoin fee to find the amount that user receives (called burntAmount)
-        _burntAmount = (ILockers(lockers).burn(_lockerLockingScript, remainingAmount)); 
+        _burntAmount = (ILockersManager(lockers).burn(_lockerLockingScript, remainingAmount)); 
         
-        address _lockerTargetAddress = ILockers(lockers).getLockerTargetAddress(_lockerLockingScript);
+        address _lockerTargetAddress = ILockersManager(lockers).getLockerTargetAddress(_lockerLockingScript);
 
         _saveBurnRequest(
             _amount,
@@ -552,9 +550,9 @@ contract BurnRouterLogic is BurnRouterStorage,
         uint totalValue = BitcoinHelper.parseOutputsTotalValue(_inputVout);
 
         // Gets the target address of the locker from its Bitcoin address
-        address _lockerTargetAddress = ILockers(lockers).getLockerTargetAddress(_lockerLockingScript);
+        address _lockerTargetAddress = ILockersManager(lockers).getLockerTargetAddress(_lockerLockingScript);
 
-        ILockers(lockers).slashThiefLocker(
+        ILockersManager(lockers).slashThiefLocker(
             _lockerTargetAddress,
             totalValue*slasherPercentageReward/MAX_SLASHER_REWARD, // Slasher reward
             _msgSender(), // Slasher address

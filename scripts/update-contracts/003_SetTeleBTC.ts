@@ -80,12 +80,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     // set telebtc in locker
     // const lockers = await deployments.get("LockersProxy")
-    // const lockersLib = await deployments.get("LockersLib")
+    // const lockersLib = await deployments.get("LockersManagerLib")
     // const lockersFactory = await ethers.getContractFactory(
     //     "LockersLogicTestnet",
     //     {
     //         libraries: {
-    //             LockersLib: lockersLib.address
+    //             LockersManagerLib: lockersLib.address
     //         }
     //     }
     // );

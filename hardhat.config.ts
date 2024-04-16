@@ -1,9 +1,6 @@
 import * as dotenv from "dotenv";
-
-import { HardhatUserConfig} from "hardhat/config";
-import { HttpNetworkUserConfig } from "hardhat/types";
+import { HardhatUserConfig } from "hardhat/config";
 import '@openzeppelin/hardhat-upgrades';
-
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
@@ -14,21 +11,6 @@ import "hardhat-deploy-tenderly";
 import "hardhat-contract-sizer";
 
 dotenv.config();
-
-const infuraNetwork = (
-	accounts: any, 
-	network: string,
-	chainId?: number,
-	gas?: number
-): HttpNetworkUserConfig => {
-	return {
-		url: `https://${network}.infura.io/v3/${process.env.PROJECT_ID}`,
-		chainId,
-		gas,
-		accounts,
-		gasPrice: 200000000000,
-	}
-}
 
 const config: HardhatUserConfig = {
 	solidity: {
@@ -50,23 +32,6 @@ const config: HardhatUserConfig = {
 				},
 			},
 			{
-				version: "0.7.6",
-				settings: {
-					optimizer: {
-						enabled: true
-					},
-				},
-			},
-			{
-				version: "0.8.0",
-				settings: {
-					optimizer: {
-						enabled: true,
-						runs: 1000,
-					},
-				},
-			},
-			{
 				version: "0.8.2",
 				settings: {
 					optimizer: {
@@ -78,39 +43,36 @@ const config: HardhatUserConfig = {
 		],
 	},
 	networks: {
-		mainnet: infuraNetwork(
-			process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
-			"mainnet", 
-			1, 
-			6283185,
-		),
-		goerli: infuraNetwork(
-			process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
-			"goerli", 
-			5, 
-			6283185
-		),
+		mainnet: {
+			url: "https://eth.llamarpc.com",
+			chainId: 1,
+			accounts: [process.env.PRIVATE_KEY ?? ""]
+		},
 		polygon: {
 			url: "https://rpc-mainnet.maticvigil.com/",
 			chainId: 137,
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-			gasPrice: 177000000000
+			accounts: [process.env.PRIVATE_KEY ?? ""]
 		},
 		mumbai: {
 			url: "https://polygon-mumbai.g.alchemy.com/v2/249SGZUqU12h4C4rAtPnb39FsJ09XMA9",
 			chainId: 80001,
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: [process.env.PRIVATE_KEY ?? ""]
+		},
+		amoy: {
+			url: "https://polygon-amoy-bor-rpc.publicnode.com",
+			chainId: 80002,
+			accounts: [process.env.PRIVATE_KEY ?? ""],
+			gasMultiplier: 5
 		},
 		bsc: {
 			url: "https://bsc-dataseed.binance.org/",
 			chainId: 56,
-			gasPrice: 20000000000,
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: [process.env.PRIVATE_KEY ?? ""]
 		},
 		bsc_testnet: {
 			url: "https://bsc-testnet.publicnode.com",
 			chainId: 97,
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: [process.env.PRIVATE_KEY ?? ""]
 		},
 		hardhat: {
 			allowUnlimitedContractSize: true,

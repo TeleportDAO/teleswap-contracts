@@ -3,7 +3,7 @@ pragma solidity >=0.8.0 <0.8.4;
 
 import "@teleportdao/btc-evm-bridge/contracts/relay/interfaces/IBitcoinRelay.sol";
 import "@teleportdao/btc-evm-bridge/contracts/libraries/BitcoinHelper.sol";
-import "../lockers/interfaces/ILockers.sol";
+import "../lockersManager/interfaces/ILockersManager.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../routers/BurnRouterStorage.sol";
@@ -80,7 +80,7 @@ library BurnRouterLib {
     ) external {
         // Checks if the locking script is valid
         require(
-            ILockers(lockers).isLocker(_lockerLockingScript),
+            ILockersManager(lockers).isLocker(_lockerLockingScript),
             "BurnRouterLogic: not locker"
         );
 
@@ -189,7 +189,7 @@ library BurnRouterLib {
 
         // Checks if the locking script is valid
         require(
-            ILockers(lockers).isLocker(_lockerLockingScript),
+            ILockersManager(lockers).isLocker(_lockerLockingScript),
             "BurnRouterLogic: not locker"
         );
 
@@ -248,7 +248,7 @@ library BurnRouterLib {
 
         // Checks if the given locking script is locker
         require(
-            ILockers(lockers).isLocker(_lockerLockingScript),
+            ILockersManager(lockers).isLocker(_lockerLockingScript),
             "BurnRouterLogic: not locker"
         );
     }

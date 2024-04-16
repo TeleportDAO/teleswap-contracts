@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 import "./interfaces/IBurnRouter.sol";
 import "./BurnRouterStorage.sol";
-import "../lockers/interfaces/ILockers.sol";
+import "../lockersManager/interfaces/ILockersManager.sol";
 import "./PolyConnectorStorage.sol";
 import "./interfaces/IPolyConnectorLogic.sol";
 import "./interfaces/AcrossMessageHandler.sol";
@@ -236,7 +236,7 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
             0
         );
 
-        address lockerTargetAddress = ILockers(lockersProxy).getLockerTargetAddress(lockerLockingScript);
+        address lockerTargetAddress = ILockersManager(lockersProxy).getLockerTargetAddress(lockerLockingScript);
         
         emit NewBurn(
             exchangeConnector,
@@ -310,9 +310,9 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
                 user,
                 userScript,
                 scriptType,
-                ILockers(lockersProxy).getLockerTargetAddress(lockerLockingScript),
+                ILockersManager(lockersProxy).getLockerTargetAddress(lockerLockingScript),
                 BurnRouterStorage(burnRouterProxy).burnRequestCounter(
-                    ILockers(lockersProxy).getLockerTargetAddress(lockerLockingScript)
+                    ILockersManager(lockersProxy).getLockerTargetAddress(lockerLockingScript)
                 ) - 1,
                 path
             );

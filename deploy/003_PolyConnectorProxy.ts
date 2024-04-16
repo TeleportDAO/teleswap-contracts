@@ -1,15 +1,14 @@
-import {HardhatRuntimeEnvironment} from 'hardhat/types';
-import {DeployFunction} from 'hardhat-deploy/types';
-import verify from "../helper-functions"
-
-import * as dotenv from "dotenv";
-dotenv.config();
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { DeployFunction } from 'hardhat-deploy/types';
+import verify from "../helper-functions";
+import config from 'config';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts, network } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
+    const proxyAdmin = config.get("proxy_admin");
     const polyConnectorLogic = await deployments.get("PolyConnectorLogic")
 
     const deployedContract = await deploy("PolyConnectorProxy", {
@@ -18,7 +17,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         skipIfAlreadyDeployed: true,
         args: [
             polyConnectorLogic.address,
-            deployer,
+            proxyAdmin,
             "0x"
         ],
     });
@@ -28,7 +27,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             deployedContract.address, 
             [
                 polyConnectorLogic.address,
-                deployer,
+                proxyAdmin,
                 "0x"
             ], 
             "contracts/routers/PolyConnectorProxy.sol:PolyConnectorProxy"

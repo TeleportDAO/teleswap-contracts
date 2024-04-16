@@ -5,15 +5,15 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../oracle/interfaces/IPriceOracle.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
-import "../types/DataTypes.sol";
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 import "../routers/interfaces/IBurnRouter.sol";
+import "../lockersManager/interfaces/ILockersManager.sol";
 
-library LockersLib {
+library LockersManagerLib {
 
     function requestToBecomeLocker(
-        mapping(address => DataTypes.locker) storage lockersMapping,
-        DataTypes.lockersLibParam memory libParams,
+        mapping(address => ILockersManager.locker) storage lockersMapping,
+        ILockersManager.lockersLibParam memory libParams,
         address theLockerTargetAddress,
         uint _lockedTDTAmount,
         uint _lockedNativeTokenAmount,
@@ -47,7 +47,7 @@ library LockersLib {
             "Lockers: used locking script"
         );
 
-        DataTypes.locker memory locker_;
+        ILockersManager.locker memory locker_;
         locker_.lockerLockingScript = _candidateLockingScript;
         locker_.TDTLockedAmount = _lockedTDTAmount;
         locker_.nativeTokenLockedAmount = _lockedNativeTokenAmount;
@@ -60,7 +60,7 @@ library LockersLib {
     }
 
     function buySlashedCollateralOfLocker(
-        DataTypes.locker storage theLocker,
+        ILockersManager.locker storage theLocker,
         uint _collateralAmount
     ) external returns (uint neededTeleBTC) {
 
@@ -91,9 +91,9 @@ library LockersLib {
     }
 
     function liquidateLocker(
-        DataTypes.locker storage theLocker,
-        DataTypes.lockersLibConstants memory libConstants,
-        DataTypes.lockersLibParam memory libParams,
+        ILockersManager.locker storage theLocker,
+        ILockersManager.lockersLibConstants memory libConstants,
+        ILockersManager.lockersLibParam memory libParams,
         uint _collateralAmount
     ) external view returns (uint neededTeleBTC) {
 
@@ -102,7 +102,7 @@ library LockersLib {
             "Lockers: input address is not a valid locker"
         );
 
-        // DataTypes.locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
+        // ILockersManager.locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
         uint priceOfCollateral = priceOfOneUnitOfCollateralInBTC(
             libConstants,
             libParams
@@ -148,9 +148,9 @@ library LockersLib {
     }
 
     function slashThiefLocker(
-        DataTypes.locker storage theLocker,
-        DataTypes.lockersLibConstants memory libConstants,
-        DataTypes.lockersLibParam memory libParams,
+        ILockersManager.locker storage theLocker,
+        ILockersManager.lockersLibConstants memory libConstants,
+        ILockersManager.lockersLibParam memory libParams,
         uint _rewardAmount,
         uint _amount,
         address _rewardRecipient
@@ -200,9 +200,9 @@ library LockersLib {
     }
 
     function slashIdleLocker(
-        DataTypes.locker storage theLocker,
-        DataTypes.lockersLibConstants memory libConstants,
-        DataTypes.lockersLibParam memory libParams,
+        ILockersManager.locker storage theLocker,
+        ILockersManager.lockersLibConstants memory libConstants,
+        ILockersManager.lockersLibParam memory libParams,
         uint _rewardAmount,
         uint _amount
     ) external returns (uint equivalentNativeToken) {
@@ -231,9 +231,9 @@ library LockersLib {
     }
 
     function maximumBuyableCollateral(
-        DataTypes.locker storage theLocker,
-        DataTypes.lockersLibConstants memory libConstants,
-        DataTypes.lockersLibParam memory libParams,
+        ILockersManager.locker storage theLocker,
+        ILockersManager.lockersLibConstants memory libConstants,
+        ILockersManager.lockersLibParam memory libParams,
         uint _priceOfOneUnitOfCollateral
     ) public view returns (uint) {
 
@@ -252,9 +252,9 @@ library LockersLib {
     }
 
     function calculateHealthFactor(
-        DataTypes.locker storage theLocker,
-        DataTypes.lockersLibConstants memory libConstants,
-        DataTypes.lockersLibParam memory libParams,
+        ILockersManager.locker storage theLocker,
+        ILockersManager.lockersLibConstants memory libConstants,
+        ILockersManager.lockersLibParam memory libParams,
         uint _priceOfOneUnitOfCollateral
     ) public view returns (uint) {
         return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount * 
@@ -263,8 +263,8 @@ library LockersLib {
     }
 
     function neededTeleBTCToBuyCollateral(
-        DataTypes.lockersLibConstants memory libConstants,
-        DataTypes.lockersLibParam memory libParams,
+        ILockersManager.lockersLibConstants memory libConstants,
+        ILockersManager.lockersLibParam memory libParams,
         uint _collateralAmount,
         uint _priceOfCollateral
     ) public pure returns (uint) {
@@ -274,7 +274,7 @@ library LockersLib {
 
     function addToCollateral(
         uint value,
-        DataTypes.locker storage theLocker,
+        ILockersManager.locker storage theLocker,
         uint _addingNativeTokenAmount
     ) external {
         require(
@@ -292,9 +292,9 @@ library LockersLib {
     }
 
     function removeFromCollateral(
-        DataTypes.locker storage theLocker,
-        DataTypes.lockersLibConstants memory libConstants,
-        DataTypes.lockersLibParam memory libParams,
+        ILockersManager.locker storage theLocker,
+        ILockersManager.lockersLibConstants memory libConstants,
+        ILockersManager.lockersLibParam memory libParams,
         uint _priceOfOneUnitOfCollateral,
         uint _removingNativeTokenAmount
     ) internal {
@@ -326,8 +326,8 @@ library LockersLib {
     }
 
     function priceOfOneUnitOfCollateralInBTC(
-        DataTypes.lockersLibConstants memory libConstants,
-        DataTypes.lockersLibParam memory libParams
+        ILockersManager.lockersLibConstants memory libConstants,
+        ILockersManager.lockersLibParam memory libParams
     ) public view returns (uint) {
 
         return IPriceOracle(libParams.priceOracle).equivalentOutputAmount(
@@ -342,9 +342,9 @@ library LockersLib {
 
 
     function lockerCollateralInTeleBTC(
-        DataTypes.locker storage theLocker,
-        DataTypes.lockersLibConstants memory libConstants,
-        DataTypes.lockersLibParam memory libParams
+        ILockersManager.locker storage theLocker,
+        ILockersManager.lockersLibConstants memory libConstants,
+        ILockersManager.lockersLibParam memory libParams
     ) public view returns (uint) {
 
         return IPriceOracle(libParams.priceOracle).equivalentOutputAmount(
@@ -361,9 +361,9 @@ library LockersLib {
     /// @dev                                Net minted amount is total minted minus total burnt for the locker
     /// @return theLockerCapacity           The net minted of the locker
     function getLockerCapacity(
-        DataTypes.locker storage theLocker,
-        DataTypes.lockersLibConstants memory libConstants,
-        DataTypes.lockersLibParam memory libParams,
+        ILockersManager.locker storage theLocker,
+        ILockersManager.lockersLibConstants memory libConstants,
+        ILockersManager.lockersLibParam memory libParams,
         uint netMinted,
         uint amount
     ) public view returns (uint theLockerCapacity) {

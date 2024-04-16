@@ -23,8 +23,8 @@ import { LockersProxy__factory } from "../src/types/factories/LockersProxy__fact
 import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
 import { LockersLogicLibraryAddresses } from "../src/types/factories/LockersLogic__factory";
 
-import { LockersLib } from "../src/types/LockersLib";
-import { LockersLib__factory } from "../src/types/factories/LockersLib__factory";
+import { LockersManagerLib } from "../src/types/LockersManagerLib";
+import { LockersManagerLib__factory } from "../src/types/factories/LockersManagerLib__factory";
 
 import { CcExchangeRouterLib } from "../src/types/CcExchangeRouterLib";
 import { CcExchangeRouterLib__factory } from "../src/types/factories/CcExchangeRouterLib__factory";
@@ -99,7 +99,7 @@ describe.only("CcExchangeRouter", async () => {
     let uniswapV2Pair: UniswapV2Pair;
     let uniswapV2Factory: UniswapV2Factory;
     let ccExchangeRouter: Contract;
-    let lockersLib: LockersLib;
+    let lockersLib: LockersManagerLib;
     let lockers: Contract;
     let teleBTC: TeleBTC;
     let teleportDAOToken: ERC20;
@@ -394,14 +394,14 @@ describe.only("CcExchangeRouter", async () => {
         return teleportDAOToken;
     };
 
-    const deployLockersLib = async (
+    const deployLockersManagerLib = async (
         _signer?: Signer
-    ): Promise<LockersLib> => {
-        const LockersLibFactory = new LockersLib__factory(
+    ): Promise<LockersManagerLib> => {
+        const LockersManagerLibFactory = new LockersManagerLib__factory(
             _signer || deployer
         );
 
-        const lockersLib = await LockersLibFactory.deploy(
+        const lockersLib = await LockersManagerLibFactory.deploy(
         );
 
         return lockersLib;
@@ -409,7 +409,7 @@ describe.only("CcExchangeRouter", async () => {
 
     const deployCcExchangeRouterLib = async (
         _signer?: Signer
-    ): Promise<LockersLib> => {
+    ): Promise<LockersManagerLib> => {
         const CcExchangeRouterFactory = new CcExchangeRouterLib__factory(
             _signer || deployer
         );
@@ -424,12 +424,12 @@ describe.only("CcExchangeRouter", async () => {
         _signer?: Signer
     ): Promise<Contract> => {
 
-        lockersLib = await deployLockersLib()
+        lockersLib = await deployLockersManagerLib()
 
         let linkLibraryAddresses: LockersLogicLibraryAddresses;
 
         linkLibraryAddresses = {
-            "contracts/libraries/LockersLib.sol:LockersLib": lockersLib.address,
+            "contracts/libraries/LockersManagerLib.sol:LockersManagerLib": lockersLib.address,
         };
 
         // Deploys lockers logic

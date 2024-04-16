@@ -22,8 +22,8 @@
 // import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
 // import { LockersLogicLibraryAddresses } from "../src/types/factories/LockersLogic__factory";
 
-// import { LockersLib } from "../src/types/LockersLib";
-// import { LockersLib__factory } from "../src/types/factories/LockersLib__factory";
+// import { LockersManagerLib } from "../src/types/LockersManagerLib";
+// import { LockersManagerLib__factory } from "../src/types/factories/LockersManagerLib__factory";
 
 // import { TeleBTCLogic } from "../src/types/TeleBTCLogic";
 // import { TeleBTCLogic__factory } from "../src/types/factories/TeleBTCLogic__factory";
@@ -82,7 +82,7 @@
 //     let uniswapV2Pair: UniswapV2Pair;
 //     let uniswapV2Factory: UniswapV2Factory;
 //     let ccExchangeRouter: Contract;
-//     let lockersLib: LockersLib;
+//     let lockersLib: LockersManagerLib;
 //     let lockers: Contract;
 //     let teleBTC: TeleBTC;
 //     let teleportDAOToken: ERC20;
@@ -268,14 +268,14 @@
 //         return teleportDAOToken;
 //     };
 
-//     const deployLockersLib = async (
+//     const deployLockersManagerLib = async (
 //         _signer?: Signer
-//     ): Promise<LockersLib> => {
-//         const LockersLibFactory = new LockersLib__factory(
+//     ): Promise<LockersManagerLib> => {
+//         const LockersManagerLibFactory = new LockersManagerLib__factory(
 //             _signer || deployer
 //         );
 
-//         const lockersLib = await LockersLibFactory.deploy(
+//         const lockersLib = await LockersManagerLibFactory.deploy(
 //         );
 
 //         return lockersLib;
@@ -285,12 +285,12 @@
 //         _signer?: Signer
 //     ): Promise<Contract> => {
 
-//         lockersLib = await deployLockersLib()
+//         lockersLib = await deployLockersManagerLib()
 
 //         let linkLibraryAddresses: LockersLogicLibraryAddresses;
 
 //         linkLibraryAddresses = {
-//             "contracts/libraries/LockersLib.sol:LockersLib": lockersLib.address,
+//             "contracts/libraries/LockersManagerLib.sol:LockersManagerLib": lockersLib.address,
 //         };
 
 //         // Deploys lockers logic

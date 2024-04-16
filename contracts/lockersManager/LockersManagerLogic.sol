@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.8.4;
 
-import "./interfaces/ILockers.sol";
-import "./LockersStorageStructure.sol";
+import "./LockersManagerStorage.sol";
 import "../oracle/interfaces/IPriceOracle.sol";
 import "../connectors/interfaces/IExchangeConnector.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../routers/interfaces/IBurnRouter.sol";
-import "../libraries/LockersLib.sol";
+import "../libraries/LockersManagerLib.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -15,15 +14,14 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "hardhat/console.sol";
 
-contract LockersLogic is LockersStorageStructure, ILockers, 
-    OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
+contract LockersManagerLogic is LockersManagerStorage, OwnableUpgradeable, 
+    ReentrancyGuardUpgradeable, PausableUpgradeable {
 
-    using LockersLib for *;
+    using LockersManagerLib for *;
     using SafeERC20 for IERC20;
    
     function initialize(
         address _teleBTC,
-        address _TeleportDAOToken,
         address _exchangeConnector,
         address _priceOracle,
         address _ccBurnRouter,
@@ -44,7 +42,6 @@ contract LockersLogic is LockersStorageStructure, ILockers,
             "Lockers: amount is zero"
         );
 
-        setTeleportDAOToken(_TeleportDAOToken);
         setTeleBTC(_teleBTC);
         setCCBurnRouter(_ccBurnRouter);
         setExchangeConnector(_exchangeConnector);
@@ -62,7 +59,6 @@ contract LockersLogic is LockersStorageStructure, ILockers,
         libConstants.MaxLockerFee = MAX_LOCKER_FEE;
         libConstants.NativeTokenDecimal = NATIVE_TOKEN_DECIMAL;
         libConstants.NativeToken = NATIVE_TOKEN;
-
     }
 
     // *************** Modifiers ***************
@@ -165,10 +161,10 @@ contract LockersLogic is LockersStorageStructure, ILockers,
 
     /// @notice                       Changes teleportDAO token in lockers 
     /// @dev                          Only current owner can call this
-    /// @param _tdtTokenAddress       The new teleportDAO token address
-    function setTeleportDAOToken(address _tdtTokenAddress) public override onlyOwner nonZeroAddress(_tdtTokenAddress) {
-        emit NewTeleportDAOToken(TeleportDAOToken, _tdtTokenAddress);
-        TeleportDAOToken = _tdtTokenAddress;
+    /// @param _TST       The new teleportDAO token address
+    function setTST(address _TST) public override onlyOwner nonZeroAddress(_TST) {
+        emit NewTST(TeleportDAOToken, _TST);
+        TeleportDAOToken = _TST;
         libParams.teleportDAOToken = TeleportDAOToken; 
     }
 
@@ -305,7 +301,7 @@ contract LockersLogic is LockersStorageStructure, ILockers,
         bytes calldata _lockerRescueScript
     ) external override payable nonReentrant returns (bool) {
 
-        LockersLib.requestToBecomeLocker(
+        LockersManagerLib.requestToBecomeLocker(
                 lockersMapping,
                 libParams,
                 lockerTargetAddress[_candidateLockingScript],
@@ -340,7 +336,7 @@ contract LockersLogic is LockersStorageStructure, ILockers,
         );
 
         // Loads locker's information
-        DataTypes.locker memory lockerRequest = lockersMapping[_msgSender()];
+        locker memory lockerRequest = lockersMapping[_msgSender()];
 
         // Removes candidate from lockersMapping
         delete lockersMapping[_msgSender()];
@@ -453,7 +449,7 @@ contract LockersLogic is LockersStorageStructure, ILockers,
     ///                               Sends back available bond of locker (in TDT and TNT)
     /// @return                       True if locker is removed successfully
     function selfRemoveLocker() external override nonReentrant returns (bool) {
-        DataTypes.locker memory _removingLocker = lockersMapping[_msgSender()];
+        locker memory _removingLocker = lockersMapping[_msgSender()];
 
         require(
             _removingLocker.isLocker,
@@ -517,7 +513,7 @@ contract LockersLogic is LockersStorageStructure, ILockers,
             "Lockers: message sender is not ccBurn"
         );
 
-        (uint equivalentNativeToken) = LockersLib.slashIdleLocker(
+        (uint equivalentNativeToken) = LockersManagerLib.slashIdleLocker(
             lockersMapping[_lockerTargetAddress],
             libConstants,
             libParams,
@@ -567,7 +563,7 @@ contract LockersLogic is LockersStorageStructure, ILockers,
             "Lockers: message sender is not ccBurn"
         );
 
-        (uint rewardInNativeToken, uint neededNativeTokenForSlash) = LockersLib.slashThiefLocker(
+        (uint rewardInNativeToken, uint neededNativeTokenForSlash) = LockersManagerLib.slashThiefLocker(
             lockersMapping[_lockerTargetAddress],
             libConstants,
             libParams,
@@ -604,14 +600,14 @@ contract LockersLogic is LockersStorageStructure, ILockers,
     ) external override nonZeroAddress(_lockerTargetAddress) nonZeroValue(_collateralAmount)
     nonReentrant whenNotPaused returns (bool) {
 
-        uint neededTeleBTC = LockersLib.liquidateLocker(
+        uint neededTeleBTC = LockersManagerLib.liquidateLocker(
             lockersMapping[_lockerTargetAddress],
             libConstants,
             libParams,
             _collateralAmount
         );
 
-        DataTypes.locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
+    locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
 
         // Updates TNT bond of locker
         lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount = 
@@ -657,7 +653,7 @@ contract LockersLogic is LockersStorageStructure, ILockers,
     ) external nonZeroAddress(_lockerTargetAddress)
         nonReentrant whenNotPaused override returns (bool) {
 
-        uint neededTeleBTC = LockersLib.buySlashedCollateralOfLocker(
+        uint neededTeleBTC = LockersManagerLib.buySlashedCollateralOfLocker(
             lockersMapping[_lockerTargetAddress],
             _collateralAmount
         );
@@ -689,7 +685,7 @@ contract LockersLogic is LockersStorageStructure, ILockers,
         address _lockerTargetAddress,
         uint _addingNativeTokenAmount
     ) external override payable nonReentrant returns (bool) {
-        LockersLib.addToCollateral(
+        LockersManagerLib.addToCollateral(
             msg.value,
             lockersMapping[_lockerTargetAddress],
             _addingNativeTokenAmount
@@ -722,12 +718,12 @@ contract LockersLogic is LockersStorageStructure, ILockers,
             "Lockers: still active"
         );
 
-        uint priceOfOnUnitOfCollateral = LockersLib.priceOfOneUnitOfCollateralInBTC(
+        uint priceOfOnUnitOfCollateral = LockersManagerLib.priceOfOneUnitOfCollateralInBTC(
             libConstants,
             libParams
         );
 
-        LockersLib.removeFromCollateral(
+        LockersManagerLib.removeFromCollateral(
             lockersMapping[_msgSender()],
             libConstants,
             libParams,
@@ -764,7 +760,7 @@ contract LockersLogic is LockersStorageStructure, ILockers,
 
         require(_lockerTargetAddress != address(0), "Lockers: address is zero");
         
-        uint theLockerCapacity = LockersLib.getLockerCapacity(
+        uint theLockerCapacity = LockersManagerLib.getLockerCapacity(
             lockersMapping[_lockerTargetAddress],
             libConstants,
             libParams,
@@ -878,7 +874,7 @@ contract LockersLogic is LockersStorageStructure, ILockers,
      * @return uint The price of one unit of collateral token (native token in teleBTC)
      */
     function priceOfOneUnitOfCollateralInBTC() public override view returns (uint) {
-        return LockersLib.priceOfOneUnitOfCollateralInBTC(
+        return LockersManagerLib.priceOfOneUnitOfCollateralInBTC(
             libConstants,
             libParams
         );

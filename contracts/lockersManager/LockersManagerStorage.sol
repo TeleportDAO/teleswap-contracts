@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.8.4;
 
-import "./interfaces/ILockersStorage.sol";
+import "./interfaces/ILockersManager.sol";
 
-contract LockersStorageStructure is ILockersStorage {
+abstract contract LockersManagerStorage is ILockersManager {
 
     // Constants
     uint public constant ONE_HUNDRED_PERCENT = 10000;
@@ -30,14 +30,14 @@ contract LockersStorageStructure is ILockersStorage {
     uint public override totalNumberOfCandidates;
     uint public override totalNumberOfLockers;
 
-    mapping(address => DataTypes.locker) public lockersMapping; // locker's target address -> locker structure
+    mapping(address => locker) public lockersMapping; // locker's target address -> locker structure
     mapping(address => uint) public lockerInactivationTimestamp;
     mapping(address => bool) public lockerLeavingAcceptance;
     mapping(bytes => address) public lockerTargetAddress; // locker's locking script -> locker's target address
     mapping(address => bool) minters;
     mapping(address => bool) burners;
 
-    DataTypes.lockersLibConstants public libConstants;
-    DataTypes.lockersLibParam public libParams;
+    lockersLibConstants public libConstants;
+    lockersLibParam public libParams;
 
 }

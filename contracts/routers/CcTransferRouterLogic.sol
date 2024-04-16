@@ -3,16 +3,15 @@ pragma solidity >=0.8.0 <0.8.4;
 
 import "./CcTransferRouterStorage.sol";
 import "./CcTransferRouterStorageV2.sol";
-import "./interfaces/ICcTransferRouter.sol";
 import "../libraries/RequestParser.sol";
-import "../lockers/interfaces/ILockers.sol";
+import "../lockersManager/interfaces/ILockersManager.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "@teleportdao/btc-evm-bridge/contracts/libraries/BitcoinHelper.sol";
 import "@teleportdao/btc-evm-bridge/contracts/relay/interfaces/IBitcoinRelay.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "hardhat/console.sol";
+
 contract CcTransferRouterLogic is CcTransferRouterStorage, 
     OwnableUpgradeable, ReentrancyGuardUpgradeable, CcTransferRouterStorageV2 {
 
@@ -244,7 +243,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
         emit NewWrap(
             txId,
             _lockerLockingScript,
-            ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
+            ILockersManager(lockers).getLockerTargetAddress(_lockerLockingScript),
             ccTransferRequests[txId].recipientAddress,
             _msgSender(),
             [ccTransferRequests[txId].inputAmount, receivedAmount],
@@ -300,7 +299,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
         */
 
         require(
-            ILockers(lockers).isLocker(_lockerLockingScript),
+            ILockersManager(lockers).isLocker(_lockerLockingScript),
             "CCTransferRouter: no locker with the given locking script exists"
         );
 
@@ -389,7 +388,7 @@ contract CcTransferRouterLogic is CcTransferRouterStorage,
 
         // Mints teleBTC for cc transfer router
         // Lockers contract gets locker's fee
-        uint mintedAmount = ILockers(lockers).mint(
+        uint mintedAmount = ILockersManager(lockers).mint(
             _lockerLockingScript,
             address(this),
             ccTransferRequests[_txId].inputAmount

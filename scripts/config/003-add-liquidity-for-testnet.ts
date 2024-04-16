@@ -16,8 +16,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const wrappedMatic = config.get("wrapped_matic") as string;
     const uniswapFactory = await config.get("uniswap_v2_factory") as string
     const uniswapRouter = await config.get("uniswap_v2_router_02") as string
-
-    // const teleBTC = await deployments.get("TeleBTC")
     const teleBTC = await deployments.get("TeleBTCProxy")
 
     const teleBTCFactory = await ethers.getContractFactory("TeleBTCLogic");
