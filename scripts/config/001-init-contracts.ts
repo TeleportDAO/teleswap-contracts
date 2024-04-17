@@ -8,16 +8,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments } = hre;
     const ZERO_ADD = "0x0000000000000000000000000000000000000000";
 
-    const lockersLib = await deployments.get("LockersLib")
-    const lockersLogic = await deployments.get("LockersLogic")
-    const teleDAOToken = await deployments.get("ERC20");
+    const lockersManagerLib = await deployments.get("LockersManagerLib")
+    const lockersManagerLogic = await deployments.get("LockersManagerLogic")
     const teleBTC = await deployments.get("TeleBTCProxy");
     const teleBTCLogic = await deployments.get("TeleBTCLogic");
     const exchangeConnector = await deployments.get("UniswapV2Connector");
     const priceOracle = await deployments.get("PriceOracle");
     const ccTransferRouterLogic = await deployments.get("CcTransferRouterLogic");
     const ccTransferRouterProxy = await deployments.get("CcTransferRouterProxy");
-    const lockersProxy = await deployments.get("LockersProxy");
+    const lockersManagerProxy = await deployments.get("LockersManagerProxy");
     const burnRouterLib = await deployments.get("BurnRouterLib");
     const burnRouterLogic = await deployments.get("BurnRouterLogic");
     const burnRouterProxy = await deployments.get("BurnRouterProxy");
@@ -46,26 +45,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Initialize Lockers ...")
 
-    const lockersLogicFactory = await ethers.getContractFactory(
-        "LockersLogic",
+    const lockersManagerLogicFactory = await ethers.getContractFactory(
+        "LockersManagerLogic",
         {
             libraries: {
-                LockersLib: lockersLib.address
+                LockersManagerLib: lockersManagerLib.address
             }
         }
     );
-    const lockersProxyInstance = await lockersLogicFactory.attach(
-        lockersProxy.address
+    const lockersManagerProxyInstance = await lockersManagerLogicFactory.attach(
+        lockersManagerProxy.address
     );
-    const lockersLogicInstance = await lockersLogicFactory.attach(
-        lockersLogic.address
+    const lockersManagerLogicInstance = await lockersManagerLogicFactory.attach(
+        lockersManagerLogic.address
     );
 
-    let _teleBtcProxy = await lockersProxyInstance.teleBTC();
+    let _teleBtcProxy = await lockersManagerProxyInstance.teleBTC();
     if (_teleBtcProxy == ZERO_ADD) {
-        const initializeTx = await lockersProxyInstance.initialize(
+        const initializeTx = await lockersManagerProxyInstance.initialize(
             teleBTC.address,
-            teleDAOToken.address,
             exchangeConnector.address,
             priceOracle.address,
             burnRouterProxy.address,
@@ -77,16 +75,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             priceWithDiscountRatio
         )
         await initializeTx.wait(1)
-        console.log("Initialized lockersProxy: ", initializeTx.hash)
+        console.log("Initialized lockersManagerProxy: ", initializeTx.hash)
     } else {
-        console.log("lockersProxy is already initialized")
+        console.log("lockersManagerProxy is already initialized")
     }
 
-    let _teleBtcLogic = await lockersLogicInstance.teleBTC()
+    let _teleBtcLogic = await lockersManagerLogicInstance.teleBTC()
     if (_teleBtcLogic == ZERO_ADD) {
-        const initializeTx = await lockersLogicInstance.initialize(
+        const initializeTx = await lockersManagerLogicInstance.initialize(
             teleBTC.address,
-            teleDAOToken.address,
             exchangeConnector.address,
             priceOracle.address,
             burnRouterProxy.address,
@@ -98,9 +95,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             priceWithDiscountRatio
         )
         await initializeTx.wait(1)
-        console.log("Initialized lockersLogic: ", initializeTx.hash)
+        console.log("Initialized lockersManagerLogic: ", initializeTx.hash)
     } else {
-        console.log("lockersLogic is already initialized")
+        console.log("lockersManagerLogic is already initialized")
     }
 
     logger.color('blue').log("-------------------------------------------------")
@@ -118,34 +115,38 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     let _relayProxy = await ccTransferRouterProxyInstance.relay();
     if (_relayProxy == ZERO_ADD) {
-        const initializeTxProxy = await ccTransferRouterProxyInstance.initialize(
+        const initializeTx = await ccTransferRouterProxyInstance.initialize(
             startingBlockHeight,
             protocolPercentageFee,
             chainId,
             appId,
             bitcoinRelay,
-            lockersProxy.address,
+            lockersManagerProxy.address,
             teleBTC.address,
             treasuryAddress
         );
-        await initializeTxProxy.wait(1);
-        console.log("Initialized CcTransferRouterProxy: ", initializeTxProxy.hash);
+        await initializeTx.wait(1)
+        console.log("Initialized CcTransferRouterProxy: ", initializeTx.hash);
+    } else {
+        console.log("CcTransferRouterProxy is already initialized")
     }
     
     let _relayLogic = await ccTransferRouterLogicInstance.relay();
     if (_relayLogic == ZERO_ADD) {
-        const initializeTxLogic = await ccTransferRouterLogicInstance.initialize(
+        const initializeTx = await ccTransferRouterLogicInstance.initialize(
             startingBlockHeight,
             protocolPercentageFee,
             chainId,
             appId,
             bitcoinRelay,
-            lockersProxy.address,
+            lockersManagerProxy.address,
             teleBTC.address,
             treasuryAddress
         )
-        await initializeTxLogic.wait(1);
-        console.log("Initialized CcTransferRouterLogic: ", initializeTxLogic.hash);
+        await initializeTx.wait(1);
+        console.log("Initialized CcTransferRouterLogic: ", initializeTx.hash);
+    } else {
+        console.log("CcTransferRouterLogic is already initialized")
     }
 
     logger.color('blue').log("-------------------------------------------------")
@@ -168,10 +169,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     _relayProxy = await burnRouterProxyInstance.relay();
     if (_relayProxy == ZERO_ADD) {
-        const initializeTxProxy = await burnRouterProxyInstance.initialize(
+        const initializeTx = await burnRouterProxyInstance.initialize(
             startingBlockHeight,
             bitcoinRelay,
-            lockersProxy.address,
+            lockersManagerProxy.address,
             treasuryAddress,
             teleBTC.address,
             transferDeadLine,
@@ -179,16 +180,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             slasherPercentageReward,
             bitcoinFee
         )
-        await initializeTxProxy.wait(1);
-        console.log("Initialized BurnRouterProxy: ", initializeTxProxy.hash);
+        await initializeTx.wait(1);
+        console.log("Initialized BurnRouterProxy: ", initializeTx.hash);
+    } else {
+        console.log("BurnRouterProxy is already initialized")
     }
 
     _relayLogic = await burnRouterLogicInstance.relay();
     if (_relayLogic == ZERO_ADD) {
-        const initializeTxLogic = await burnRouterLogicInstance.initialize(
+        const initializeTx = await burnRouterLogicInstance.initialize(
             startingBlockHeight,
             bitcoinRelay,
-            lockersProxy.address,
+            lockersManagerProxy.address,
             treasuryAddress,
             teleBTC.address,
             transferDeadLine,
@@ -196,8 +199,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             slasherPercentageReward,
             bitcoinFee
         )
-        await initializeTxLogic.wait(1);
-        console.log("Initialized BurnRouterLogic: ", initializeTxLogic.hash);
+        await initializeTx.wait(1);
+        console.log("Initialized BurnRouterLogic: ", initializeTx.hash);
+    } else {
+        console.log("BurnRouterLogic is already initialized")
     }
 
     logger.color('blue').log("-------------------------------------------------")
@@ -220,38 +225,41 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     _relayProxy = await ccExchangeRouterProxyInstance.relay();
     if (_relayProxy == ZERO_ADD) {
-        const initializeTxProxy = await ccExchangeRouterProxyInstance.initialize(
+        const initializeTx = await ccExchangeRouterProxyInstance.initialize(
             startingBlockHeight,
             protocolPercentageFee,
             chainID,
-            lockersProxy.address,
+            lockersManagerProxy.address,
             bitcoinRelay,
             teleBTC.address,
             treasuryAddress,
             across,
             burnRouterProxy.address
         );
-        await initializeTxProxy.wait(1);
-        console.log("Initialize CcExchangeRouterProxy: ", initializeTxProxy.hash);
+        await initializeTx.wait(1);
+        console.log("Initialize CcExchangeRouterProxy: ", initializeTx.hash);
+    } else {
+        console.log("CcExchangeRouterProxy is already initialized")
     }
 
     _relayLogic = await ccExchangeRouterLogicInstance.relay();
     if (_relayLogic == ZERO_ADD) {
-        const initializeTxLogic = await ccExchangeRouterLogicInstance.initialize(
+        const initializeTx = await ccExchangeRouterLogicInstance.initialize(
             startingBlockHeight,
             protocolPercentageFee,
             chainID,
-            lockersProxy.address,
+            lockersManagerProxy.address,
             bitcoinRelay,
             teleBTC.address,
             treasuryAddress,
             across,
             burnRouterProxy.address
         )
-        await initializeTxLogic.wait(1);
-        console.log("Initialize CcExchangeRouterLogic: ", initializeTxLogic.hash);
+        await initializeTx.wait(1);
+        console.log("Initialize CcExchangeRouterLogic: ", initializeTx.hash);
+    } else {
+        console.log("CcExchangeRouterLogic is already initialized")
     }
-
 
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Initialize TeleBTC ...")
@@ -276,7 +284,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             tokenSymbol
         );
         await initializeTxProxy.wait(1);
-        console.log("Initialize TeleBTC: ", initializeTxProxy.hash);
+        console.log("Initialize TeleBTCProxy: ", initializeTxProxy.hash);
+    } else {
+        console.log("TeleBTCProxy is already initialized")
     }
 
     let _ownerLogic = await teleBTCLogicInstance.owner();
@@ -285,12 +295,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         const tokenName = "teleBTC"
         const tokenSymbol = "TELEBTC"
 
-        const initializeTxLogic = await teleBTCLogicInstance.initialize(
+        const initializeTx = await teleBTCLogicInstance.initialize(
             tokenName,
             tokenSymbol
         )
-        await initializeTxLogic.wait(1);
-        console.log("Initialize TeleBTC: ", initializeTxLogic.hash);
+        await initializeTx.wait(1);
+        console.log("Initialize TeleBTCLogic: ", initializeTx.hash);
+    } else {
+        console.log("TeleBTCLogic is already initialized")
     }
 
 };

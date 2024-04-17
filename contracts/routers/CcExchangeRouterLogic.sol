@@ -4,19 +4,16 @@ pragma solidity >=0.8.0 <0.8.4;
 import "./CcExchangeRouterStorage.sol";
 import "./CcExchangeRouterStorageV2.sol";
 import "./interfaces/IBurnRouter.sol";
-import "./interfaces/ICcExchangeRouter.sol";
 import "../connectors/interfaces/IExchangeConnector.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
-import "../lockers/interfaces/ILockers.sol";
+import "../lockersManager/interfaces/ILockersManager.sol";
 import "../libraries/CcExchangeRouterLib.sol";
-import "@teleportdao/btc-evm-bridge/contracts/relay/interfaces/IBitcoinRelay.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "@across-protocol/contracts-v2/contracts/interfaces/SpokePoolInterface.sol";
-import "hardhat/console.sol";
 
 contract CcExchangeRouterLogic is CcExchangeRouterStorage, 
     OwnableUpgradeable, ReentrancyGuardUpgradeable, CcExchangeRouterStorageV2 {
@@ -221,7 +218,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
 
         // Checks that the given script hash is locker
         require(
-            ILockers(lockers).isLocker(_lockerLockingScript),
+            ILockersManager(lockers).isLocker(_lockerLockingScript),
             "ExchangeRouter: not locker"
         );
 
@@ -830,7 +827,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             ];
 
             emit NewWrapAndSwap(
-                ILockers(lockers).getLockerTargetAddress(swapArguments._lockerLockingScript),
+                ILockersManager(lockers).getLockerTargetAddress(swapArguments._lockerLockingScript),
                 swapArguments._ccExchangeRequest.recipientAddress,
                 [
                     teleBTC, 
@@ -854,7 +851,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
                 0
             ];
             emit FailedWrapAndSwap(
-                ILockers(lockers).getLockerTargetAddress(swapArguments._lockerLockingScript),
+                ILockersManager(lockers).getLockerTargetAddress(swapArguments._lockerLockingScript),
                 swapArguments._ccExchangeRequest.recipientAddress,
                 [
                     teleBTC, 
@@ -938,7 +935,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     //     }
 
     //     emit CCExchange(
-    //         ILockers(lockers).getLockerTargetAddress(_lockerLockingScript),
+    //         ILockersManager(lockers).getLockerTargetAddress(_lockerLockingScript),
     //         _request.recipientAddress,
     //         [teleBTC, outputToken], // [input token, output token]
     //         [extendedCcExchangeRequests[_txId].remainedInputAmount, _request.outputAmount], // [input amount, output amount]
@@ -976,7 +973,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     ) private {
 
         // Mints teleBTC for cc exchange router
-        uint mintedAmount = ILockers(lockers).mint(
+        uint mintedAmount = ILockersManager(lockers).mint(
             _lockerLockingScript,
             address(this),
             ccExchangeRequests[_txId].inputAmount

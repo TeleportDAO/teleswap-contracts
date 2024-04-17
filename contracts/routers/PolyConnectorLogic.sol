@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.8.4;
+pragma solidity >=0.8.0 <=0.8.4;;
 
 import "@across-protocol/contracts-v2/contracts/interfaces/SpokePoolInterface.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 import "./interfaces/IBurnRouter.sol";
 import "./BurnRouterStorage.sol";
-import "../lockers/interfaces/ILockers.sol";
+import "../lockersManager/interfaces/ILockersManager.sol";
 import "./PolyConnectorStorage.sol";
 import "./interfaces/IPolyConnectorLogic.sol";
 import "./interfaces/AcrossMessageHandler.sol";
@@ -236,7 +236,7 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
             0
         );
 
-        address lockerTargetAddress = ILockers(lockersProxy).getLockerTargetAddress(lockerLockingScript);
+        address lockerTargetAddress = ILockersManager(lockersProxy).getLockerTargetAddress(lockerLockingScript);
         
         emit NewBurn(
             exchangeConnector,

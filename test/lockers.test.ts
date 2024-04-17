@@ -2,22 +2,16 @@ require('dotenv').config({path:"../../.env"});
 
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
-import { Signer, BigNumber, BigNumberish, BytesLike } from "ethers";
+import { Signer, BigNumber } from "ethers";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
 import { Contract } from "@ethersproject/contracts";
 import { Address } from "hardhat-deploy/types";
-
-import { LockersProxy__factory } from "../src/types/factories/LockersProxy__factory";
-
-import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
-import { LockersLogicLibraryAddresses } from "../src/types/factories/LockersLogic__factory";
-
-import { LockersLib } from "../src/types/LockersLib";
-import { LockersLib__factory } from "../src/types/factories/LockersLib__factory";
-
-import { TeleBTCLogic } from "../src/types/TeleBTCLogic";
+import { LockersManagerProxy__factory } from "../src/types/factories/LockersManagerProxy__factory";
+import { LockersManagerLogic__factory } from "../src/types/factories/LockersManagerLogic__factory";
+import { LockersManagerLogicLibraryAddresses } from "../src/types/factories/LockersManagerLogic__factory";
+import { LockersManagerLib } from "../src/types/LockersManagerLib";
+import { LockersManagerLib__factory } from "../src/types/factories/LockersManagerLib__factory";
 import { TeleBTCLogic__factory } from "../src/types/factories/TeleBTCLogic__factory";
-import { TeleBTCProxy } from "../src/types/TeleBTCProxy";
 import { TeleBTCProxy__factory } from "../src/types/factories/TeleBTCProxy__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { Erc20__factory } from "../src/types/factories/Erc20__factory";
@@ -64,7 +58,7 @@ describe("Lockers", async () => {
     let ccBurnSimulatorAddress: Address;
 
     // Contracts
-    let lockersLib: LockersLib;
+    let lockersLib: LockersManagerLib;
     let lockers: Contract;
     let lockers2: Contract;
     let lockersAsAdmin: Contract;
@@ -215,14 +209,14 @@ describe("Lockers", async () => {
         return wrappedToken;
     };
 
-    const deployLockersLib = async (
+    const deployLockersManagerLib = async (
         _signer?: Signer
-    ): Promise<LockersLib> => {
-        const LockersLibFactory = new LockersLib__factory(
+    ): Promise<LockersManagerLib> => {
+        const LockersManagerLibFactory = new LockersManagerLib__factory(
             _signer || deployer
         );
 
-        const lockersLib = await LockersLibFactory.deploy(
+        const lockersLib = await LockersManagerLibFactory.deploy(
         );
 
         return lockersLib;
@@ -233,16 +227,16 @@ describe("Lockers", async () => {
         _signer?: Signer
     ): Promise<Contract> => {
 
-        lockersLib = await deployLockersLib()
+        lockersLib = await deployLockersManagerLib()
 
-        let linkLibraryAddresses: LockersLogicLibraryAddresses;
+        let linkLibraryAddresses: LockersManagerLogicLibraryAddresses;
 
         linkLibraryAddresses = {
-            "contracts/libraries/LockersLib.sol:LockersLib": lockersLib.address,
+            "contracts/libraries/LockersManagerLib.sol:LockersManagerLib": lockersLib.address,
         };
 
         // Deploys lockers logic
-        const lockersLogicFactory = new LockersLogic__factory(
+        const lockersLogicFactory = new LockersManagerLogic__factory(
             linkLibraryAddresses,
             _signer || deployer
         );
@@ -250,7 +244,7 @@ describe("Lockers", async () => {
         const lockersLogic = await lockersLogicFactory.deploy();
 
         // Deploys lockers proxy
-        const lockersProxyFactory = new LockersProxy__factory(
+        const lockersProxyFactory = new LockersManagerProxy__factory(
             _signer || deployer
         );
         const lockersProxy = await lockersProxyFactory.deploy(

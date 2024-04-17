@@ -1,21 +1,23 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
-import verify from "../helper-functions"
+import verify from "../helper-functions";
+import config from 'config';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts, network } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const lockersLogic = await deployments.get("LockersLogic")
+    const proxyAdmin = config.get("proxy_admin");
+    const lockersManagerLogic = await deployments.get("LockersManagerLogic")
 
-    const deployedContract = await deploy("LockersProxy", {
+    const deployedContract = await deploy("LockersManagerProxy", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
         args: [
-            lockersLogic.address,
-            deployer,
+            lockersManagerLogic.address,
+            proxyAdmin,
             "0x"
         ],
     });
@@ -24,14 +26,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         await verify(
             deployedContract.address, 
             [
-                lockersLogic.address,
-                deployer,
+                lockersManagerLogic.address,
+                proxyAdmin,
                 "0x"
             ], 
-            "contracts/lockers/LockersProxy.sol:LockersProxy"
+            "contracts/lockers/LockersManagerProxy.sol:LockersManagerProxy"
         )
     }
 };
 
 export default func;
-func.tags = ["LockersProxy"];
+func.tags = ["LockersManagerProxy"];
