@@ -56,13 +56,11 @@
 		"solidity-bytes-utils": "^0.8.0"
 	},
 	"scripts": {
-		"build": "hardhat compile && tsc",
-		"clean": "rimraf artifacts && rimraf cache && rimraf deployments/localhost && rimraf src/types/*",
-		"prepare": "husky install",
-		"deploy": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json",
-		"config": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json --deploy-scripts scripts/config",
-		"update": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json --deploy-scripts scripts/update-contracts",
+		"build": "rimraf artifacts cache src/types && hardhat compile && tsc",
 		"test": "hardhat test",
-		"lint": "commitlint --from=HEAD"
+		"deploy": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json",
+		"config": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json --deploy-scripts scripts",
+		"lint": "commitlint --from=HEAD",
+		"prepare": "husky install"
 	}
 }

@@ -7,7 +7,7 @@
 	"uniswap_v2_factory": "0x26C7eD58E18f2EC2bFa3eFBABA7a82368ea2957b",
 	"wrapped_matic": "0x0ae690aad8663aab12a671a6a0d74242332de85f",
 	"usdt_token": "0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582",
-	"usdc_token": "0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582",
+	"usdc_token": "0x42e94eb019c0762f9bfcf9fb1e58725bfb0e7582",
 	"acceptable_delay": 7200,
 	"chain_id": 137,
 	"treasury": "0x4234c3aBeA751301579448594D3EA2398452a982",

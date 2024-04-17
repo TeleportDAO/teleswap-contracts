@@ -1,19 +1,17 @@
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { DeployFunction } from 'hardhat-deploy/types';
-import verify from "../helper-functions"
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { DeployFunction } from "hardhat-deploy/types";
+import verify from "../helper-functions";
+import config from "config";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts, network } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const teleBTCLogic = await deployments.get("TeleBTCLogic")
+    const proxyAdmin = config.get("proxy_admin");
+    const teleBTCLogic = await deployments.get("TeleBTCLogic");
 
-    let theArgs = [
-        teleBTCLogic.address,
-        deployer,
-        "0x"
-    ]
+    let theArgs = [teleBTCLogic.address, proxyAdmin, "0x"];
 
     const deployedContract = await deploy("TeleBTCProxy", {
         from: deployer,
@@ -22,12 +20,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args: theArgs,
     });
 
-    if (network.name != "hardhat" && process.env.ETHERSCAN_API_KEY && process.env.VERIFY_OPTION == "1") {
+    if (
+        network.name != "hardhat" &&
+        process.env.ETHERSCAN_API_KEY &&
+        process.env.VERIFY_OPTION == "1"
+    ) {
         await verify(
-            deployedContract.address, 
-            theArgs, 
+            deployedContract.address,
+            theArgs,
             "contracts/erc20/TeleBTCProxy.sol:TeleBTCProxy"
-        )
+        );
     }
 };
 
