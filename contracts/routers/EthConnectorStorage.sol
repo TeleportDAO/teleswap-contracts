@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.8.4;
+pragma solidity >=0.8.0 <=0.8.4;
 
-contract EthConnectorStorage {
+import "./interfaces/IEthConnectorLogic.sol";
+
+abstract contract EthConnectorStorage {
     
     uint constant public ONE_HUNDRED_PERCENT = 10000;
     address constant public ETH_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;

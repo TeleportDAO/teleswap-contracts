@@ -11,9 +11,9 @@ import { Address } from "hardhat-deploy/types";
 import { CcTransferRouterProxy__factory } from "../src/types/factories/CcTransferRouterProxy__factory";
 import { CcTransferRouterLogic__factory } from "../src/types/factories/CcTransferRouterLogic__factory";
 
-import { LockersProxy__factory } from "../src/types/factories/LockersProxy__factory";
-import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
-import { LockersLogicLibraryAddresses } from "../src/types/factories/LockersLogic__factory";
+import { LockersManagerProxy__factory } from "../src/types/factories/LockersManagerProxy__factory";
+import { LockersManagerLogic__factory } from "../src/types/factories/LockersManagerLogic__factory";
+import { LockersManagerLogicLibraryAddresses } from "../src/types/factories/LockersManagerLogic__factory";
 
 import { LockersManagerLib } from "../src/types/LockersManagerLib";
 import { LockersManagerLib__factory } from "../src/types/factories/LockersManagerLib__factory";
@@ -188,14 +188,14 @@ describe("CcTransferRouter", async () => {
 
         lockersLib = await deployLockersManagerLib()
 
-        let linkLibraryAddresses: LockersLogicLibraryAddresses;
+        let linkLibraryAddresses: LockersManagerLogicLibraryAddresses;
 
         linkLibraryAddresses = {
             "contracts/libraries/LockersManagerLib.sol:LockersManagerLib": lockersLib.address,
         };
 
         // Deploys lockers logic
-        const lockersLogicFactory = new LockersLogic__factory(
+        const lockersLogicFactory = new LockersManagerLogic__factory(
             linkLibraryAddresses,
             _signer || deployer
         );
@@ -203,7 +203,7 @@ describe("CcTransferRouter", async () => {
         const lockersLogic = await lockersLogicFactory.deploy();
 
         // Deploys lockers proxy
-        const lockersProxyFactory = new LockersProxy__factory(
+        const lockersProxyFactory = new LockersManagerProxy__factory(
             _signer || deployer
         );
         const lockersProxy = await lockersProxyFactory.deploy(
@@ -219,7 +219,6 @@ describe("CcTransferRouter", async () => {
         // Initializes lockers proxy
         await lockers.initialize(
             teleBTC.address,
-            teleportDAOToken.address,
             ONE_ADDRESS,
             mockPriceOracle.address,
             ONE_ADDRESS,
@@ -230,6 +229,8 @@ describe("CcTransferRouter", async () => {
             LOCKER_PERCENTAGE_FEE,
             PRICE_WITH_DISCOUNT_RATIO
         )
+
+        await lockers.setTST(teleportDAOToken.address)
 
         return lockers;
     };
@@ -1017,23 +1018,23 @@ describe("CcTransferRouter", async () => {
         it("Reverts since given address is zero", async function () {
             await expect(
                 ccTransferRouter.setRelay(ZERO_ADDRESS)
-            ).to.revertedWith("CCTransferRouter: address is zero");
+            ).to.revertedWith("ZeroAddress()");
 
             await expect(
                 ccTransferRouter.setLockers(ZERO_ADDRESS)
-            ).to.revertedWith("CCTransferRouter: address is zero");
+            ).to.revertedWith("ZeroAddress()");
 
             await expect(
                 ccTransferRouter.setInstantRouter(ZERO_ADDRESS)
-            ).to.revertedWith("CCTransferRouter: address is zero");
+            ).to.revertedWith("ZeroAddress()");
 
             await expect(
                 ccTransferRouter.setTeleBTC(ZERO_ADDRESS)
-            ).to.revertedWith("CCTransferRouter: address is zero");
+            ).to.revertedWith("ZeroAddress()");
 
             await expect(
                 ccTransferRouter.setTreasury(ZERO_ADDRESS)
-            ).to.revertedWith("CCTransferRouter: address is zero");
+            ).to.revertedWith("ZeroAddress()");
         })
 
     });

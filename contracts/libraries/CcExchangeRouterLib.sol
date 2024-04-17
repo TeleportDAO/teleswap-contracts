@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.8.4;
+pragma solidity >=0.8.0 <=0.8.4;
 
 import "@teleportdao/btc-evm-bridge/contracts/relay/interfaces/IBitcoinRelay.sol";
 import "@teleportdao/btc-evm-bridge/contracts/libraries/BitcoinHelper.sol";
@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../routers/interfaces/ICcExchangeRouter.sol";
 import "../libraries/RequestParser.sol";
-import "hardhat/console.sol";
 
 library CcExchangeRouterLib {
 
@@ -17,8 +16,6 @@ library CcExchangeRouterLib {
         mapping(bytes32 => ICcExchangeRouter.ccExchangeRequest) storage ccExchangeRequests,
         mapping(bytes32 => ICcExchangeRouter.extendedCcExchangeRequest) storage extendedCcExchangeRequests,
         address _teleBTC,
-        address _wrappedNativeToken,
-        uint _maxProtocolFee,
         bytes memory _lockerLockingScript,
         address _relay
     ) external returns (bytes32) {
@@ -109,7 +106,7 @@ library CcExchangeRouterLib {
         bytes32 r,
         bytes32 s,
         uint8 v
-    ) internal pure returns (address) {
+    ) public pure returns (address) {
         // Compute the message hash
         bytes32 messageHash = keccak256(message);
 

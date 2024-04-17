@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.8.4;
+pragma solidity >=0.8.0 <=0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-// import "../libraries/AddressLib.sol";
-import "../libraries/BurnRouterLib.sol";
 import "./EthConnectorStorage.sol";
 import "./interfaces/IEthConnectorLogic.sol";
-import "hardhat/console.sol";
 
 contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage, 
     OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
 
+    error ZeroAddress();
+
     modifier nonZeroAddress(address _address) {
-        require(_address != address(0), "EthManagerLogic: zero address");
+        if (_address == address(0))
+            revert ZeroAddress();
         _;
     }
 
@@ -58,23 +58,23 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
     }
 
     /// @notice Setter for PolygonConnectorProxy
-    function setPolygonConnectorProxy(address _polygonConnectorProxy) external override onlyOwner {
+    function setPolygonConnectorProxy(address _polygonConnectorProxy) external override onlyOwner nonZeroAddress(_polygonConnectorProxy){
         _setPolygonConnectorProxy(_polygonConnectorProxy);
     }
 
     /// @notice Setter for PolygonTeleBTC
-    function setPolygonTeleBTC(address _polygonTeleBTC) external override onlyOwner {
+    function setPolygonTeleBTC(address _polygonTeleBTC) external override onlyOwner nonZeroAddress(_polygonTeleBTC){
         _setPolygonTeleBTC(_polygonTeleBTC);
     }
 
     /// @notice Setter for WrappedNativeToken
-    function setWrappedNativeToken(address _wrappedNativeToken) external override onlyOwner {
+    function setWrappedNativeToken(address _wrappedNativeToken) external override onlyOwner nonZeroAddress(_wrappedNativeToken){
         _setWrappedNativeToken(_wrappedNativeToken);
     }
 
     // 
 
-    function _setMinAmount(address _token, uint _minAmount) private {
+    function _setMinAmount(address _token, uint _minAmount) nonZeroAddress(_token) private {
         emit MinAmountUpdated(
             _token,
             _minAmount
@@ -92,7 +92,7 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
         minModifier = _minModifier;
     }
 
-    function _setAcross(address _across) private {
+    function _setAcross(address _across) private nonZeroAddress(_across){
         emit AcrossUpdated(
             across,
             _across
@@ -101,7 +101,7 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
         across = _across;
     }
 
-    function _setPolygonConnectorProxy(address _polygonConnectorProxy) private {
+    function _setPolygonConnectorProxy(address _polygonConnectorProxy) private nonZeroAddress(_polygonConnectorProxy){
         emit PolygonConnectorUpdated(
             polygonConnectorProxy,
             _polygonConnectorProxy
@@ -110,7 +110,7 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
         polygonConnectorProxy = _polygonConnectorProxy;
     }
 
-    function _setPolygonTeleBTC(address _polygonTeleBTC) private {
+    function _setPolygonTeleBTC(address _polygonTeleBTC) private nonZeroAddress(_polygonTeleBTC){
         emit PolygonTeleBtcUpdated(
             polygonTeleBTC,
             _polygonTeleBTC
@@ -119,7 +119,7 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
         polygonTeleBTC = _polygonTeleBTC;
     }
 
-    function _setWrappedNativeToken(address _wrappedNativeToken) private {
+    function _setWrappedNativeToken(address _wrappedNativeToken) private nonZeroAddress(_wrappedNativeToken){
         emit WrappedNativeTokenUpdated(
             wrappedNativeToken,
             _wrappedNativeToken

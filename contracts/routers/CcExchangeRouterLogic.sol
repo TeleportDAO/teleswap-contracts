@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.8.4;
+pragma solidity >=0.8.0 <=0.8.4;
 
 import "./CcExchangeRouterStorage.sol";
 import "./CcExchangeRouterStorageV2.sol";
@@ -8,10 +8,8 @@ import "../connectors/interfaces/IExchangeConnector.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../lockersManager/interfaces/ILockersManager.sol";
 import "../libraries/CcExchangeRouterLib.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "@across-protocol/contracts-v2/contracts/interfaces/SpokePoolInterface.sol";
 
@@ -20,8 +18,11 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
 
     using BytesLib for bytes;
 
+    error ZeroAddress();
+
     modifier nonZeroAddress(address _address) {
-        require(_address != address(0), "ExchangeRouter: zero address");
+        if (_address == address(0))
+            revert ZeroAddress();
         _;
     }
 
@@ -228,8 +229,6 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             ccExchangeRequests,
             extendedCcExchangeRequests,
             teleBTC,
-            wrappedNativeToken,
-            MAX_PROTOCOL_FEE,
             _lockerLockingScript,
             relay
         );
@@ -345,7 +344,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
     //         uint fillAmount = _requestAmount - _prefixFillSum.prefixSum[index];
 
     //         if (_token == NATIVE_TOKEN) {
-    //             require(msg.value >= fillAmount, "ExchangeRouter: incorrect amount");
+    //             require(_msgValue() >= fillAmount, "ExchangeRouter: incorrect amount");
     //             (bool sentToRecipient, bytes memory data1) = _recipient.call{value: fillAmount}("");
     //             (bool sentToFiller, bytes memory data2) = _msgSender().call{value: fillAmount}("");
     //             require(
@@ -540,7 +539,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
             bytes32 _txId,
             uint8 _scriptType,
             bytes memory _userScript,
-            uint _acrossRelayerFee
+             
         ) = abi.decode(
             _message,
             (
@@ -637,26 +636,26 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         );
 
         // Exchanges teleBTC for desired exchange token
-        // (bool result, uint[] memory amounts) = IExchangeConnector(exchangeConnector[exchangeReq.appId]).swap(
-        //     extendedCcExchangeRequests[_txId].remainedInputAmount,
-        //     _outputAmount,
-        //     path,
-        //     address(this), // Sends tokens to this contract
-        //     block.timestamp,
-        //     true // Input token is fixed
-        // );
-        // require(result, "ExchangeRouter: swap failed");
+        (bool result, uint[] memory amounts) = IExchangeConnector(exchangeConnector[exchangeReq.appId]).swap(
+            extendedCcExchangeRequests[_txId].remainedInputAmount,
+            _outputAmount,
+            path,
+            address(this), // Sends tokens to this contract
+            block.timestamp,
+            true // Input token is fixed
+        );
+        require(result, "ExchangeRouter: swap failed");
 
-        // // Sends exchanged tokens to ETH
-        // _sendTokenToOtherChain(
-        //     extendedCcExchangeRequests[_txId].chainId,
-        //     path[path.length - 1], 
-        //     amounts[amounts.length - 1], 
-        //     exchangeReq.recipientAddress,
-        //     _acrossRelayerFee
-        // );
+        // Sends exchanged tokens to ETH
+        _sendTokenToOtherChain(
+            extendedCcExchangeRequests[_txId].chainId,
+            path[path.length - 1], 
+            amounts[amounts.length - 1], 
+            exchangeReq.recipientAddress,
+            _acrossRelayerFee
+        );
 
-        // return true;
+        return true;
     }
 
     /// @notice Sends tokens to the destination using across
@@ -692,7 +691,7 @@ contract CcExchangeRouterLogic is CcExchangeRouterStorage,
         address[] memory _path
     ) internal {
         // try swapping with path provided by teleporter
-        (bool result, uint[] memory amounts) = _swap(
+        (bool result, ) = _swap(
             ICcExchangeRouter.swapArguments(
                 chainId,
                 _lockerLockingScript,

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.8.4;
+pragma solidity >=0.8.0 <=0.8.4;
 
 import "./CcTransferRouterStorage.sol";
 import "./CcTransferRouterStorageV2.sol";
@@ -15,8 +15,11 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 contract CcTransferRouterLogic is CcTransferRouterStorage, 
     OwnableUpgradeable, ReentrancyGuardUpgradeable, CcTransferRouterStorageV2 {
 
+    error ZeroAddress();
+
     modifier nonZeroAddress(address _address) {
-        require(_address != address(0), "CCTransferRouter: address is zero");
+        if (_address == address(0))
+            revert ZeroAddress();
         _;
     }
 

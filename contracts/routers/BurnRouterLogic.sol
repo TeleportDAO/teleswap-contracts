@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.8.4;
+pragma solidity >=0.8.0 <=0.8.4;
 
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../lockersManager/interfaces/ILockersManager.sol";
@@ -12,8 +12,11 @@ import "./BurnRouterStorageV2.sol";
 contract BurnRouterLogic is BurnRouterStorage, 
     OwnableUpgradeable, ReentrancyGuardUpgradeable, BurnRouterStorageV2 {
     
+    error ZeroAddress();
+
     modifier nonZeroAddress(address _address) {
-        require(_address != address(0), "BurnRouterLogic: zero address");
+        if (_address == address(0))
+            revert ZeroAddress();
         _;
     }
 

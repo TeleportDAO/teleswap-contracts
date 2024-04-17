@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.8.4;
+pragma solidity >=0.8.0 <=0.8.4;
 
 import "./LockersManagerStorage.sol";
 import "../oracle/interfaces/IPriceOracle.sol";
@@ -16,6 +16,9 @@ import "hardhat/console.sol";
 
 contract LockersManagerLogic is LockersManagerStorage, OwnableUpgradeable, 
     ReentrancyGuardUpgradeable, PausableUpgradeable {
+
+    error ZeroAddress();
+    error ZeroValue();
 
     using LockersManagerLib for *;
     using SafeERC20 for IERC20;
@@ -37,10 +40,8 @@ contract LockersManagerLogic is LockersManagerStorage, OwnableUpgradeable,
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
         PausableUpgradeable.__Pausable_init();
 
-        require(
-            _minRequiredTNTLockedAmount != 0,
-            "Lockers: amount is zero"
-        );
+        if (_minRequiredTNTLockedAmount == 0)
+            revert ZeroValue();
 
         setTeleBTC(_teleBTC);
         setCCBurnRouter(_ccBurnRouter);
@@ -64,12 +65,14 @@ contract LockersManagerLogic is LockersManagerStorage, OwnableUpgradeable,
     // *************** Modifiers ***************
 
     modifier nonZeroAddress(address _address) {
-        require(_address != address(0), "Lockers: address is zero");
+        if (_address == address(0))
+            revert ZeroAddress();
         _;
     }
 
     modifier nonZeroValue(uint _value) {
-        require(_value > 0, "Lockers: value is zero");
+        if (_value == 0)
+            revert ZeroValue();
         _;
     }
 
@@ -206,10 +209,8 @@ contract LockersManagerLogic is LockersManagerStorage, OwnableUpgradeable,
     ///                 It should be a non-zero value
     /// @param _minRequiredTNTLockedAmount   The new required native token bond amount
     function setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) public override onlyOwner {
-        require(
-            _minRequiredTNTLockedAmount != 0,
-            "Lockers: amount is zero"
-        );
+        if (_minRequiredTNTLockedAmount == 0)
+            revert ZeroValue();
         emit NewMinRequiredTNTLockedAmount(minRequiredTNTLockedAmount, _minRequiredTNTLockedAmount);
         minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
         libParams.minRequiredTNTLockedAmount = minRequiredTNTLockedAmount;

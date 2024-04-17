@@ -33,7 +33,7 @@ const abiUtils = new Web3().eth.abi
 const web3 = new Web3();
 const provider = waffle.provider;
 
-describe.only("PolyConnector", async () => {
+describe("PolyConnector", async () => {
     let snapshotId: any;
 
     // Accounts
@@ -111,7 +111,7 @@ describe.only("PolyConnector", async () => {
         )
 
         const lockers = await deployments.getArtifact(
-            "LockersLogic"
+            "LockersManagerLogic"
         );
         mockLockers = await deployMockContract(
             deployer,
@@ -548,7 +548,7 @@ describe.only("PolyConnector", async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
-        it.only("should handle across message", async () => {
+        it("should handle across message", async () => {
 
             let burntAmount: number;
             burntAmount = telebtcAmount - BITCOIN_FEE - protocolFee;

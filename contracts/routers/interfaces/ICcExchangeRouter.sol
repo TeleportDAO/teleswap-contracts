@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.8.4;
+pragma solidity >=0.8.0 <=0.8.4;
 
 interface ICcExchangeRouter {
 
@@ -348,7 +348,7 @@ interface ICcExchangeRouter {
 
     function treasury() external view returns (address);
 
-    function isTokenSupported(uint chainId, address _exchangeToken) external view returns (bool);
+    function isTokenSupported(uint _chainId, address _exchangeToken) external view returns (bool);
 
     function isChainSupported(uint _chainId) external view returns (bool);
 
@@ -406,9 +406,9 @@ interface ICcExchangeRouter {
     //    bytes32 _txId
     // ) external returns (bool);
 
-    function supportToken(uint chainId, address _token) external;
+    function supportToken(uint _chainId, address _token) external;
 
-    function removeToken(uint chainId, address _token) external;
+    function removeToken(uint _chainId, address _token) external;
 
     function supportChain(uint _chainId) external;
 

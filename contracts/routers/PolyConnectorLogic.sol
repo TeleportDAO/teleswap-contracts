@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <=0.8.4;;
+pragma solidity >=0.8.0 <=0.8.4;
 
 import "@across-protocol/contracts-v2/contracts/interfaces/SpokePoolInterface.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
@@ -13,12 +13,15 @@ import "../lockersManager/interfaces/ILockersManager.sol";
 import "./PolyConnectorStorage.sol";
 import "./interfaces/IPolyConnectorLogic.sol";
 import "./interfaces/AcrossMessageHandler.sol";
-import "hardhat/console.sol";
 
 contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage, 
     OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable, AcrossMessageHandler {
+
+    error ZeroAddress();
+
     modifier nonZeroAddress(address _address) {
-        require(_address != address(0), "PolygonConnectorLogic: zero address");
+        if (_address == address(0))
+            revert ZeroAddress();
         _;
     }
 
@@ -41,27 +44,27 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
     }
 
     /// @notice Setter for EthConnectorProxy
-    function setEthConnectorProxy(address _ethConnectorProxy) external override onlyOwner {
+    function setEthConnectorProxy(address _ethConnectorProxy) external override onlyOwner nonZeroAddress(_ethConnectorProxy) {
         ethConnectorProxy = _ethConnectorProxy;
     }
 
     /// @notice Setter for LockersProxy
-    function setLockersProxy(address _lockersProxy) external override onlyOwner {
+    function setLockersProxy(address _lockersProxy) external override onlyOwner nonZeroAddress(_lockersProxy){
         lockersProxy = _lockersProxy;
     }
 
     /// @notice Setter for BurnRouterProxy
-    function setBurnRouterProxy(address _burnRouterProxy) external override onlyOwner {
+    function setBurnRouterProxy(address _burnRouterProxy) external override onlyOwner nonZeroAddress(_burnRouterProxy){
         burnRouterProxy = _burnRouterProxy;
     }
 
     /// @notice Setter for Across
-    function setAcross(address _across) external override onlyOwner {
+    function setAcross(address _across) external override onlyOwner nonZeroAddress(_across){
         across = _across;
     }
 
     /// @notice Setter for AcrossV3
-    function setAcrossV3(address _acrossV3) external override onlyOwner {
+    function setAcrossV3(address _acrossV3) external override onlyOwner nonZeroAddress(_acrossV3){
         acrossV3 = _acrossV3;
     }
 
@@ -311,9 +314,9 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
                 arguments.user,
                 arguments.userScript,
                 arguments.scriptType,
-                ILockers(lockersProxy).getLockerTargetAddress(arguments.lockerLockingScript),
+                ILockersManager(lockersProxy).getLockerTargetAddress(arguments.lockerLockingScript),
                 BurnRouterStorage(burnRouterProxy).burnRequestCounter(
-                    ILockers(lockersProxy).getLockerTargetAddress(arguments.lockerLockingScript)
+                    ILockersManager(lockersProxy).getLockerTargetAddress(arguments.lockerLockingScript)
                 ) - 1,
                 arguments.path
             );

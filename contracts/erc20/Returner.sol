@@ -1,4 +1,6 @@
-pragma solidity >=0.8.0 <0.8.4;
+// SPDX-License-Identifier: MIT
+
+pragma solidity >=0.8.0 <=0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -31,7 +33,7 @@ contract Returner is Ownable, ReentrancyGuard, Pausable {
         _unpause();
     }
 
-    constructor(string[] memory tokenName, address[] memory tokenAddress, address _teleBTC) public {
+    constructor(string[] memory tokenName, address[] memory tokenAddress, address _teleBTC) {
         require(tokenName.length == tokenAddress.length, "Invalid input parameters");
         for (uint i = 0; i < tokenName.length; i++)
             tokenMapping[tokenName[i]] = tokenAddress[i];

@@ -19,9 +19,9 @@ import { CcExchangeRouterProxy__factory } from "../src/types/factories/CcExchang
 import { CcExchangeRouterLogic__factory } from "../src/types/factories/CcExchangeRouterLogic__factory";
 import { CcExchangeRouterLogicLibraryAddresses } from "../src/types/factories/CcExchangeRouterLogic__factory";
 
-import { LockersProxy__factory } from "../src/types/factories/LockersProxy__factory";
-import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
-import { LockersLogicLibraryAddresses } from "../src/types/factories/LockersLogic__factory";
+import { LockersManagerProxy__factory } from "../src/types/factories/LockersManagerProxy__factory";
+import { LockersManagerLogic__factory } from "../src/types/factories/LockersManagerLogic__factory";
+import { LockersManagerLogicLibraryAddresses } from "../src/types/factories/LockersManagerLogic__factory";
 
 import { LockersManagerLib } from "../src/types/LockersManagerLib";
 import { LockersManagerLib__factory } from "../src/types/factories/LockersManagerLib__factory";
@@ -51,7 +51,7 @@ import Web3 from 'web3'
 const abiUtils = new Web3().eth.abi
 const web3 = new Web3();
 
-describe.only("CcExchangeRouter", async () => {
+describe("CcExchangeRouter", async () => {
 
     let snapshotId: any;
 
@@ -248,12 +248,12 @@ describe.only("CcExchangeRouter", async () => {
 
         // Deploys burn router
 
-        const lockersLogic = await deployments.getArtifact(
-            "LockersLogic"
+        const LockersManagerLogic = await deployments.getArtifact(
+            "LockersManagerLogic"
         );
         mockLockers = await deployMockContract(
             deployer,
-            lockersLogic.abi
+            LockersManagerLogic.abi
         )
 
         burnRouter = await deployBurnRouter();
@@ -426,38 +426,37 @@ describe.only("CcExchangeRouter", async () => {
 
         lockersLib = await deployLockersManagerLib()
 
-        let linkLibraryAddresses: LockersLogicLibraryAddresses;
+        let linkLibraryAddresses: LockersManagerLogicLibraryAddresses;
 
         linkLibraryAddresses = {
             "contracts/libraries/LockersManagerLib.sol:LockersManagerLib": lockersLib.address,
         };
 
         // Deploys lockers logic
-        const lockersLogicFactory = new LockersLogic__factory(
+        const LockersManagerLogicFactory = new LockersManagerLogic__factory(
             linkLibraryAddresses,
             _signer || deployer
         );
 
-        const lockersLogic = await lockersLogicFactory.deploy();
+        const LockersManagerLogic = await LockersManagerLogicFactory.deploy();
 
         // Deploys lockers proxy
-        const lockersProxyFactory = new LockersProxy__factory(
+        const lockersProxyFactory = new LockersManagerProxy__factory(
             _signer || deployer
         );
         const lockersProxy = await lockersProxyFactory.deploy(
-            lockersLogic.address,
+            LockersManagerLogic.address,
             proxyAdminAddress,
             "0x"
         )
 
-        const lockers = await lockersLogic.attach(
+        const lockers = await LockersManagerLogic.attach(
             lockersProxy.address
         );
 
         // Initializes lockers proxy
         await lockers.initialize(
             teleBTC.address,
-            teleportDAOToken.address,
             ONE_ADDRESS,
             mockPriceOracle.address,
             ONE_ADDRESS,
@@ -469,6 +468,7 @@ describe.only("CcExchangeRouter", async () => {
             PRICE_WITH_DISCOUNT_RATIO
         )
 
+        await lockers.setTST(teleportDAOToken.address)
         return lockers;
     };
 
@@ -1425,23 +1425,23 @@ describe.only("CcExchangeRouter", async () => {
         it("Reverts since given address is zero", async function () {
             await expect(
                 ccExchangeRouter.setRelay(ZERO_ADDRESS)
-            ).to.revertedWith("ExchangeRouter: zero address");
+            ).to.revertedWith("ZeroAddress()");
 
             await expect(
                 ccExchangeRouter.setLockers(ZERO_ADDRESS)
-            ).to.revertedWith("ExchangeRouter: zero address");
+            ).to.revertedWith("ZeroAddress()");
 
             await expect(
                 ccExchangeRouter.setInstantRouter(ZERO_ADDRESS)
-            ).to.revertedWith("ExchangeRouter: zero address");
+            ).to.revertedWith("ZeroAddress()");
 
             await expect(
                 ccExchangeRouter.setTeleBTC(ZERO_ADDRESS)
-            ).to.revertedWith("ExchangeRouter: zero address");
+            ).to.revertedWith("ZeroAddress()");
 
             await expect(
                 ccExchangeRouter.setTreasury(ZERO_ADDRESS)
-            ).to.revertedWith("ExchangeRouter: zero address");
+            ).to.revertedWith("ZeroAddress()");
         })
 
     });

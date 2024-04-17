@@ -18,9 +18,9 @@
 // import { CcExchangeRouterProxy__factory } from "../src/types/factories/CcExchangeRouterProxy__factory";
 // import { CcExchangeRouterLogicWithFiller__factory } from "../src/types/factories/CcExchangeRouterLogicWithFiller__factory";
 
-// import { LockersProxy__factory } from "../src/types/factories/LockersProxy__factory";
-// import { LockersLogic__factory } from "../src/types/factories/LockersLogic__factory";
-// import { LockersLogicLibraryAddresses } from "../src/types/factories/LockersLogic__factory";
+// import { LockersManagerProxy__factory } from "../src/types/factories/LockersManagerProxy__factory";
+// import { LockersManagerLogic__factory } from "../src/types/factories/LockersManagerLogic__factory";
+// import { LockersManagerLogicLibraryAddresses } from "../src/types/factories/LockersManagerLogic__factory";
 
 // import { LockersManagerLib } from "../src/types/LockersManagerLib";
 // import { LockersManagerLib__factory } from "../src/types/factories/LockersManagerLib__factory";
@@ -287,14 +287,14 @@
 
 //         lockersLib = await deployLockersManagerLib()
 
-//         let linkLibraryAddresses: LockersLogicLibraryAddresses;
+//         let linkLibraryAddresses: LockersManagerLogicLibraryAddresses;
 
 //         linkLibraryAddresses = {
 //             "contracts/libraries/LockersManagerLib.sol:LockersManagerLib": lockersLib.address,
 //         };
 
 //         // Deploys lockers logic
-//         const lockersLogicFactory = new LockersLogic__factory(
+//         const lockersLogicFactory = new LockersManagerLogic__factory(
 //             linkLibraryAddresses,
 //             _signer || deployer
 //         );
@@ -302,7 +302,7 @@
 //         const lockersLogic = await lockersLogicFactory.deploy();
 
 //         // Deploys lockers proxy
-//         const lockersProxyFactory = new LockersProxy__factory(
+//         const lockersProxyFactory = new LockersManagerProxy__factory(
 //             _signer || deployer
 //         );
 //         const lockersProxy = await lockersProxyFactory.deploy(

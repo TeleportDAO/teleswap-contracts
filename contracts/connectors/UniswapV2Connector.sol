@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.8.4;
+pragma solidity >=0.8.0 <=0.8.4;
 
 import "./interfaces/IExchangeConnector.sol";
 import "../uniswap/v2-periphery/interfaces/IUniswapV2Router02.sol";
