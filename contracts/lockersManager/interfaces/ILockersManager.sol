@@ -208,11 +208,6 @@ interface ILockersManager {
         address newCCBurnRouter
     );
 
-    event NewExchangeConnector(
-        address oldExchangeConnector,
-        address newExchangeConnector
-    );
-
     event NewTST(
         address oldTST,
         address newTST
@@ -309,8 +304,6 @@ interface ILockersManager {
 
     function setCCBurnRouter(address _ccBurnRouter) external;
 
-    function setExchangeConnector(address _exchangeConnector) external;
-
     function setTeleBTC(address _teleBTC) external;
 
     function setCollateralRatio(uint _collateralRatio) external;
@@ -333,7 +326,7 @@ interface ILockersManager {
 
     function requestToBecomeLocker(
         bytes calldata _lockerLockingScript,
-        uint _lockedTDTAmount,
+        uint _lockedTSTAmount,
         uint _lockedNativeTokenAmount,
         ScriptTypes _lockerRescueType,
         bytes calldata _lockerRescueScript
@@ -352,7 +345,7 @@ interface ILockersManager {
     function slashIdleLocker(
         address _lockerTargetAddress,
         uint _rewardAmount,
-        address _rewardRecipient,
+        address _slasher,
         uint _amount,
         address _recipient
     ) external returns(bool);
@@ -360,7 +353,7 @@ interface ILockersManager {
     function slashThiefLocker(
         address _lockerTargetAddress,
         uint _rewardAmount,
-        address _rewardRecipient,
+        address _slasher,
         uint _amount
     ) external returns(bool);
 

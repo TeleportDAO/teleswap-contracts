@@ -7,27 +7,22 @@ import "../erc20/interfaces/ITeleBTC.sol";
 import "../lockersManager/interfaces/ILockersManager.sol";
 
 library LockersManagerLib {
-
     function requestToBecomeLocker(
         mapping(address => ILockersManager.locker) storage lockersMapping,
         ILockersManager.lockersLibParam memory libParams,
         address theLockerTargetAddress,
-        uint _lockedTDTAmount,
-        uint _lockedNativeTokenAmount,
+        uint256 _lockedTDTAmount,
+        uint256 _lockedNativeTokenAmount,
         bytes calldata _candidateLockingScript,
         ScriptTypes _lockerRescueType,
         bytes calldata _lockerRescueScript
     ) external {
-
         require(
             !lockersMapping[msg.sender].isCandidate,
             "Lockers: is candidate"
         );
 
-        require(
-            !lockersMapping[msg.sender].isLocker,
-            "Lockers: is locker"
-        );
+        require(!lockersMapping[msg.sender].isLocker, "Lockers: is locker");
 
         require(
             _lockedTDTAmount >= libParams.minRequiredTDTLockedAmount,
@@ -35,7 +30,8 @@ library LockersManagerLib {
         );
 
         require(
-            _lockedNativeTokenAmount >= libParams.minRequiredTNTLockedAmount && msg.value == _lockedNativeTokenAmount,
+            _lockedNativeTokenAmount >= libParams.minRequiredTNTLockedAmount &&
+                msg.value == _lockedNativeTokenAmount,
             "Lockers: low TNT"
         );
 
@@ -53,14 +49,12 @@ library LockersManagerLib {
         locker_.lockerRescueScript = _lockerRescueScript;
 
         lockersMapping[msg.sender] = locker_;
-
     }
 
     function buySlashedCollateralOfLocker(
         ILockersManager.locker storage theLocker,
-        uint _collateralAmount
-    ) external returns (uint neededTeleBTC) {
-
+        uint256 _collateralAmount
+    ) external returns (uint256 neededTeleBTC) {
         require(
             theLocker.isLocker,
             "Lockers: input address is not a valid locker"
@@ -71,36 +65,38 @@ library LockersManagerLib {
             "Lockers: not enough slashed collateral to buy"
         );
 
-        neededTeleBTC = theLocker.slashingTeleBTCAmount * _collateralAmount / theLocker.reservedNativeTokenForSlash;
+        neededTeleBTC =
+            (theLocker.slashingTeleBTCAmount * _collateralAmount) /
+            theLocker.reservedNativeTokenForSlash;
 
         if (neededTeleBTC < theLocker.slashingTeleBTCAmount) {
             // to avoid precision loss (so buyer cannot profit of it)
             neededTeleBTC = neededTeleBTC + 1;
         }
 
-        // Updates locker's slashing info 
+        // Updates locker's slashing info
         theLocker.slashingTeleBTCAmount =
-            theLocker.slashingTeleBTCAmount - neededTeleBTC;
+            theLocker.slashingTeleBTCAmount -
+            neededTeleBTC;
 
         theLocker.reservedNativeTokenForSlash =
-            theLocker.reservedNativeTokenForSlash - _collateralAmount;
-
+            theLocker.reservedNativeTokenForSlash -
+            _collateralAmount;
     }
 
     function liquidateLocker(
         ILockersManager.locker storage theLocker,
         ILockersManager.lockersLibConstants memory libConstants,
         ILockersManager.lockersLibParam memory libParams,
-        uint _collateralAmount
-    ) external view returns (uint neededTeleBTC) {
-
+        uint256 _collateralAmount
+    ) external view returns (uint256 neededTeleBTC) {
         require(
             theLocker.isLocker,
             "Lockers: input address is not a valid locker"
         );
 
         // ILockersManager.locker memory theLiquidatingLocker = lockersMapping[_lockerTargetAddress];
-        uint priceOfCollateral = priceOfOneUnitOfCollateralInBTC(
+        uint256 priceOfCollateral = priceOfOneUnitOfCollateralInBTC(
             libConstants,
             libParams
         );
@@ -116,7 +112,7 @@ library LockersManagerLib {
             "Lockers: is healthy"
         );
 
-        uint _maxBuyableCollateral = maximumBuyableCollateral(
+        uint256 _maxBuyableCollateral = maximumBuyableCollateral(
             theLocker,
             libConstants,
             libParams,
@@ -141,172 +137,193 @@ library LockersManagerLib {
         );
 
         neededTeleBTC = neededTeleBTC + 1; // to prevent precision loss
-
     }
 
     function slashThiefLocker(
         ILockersManager.locker storage theLocker,
         ILockersManager.lockersLibConstants memory libConstants,
         ILockersManager.lockersLibParam memory libParams,
-        uint _rewardAmount,
-        uint _amount,
-        address _rewardRecipient
-    ) external returns (uint rewardInNativeToken, uint neededNativeTokenForSlash) {
-
+        uint256 _rewardAmount,
+        uint256 _amount
+    )
+        external
+        returns (uint256 rewardInNativeToken, uint256 neededNativeTokenForSlash)
+    {
         require(
             theLocker.isLocker,
             "Lockers: input address is not a valid locker"
         );
 
-        uint equivalentNativeToken = IPriceOracle(libParams.priceOracle).equivalentOutputAmount(
-            _amount, // Total amount of TeleBTC that is slashed
-            ITeleBTC(libParams.teleBTC).decimals(), // Decimal of teleBTC
-            libConstants.NativeTokenDecimal, // Decimal of TNT
-            libParams.teleBTC, // Input token
-            libConstants.NativeToken // Output token
-        );
+        uint256 equivalentNativeToken = IPriceOracle(libParams.priceOracle)
+            .equivalentOutputAmount(
+                _amount, // Total amount of TeleBTC that is slashed
+                ITeleBTC(libParams.teleBTC).decimals(), // Decimal of teleBTC
+                libConstants.NativeTokenDecimal, // Decimal of TNT
+                libParams.teleBTC, // Input token
+                libConstants.NativeToken // Output token
+            );
 
-        rewardInNativeToken = equivalentNativeToken*_rewardAmount/_amount;
-        neededNativeTokenForSlash = equivalentNativeToken*libParams.liquidationRatio/libConstants.OneHundredPercent;
+        rewardInNativeToken = (equivalentNativeToken * _rewardAmount) / _amount;
+        neededNativeTokenForSlash =
+            (equivalentNativeToken * libParams.liquidationRatio) /
+            libConstants.OneHundredPercent;
 
-        if ((rewardInNativeToken + neededNativeTokenForSlash) > theLocker.nativeTokenLockedAmount) {
+        if (
+            (rewardInNativeToken + neededNativeTokenForSlash) >
+            theLocker.nativeTokenLockedAmount
+        ) {
             // Divides total locker's collateral proportional to reward amount and slash amount
-            rewardInNativeToken = rewardInNativeToken*theLocker.nativeTokenLockedAmount/
+            rewardInNativeToken =
+                (rewardInNativeToken * theLocker.nativeTokenLockedAmount) /
                 (rewardInNativeToken + neededNativeTokenForSlash);
-            neededNativeTokenForSlash = theLocker.nativeTokenLockedAmount - rewardInNativeToken;
+            neededNativeTokenForSlash =
+                theLocker.nativeTokenLockedAmount -
+                rewardInNativeToken;
         }
 
         // Updates locker's bond (in TNT)
-        theLocker.nativeTokenLockedAmount
-            = theLocker.nativeTokenLockedAmount - (rewardInNativeToken + neededNativeTokenForSlash);
+        theLocker.nativeTokenLockedAmount =
+            theLocker.nativeTokenLockedAmount -
+            (rewardInNativeToken + neededNativeTokenForSlash);
 
         if (_amount > theLocker.netMinted) {
             _amount = theLocker.netMinted;
         }
-        
-        theLocker.netMinted
-            = theLocker.netMinted - _amount;
 
-        theLocker.slashingTeleBTCAmount
-            = theLocker.slashingTeleBTCAmount + _amount; 
+        theLocker.netMinted = theLocker.netMinted - _amount;
 
-        theLocker.reservedNativeTokenForSlash
-            = theLocker.reservedNativeTokenForSlash + neededNativeTokenForSlash;
+        theLocker.slashingTeleBTCAmount =
+            theLocker.slashingTeleBTCAmount +
+            _amount;
 
-        
+        theLocker.reservedNativeTokenForSlash =
+            theLocker.reservedNativeTokenForSlash +
+            neededNativeTokenForSlash;
     }
 
     function slashIdleLocker(
         ILockersManager.locker storage theLocker,
         ILockersManager.lockersLibConstants memory libConstants,
         ILockersManager.lockersLibParam memory libParams,
-        uint _rewardAmount,
-        uint _amount
-    ) external returns (uint equivalentNativeToken) {
-
+        uint256 _rewardAmount,
+        uint256 _amount
+    ) external returns (uint256 equivalentNativeToken) {
         require(
             theLocker.isLocker,
             "Lockers: input address is not a valid locker"
         );
 
-        equivalentNativeToken = IPriceOracle(libParams.priceOracle).equivalentOutputAmount(
-            _rewardAmount + _amount, // Total amount of TeleBTC that is slashed
-            ITeleBTC(libParams.teleBTC).decimals(), // Decimal of teleBTC
-            libConstants.NativeTokenDecimal, // Decimal of TNT
-            libParams.teleBTC, // Input token
-            libConstants.NativeToken // Output token
-        );
+        equivalentNativeToken = IPriceOracle(libParams.priceOracle)
+            .equivalentOutputAmount(
+                _rewardAmount + _amount, // Total amount of TeleBTC that is slashed
+                ITeleBTC(libParams.teleBTC).decimals(), // Decimal of teleBTC
+                libConstants.NativeTokenDecimal, // Decimal of TNT
+                libParams.teleBTC, // Input token
+                libConstants.NativeToken // Output token
+            );
 
         if (equivalentNativeToken > theLocker.nativeTokenLockedAmount) {
             equivalentNativeToken = theLocker.nativeTokenLockedAmount;
         }
 
         // Updates locker's bond (in TNT)
-        theLocker.nativeTokenLockedAmount
-        = theLocker.nativeTokenLockedAmount - equivalentNativeToken;
-
+        theLocker.nativeTokenLockedAmount =
+            theLocker.nativeTokenLockedAmount -
+            equivalentNativeToken;
     }
 
     function maximumBuyableCollateral(
         ILockersManager.locker storage theLocker,
         ILockersManager.lockersLibConstants memory libConstants,
         ILockersManager.lockersLibParam memory libParams,
-        uint _priceOfOneUnitOfCollateral
-    ) public view returns (uint) {
-
+        uint256 _priceOfOneUnitOfCollateral
+    ) public view returns (uint256) {
         // maxBuyable <= (upperHealthFactor*netMinted*liquidationRatio/10000 - nativeTokenLockedAmount*nativeTokenPrice)/(upperHealthFactor*liquidationRatio*discountedPrice - nativeTokenPrice)
         //  => maxBuyable <= (upperHealthFactor*netMinted*liquidationRatio * 10^18  - nativeTokenLockedAmount*nativeTokenPrice * 10^8)/(upperHealthFactor*liquidationRatio*discountedPrice - nativeTokenPrice * 10^8)
 
-        uint teleBTCDecimal = ERC20(libParams.teleBTC).decimals();
+        uint256 teleBTCDecimal = ERC20(libParams.teleBTC).decimals();
 
-        uint antecedent = (libConstants.UpperHealthFactor * theLocker.netMinted * libParams.liquidationRatio * (10 ** libConstants.NativeTokenDecimal)) -
-        (theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * (10 ** teleBTCDecimal));
+        uint256 antecedent = (libConstants.UpperHealthFactor *
+            theLocker.netMinted *
+            libParams.liquidationRatio *
+            (10**libConstants.NativeTokenDecimal)) -
+            (theLocker.nativeTokenLockedAmount *
+                _priceOfOneUnitOfCollateral *
+                (10**teleBTCDecimal));
 
-        uint consequent = ((libConstants.UpperHealthFactor * libParams.liquidationRatio * _priceOfOneUnitOfCollateral * libParams.priceWithDiscountRatio)/libConstants.OneHundredPercent) -
-        (_priceOfOneUnitOfCollateral * (10 ** teleBTCDecimal));
+        uint256 consequent = ((libConstants.UpperHealthFactor *
+            libParams.liquidationRatio *
+            _priceOfOneUnitOfCollateral *
+            libParams.priceWithDiscountRatio) /
+            libConstants.OneHundredPercent) -
+            (_priceOfOneUnitOfCollateral * (10**teleBTCDecimal));
 
-        return antecedent/consequent;
+        return antecedent / consequent;
     }
 
     function calculateHealthFactor(
         ILockersManager.locker storage theLocker,
         ILockersManager.lockersLibConstants memory libConstants,
         ILockersManager.lockersLibParam memory libParams,
-        uint _priceOfOneUnitOfCollateral
-    ) public view returns (uint) {
-        return (_priceOfOneUnitOfCollateral * theLocker.nativeTokenLockedAmount * 
-            (10 ** (1 + ERC20(libParams.teleBTC).decimals())))/
-                (theLocker.netMinted * libParams.liquidationRatio * (10 ** (1 + libConstants.NativeTokenDecimal)));
+        uint256 _priceOfOneUnitOfCollateral
+    ) public view returns (uint256) {
+        return
+            (_priceOfOneUnitOfCollateral *
+                theLocker.nativeTokenLockedAmount *
+                (10**(1 + ERC20(libParams.teleBTC).decimals()))) /
+            (theLocker.netMinted *
+                libParams.liquidationRatio *
+                (10**(1 + libConstants.NativeTokenDecimal)));
     }
 
     function neededTeleBTCToBuyCollateral(
         ILockersManager.lockersLibConstants memory libConstants,
         ILockersManager.lockersLibParam memory libParams,
-        uint _collateralAmount,
-        uint _priceOfCollateral
-    ) public pure returns (uint) {
-        return (_collateralAmount * _priceOfCollateral * libParams.priceWithDiscountRatio)/
-            (libConstants.OneHundredPercent*(10 ** libConstants.NativeTokenDecimal));
+        uint256 _collateralAmount,
+        uint256 _priceOfCollateral
+    ) public pure returns (uint256) {
+        return
+            (_collateralAmount *
+                _priceOfCollateral *
+                libParams.priceWithDiscountRatio) /
+            (libConstants.OneHundredPercent *
+                (10**libConstants.NativeTokenDecimal));
     }
 
     function addToCollateral(
-        uint value,
+        uint256 value,
         ILockersManager.locker storage theLocker,
-        uint _addingNativeTokenAmount
+        uint256 _addingNativeTokenAmount
     ) external {
-        require(
-            value == _addingNativeTokenAmount,
-            "Lockers: msg value"
-        );
+        require(value == _addingNativeTokenAmount, "Lockers: msg value");
 
-        require(
-            theLocker.isLocker,
-            "Lockers: no locker"
-        );
+        require(theLocker.isLocker, "Lockers: no locker");
 
         theLocker.nativeTokenLockedAmount =
-        theLocker.nativeTokenLockedAmount + _addingNativeTokenAmount;
+            theLocker.nativeTokenLockedAmount +
+            _addingNativeTokenAmount;
     }
 
     function removeFromCollateral(
         ILockersManager.locker storage theLocker,
         ILockersManager.lockersLibConstants memory libConstants,
         ILockersManager.lockersLibParam memory libParams,
-        uint _priceOfOneUnitOfCollateral,
-        uint _removingNativeTokenAmount
+        uint256 _priceOfOneUnitOfCollateral,
+        uint256 _removingNativeTokenAmount
     ) internal {
+        require(theLocker.isLocker, "Lockers: account is not a locker");
 
-        require(
-            theLocker.isLocker,
-            "Lockers: account is not a locker"
-        );
+        // Capacity of locker = (locker's collateral value in TeleBTC) * (collateral ratio) - (minted TeleBTC)
+        uint256 lockerCapacity = (theLocker.nativeTokenLockedAmount *
+            _priceOfOneUnitOfCollateral *
+            libConstants.OneHundredPercent) /
+            (libParams.collateralRatio *
+                (10**libConstants.NativeTokenDecimal)) -
+            theLocker.netMinted;
 
-        // Capacity of locker = (locker's collateral value in TeleBTC) * (collateral ratio) - (minted TeleBTC) 
-        uint lockerCapacity = (theLocker.nativeTokenLockedAmount * _priceOfOneUnitOfCollateral * 
-            libConstants.OneHundredPercent)/
-                (libParams.collateralRatio * (10 ** libConstants.NativeTokenDecimal)) - theLocker.netMinted;
-
-        uint maxRemovableCollateral = (lockerCapacity * (10 ** libConstants.NativeTokenDecimal))/_priceOfOneUnitOfCollateral;
+        uint256 maxRemovableCollateral = (lockerCapacity *
+            (10**libConstants.NativeTokenDecimal)) /
+            _priceOfOneUnitOfCollateral;
 
         require(
             _removingNativeTokenAmount <= maxRemovableCollateral,
@@ -314,45 +331,44 @@ library LockersManagerLib {
         );
 
         require(
-            theLocker.nativeTokenLockedAmount - _removingNativeTokenAmount >= libParams.minRequiredTNTLockedAmount,
+            theLocker.nativeTokenLockedAmount - _removingNativeTokenAmount >=
+                libParams.minRequiredTNTLockedAmount,
             "Lockers: less than min collateral"
         );
 
         theLocker.nativeTokenLockedAmount =
-        theLocker.nativeTokenLockedAmount - _removingNativeTokenAmount;
+            theLocker.nativeTokenLockedAmount -
+            _removingNativeTokenAmount;
     }
 
     function priceOfOneUnitOfCollateralInBTC(
         ILockersManager.lockersLibConstants memory libConstants,
         ILockersManager.lockersLibParam memory libParams
-    ) public view returns (uint) {
-
-        return IPriceOracle(libParams.priceOracle).equivalentOutputAmount(
-            (10**libConstants.NativeTokenDecimal), // 1 Ether is 10^18 wei
-            libConstants.NativeTokenDecimal,
-            ITeleBTC(libParams.teleBTC).decimals(),
-            libConstants.NativeToken,
-            libParams.teleBTC
-        );
-
+    ) public view returns (uint256) {
+        return
+            IPriceOracle(libParams.priceOracle).equivalentOutputAmount(
+                (10**libConstants.NativeTokenDecimal), // 1 Ether is 10^18 wei
+                libConstants.NativeTokenDecimal,
+                ITeleBTC(libParams.teleBTC).decimals(),
+                libConstants.NativeToken,
+                libParams.teleBTC
+            );
     }
-
 
     function lockerCollateralInTeleBTC(
         ILockersManager.locker storage theLocker,
         ILockersManager.lockersLibConstants memory libConstants,
         ILockersManager.lockersLibParam memory libParams
-    ) public view returns (uint) {
-
-        return IPriceOracle(libParams.priceOracle).equivalentOutputAmount(
-            theLocker.nativeTokenLockedAmount,
-            libConstants.NativeTokenDecimal,
-            ITeleBTC(libParams.teleBTC).decimals(),
-            libConstants.NativeToken,
-            libParams.teleBTC
-        );
+    ) public view returns (uint256) {
+        return
+            IPriceOracle(libParams.priceOracle).equivalentOutputAmount(
+                theLocker.nativeTokenLockedAmount,
+                libConstants.NativeTokenDecimal,
+                ITeleBTC(libParams.teleBTC).decimals(),
+                libConstants.NativeToken,
+                libParams.teleBTC
+            );
     }
-
 
     /// @notice                             Get how much the locker can mint
     /// @dev                                Net minted amount is total minted minus total burnt for the locker
@@ -361,28 +377,21 @@ library LockersManagerLib {
         ILockersManager.locker storage theLocker,
         ILockersManager.lockersLibConstants memory libConstants,
         ILockersManager.lockersLibParam memory libParams,
-        uint netMinted,
-        uint amount
-    ) public view returns (uint theLockerCapacity) {
-        uint _lockerCollateralInTeleBTC = lockerCollateralInTeleBTC(
+        uint256 netMinted,
+        uint256 amount
+    ) public view returns (uint256 theLockerCapacity) {
+        uint256 _lockerCollateralInTeleBTC = (lockerCollateralInTeleBTC(
             theLocker,
             libConstants,
             libParams
-        )*libConstants.OneHundredPercent/libParams.collateralRatio;
-
+        ) * libConstants.OneHundredPercent) / libParams.collateralRatio;
 
         if (_lockerCollateralInTeleBTC > netMinted) {
-            theLockerCapacity =  _lockerCollateralInTeleBTC - netMinted;
+            theLockerCapacity = _lockerCollateralInTeleBTC - netMinted;
         } else {
             theLockerCapacity = 0;
         }
 
-
-
-        require(
-            theLockerCapacity >= amount,
-            "Lockers: insufficient capacity"
-        );
+        require(theLockerCapacity >= amount, "Lockers: insufficient capacity");
     }
-
 }
