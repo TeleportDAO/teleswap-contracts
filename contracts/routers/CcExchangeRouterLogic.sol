@@ -31,15 +31,16 @@ contract CcExchangeRouterLogic is
     // Contract is payable
     receive() external payable {}
 
-    /// @notice Gives default params to initiate cc exchange router
-    /// @param _startingBlockNumber Requests that are included in a block older
-    ///                             than _startingBlockNumber cannot be executed
-    /// @param _protocolPercentageFee Percentage amount of protocol fee (min: %0.01)
-    /// @param _chainId Id of the target chain
-    /// @param _relay The Relay address to validate data from source chain
-    /// @param _lockers Lockers' contract address
-    /// @param _teleBTC TeleportDAO BTC ERC20 token address
-    /// @param _treasury Address of treasury that collects protocol fees
+    /// @notice Initialize CcExchangeRouter
+    /// @param _startingBlockNumber Transactions that are included in blocks older
+    ///                             than _startingBlockNumber cannot be processed
+    /// @param _protocolPercentageFee Protocol percentage fee (min: %0.01).
+    ///                               This fee goes to treasury from each wrapAndSwap request
+    /// @param _chainId Chain Id of the current chain
+    /// @param _relay Address of BitcoinRelay which checks Bitcoin transactions inclusion
+    /// @param _lockers LockersManager contract address
+    /// @param _teleBTC TeleBTC token
+    /// @param _treasury Treasury collects protocol fees
     function initialize(
         uint256 _startingBlockNumber,
         uint256 _protocolPercentageFee,
@@ -77,14 +78,12 @@ contract CcExchangeRouterLogic is
         _setStartingBlockNumber(_startingBlockNumber);
     }
 
-    /// @notice Updates relay contract address
+    /// @notice Update Relay address
     function setRelay(address _relay) external override onlyOwner {
         _setRelay(_relay);
     }
 
-    /// @notice                 Changes instantRouter contract address
-    /// @dev                    Only owner can call this
-    /// @param _instantRouter   The new instantRouter contract address
+    /// @notice Address of special Teleporter that can submit requests
     function setInstantRouter(address _instantRouter)
         external
         override
@@ -93,13 +92,13 @@ contract CcExchangeRouterLogic is
         _setInstantRouter(_instantRouter);
     }
 
-    /// @notice Updates lockers contract address
+    /// @notice Update LockersManager address
     function setLockers(address _lockers) external override onlyOwner {
         _setLockers(_lockers);
     }
 
-    /// @notice Sets appId for an exchange connector
-    /// @dev _exchangeConnector can be set to zero to inactive an app
+    /// @notice Assign an exchange connector to an app id
+    /// @dev Users determine which DEX to use by determining the app id.
     function setExchangeConnector(uint256 _appId, address _exchangeConnector)
         external
         override
@@ -109,7 +108,7 @@ contract CcExchangeRouterLogic is
         emit SetExchangeConnector(_appId, _exchangeConnector);
     }
 
-    /// @notice Updates teleBTC contract address
+    /// @notice Update TeleBTC address
     function setTeleBTC(address _teleBTC) external override onlyOwner {
         _setTeleBTC(_teleBTC);
     }
@@ -137,18 +136,20 @@ contract CcExchangeRouterLogic is
     // }
 
     /// @notice Setter for across
+    /// @dev Across is used to send exchanged tokens to other chains
     function setAcross(address _across) external override onlyOwner {
         _setAcross(_across);
     }
 
-    /// @notice Setter for burnRouters
+    /// @notice Setter for BurnRouter
     function setBurnRouter(address _burnRouter) external override onlyOwner {
         _setBurnRouter(_burnRouter);
     }
 
-    /// @notice                             Setter for third party address
-    /// @dev                                Only owner can call this
-    /// @param _thirdPartyAddress           third party address
+    /// @notice Setter for third party
+    /// @dev Each third party has an id and an address.
+    ///      Users determine the third party by determining the id in the request.
+    ///      Third party fee is sent to the third party address.
     function setThirdPartyAddress(
         uint256 _thirdPartyId,
         address _thirdPartyAddress
@@ -156,9 +157,9 @@ contract CcExchangeRouterLogic is
         _setThirdPartyAddress(_thirdPartyId, _thirdPartyAddress);
     }
 
-    /// @notice                             Setter for third party fee
-    /// @dev                                Only owner can call this
-    /// @param _thirdPartyFee               third party fee
+    /// @notice Setter for third party fee
+    /// @dev Third party fee is a percentage of the input amount.
+    ///      Third parties can set their own fees.
     function setThirdPartyFee(uint256 _thirdPartyId, uint256 _thirdPartyFee)
         external
         override
@@ -167,9 +168,7 @@ contract CcExchangeRouterLogic is
         _setThirdPartyFee(_thirdPartyId, _thirdPartyFee);
     }
 
-    /// @notice                             Setter for wrappedNativeToken
-    /// @dev                                Only owner can call this
-    /// @param _wrappedNativeToken          wrappedNativeToken address
+    /// @notice Setter for wrapped native token
     function setWrappedNativeToken(address _wrappedNativeToken)
         external
         override
@@ -178,8 +177,9 @@ contract CcExchangeRouterLogic is
         _setWrappedNativeToken(_wrappedNativeToken);
     }
 
-    /// @notice                             Setter for chain id mapping
-    /// @dev                                Only owner can call this
+    /// @notice Setter for chain id mapping
+    /// @dev Requests are submitted on the middle chain and the final token is sent to the destination chain.
+    /// @dev For example, for Ethereum, the middle chain is Polygon and the destination chain is Ethereum.
     function setChainIdMapping(
         uint256 _mappedId,
         uint256 _middleChain,
@@ -188,7 +188,9 @@ contract CcExchangeRouterLogic is
         _setChainIdMapping(_middleChain, _destinationChain, _mappedId);
     }
 
-    /// @notice Adding a token as supported token on specific chain
+    /// @notice Support a new token on specific chain
+    /// @dev Users can only submit exchange requests for supported tokens.
+    ///      By default, all tokens are supported on the current chain.
     function supportToken(uint256 chainId, address _token)
         external
         override
@@ -198,7 +200,7 @@ contract CcExchangeRouterLogic is
         isTokenSupported[chainId][_token] = true;
     }
 
-    /// @notice Removing a token as supported token on specific chain
+    /// @notice Remove a token from supported tokens
     function removeToken(uint256 chainId, address _token)
         external
         override
@@ -208,20 +210,21 @@ contract CcExchangeRouterLogic is
         isTokenSupported[chainId][_token] = false;
     }
 
-    /// @notice Adding a new chainId
+    /// @notice Support a new chain
+    /// @dev Users can only submit exchange requests for supported chains.
     function supportChain(uint256 _chainId) external override onlyOwner {
         emit ChainAdded(_chainId);
         isChainSupported[_chainId] = true;
     }
 
-    /// @notice Removing a chainId
+    /// @notice Remove a chain from supported chains
     function removeChain(uint256 _chainId) external override onlyOwner {
         emit ChainRemoved(_chainId);
         isChainSupported[_chainId] = false;
     }
 
-    /// @notice Checks if a request has been executed before
-    /// @dev It prevents re-submitting an executed request
+    /// @notice Check if a request has been processed
+    /// @dev It prevents re-submitting a processed request
     /// @param _txId The transaction ID of request on Bitcoin
     /// @return True if the cc exchange request has been already executed
     function isRequestUsed(bytes32 _txId)
@@ -233,6 +236,7 @@ contract CcExchangeRouterLogic is
         return ccExchangeRequests[_txId].isUsed ? true : false;
     }
 
+    /// @notice Return the middle chain and destination chain from chainId
     function extractChainId(uint256 chainId)
         public
         view
@@ -244,6 +248,7 @@ contract CcExchangeRouterLogic is
         );
     }
 
+    /// @notice Return the destination chain from chainId
     function extractDestinationChainId(uint256 chainId)
         public
         view
@@ -252,14 +257,18 @@ contract CcExchangeRouterLogic is
         return chainIdMapping[chainId].destinationChain;
     }
 
-    /// @notice Executes a cross-chain exchange request after checking its merkle inclusion proof
-    /// @dev Mints teleBTC for user if exchanging is not successful
-    /// @param _txAndProof Transaction and merkle proof data
-    /// @param _lockerLockingScript Script hash of locker that user has sent BTC to it
-    /// @param _path (Optional) Exchange path from teleBTC to the output token. This is used if
-    ///              the default path [teleBTC, wrappedNativeToken, outputToken] not exist or
-    ///              exchanging using this path fails
-    /// @return true
+    /// @notice Process a wrapAndSwap request after checking its inclusion on Bitcoin
+    /// @dev Steps to process a request:
+    ///      1. Check transaction inclusion on Bitcoin
+    ///      2. Extract the request info
+    ///      3. Mint TeleBTC and send fees to protocol, Locker, and third party
+    ///      4. Exchange TeleBTC for the output token
+    ///      5.1 Send the output token to the user
+    ///      5.2 Send TeleBTC to user if exchange fails and the request belongs to the current chain
+    ///      5.3 Keep TeleBTC if exchange fails and the request doesn't blong to the current chain
+    /// @param _txAndProof Transaction and inclusion proof data
+    /// @param _lockerLockingScript Script hash of Locker that user has sent BTC to it
+    /// @param _path (Optional) Exchange path from teleBTC to the output token.
     function wrapAndSwap(
         TxAndProof memory _txAndProof,
         bytes calldata _lockerLockingScript,
@@ -279,13 +288,13 @@ contract CcExchangeRouterLogic is
             "ExchangeRouter: non-zero locktime"
         );
 
-        // Checks that the given script hash is locker
+        // Check that the given script hash is Locker
         require(
             ILockersManager(lockers).isLocker(_lockerLockingScript),
             "ExchangeRouter: not locker"
         );
 
-        // Extracts information from the request and checks if transaction has been finalized on Bitcoin
+        // Extract request info and check if tx has been finalized on Bitcoin
         bytes32 txId = CcExchangeRouterLib.ccExchangeHelper(
             _txAndProof,
             ccExchangeRequests,
@@ -295,23 +304,19 @@ contract CcExchangeRouterLogic is
             relay
         );
 
-        // last element of path must be equal to request exchange token
-        require(
-            ccExchangeRequests[txId].path[1] == _path[_path.length - 1],
-            "ExchangeRouter: wrong path"
-        );
-
-        // extract the middle chain Id (the chain user is sending the request to)
+        // Extract the middle chain Id (the chain user is sending the request to)
         // and destination chain Id (the final chain that user gets its token on it) from chainId
         (uint256 middleChainId, uint256 destinationChainId) = extractChainId(
             extendedCcExchangeRequests[txId].chainId
         );
 
-        // middle chain Id must be equal to current chain
+        // Middle chain Id must be equal to the current chain
         require(middleChainId == chainId, "ExchangeRouter: wrong chain");
 
+        // Either the destination chain should be the current chain or the destination chain should be supported
         require(
-            isChainSupported[destinationChainId],
+            isChainSupported[destinationChainId] ||
+                destinationChainId == chainId,
             "ExchangeRouter: invalid chain id"
         );
 
@@ -329,10 +334,8 @@ contract CcExchangeRouterLogic is
             "ExchangeRouter: invalid appId"
         );
 
-        // Finds remained amount after reducing fees
+        // Find remained amount after reducing fees
         _mintAndReduceFees(_lockerLockingScript, txId);
-
-        require(request.speed == 0, "ExchangeRouter: filler is not supported");
 
         // if (
         //     request.speed == 1 &&
@@ -575,8 +578,10 @@ contract CcExchangeRouterLogic is
     //     return false;
     // }
 
-    /// @notice ETH user whose request failed can redeem teleBTC for native BTC
-    /// @param _message abi encode of txId, scriptType, userScript and acrossRelayerFee
+    /// @notice Request BTC for failed exchange request
+    /// @dev Users can get their BTC back if the request execution failed
+    ///      and their request destination is different from the current chain
+    /// @param _message ABI encode of (txId, scriptType, userScript, acrossRelayerFee)
     /// @param _r Signature r
     /// @param _s Signature s
     /// @param _v Signature v
@@ -589,7 +594,7 @@ contract CcExchangeRouterLogic is
         uint8 _v,
         bytes calldata _lockerLockingScript
     ) external override nonReentrant returns (bool) {
-        /* Checks that:
+        /* Check that:
            1. Request doesn't belong to the current chain
            2. Request execution has been failed
         */
@@ -628,9 +633,10 @@ contract CcExchangeRouterLogic is
         return true;
     }
 
-    /// @notice ETH user whose exchange request failed can retry
-    ///         to exchange teleBTC for the desired token
-    /// @param _message abi encode of txId, outputAmount, acrossRelayerFee and Exchange path
+    /// @notice Retry for failed exchange request
+    /// @dev Users can retry their failed exchange request if
+    ///      their request destination is different from the current chain
+    /// @param _message ABI encode of (txId, outputAmount, acrossRelayerFee, exchangePath)
     /// @param _r Signature r
     /// @param _s Signature s
     /// @param _v Signature v
@@ -649,7 +655,7 @@ contract CcExchangeRouterLogic is
 
         ccExchangeRequest memory exchangeReq = ccExchangeRequests[_txId];
 
-        /* Checks that:
+        /* Check that:
            1. Request doesn't belong to the current chain
            2. Request execution has been failed
         */
@@ -667,7 +673,7 @@ contract CcExchangeRouterLogic is
             "ExchangeRouter: invalid signer"
         );
 
-        // Exchanges teleBTC for desired exchange token
+        // Exchange teleBTC for desired exchange token
         (bool result, uint256[] memory amounts) = IExchangeConnector(
             exchangeConnector[exchangeReq.appId]
         ).swap(
@@ -680,7 +686,7 @@ contract CcExchangeRouterLogic is
             );
         require(result, "ExchangeRouter: swap failed");
 
-        // Sends exchanged tokens to ETH
+        // Send exchanged tokens to ETH
         _sendTokenToOtherChain(
             extendedCcExchangeRequests[_txId].chainId,
             path[path.length - 1],
@@ -692,7 +698,7 @@ contract CcExchangeRouterLogic is
         return true;
     }
 
-    /// @notice Sends tokens to the destination using across
+    /// @notice Send tokens to the destination using Across
     function _sendTokenToOtherChain(
         uint256 _chainId,
         address _token,
@@ -713,8 +719,7 @@ contract CcExchangeRouterLogic is
         );
     }
 
-    /// @notice Executes the exchange request
-    /// @dev Mints teleBTC for user if exchanging is not successful
+    /// @notice Internal function for request belonging to the current chain
     function _wrapAndSwap(
         address _exchangeConnector,
         bytes memory _lockerLockingScript,
@@ -743,10 +748,7 @@ contract CcExchangeRouterLogic is
         }
     }
 
-    /// @notice                          Executes a normal cross-chain exchange request
-    /// @dev                             Mints teleBTC for user if exchanging is not successful
-    /// @param _lockerLockingScript      Locker's locking script
-    /// @param _txId                     Id of the transaction containing the user request
+    /// @notice Internal function for request belonging chains other than the current chain
     function _wrapAndSwapToOtherChain(
         address _exchangeConnector,
         bytes memory _lockerLockingScript,
@@ -791,19 +793,12 @@ contract CcExchangeRouterLogic is
         }
     }
 
+    /// @notice Swap TeleBTC for the output token
+    /// @dev First try to swap with the given path, if it fails,
+    ///      try to swap with the default path (teleBTC -> output token)
     function _swap(ICcExchangeRouter.swapArguments memory swapArguments)
         private
-        returns (
-            // uint destinationChainId,
-            // bytes memory _lockerLockingScript,
-            // ccExchangeRequest memory _ccExchangeRequest,
-            // extendedCcExchangeRequest memory _extendedCcExchangeRequest,
-            // bytes32 _txId,
-            // address[] memory _path,
-            // address _exchangeConnector
-            bool result,
-            uint256[] memory amounts
-        )
+        returns (bool result, uint256[] memory amounts)
     {
         if (
             swapArguments.destinationChainId == chainId ||
@@ -893,7 +888,7 @@ contract CcExchangeRouterLogic is
                 swapArguments.destinationChainId
             );
         } else {
-            // Handles situation where exchange was not successful
+            // Handled situation where exchange fails
             uint256[5] memory fees = [
                 swapArguments._ccExchangeRequest.fee,
                 swapArguments._extendedCcExchangeRequest.lockerFee,
