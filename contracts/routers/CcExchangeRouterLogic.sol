@@ -821,7 +821,6 @@ contract CcExchangeRouterLogic is
                 IExchangeConnector(swapArguments._exchangeConnector)
                     .isPathValid(swapArguments._path)
             ) {
-                console.log(swapArguments._path[0]);
                 require(
                     swapArguments._path[0] == teleBTC &&
                         swapArguments._path[swapArguments._path.length - 1] ==
