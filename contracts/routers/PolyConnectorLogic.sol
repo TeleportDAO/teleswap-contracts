@@ -63,6 +63,7 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
         across = _across;
     }
 
+    // TODO check across v3 functions
     /// @notice Setter for AcrossV3
     function setAcrossV3(address _acrossV3) external override onlyOwner nonZeroAddress(_acrossV3){
         acrossV3 = _acrossV3;
@@ -86,7 +87,7 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
         require(msg.sender == across, "PolygonConnectorLogic: not across");
 
         // // FIXME: handle cases the fillCompleted is not true
-        // require(_fillCompleted, "PolygonConnectorLogic: partial fill");
+        require(_fillCompleted, "PolygonConnectorLogic: partial fill");
 
         // Determines the function call
         (string memory purpose, uint uniqueCounter) = abi.decode(_message, (string, uint));
@@ -105,7 +106,7 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
         bytes memory _message
     ) external nonReentrant override {
         // Checks the msg origin and fill completion (full amount has been received)
-        require(msg.sender == acrossV3, "PolyConnectorLogic: not acrossV3");
+        require(msg.sender == acrossV3, "PolygonConnectorLogic: not acrossV3");
 
         // Determines the function call
         (string memory purpose, uint uniqueCounter) = abi.decode(_message, (string, uint));
@@ -399,33 +400,11 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
         return signer;
     }
 
-    // TODO: move to a library
-    // Helper function to convert uint to string
-    function uintToString(uint v) private pure returns (string memory str) {
-        if (v == 0) {
-            return "0";
-        }
-        uint j = v;
-        uint length;
-        while (j != 0) {
-            length++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(length);
-        uint k = length;
-        while (v != 0) {
-            k = k-1;
-            uint8 temp = (48 + uint8(v - v / 10 * 10));
-            bytes1 b1 = bytes1(temp);
-            bstr[k] = b1;
-            v /= 10;
-        }
-        str = string(bstr);
-    }
-
     /// @notice Checks if two strings are equal
     function _isEqualString(string memory _a, string memory _b) internal pure returns (bool) {
         return keccak256(abi.encodePacked(_a)) == keccak256(abi.encodePacked(_b));
     }
+
+    receive() external payable {}
 
 }

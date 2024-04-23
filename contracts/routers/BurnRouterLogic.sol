@@ -356,8 +356,8 @@ contract BurnRouterLogic is BurnRouterStorage,
                 burnRequests,
                 _lockerTargetAddress,
                 _indices[i],
-                BurnRouterLib.lastSubmittedHeight(relay),
                 transferDeadline,
+                BurnRouterLib.lastSubmittedHeight(relay),
                 startingBlockNumber
             );
 

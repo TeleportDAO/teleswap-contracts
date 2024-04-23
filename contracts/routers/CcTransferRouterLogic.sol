@@ -85,7 +85,6 @@ contract CcTransferRouterLogic is
     function setRelay(address _relay)
         external
         override
-        nonZeroAddress(_relay)
         onlyOwner
     {
         _setRelay(_relay);
@@ -97,7 +96,6 @@ contract CcTransferRouterLogic is
     function setLockers(address _lockers)
         external
         override
-        nonZeroAddress(_lockers)
         onlyOwner
     {
         _setLockers(_lockers);
@@ -109,7 +107,6 @@ contract CcTransferRouterLogic is
     function setInstantRouter(address _instantRouter)
         external
         override
-        nonZeroAddress(_instantRouter)
         onlyOwner
     {
         _setInstantRouter(_instantRouter);
@@ -121,7 +118,6 @@ contract CcTransferRouterLogic is
     function setTeleBTC(address _teleBTC)
         external
         override
-        nonZeroAddress(_teleBTC)
         onlyOwner
     {
         _setTeleBTC(_teleBTC);
@@ -133,7 +129,6 @@ contract CcTransferRouterLogic is
     function setTreasury(address _treasury)
         external
         override
-        nonZeroAddress(_treasury)
         onlyOwner
     {
         _setTreasury(_treasury);

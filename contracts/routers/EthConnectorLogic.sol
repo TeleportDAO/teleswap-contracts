@@ -41,7 +41,7 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
     /// @notice Setter for min exchange amount of a token
     /// @dev Exchanging below the min amount is not possible since withdrawing 
     ///      funds in the case of failure becomes impossible (due to Across bridge fee)
-    function setMinAmount(address _token, uint _minAmount) external override onlyOwner {
+    function setMinAmount(address _token, uint _minAmount) external override onlyOwner nonZeroAddress(_token){
         _setMinAmount(_token, _minAmount);
     }
 
@@ -58,17 +58,17 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
     }
 
     /// @notice Setter for PolygonConnectorProxy
-    function setPolygonConnectorProxy(address _polygonConnectorProxy) external override onlyOwner nonZeroAddress(_polygonConnectorProxy){
+    function setPolygonConnectorProxy(address _polygonConnectorProxy) external override onlyOwner {
         _setPolygonConnectorProxy(_polygonConnectorProxy);
     }
 
     /// @notice Setter for PolygonTeleBTC
-    function setPolygonTeleBTC(address _polygonTeleBTC) external override onlyOwner nonZeroAddress(_polygonTeleBTC){
+    function setPolygonTeleBTC(address _polygonTeleBTC) external override onlyOwner {
         _setPolygonTeleBTC(_polygonTeleBTC);
     }
 
     /// @notice Setter for WrappedNativeToken
-    function setWrappedNativeToken(address _wrappedNativeToken) external override onlyOwner nonZeroAddress(_wrappedNativeToken){
+    function setWrappedNativeToken(address _wrappedNativeToken) external override onlyOwner {
         _setWrappedNativeToken(_wrappedNativeToken);
     }
 
@@ -271,4 +271,6 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
 
         require(_amounts.length == 2, "EthManagerLogic: wrong amounts");
     }
+
+    receive() external payable {}
 }

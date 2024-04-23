@@ -82,6 +82,8 @@ library CcExchangeRouterLib {
         
         // Note: speed now determines using fillers to speed up filling request (speed = 1) or not
         request.speed = RequestParser.parseSpeed(arbitraryData);
+        require(request.speed == 0, "ExchangeRouterLib: filler is not supported");
+    
         request.isUsed = true;
 
         // Saves request

@@ -56,7 +56,7 @@ contract CcExchangeRouterLogic is
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
 
         chainId = _chainId;
-        isChainSupported[chainId] = true;
+        // isChainSupported[chainId] = true;
         _setStartingBlockNumber(_startingBlockNumber);
         _setProtocolPercentageFee(_protocolPercentageFee);
         _setRelay(_relay);
@@ -650,10 +650,12 @@ contract CcExchangeRouterLogic is
             bytes32 _txId,
             uint256 _outputAmount,
             uint256 _acrossRelayerFee,
-            address[] memory path
-        ) = abi.decode(_message, (bytes32, uint256, uint256, address[]));
+            address[] memory path,
+            bytes memory _lockerLockingScript
+        ) = abi.decode(_message, (bytes32, uint256, uint256, address[], bytes));
 
         ccExchangeRequest memory exchangeReq = ccExchangeRequests[_txId];
+        extendedCcExchangeRequest memory extendedReq = extendedCcExchangeRequests[_txId];
 
         /* Check that:
            1. Request doesn't belong to the current chain
@@ -661,29 +663,29 @@ contract CcExchangeRouterLogic is
         */
         require(
             extendedCcExchangeRequests[_txId].chainId != chainId &&
-                extendedCcExchangeRequests[_txId].isTransferredToOtherChain ==
-                false,
+            extendedCcExchangeRequests[_txId].isTransferredToOtherChain == false,
             "ExchangeRouter: already processed"
         );
         extendedCcExchangeRequests[_txId].isTransferredToOtherChain = true;
 
         require(
-            CcExchangeRouterLib._verifySig(_message, _r, _s, _v) ==
-                exchangeReq.recipientAddress,
+            CcExchangeRouterLib._verifySig(_message, _r, _s, _v) == exchangeReq.recipientAddress,
             "ExchangeRouter: invalid signer"
         );
 
         // Exchange teleBTC for desired exchange token
-        (bool result, uint256[] memory amounts) = IExchangeConnector(
-            exchangeConnector[exchangeReq.appId]
-        ).swap(
-                extendedCcExchangeRequests[_txId].remainedInputAmount,
-                _outputAmount,
+        (bool result, uint256[] memory amounts) = _swap(
+            ICcExchangeRouter.swapArguments(
+                extendedReq.chainId,
+                _lockerLockingScript,
+                exchangeReq,
+                extendedReq,
+                _txId,
                 path,
-                address(this), // Sends tokens to this contract
-                block.timestamp,
-                true // Input token is fixed
-            );
+                exchangeConnector[exchangeReq.appId]
+            )
+        );
+
         require(result, "ExchangeRouter: swap failed");
 
         // Send exchanged tokens to ETH
@@ -819,6 +821,7 @@ contract CcExchangeRouterLogic is
                 IExchangeConnector(swapArguments._exchangeConnector)
                     .isPathValid(swapArguments._path)
             ) {
+                console.log(swapArguments._path[0]);
                 require(
                     swapArguments._path[0] == teleBTC &&
                         swapArguments._path[swapArguments._path.length - 1] ==
