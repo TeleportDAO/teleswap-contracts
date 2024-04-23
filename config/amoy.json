@@ -1,7 +1,7 @@
 {
 	"proxy_admin": "0x423e64c9c98498E51230B4f7C0EaFd931ED14e7f",
 	"bitcoin_network": "testnet",
-	"bitcoin_relay": "0xc4e9Db3470201871F99B85f61e5FCe50E5E09ca2",
+	"bitcoin_relay": "0xB7D2Af1d3906926916079C049E32D9DfbE81Dc59",
 	"starting_block_height": "123",
 	"uniswap_v2_router_02": "0xf0568b9E879ae5851406b7ACCF2D694f32a8B0fE",
 	"uniswap_v2_factory": "0x26C7eD58E18f2EC2bFa3eFBABA7a82368ea2957b",
