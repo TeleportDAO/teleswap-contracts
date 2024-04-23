@@ -219,7 +219,6 @@ describe("CcTransferRouter", async () => {
         // Initializes lockers proxy
         await lockers.initialize(
             teleBTC.address,
-            ONE_ADDRESS,
             mockPriceOracle.address,
             ONE_ADDRESS,
             0,
@@ -738,6 +737,25 @@ describe("CcTransferRouter", async () => {
             ).to.revertedWith("CCTransferRouter: input amount is zero");
         })
 
+        it("Reverts if data length is wrong", async function () {
+            await setRelayReturn(true);
+
+            await expect(
+                ccTransferRouter.wrap(
+                    {
+                        version: CC_REQUESTS.normalCCTransfer_invalidLength.version,
+                        vin: CC_REQUESTS.normalCCTransfer_invalidLength.vin,
+                        vout: CC_REQUESTS.normalCCTransfer_invalidLength.vout,
+                        locktime: CC_REQUESTS.normalCCTransfer_invalidLength.locktime,
+                        blockNumber: CC_REQUESTS.normalCCTransfer_invalidLength.blockNumber,
+                        intermediateNodes: CC_REQUESTS.normalCCTransfer_invalidLength.intermediateNodes,
+                        index: CC_REQUESTS.normalCCTransfer_invalidLength.index
+                    },
+                    LOCKER1_LOCKING_SCRIPT
+                )
+            ).to.revertedWith("CCTransferRouter: invalid len");
+        })
+
         it("Reverts if speed is wrong", async function () {
             await setRelayReturn(true);
 
@@ -755,6 +773,44 @@ describe("CcTransferRouter", async () => {
                     LOCKER1_LOCKING_SCRIPT
                 )
             ).to.revertedWith("CCTransferRouter: speed is out of range");
+        })
+
+        it("Reverts if locktime is not zero", async function () {
+            await setRelayReturn(true);
+
+            await expect(
+                ccTransferRouter.wrap(
+                    {
+                        version: CC_REQUESTS.normalCCTransfer_invalidSpeed.version,
+                        vin: CC_REQUESTS.normalCCTransfer_invalidSpeed.vin,
+                        vout: CC_REQUESTS.normalCCTransfer_invalidSpeed.vout,
+                        locktime: "0x10000000",
+                        blockNumber: CC_REQUESTS.normalCCTransfer_invalidSpeed.blockNumber,
+                        intermediateNodes: CC_REQUESTS.normalCCTransfer_invalidSpeed.intermediateNodes,
+                        index: CC_REQUESTS.normalCCTransfer_invalidSpeed.index
+                    },
+                    LOCKER1_LOCKING_SCRIPT
+                )
+            ).to.revertedWith("CCTransferRouter: lock time is non -zero");
+        })
+
+        it("only instant router can wrap", async function () {
+            await setRelayReturn(true);
+
+            await expect(
+                ccTransferRouter.connect(signer1).wrap(
+                    {
+                        version: CC_REQUESTS.normalCCTransfer.version,
+                        vin: CC_REQUESTS.normalCCTransfer.vin,
+                        vout: CC_REQUESTS.normalCCTransfer.vout,
+                        locktime: CC_REQUESTS.normalCCTransfer.locktime,
+                        blockNumber: CC_REQUESTS.normalCCTransfer.blockNumber,
+                        intermediateNodes: CC_REQUESTS.normalCCTransfer.intermediateNodes,
+                        index: CC_REQUESTS.normalCCTransfer.index
+                    },
+                    LOCKER1_LOCKING_SCRIPT
+                )
+            ).to.revertedWith("CCTransferRouter: invalid sender");
         })
 
         it("Reverts if msg.value is lower than relay fee", async function () {
@@ -1037,6 +1093,27 @@ describe("CcTransferRouter", async () => {
             ).to.revertedWith("ZeroAddress()");
         })
 
+        
+        it("Reverts since new starting block number is less than what is set before", async function () {
+            await expect(
+                ccTransferRouter.setStartingBlockNumber(STARTING_BLOCK_NUMBER - 1)
+            ).to.revertedWith("CCTransferRouter: low startingBlockNumber");
+        })
+
+        it("Only owner can set functions", async function () {
+            await expect(
+                ccTransferRouter.connect(signer1).setStartingBlockNumber(1)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+            await expect(
+                ccTransferRouter.connect(signer1).setProtocolPercentageFee(1)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+            await expect(
+                ccTransferRouter.connect(signer1).setRelay(ONE_ADDRESS)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+
+        })
     });
 
     describe("#third party", async () => {

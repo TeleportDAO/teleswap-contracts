@@ -318,6 +318,14 @@ describe("EthConnector", async () => {
         it("should not set the WrappedNativeToken if not owner", async () => {
             await expect(EthConnector.connect(signer1).setWrappedNativeToken(ONE_ADDRESS)).to.be.revertedWith("Ownable: caller is not the owner");
         });
+
+        it("can't set addresses to zero address", async () => {
+            await expect(EthConnector.setMinAmount(ZERO_ADDRESS, requestAmount)).to.be.revertedWith("ZeroAddress()");
+            await expect(EthConnector.setAcross(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
+            await expect(EthConnector.setPolygonConnectorProxy(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
+            await expect(EthConnector.setPolygonTeleBTC(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
+            await expect(EthConnector.setWrappedNativeToken(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
+        });
     });
 
     describe("#Handle across message", async () => {
@@ -534,6 +542,68 @@ describe("EthConnector", async () => {
             ).to.be.revertedWith("EthManagerLogic: wrong value");
         });
       
+    });
+
+    describe("#Handle emergencyWithdraw", async () => {
+        //write test that handle emergency withdraw
+        it("should handle emergency withdraw token", async () => {
+            await inputToken.transfer(
+                EthConnector.address,
+                requestAmount
+            );
+
+            await expect (
+                await inputToken.balanceOf(EthConnector.address)
+            ).to.be.equal(requestAmount)
+
+            await EthConnector.emergencyWithdraw(
+                inputToken.address,
+                signer1Address,
+                requestAmount
+            )
+
+            await expect (
+                await inputToken.balanceOf(EthConnector.address)
+            ).to.be.equal(0)
+
+            await expect (
+                await inputToken.balanceOf(signer1Address)
+            ).to.be.equal(requestAmount)
+
+        });
+
+        it("should handle emergency withdraw eth", async () => {
+            let tx = {
+                to: EthConnector.address,
+                value: 100
+            };
+            await signer1.sendTransaction(tx);
+
+            let beforeBalance = await signer1.getBalance()
+            beforeBalance.add(100)
+
+            await expect (
+                await provider.getBalance(EthConnector.address)
+            ).to.be.equal(100)
+
+            await EthConnector.emergencyWithdraw(
+                "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+                signer1Address,
+                100
+            )
+
+        });
+
+        // write test that only owner can emergency withdraw
+        it("should not handle emergency withdraw if not owner", async () => {
+            await expect (
+                EthConnector.connect(signer1).emergencyWithdraw(
+                    inputToken.address,
+                    signer1Address,
+                    requestAmount
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        });
     });
 
 

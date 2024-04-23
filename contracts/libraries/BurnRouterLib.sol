@@ -163,44 +163,7 @@ library BurnRouterLib {
             "BurnRouterLogic: not for locker"
         );
     }
-
-    function slashLockerHelper(
-        bytes memory _lockerLockingScript,
-        bytes4 _version,
-        bytes memory _inputVin,
-        uint256 _index,
-        bytes memory _outputVin,
-        bytes memory _outputVout,
-        bytes4 _locktime
-    ) external view {
-        // Extracts outpoint id and index from input tx
-        (bytes32 _outpointId, uint256 _outpointIndex) = BitcoinHelper
-            .extractOutpoint(
-                _inputVin,
-                _index // Index of malicious input in input tx
-            );
-
-        // Checks that "outpoint tx id == output tx id"
-        require(
-            _outpointId ==
-                BitcoinHelper.calculateTxId(
-                    _version,
-                    _outputVin,
-                    _outputVout,
-                    _locktime
-                ),
-            "BurnRouterLogic: wrong output tx"
-        );
-
-        // Checks that _outpointIndex of _outpointId belongs to locker locking script
-        require(
-            keccak256(
-                BitcoinHelper.getLockingScript(_outputVout, _outpointIndex)
-            ) == keccak256(_lockerLockingScript),
-            "BurnRouterLogic: not for locker"
-        );
-    }
-
+    
     function burnProofHelper(
         uint256 _blockNumber,
         uint256 startingBlockNumber,

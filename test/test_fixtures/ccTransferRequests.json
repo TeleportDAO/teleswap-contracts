@@ -33,6 +33,23 @@
 		"desiredRecipient": "0x4062c8aeed4f81c2d73ff854a2957021191e20b6",
 		"chainId": 1
 	},
+	"normalCCTransfer_invalidLength": {
+		"txId": "0xf16f079358c38dce1911c12936a85412c0f3d95b4712db2202cf94162e6935af",
+		"version": "0x02000000",
+		"vin": "0x0168cc0ef5ffb948080a79d85b5ffda89092921e2d776f7eb864cbbbea4271e2a90200000000feffffff",
+		"vout":    "0x03102700000000000017a9144062c8aeed4f81c2d73ff854a2957021191e20b68700000000000000001d6a1b010082492cAFDD0BA0F68dec07Da75C28Fdb9d07447d0000640001533b0000000000001600140c92227de5c4bbe76247335b078cf2de137285db",
+		"opReturn": "00010082492cAFDD0BA0F68dec07Da75C28Fdb9d07447d0000640001",
+		"locktime": "0x00000000",
+		"blockNumber": 497,
+		"intermediateNodes": "0x545d893c5311b44ea319e27e53d9d7d2725882cb194a782be75c4da6c71ce0f8",
+		"index": 1,
+		"bitcoinAmount": 10000,
+		"recipientAddress":"0x82492cAFDD0BA0F68dec07Da75C28Fdb9d07447d",
+		"teleporterFee": 100,
+		"speed": 0,
+		"desiredRecipient": "0x4062c8aeed4f81c2d73ff854a2957021191e20b6",
+		"chainId": 1
+	},
 	"normalCCTransfer_zeroFee": {
 		"txId": "0xb176b3d6aac7d93e7d77acd5e18146eb76a75666f3cfbdeec37282710f59fd5d",
 		"version": "0x02000000",

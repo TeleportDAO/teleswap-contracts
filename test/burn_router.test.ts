@@ -1144,40 +1144,47 @@ describe("BurnRouter", async () => {
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
+        it("only owner can dispute burn", async function () {
+            await expect(
+                burnRouter.connect(signer1).disputeBurn(
+                        LOCKER_TARGET_ADDRESS,
+                        [0]
+                    )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
 
-        //TODO
-        // it("Disputes locker successfully", async function () {
-        //     // Sets mock contracts
-        //     await setRelayLastSubmittedHeight(burnReqBlockNumber + TRANSFER_DEADLINE + 1);
-        //     await setLockersSlashIdleLockerReturn();
-        //     await setLockersIsLocker(true);
+        it("Disputes locker successfully", async function () {
+            // Sets mock contracts
+            await setRelayLastSubmittedHeight(burnReqBlockNumber + TRANSFER_DEADLINE + 1);
+            await setLockersSlashIdleLockerReturn();
+            await setLockersIsLocker(true);
 
-        //     await expect(
-        //         burnRouter.disputeBurn(
-        //             LOCKER_TARGET_ADDRESS,
-        //             [0]
-        //         )
-        //     ).to.not.reverted;
-        // })
+            await expect(
+                burnRouter.disputeBurn(
+                    LOCKER_TARGET_ADDRESS,
+                    [0]
+                )
+            ).to.not.reverted;
+        })
 
-        // it("Reverts since locker has been slashed before", async function () {
-        //     // Sets mock contracts
-        //     await setRelayLastSubmittedHeight(burnReqBlockNumber + TRANSFER_DEADLINE + 1);
-        //     await setLockersSlashIdleLockerReturn();
-        //     await setLockersIsLocker(true);
+        it("Reverts since locker has been slashed before", async function () {
+            // Sets mock contracts
+            await setRelayLastSubmittedHeight(burnReqBlockNumber + TRANSFER_DEADLINE + 1);
+            await setLockersSlashIdleLockerReturn();
+            await setLockersIsLocker(true);
 
-        //     await burnRouter.disputeBurn(
-        //         LOCKER_TARGET_ADDRESS,
-        //         [0]
-        //     );
+            await burnRouter.disputeBurn(
+                LOCKER_TARGET_ADDRESS,
+                [0]
+            );
 
-        //     await expect(
-        //         burnRouter.disputeBurn(
-        //             LOCKER_TARGET_ADDRESS,
-        //             [0]
-        //         )
-        //     ).to.revertedWith("BurnRouterLogic: already paid")
-        // })
+            await expect(
+                burnRouter.disputeBurn(
+                    LOCKER_TARGET_ADDRESS,
+                    [0]
+                )
+            ).to.revertedWith("BurnRouterLogic: already paid")
+        })
 
         it("Reverts since locking script is invalid", async function () {
 
@@ -1235,6 +1242,22 @@ describe("BurnRouter", async () => {
         afterEach(async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
+
+        it("Dispute the locker who has sent its BTC to external account", async function () {
+            await expect(
+                burnRouter.connect(signer1).disputeLocker(
+                    LOCKER1_LOCKING_SCRIPT,
+                    [CC_BURN_REQUESTS.disputeLocker_input.version, CC_BURN_REQUESTS.disputeLocker_output.version],
+                    CC_BURN_REQUESTS.disputeLocker_input.vin,
+                    CC_BURN_REQUESTS.disputeLocker_input.vout,
+                    CC_BURN_REQUESTS.disputeLocker_output.vin,
+                    CC_BURN_REQUESTS.disputeLocker_output.vout,
+                    [CC_BURN_REQUESTS.disputeLocker_input.locktime, CC_BURN_REQUESTS.disputeLocker_output.locktime],
+                    CC_BURN_REQUESTS.disputeLocker_input.intermediateNodes,
+                    [0, 1, burnReqBlockNumber]
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
 
         it("Dispute the locker who has sent its BTC to external account", async function () {
 
@@ -1544,6 +1567,12 @@ describe("BurnRouter", async () => {
             ).to.equal(100);
         })
 
+        it("Reverts since network fee is greater than 10000", async function () {
+            await expect(
+                burnRouter.connect(signer1).setNetworkFee(10001)
+            ).to.revertedWith("BurnRouterLogic: not oracle");
+        })
+
         it("Sets relay, lockers, teleBTC and treasury", async function () {
             await expect(
                 burnRouter.setRelay(ONE_ADDRESS)
@@ -1588,6 +1617,12 @@ describe("BurnRouter", async () => {
 
         })
 
+        it("Reverts since starting block number is low", async function () {
+            await expect(
+                burnRouter.setStartingBlockNumber(1)
+            ).to.revertedWith("BurnRouterLogic: low startingBlockNumber");
+        })
+
         it("Reverts since given address is zero", async function () {
             await expect(
                 burnRouter.setRelay(ZERO_ADDRESS)
@@ -1606,6 +1641,62 @@ describe("BurnRouter", async () => {
             ).to.revertedWith("ZeroAddress()");
         })
 
+        it("Reverts since given address is zero", async function () {
+            await burnRouter.setThirdPartyAddress(1, ONE_ADDRESS)
+            
+            await expect(
+                await burnRouter.thirdPartyAddress(1)
+            ).to.equal(ONE_ADDRESS);
+
+            await burnRouter.setThirdPartyFee(1, 1)
+            
+            await expect(
+                await burnRouter.thirdPartyFee(1)
+            ).to.equal(1);
+        })
+
+        it("Reverts since caller is not owner", async function () {
+            await expect(
+                burnRouter.connect(signer1).setRelay(ONE_ADDRESS)
+            ).to.revertedWith("Ownable: caller is not the owner");
+
+            await expect(
+                burnRouter.connect(signer1).setLockers(ONE_ADDRESS)
+            ).to.revertedWith("Ownable: caller is not the owner");
+
+            await expect(
+                burnRouter.connect(signer1).setTeleBTC(ONE_ADDRESS)
+            ).to.revertedWith("Ownable: caller is not the owner");
+
+            await expect(
+                burnRouter.connect(signer1).setTreasury(ONE_ADDRESS)
+            ).to.revertedWith("Ownable: caller is not the owner");
+
+            await expect(
+                burnRouter.connect(signer1).setProtocolPercentageFee(100)
+            ).to.revertedWith("Ownable: caller is not the owner");
+            
+            await expect(
+                burnRouter.connect(signer1).setSlasherPercentageReward(100)
+            ).to.revertedWith("Ownable: caller is not the owner");
+
+            await expect(
+                burnRouter.connect(signer1).setNetworkFeeOracle(ONE_ADDRESS)
+            ).to.revertedWith("Ownable: caller is not the owner");
+
+            await expect(
+                burnRouter.connect(signer1).setThirdPartyFee(1, 1)
+            ).to.revertedWith("Ownable: caller is not the owner");
+
+            await expect(
+                burnRouter.connect(signer1).setThirdPartyAddress(1, ONE_ADDRESS)
+            ).to.revertedWith("Ownable: caller is not the owner");
+
+            await expect(
+                burnRouter.connect(signer1).setStartingBlockNumber(1)
+            ).to.revertedWith("Ownable: caller is not the owner");
+        })
+
     });
 
     describe("#renounce ownership", async () => {
@@ -1614,6 +1705,12 @@ describe("BurnRouter", async () => {
             await expect(
                 await burnRouter.owner()
             ).to.equal(deployerAddress);
+        })
+
+        it("only owner can renounce ownership", async function () {
+            await expect(
+                burnRouter.connect(signer1).renounceOwnership()
+            ).to.revertedWith("Ownable: caller is not the owner");
         })
     });
 
