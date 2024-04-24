@@ -366,7 +366,8 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
             _amount
         );
 
-        SpokePoolInterface(across).deposit(
+        SpokePoolInterface(across).depositFor(
+            _user,
             _user,
             _token,
             _amount,

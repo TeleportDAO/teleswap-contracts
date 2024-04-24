@@ -122,7 +122,6 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @param _transferDeadline The new transfer deadline
     function setTransferDeadline(uint _transferDeadline) public override {
         uint _finalizationParameter = BurnRouterLib.finalizationParameter(relay);
-        //TODO or?! shouldn't be and?
         require(
             _msgSender() == owner() || transferDeadline < _finalizationParameter, 
             "BurnRouterLogic: no permit"
@@ -597,13 +596,14 @@ contract BurnRouterLogic is BurnRouterStorage,
         paidOutputCounter = 0;
 
         uint tempVoutIndex;
-        // TODO need explanation
+        // TODO test
         for (uint i = 0; i < _burnReqIndexes.length; i++) {
 
             // prevent from sending repeated vout indexes
             if (i == 0) {
                 tempVoutIndex = _voutIndexes[i];
             } else {
+                // get vout indexes in increasing order to get sure there is no duplicate
                 require(
                     _voutIndexes[i] > tempVoutIndex,
                     "BurnRouterLogic: un-sorted vout indexes"

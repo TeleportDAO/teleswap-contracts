@@ -348,7 +348,7 @@ contract LockersManagerLogic is
             _lockerRescueScript
         );
 
-        // TODO if or require?
+
         if (libParams.teleportDAOToken != address(0)) {
             IERC20(libParams.teleportDAOToken).safeTransferFrom(
                 _msgSender(),
@@ -517,7 +517,6 @@ contract LockersManagerLogic is
 
         require(_removingLocker.netMinted == 0, "Lockers: 0 net minted");
 
-        // TODO doesn't exists?
         require(
             _removingLocker.slashingTeleBTCAmount == 0,
             "Lockers: 0 slashing TBTC"
