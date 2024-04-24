@@ -1,34 +1,57 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.8.4;
+pragma solidity >=0.8.0 <=0.8.4;
 
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 
 interface IBurnRouter {
 
+	// Structures
+
+    /// @notice Structure for recording cc burn requests
+    /// @param amount of tokens that user wants to burn
+    /// @param burntAmount that user will receive (after reducing fees from amount)
+    /// @param sender Address of user who requests burning
+    /// @param userScript Script hash of the user on Bitcoin
+    /// @param deadline of locker for executing the request
+    /// @param isTransferred True if the request has been processed
+    /// @param scriptType The script type of the user
+    /// @param requestIdOfLocker The index of the request for a specific locker
+	struct burnRequest {
+		uint amount;
+		uint burntAmount;
+		address sender;
+		bytes userScript;
+		uint deadline;
+		bool isTransferred;
+		ScriptTypes scriptType;
+		uint requestIdOfLocker;
+  	}
+
   	// Events
 
 	/// @notice Emits when a burn request gets submitted
-    /// @param userTargetAddress Address of the user
     /// @param userScript Script of user on Bitcoin
     /// @param scriptType Script type of the user (for bitcoin address)
-    /// @param inputAmount Amount of input token (0 if input token is teleBTC)
-    /// @param inputToken Address of token that will be exchanged for teleBTC (address(0) if input token is teleBTC)
-	/// @param teleBTCAmount amount of teleBTC that user sent OR Amount of teleBTC after exchanging
-    /// @param burntAmount that user will receive (after reducing fees)
 	/// @param lockerTargetAddress Address of Locker
+	/// @param userTargetAddress Address of the user on EVM
 	/// @param requestIdOfLocker Index of request between Locker's burn requests
 	/// @param deadline of Locker for executing the request (in terms of Bitcoin blocks)
-  	event CCBurn(
-		address indexed userTargetAddress,
+	/// @param thirdPartyId Id of third party
+	/// @param inputToken inputToken address
+	/// @param amounts [inputAmount, teleBTCAmount, burntAmount]
+	/// @param fees [network fee, locker fee, protocol fee, third party fee]
+	
+  	event NewUnwrap(
 		bytes userScript,
 		ScriptTypes scriptType,
-		uint inputAmount,
-		address inputToken,
-		uint teleBTCAmount, 
-		uint burntAmount,
 		address lockerTargetAddress,
+		address indexed userTargetAddress,
 		uint requestIdOfLocker,
-		uint indexed deadline
+		uint indexed deadline,
+		uint thirdPartyId,
+		address inputToken,
+		uint[3] amounts,
+		uint[4] fees
 	);
 
 	/// @notice Emits when a burn proof is provided
@@ -36,7 +59,7 @@ interface IBurnRouter {
     /// @param requestIdOfLocker Index of paid request of among Locker's requests
     /// @param bitcoinTxId The hash of tx that paid a burn request
 	/// @param bitcoinTxOutputIndex The output index in tx
-	event PaidCCBurn(
+	event PaidUnwrap(
 		address indexed lockerTargetAddress,
 		uint requestIdOfLocker,
 		bytes32 bitcoinTxId,
@@ -105,21 +128,58 @@ interface IBurnRouter {
         uint newSlasherPercentageFee
     );
 
-	/// @notice Emits when bitcoin fee is updated
-    event NewBitcoinFee(
-        uint oldBitcoinFee, 
-        uint newBitcoinFee
+	/// @notice Emits when network fee is updated
+    event NewNetworkFee(
+        uint oldNetworkFee, 
+        uint newNetworkFee
     );
 
-	/// @notice Emits when bitcoin fee oracle is updated
-    event NewBitcoinFeeOracle(
-        address oldBitcoinFeeOracle, 
-        address newBitcoinFeeOracle
+	/// @notice Emits when network fee oracle is updated
+    event NewNetworkFeeOracle(
+        address oldNetworkFeeOracle, 
+        address newNetworkFeeOracle
     );
+
+	/// @notice                     Emits when changes made to third party address
+	event NewThirdPartyAddress(
+		uint thirdPartyId,
+		address oldThirdPartyAddress, 
+		address newThirdPartyAddress
+	);
+
+	/// @notice                     Emits when changes made to third party fee
+	event NewThirdPartyFee(
+		uint thirdPartyId,
+		uint oldThirdPartyFee, 
+		uint newThirdPartyFee
+	);
+
 
 	// Read-only functions
 
 	function isTransferred(address _lockerTargetAddress, uint _index) external view returns (bool);
+
+    function startingBlockNumber() external view returns (uint);
+	
+	function relay() external view returns (address);
+
+	function lockers() external view returns (address);
+
+	function teleBTC() external view returns (address);
+
+	function treasury() external view returns (address);
+
+	function transferDeadline() external view returns (uint);
+
+	function protocolPercentageFee() external view returns (uint);
+
+	function slasherPercentageReward() external view returns (uint);
+
+	function bitcoinFee() external view returns (uint); // Bitcoin transaction fee
+
+	function isUsedAsBurnProof(bytes32 _txId) external view returns (bool);
+
+	function bitcoinFeeOracle() external view returns (address);
 
 	// State-changing functions
 
@@ -139,18 +199,23 @@ interface IBurnRouter {
 
 	function setSlasherPercentageReward(uint _slasherPercentageReward) external;
 
-	function setBitcoinFee(uint _bitcoinFee) external;
+	function setNetworkFee(uint _networkFee) external;
 
-	function setBitcoinFeeOracle(address _bitcoinFeeOracle) external;
+	function setNetworkFeeOracle(address _networkFeeOracle) external;
 
-	function ccBurn(
+	function setThirdPartyAddress(uint _thirdPartyId, address _thirdPartyAddress) external;
+
+	function setThirdPartyFee(uint _thirdPartyId, uint _thirdPartyFee) external;
+
+	function unwrap(
 		uint _amount, 
 		bytes calldata _userScript,
 		ScriptTypes _scriptType,
-		bytes calldata _lockerLockingScript
+		bytes calldata _lockerLockingScript,
+		uint thirdParty
 	) external returns (uint);
 
-    function ccExchangeAndBurn(
+    function swapAndUnwrap(
         address _exchangeConnector,
         uint[] calldata _amounts,
         bool _isFixedToken,
@@ -158,7 +223,8 @@ interface IBurnRouter {
         uint256 _deadline, 
         bytes memory _userScript,
         ScriptTypes _scriptType,
-        bytes calldata _lockerLockingScript
+        bytes calldata _lockerLockingScript,
+		uint thirdParty
 	) external returns (uint);
 
 	function burnProof(

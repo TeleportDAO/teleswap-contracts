@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.8.4;
+pragma solidity >=0.8.0 <=0.8.4;
 
 import "@teleportdao/btc-evm-bridge/contracts/relay/interfaces/IBitcoinRelay.sol";
 import "@teleportdao/btc-evm-bridge/contracts/libraries/BitcoinHelper.sol";
+import "../lockersManager/interfaces/ILockersManager.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../routers/BurnRouterStorage.sol";
 
 library BurnRouterLib {
-
-   /// @notice Checks if all outputs of the transaction used to pay a cc burn request
+    /// @notice Checks if all outputs of the transaction used to pay a cc burn request
     /// @dev  One output might return the remaining value to the locker
     /// @param _paidOutputCounter  Number of the tx outputs that pay a cc burn request
     /// @param _vout Outputs of a transaction
@@ -17,13 +17,16 @@ library BurnRouterLib {
     /// @param _txId Transaction id
     function updateIsUsedAsBurnProof(
         mapping(bytes32 => bool) storage _isUsedAsBurnProof,
-        uint _paidOutputCounter,
+        uint256 _paidOutputCounter,
         bytes memory _vout,
         bytes memory _lockerLockingScript,
         bytes32 _txId
     ) external {
-        uint parsedAmount = BitcoinHelper.parseValueHavingLockingScript(_vout, _lockerLockingScript);
-        uint numberOfOutputs = BitcoinHelper.numberOfOutputs(_vout);
+        uint256 parsedAmount = BitcoinHelper.parseValueHavingLockingScript(
+            _vout,
+            _lockerLockingScript
+        );
+        uint256 numberOfOutputs = BitcoinHelper.numberOfOutputs(_vout);
 
         if (parsedAmount != 0 && _paidOutputCounter + 1 == numberOfOutputs) {
             // One output sends the remaining value to locker
@@ -35,12 +38,13 @@ library BurnRouterLib {
     }
 
     function disputeBurnHelper(
-        mapping(address => BurnRouterStorage.burnRequest[]) storage burnRequests,
+        mapping(address => BurnRouterStorage.burnRequest[])
+            storage burnRequests,
         address _lockerTargetAddress,
-        uint _index, 
-        uint _transferDeadline,
-        uint _lastSubmittedHeight,
-        uint _startingBlockNumber
+        uint256 _index,
+        uint256 _transferDeadline,
+        uint256 _lastSubmittedHeight,
+        uint256 _startingBlockNumber
     ) external {
         // Checks that locker has not provided burn proof
         require(
@@ -50,12 +54,14 @@ library BurnRouterLib {
 
         // Checks that payback deadline has passed
         require(
-            burnRequests[_lockerTargetAddress][_index].deadline < _lastSubmittedHeight,
+            burnRequests[_lockerTargetAddress][_index].deadline <
+                _lastSubmittedHeight,
             "BurnRouterLogic: deadline not passed"
         );
 
         require(
-            burnRequests[_lockerTargetAddress][_index].deadline > _startingBlockNumber + _transferDeadline,
+            burnRequests[_lockerTargetAddress][_index].deadline >
+                _startingBlockNumber + _transferDeadline,
             "BurnRouterLogic: old request"
         );
 
@@ -63,27 +69,38 @@ library BurnRouterLib {
         burnRequests[_lockerTargetAddress][_index].isTransferred = true;
     }
 
-    function disputeLockerHelper(
-        mapping(bytes32 => bool) storage _isUsedAsBurnProof,
-        uint _transferDeadline,
-        address _relay,
-        uint _startingBlockNumber,
-        bytes32 _inputTxId,
+    function disputeAndSlashLockerHelper(
+        address lockers,
+        bytes memory _lockerLockingScript,
         bytes4[] memory _versions, // [inputTxVersion, outputTxVersion]
+        bytes[3] memory _inputOutputVinVout, // [_inputVin, _outputVin, _outputVout]
+        mapping(bytes32 => bool) storage _isUsedAsBurnProof,
+        uint256 _transferDeadline,
+        address _relay,
+        uint256 _startingBlockNumber,
+        bytes32 _inputTxId,
         bytes4[] memory _locktimes, // [inputTxLocktime, outputTxLocktime]
         bytes memory _inputIntermediateNodes,
-        uint[] memory _indexesAndBlockNumbers // [inputIndex, inputTxIndex, inputTxBlockNumber]
+        uint256[] memory _indexesAndBlockNumbers // [inputIndex, inputTxIndex, inputTxBlockNumber]
     ) external {
-        
+        // Checks if the locking script is valid
+        require(
+            ILockersManager(lockers).isLocker(_lockerLockingScript),
+            "BurnRouterLogic: not locker"
+        );
+
         // Checks input array sizes
         require(
             _versions.length == 2 &&
-            _locktimes.length == 2 &&
-            _indexesAndBlockNumbers.length == 3,
+                _locktimes.length == 2 &&
+                _indexesAndBlockNumbers.length == 3,
             "BurnRouterLogic: wrong inputs"
         );
 
-        require(_indexesAndBlockNumbers[2] >= _startingBlockNumber, "BurnRouterLogic: old request");
+        require(
+            _indexesAndBlockNumbers[2] >= _startingBlockNumber,
+            "BurnRouterLogic: old request"
+        );
 
         require(
             isConfirmed(
@@ -107,14 +124,72 @@ library BurnRouterLib {
         );
 
         // prevents multiple slashing of locker
-        _isUsedAsBurnProof[_inputTxId] = true;  
+        _isUsedAsBurnProof[_inputTxId] = true;
 
         // Checks that deadline for using the tx as burn proof has passed
         require(
-            lastSubmittedHeight(_relay) > _transferDeadline + _indexesAndBlockNumbers[2],
+            lastSubmittedHeight(_relay) >
+                _transferDeadline + _indexesAndBlockNumbers[2],
             "BurnRouterLogic: deadline not passed"
-        ); 
+        );
 
+        // Extracts outpoint id and index from input tx
+        (bytes32 _outpointId, uint256 _outpointIndex) = BitcoinHelper
+            .extractOutpoint(
+                _inputOutputVinVout[0],
+                _indexesAndBlockNumbers[0] // Index of malicious input in input tx
+            );
+
+        // Checks that "outpoint tx id == output tx id"
+        require(
+            _outpointId ==
+                BitcoinHelper.calculateTxId(
+                    _versions[1],
+                    _inputOutputVinVout[1],
+                    _inputOutputVinVout[2],
+                    _locktimes[1]
+                ),
+            "BurnRouterLogic: wrong output tx"
+        );
+
+        // Checks that _outpointIndex of _outpointId belongs to locker locking script
+        require(
+            keccak256(
+                BitcoinHelper.getLockingScript(
+                    _inputOutputVinVout[2],
+                    _outpointIndex
+                )
+            ) == keccak256(_lockerLockingScript),
+            "BurnRouterLogic: not for locker"
+        );
+    }
+    
+    function burnProofHelper(
+        uint256 _blockNumber,
+        uint256 startingBlockNumber,
+        bytes4 _locktime,
+        address lockers,
+        bytes memory _lockerLockingScript,
+        uint256 _burnReqIndexesLength,
+        uint256 _voutIndexesLength
+    ) external view {
+        require(
+            _blockNumber >= startingBlockNumber,
+            "BurnRouterLogic: old request"
+        );
+        // Checks that locker's tx doesn't have any locktime
+        require(_locktime == bytes4(0), "BurnRouterLogic: non-zero lock time");
+
+        // Checks if the locking script is valid
+        require(
+            ILockersManager(lockers).isLocker(_lockerLockingScript),
+            "BurnRouterLogic: not locker"
+        );
+
+        require(
+            _burnReqIndexesLength == _voutIndexesLength,
+            "BurnRouterLogic: wrong indexes"
+        );
     }
 
     /// @notice Checks inclusion of the transaction in the specified block
@@ -130,10 +205,10 @@ library BurnRouterLib {
         bytes32 _txId,
         uint256 _blockNumber,
         bytes memory _intermediateNodes,
-        uint _index
+        uint256 _index
     ) public returns (bool) {
         // Finds fee amount
-        uint feeAmount = getFinalizedBlockHeaderFee(_relay, _blockNumber);
+        uint256 feeAmount = getFinalizedBlockHeaderFee(_relay, _blockNumber);
         require(msg.value >= feeAmount, "BitcoinRelay: low fee");
 
         // Calls relay contract
@@ -149,21 +224,60 @@ library BurnRouterLib {
             feeAmount
         );
 
+        //TODO?
         // Sends extra ETH back to msg.sender
         Address.sendValue(payable(msg.sender), msg.value - feeAmount);
 
         return abi.decode(data, (bool));
     }
 
-    function lastSubmittedHeight(address _relay) public view returns (uint) {
+    /// @notice Checks the user hash script to be valid (based on its type)
+    function checkScriptTypeAndLocker(
+        bytes memory _userScript,
+        ScriptTypes _scriptType,
+        address lockers,
+        bytes calldata _lockerLockingScript
+    ) external view {
+        if (
+            _scriptType == ScriptTypes.P2PK ||
+            _scriptType == ScriptTypes.P2WSH ||
+            _scriptType == ScriptTypes.P2TR
+        ) {
+            require(
+                _userScript.length == 32,
+                "BurnRouterLogic: invalid script"
+            );
+        } else {
+            require(
+                _userScript.length == 20,
+                "BurnRouterLogic: invalid script"
+            );
+        }
+
+        // Checks if the given locking script is locker
+        require(
+            ILockersManager(lockers).isLocker(_lockerLockingScript),
+            "BurnRouterLogic: not locker"
+        );
+    }
+
+    function lastSubmittedHeight(address _relay) public view returns (uint256) {
         return IBitcoinRelay(_relay).lastSubmittedHeight();
     }
 
-    function finalizationParameter(address _relay) external view returns (uint) {
+    function finalizationParameter(address _relay)
+        external
+        view
+        returns (uint256)
+    {
         return IBitcoinRelay(_relay).finalizationParameter();
     }
 
-    function getFinalizedBlockHeaderFee(address _relay, uint _blockNumber) public view returns (uint) {
+    function getFinalizedBlockHeaderFee(address _relay, uint256 _blockNumber)
+        public
+        view
+        returns (uint256)
+    {
         return IBitcoinRelay(_relay).getBlockHeaderFee(_blockNumber, 0);
     }
 }

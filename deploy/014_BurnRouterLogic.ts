@@ -19,17 +19,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
-        args: [
-            // theBlockHeight,
-            // bitcoinRelay,
-            // lockersProxy.address,
-            // treasuryAddress,
-            // teleBTC.address,
-            // transferDeadLine,
-            // protocolPercentageFee,
-            // slasherPercentageReward,
-            // bitcoinFee
-        ],
+        args: [],
         libraries: {
             "BurnRouterLib": burnRouterLib.address
         },
@@ -38,17 +28,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     if (network.name != "hardhat" && process.env.ETHERSCAN_API_KEY && process.env.VERIFY_OPTION == "1") {
         await verify(
             deployedContract.address, 
-            [
-                // theBlockHeight,
-                // bitcoinRelay,
-                // lockersProxy.address,
-                // treasuryAddress,
-                // teleBTC.address,
-                // transferDeadLine,
-                // protocolPercentageFee,
-                // slasherPercentageReward,
-                // bitcoinFee
-            ], 
+            [], 
             "contracts/routers/BurnRouterLogic.sol:BurnRouterLogic")
     }
 };

@@ -130,7 +130,7 @@ describe("UniswapV2Connector", async () => {
             deployerAddress,
             10000000000000, // Long deadline
         );
-        console.log("we are here2");
+        
         let liquidityPoolABAddress = await uniswapV2Factory.getPair(
             erc20.address,
             erc20X.address
@@ -194,11 +194,11 @@ describe("UniswapV2Connector", async () => {
         liquidityPoolEF = await uniswapV2Pair__factory.attach(liquidityPoolEFAddress);
 
         // Records current reserves of teleBTC and TDT
-        if (await liquidityPoolEF.token0() == erc20Z.address) {
-            [oldReserveE, oldReserveF] = await liquidityPoolEF.getReserves();
-        } else {
-            [oldReserveF, oldReserveE] = await liquidityPoolEF.getReserves()
-        }
+        // if (await liquidityPoolEF.token0() == erc20Z.address) {
+        //     [oldReserveE, oldReserveF] = await liquidityPoolEF.getReserves();
+        // } else {
+        //     [oldReserveF, oldReserveE] = await liquidityPoolEF.getReserves()
+        // }
 
         // Records current tokens balances of deployer
         oldDeployerBalanceERC20 = await erc20.balanceOf(deployerAddress);

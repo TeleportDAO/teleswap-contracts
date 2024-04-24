@@ -8,7 +8,6 @@ typechain
 cache
 artifacts
 
-
 contracts.json
 coverage*
 deployments/localhost
