@@ -369,29 +369,4 @@ library LockersManagerLib {
                 libParams.teleBTC
             );
     }
-
-    /// @notice                             Get how much the locker can mint
-    /// @dev                                Net minted amount is total minted minus total burnt for the locker
-    /// @return theLockerCapacity           The net minted of the locker
-    function getLockerCapacity(
-        ILockersManager.locker storage theLocker,
-        ILockersManager.lockersLibConstants memory libConstants,
-        ILockersManager.lockersLibParam memory libParams,
-        uint256 netMinted,
-        uint256 amount
-    ) public view returns (uint256 theLockerCapacity) {
-        uint256 _lockerCollateralInTeleBTC = (lockerCollateralInTeleBTC(
-            theLocker,
-            libConstants,
-            libParams
-        ) * libConstants.OneHundredPercent) / libParams.collateralRatio;
-
-        if (_lockerCollateralInTeleBTC > netMinted) {
-            theLockerCapacity = _lockerCollateralInTeleBTC - netMinted;
-        } else {
-            theLockerCapacity = 0;
-        }
-
-        require(theLockerCapacity >= amount, "Lockers: insufficient capacity");
-    }
 }

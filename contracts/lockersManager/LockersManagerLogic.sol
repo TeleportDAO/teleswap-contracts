@@ -71,12 +71,12 @@ contract LockersManagerLogic is
     }
 
     modifier onlyMinter() {
-        require(isMinter(_msgSender()), "Lockers: only minters can mint");
+        require(minters[_msgSender()], "Lockers: only minters can mint");
         _;
     }
 
     modifier onlyBurner() {
-        require(isBurner(_msgSender()), "Lockers: only burners can burn");
+        require(burners[_msgSender()], "Lockers: only burners can burn");
         _;
     }
 
@@ -89,7 +89,7 @@ contract LockersManagerLogic is
         nonZeroAddress(_account)
         onlyOwner
     {
-        require(!isMinter(_account), "Lockers: account already has role");
+        require(!minters[_account], "Lockers: account already has role");
         minters[_account] = true;
         emit MinterAdded(_account);
     }
@@ -101,7 +101,7 @@ contract LockersManagerLogic is
         nonZeroAddress(_account)
         onlyOwner
     {
-        require(isMinter(_account), "Lockers: account does not have role");
+        require(minters[_account], "Lockers: account does not have role");
         minters[_account] = false;
         emit MinterRemoved(_account);
     }
@@ -113,7 +113,7 @@ contract LockersManagerLogic is
         nonZeroAddress(_account)
         onlyOwner
     {
-        require(!isBurner(_account), "Lockers: account already has role");
+        require(!burners[_account], "Lockers: account already has role");
         burners[_account] = true;
         emit BurnerAdded(_account);
     }
@@ -125,7 +125,7 @@ contract LockersManagerLogic is
         nonZeroAddress(_account)
         onlyOwner
     {
-        require(isBurner(_account), "Lockers: account does not have role");
+        require(burners[_account], "Lockers: account does not have role");
         burners[_account] = false;
         emit BurnerRemoved(_account);
     }
@@ -150,6 +150,34 @@ contract LockersManagerLogic is
         returns (address)
     {
         return lockerTargetAddress[_lockerLockingScript];
+    }
+
+    /// @notice Return how much TeleBTC can be minted by the Locker
+    /// @param _lockerTargetAddress Locker's target chain address
+    function getLockerCapacity(address _lockerTargetAddress)
+        public
+        view
+        override
+        nonZeroAddress(_lockerTargetAddress)
+        returns (uint256)
+    {
+        uint256 _lockerCollateralInTeleBTC = (LockersManagerLib
+            .lockerCollateralInTeleBTC(
+                lockersMapping[_lockerTargetAddress],
+                libConstants,
+                libParams
+            ) * ONE_HUNDRED_PERCENT) / collateralRatio;
+
+        if (
+            _lockerCollateralInTeleBTC >
+            lockersMapping[_lockerTargetAddress].netMinted
+        ) {
+            return
+                _lockerCollateralInTeleBTC -
+                lockersMapping[_lockerTargetAddress].netMinted;
+        } else {
+            return 0;
+        }
     }
 
     /// @notice Return true if _lockerLockingScript is Locker
@@ -347,7 +375,6 @@ contract LockersManagerLogic is
             _lockerRescueType,
             _lockerRescueScript
         );
-
 
         if (libParams.teleportDAOToken != address(0)) {
             IERC20(libParams.teleportDAOToken).safeTransferFrom(
@@ -845,12 +872,9 @@ contract LockersManagerLogic is
 
         require(_lockerTargetAddress != address(0), "Lockers: address is zero");
 
-        LockersManagerLib.getLockerCapacity(
-            lockersMapping[_lockerTargetAddress],
-            libConstants,
-            libParams,
-            lockersMapping[_lockerTargetAddress].netMinted,
-            _amount
+        require(
+            getLockerCapacity(_lockerTargetAddress) >= _amount,
+            "Lockers: insufficient capacity"
         );
 
         require(isLockerActive(_lockerTargetAddress), "Lockers: not active");
@@ -978,31 +1002,5 @@ contract LockersManagerLogic is
                 libConstants,
                 libParams
             );
-    }
-
-    /// @notice                Check if an account is minter
-    /// @param  account        The account which intended to be checked
-    /// @return bool
-    function isMinter(address account)
-        public
-        view
-        override
-        nonZeroAddress(account)
-        returns (bool)
-    {
-        return minters[account];
-    }
-
-    /// @notice                Check if an account is burner
-    /// @param  account        The account which intended to be checked
-    /// @return bool
-    function isBurner(address account)
-        public
-        view
-        override
-        nonZeroAddress(account)
-        returns (bool)
-    {
-        return burners[account];
     }
 }

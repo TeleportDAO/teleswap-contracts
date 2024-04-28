@@ -9,24 +9,29 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./BurnRouterStorageV2.sol";
 
-contract BurnRouterLogic is BurnRouterStorage, 
-    OwnableUpgradeable, ReentrancyGuardUpgradeable, BurnRouterStorageV2 {
-    
+contract BurnRouterLogic is
+    BurnRouterStorage,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    BurnRouterStorageV2
+{
     error ZeroAddress();
 
     modifier nonZeroAddress(address _address) {
-        if (_address == address(0))
-            revert ZeroAddress();
+        if (_address == address(0)) revert ZeroAddress();
         _;
     }
 
     modifier onlyOracle(address _networkFeeOracle) {
-        require(_networkFeeOracle == bitcoinFeeOracle, "BurnRouterLogic: not oracle");
+        require(
+            _networkFeeOracle == bitcoinFeeOracle,
+            "BurnRouterLogic: not oracle"
+        );
         _;
     }
 
     /// @notice Handles cross-chain burn requests
-    /// @param _startingBlockNumber Requests that are included in a block older 
+    /// @param _startingBlockNumber Requests that are included in a block older
     ///                             than _startingBlockNumber cannot be executed
     /// @param _relay Address of relay contract
     /// @param _lockers Address of lockers contract
@@ -37,15 +42,15 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @param _slasherPercentageReward Percentage of tokens that slasher receives after slashing a locker
     /// @param _networkFee Fee of submitting a transaction on Network
     function initialize(
-        uint _startingBlockNumber,
+        uint256 _startingBlockNumber,
         address _relay,
         address _lockers,
         address _treasury,
         address _teleBTC,
-        uint _transferDeadline,
-        uint _protocolPercentageFee,
-        uint _slasherPercentageReward,
-        uint _networkFee
+        uint256 _transferDeadline,
+        uint256 _protocolPercentageFee,
+        uint256 _slasherPercentageReward,
+        uint256 _networkFee
     ) public initializer {
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
@@ -68,15 +73,21 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @notice Returns true is request has been processed
     /// @param _lockerTargetAddress Locker address on the target chain
     /// @param _index the request for the locker
-    function isTransferred(
-        address _lockerTargetAddress,
-        uint _index
-    ) external view override returns (bool) {
+    function isTransferred(address _lockerTargetAddress, uint256 _index)
+        external
+        view
+        override
+        returns (bool)
+    {
         return burnRequests[_lockerTargetAddress][_index].isTransferred;
     }
 
     /// @notice Setter for starting block number
-    function setStartingBlockNumber(uint _startingBlockNumber) public override onlyOwner {
+    function setStartingBlockNumber(uint256 _startingBlockNumber)
+        public
+        override
+        onlyOwner
+    {
         require(
             _startingBlockNumber > startingBlockNumber,
             "BurnRouterLogic: low startingBlockNumber"
@@ -87,7 +98,12 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @notice Updates relay contract address
     /// @dev Only owner can call this
     /// @param _relay The new relay contract address
-    function setRelay(address _relay) public override onlyOwner nonZeroAddress(_relay) {
+    function setRelay(address _relay)
+        public
+        override
+        onlyOwner
+        nonZeroAddress(_relay)
+    {
         emit NewRelay(relay, _relay);
         relay = _relay;
     }
@@ -95,7 +111,12 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @notice Updates lockers contract address
     /// @dev Only owner can call this
     /// @param _lockers The new lockers contract address
-    function setLockers(address _lockers) public override onlyOwner nonZeroAddress(_lockers) {
+    function setLockers(address _lockers)
+        public
+        override
+        onlyOwner
+        nonZeroAddress(_lockers)
+    {
         emit NewLockers(lockers, _lockers);
         lockers = _lockers;
     }
@@ -103,7 +124,12 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @notice Updates teleBTC contract address
     /// @dev Only owner can call this
     /// @param _teleBTC The new teleBTC contract address
-    function setTeleBTC(address _teleBTC) public override onlyOwner nonZeroAddress(_teleBTC) {
+    function setTeleBTC(address _teleBTC)
+        public
+        override
+        onlyOwner
+        nonZeroAddress(_teleBTC)
+    {
         emit NewTeleBTC(teleBTC, _teleBTC);
         teleBTC = _teleBTC;
     }
@@ -111,7 +137,12 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @notice Updates protocol treasury address
     /// @dev Only owner can call this
     /// @param _treasury The new treasury address
-    function setTreasury(address _treasury) public override onlyOwner nonZeroAddress(_treasury) {
+    function setTreasury(address _treasury)
+        public
+        override
+        onlyOwner
+        nonZeroAddress(_treasury)
+    {
         emit NewTreasury(treasury, _treasury);
         treasury = _treasury;
     }
@@ -120,14 +151,20 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @dev Only owner can call this
     ///      Deadline should be greater than relay finalization parameter
     /// @param _transferDeadline The new transfer deadline
-    function setTransferDeadline(uint _transferDeadline) public override {
-        uint _finalizationParameter = BurnRouterLib.finalizationParameter(relay);
+    function setTransferDeadline(uint256 _transferDeadline) public override {
+        uint256 _finalizationParameter = BurnRouterLib.finalizationParameter(
+            relay
+        );
         require(
-            _msgSender() == owner() || transferDeadline < _finalizationParameter, 
+            _msgSender() == owner() ||
+                transferDeadline < _finalizationParameter,
             "BurnRouterLogic: no permit"
         );
         // Gives lockers enough time to pay cc burn requests
-        require(_transferDeadline > _finalizationParameter, "BurnRouterLogic: low deadline");
+        require(
+            _transferDeadline > _finalizationParameter,
+            "BurnRouterLogic: low deadline"
+        );
         emit NewTransferDeadline(transferDeadline, _transferDeadline);
         transferDeadline = _transferDeadline;
     }
@@ -135,25 +172,49 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @notice Updates protocol percentage fee for burning tokens
     /// @dev Only owner can call this
     /// @param _protocolPercentageFee The new protocol percentage fee
-    function setProtocolPercentageFee(uint _protocolPercentageFee) public override onlyOwner {
-        require(MAX_PROTOCOL_FEE >= _protocolPercentageFee, "BurnRouterLogic: invalid fee");
-        emit NewProtocolPercentageFee(protocolPercentageFee, _protocolPercentageFee);
+    function setProtocolPercentageFee(uint256 _protocolPercentageFee)
+        public
+        override
+        onlyOwner
+    {
+        require(
+            MAX_PROTOCOL_FEE >= _protocolPercentageFee,
+            "BurnRouterLogic: invalid fee"
+        );
+        emit NewProtocolPercentageFee(
+            protocolPercentageFee,
+            _protocolPercentageFee
+        );
         protocolPercentageFee = _protocolPercentageFee;
     }
 
     /// @notice Updates slasher percentage reward for disputing lockers
     /// @dev Only owner can call this
     /// @param _slasherPercentageReward The new slasher percentage reward
-    function setSlasherPercentageReward(uint _slasherPercentageReward) public override onlyOwner {
-        require(MAX_SLASHER_REWARD >= _slasherPercentageReward, "BurnRouterLogic: invalid reward");
-        emit NewSlasherPercentageFee(slasherPercentageReward, _slasherPercentageReward);
+    function setSlasherPercentageReward(uint256 _slasherPercentageReward)
+        public
+        override
+        onlyOwner
+    {
+        require(
+            MAX_SLASHER_REWARD >= _slasherPercentageReward,
+            "BurnRouterLogic: invalid reward"
+        );
+        emit NewSlasherPercentageFee(
+            slasherPercentageReward,
+            _slasherPercentageReward
+        );
         slasherPercentageReward = _slasherPercentageReward;
     }
 
     /// @notice Updates Bitcoin oracle
     /// @dev Only owner can call this
     /// @param _networkFeeOracle Address of oracle who can update burn fee
-    function setNetworkFeeOracle(address _networkFeeOracle) public override onlyOwner {
+    function setNetworkFeeOracle(address _networkFeeOracle)
+        public
+        override
+        onlyOwner
+    {
         emit NewNetworkFeeOracle(bitcoinFeeOracle, _networkFeeOracle);
         bitcoinFeeOracle = _networkFeeOracle;
     }
@@ -161,7 +222,11 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @notice Updates Bitcoin transaction fee
     /// @dev Only owner can call this
     /// @param _networkFee The new Bitcoin transaction fee
-    function setNetworkFee(uint _networkFee) public override onlyOracle(msg.sender) {
+    function setNetworkFee(uint256 _networkFee)
+        public
+        override
+        onlyOracle(msg.sender)
+    {
         emit NewNetworkFee(bitcoinFee, _networkFee);
         bitcoinFee = _networkFee;
     }
@@ -169,16 +234,31 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @notice                             Setter for third party address
     /// @dev                                Only owner can call this
     /// @param _thirdPartyAddress           third party address
-    function setThirdPartyAddress(uint _thirdPartyId, address _thirdPartyAddress) public override onlyOwner {
-        emit NewThirdPartyAddress(_thirdPartyId, thirdPartyAddress[_thirdPartyId], _thirdPartyAddress);
+    function setThirdPartyAddress(
+        uint256 _thirdPartyId,
+        address _thirdPartyAddress
+    ) public override onlyOwner {
+        emit NewThirdPartyAddress(
+            _thirdPartyId,
+            thirdPartyAddress[_thirdPartyId],
+            _thirdPartyAddress
+        );
         thirdPartyAddress[_thirdPartyId] = _thirdPartyAddress;
     }
 
     /// @notice                             Setter for third party fee
     /// @dev                                Only owner can call this
     /// @param _thirdPartyFee               third party fee
-    function setThirdPartyFee(uint _thirdPartyId, uint _thirdPartyFee) public override onlyOwner {
-        emit NewThirdPartyFee(_thirdPartyId, thirdPartyFee[_thirdPartyId], _thirdPartyFee);
+    function setThirdPartyFee(uint256 _thirdPartyId, uint256 _thirdPartyFee)
+        public
+        override
+        onlyOwner
+    {
+        emit NewThirdPartyFee(
+            _thirdPartyId,
+            thirdPartyFee[_thirdPartyId],
+            _thirdPartyFee
+        );
         thirdPartyFee[_thirdPartyId] = _thirdPartyFee;
     }
 
@@ -189,33 +269,36 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @param _userScript User script hash
     /// @param _scriptType User script type
     /// @param _lockerLockingScript	of locker that should execute the burn request
-    /// @param thirdParty Third party id 
+    /// @param thirdParty Third party id
     /// @return Amount of BTC that user receives
     function unwrap(
-        uint _amount,
+        uint256 _amount,
         bytes memory _userScript,
         ScriptTypes _scriptType,
         bytes calldata _lockerLockingScript,
-        uint thirdParty
-    ) external nonReentrant override returns (uint) {
+        uint256 thirdParty
+    ) external override nonReentrant returns (uint256) {
         // Transfers user's teleBTC to contract
         require(
-            ITeleBTC(teleBTC).transferFrom(_msgSender(), address(this), _amount),
+            ITeleBTC(teleBTC).transferFrom(
+                _msgSender(),
+                address(this),
+                _amount
+            ),
             "BurnRouterLogic: transferFrom failed"
         );
 
-        (uint burntAmount) = _unwrap(
+        uint256 burntAmount = _unwrap(
             teleBTC,
             _amount,
-            _amount, 
-            _userScript, 
-            _scriptType, 
+            _amount,
+            _userScript,
+            _scriptType,
             _lockerLockingScript,
             thirdParty
         );
 
         return burntAmount;
-
     }
 
     /// @notice Exchanges input token for teleBTC then burns it
@@ -225,20 +308,20 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @param _isFixedToken True if input token amount is fixed
     /// @param _path of exchanging inputToken to teleBTC
     /// @param _deadline of exchanging
-    /// @param thirdParty Third party id 
+    /// @param thirdParty Third party id
     /// @return Amount of BTC that user receives
     function swapAndUnwrap(
         address _exchangeConnector,
-        uint[] calldata _amounts,
+        uint256[] calldata _amounts,
         bool _isFixedToken,
         address[] calldata _path,
-        uint256 _deadline, 
+        uint256 _deadline,
         bytes memory _userScript,
         ScriptTypes _scriptType,
         bytes calldata _lockerLockingScript,
-        uint thirdParty
-    ) external nonReentrant override returns (uint) {
-        uint _exchangedTeleBTC = _exchange(
+        uint256 thirdParty
+    ) external override nonReentrant returns (uint256) {
+        uint256 _exchangedTeleBTC = _exchange(
             _exchangeConnector,
             _amounts,
             _isFixedToken,
@@ -246,15 +329,16 @@ contract BurnRouterLogic is BurnRouterStorage,
             _deadline
         );
 
-        return _swapAndUnwrap(
-            _amounts[0],
-            _path[0],
-            _exchangedTeleBTC,
-            _userScript,
-            _scriptType,
-            _lockerLockingScript,
-            thirdParty
-        );
+        return
+            _swapAndUnwrap(
+                _amounts[0],
+                _path[0],
+                _exchangedTeleBTC,
+                _userScript,
+                _scriptType,
+                _lockerLockingScript,
+                thirdParty
+            );
     }
 
     /// @notice Checks the correctness of burn proof (which is a Bitcoin tx)
@@ -268,7 +352,7 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @param _index Index of the Bitcoin tx the block
     /// @param _lockerLockingScript Locker's locking script that this burn request belongs to
     /// @param _burnReqIndexes Indexes of requests that locker wants to provide proof for them
-    /// @param _voutIndexes Indexes of outputs that were used to pay burn requests. 
+    /// @param _voutIndexes Indexes of outputs that were used to pay burn requests.
     ///                     _voutIndexes[i] belongs to _burnReqIndexes[i]
     function burnProof(
         bytes4 _version,
@@ -277,11 +361,11 @@ contract BurnRouterLogic is BurnRouterStorage,
         bytes4 _locktime,
         uint256 _blockNumber,
         bytes memory _intermediateNodes,
-        uint _index,
+        uint256 _index,
         bytes memory _lockerLockingScript,
-        uint[] memory _burnReqIndexes,
-        uint[] memory _voutIndexes
-    ) external payable nonReentrant override returns (bool) {
+        uint256[] memory _burnReqIndexes,
+        uint256[] memory _voutIndexes
+    ) external payable override nonReentrant returns (bool) {
         BurnRouterLib.burnProofHelper(
             _blockNumber,
             startingBlockNumber,
@@ -293,7 +377,12 @@ contract BurnRouterLogic is BurnRouterStorage,
         );
 
         // Checks inclusion of transaction
-        bytes32 txId = BitcoinHelper.calculateTxId(_version, _vin, _vout, _locktime);
+        bytes32 txId = BitcoinHelper.calculateTxId(
+            _version,
+            _vin,
+            _vout,
+            _locktime
+        );
         require(
             BurnRouterLib.isConfirmed(
                 relay,
@@ -306,10 +395,11 @@ contract BurnRouterLogic is BurnRouterStorage,
         );
 
         // Get the target address of the locker from its locking script
-        address _lockerTargetAddress = ILockersManager(lockers).getLockerTargetAddress(_lockerLockingScript);
+        address _lockerTargetAddress = ILockersManager(lockers)
+            .getLockerTargetAddress(_lockerLockingScript);
 
         // Checks the paid burn requests
-        uint paidOutputCounter = _checkPaidBurnRequests(
+        uint256 paidOutputCounter = _checkPaidBurnRequests(
             txId,
             _blockNumber,
             _lockerTargetAddress,
@@ -323,10 +413,10 @@ contract BurnRouterLogic is BurnRouterStorage,
             Sets isUsedAsBurnProof of txId true if all the outputs (except one) were used to pay cc burn requests
         */
         BurnRouterLib.updateIsUsedAsBurnProof(
-            isUsedAsBurnProof, 
-            paidOutputCounter, 
-            _vout, 
-            _lockerLockingScript, 
+            isUsedAsBurnProof,
+            paidOutputCounter,
+            _vout,
+            _lockerLockingScript,
             txId
         );
 
@@ -338,8 +428,8 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @param _indices Indices of requests that their deadline has passed
     function disputeBurn(
         bytes calldata _lockerLockingScript,
-        uint[] memory _indices
-    ) external nonReentrant onlyOwner override {
+        uint256[] memory _indices
+    ) external override nonReentrant onlyOwner {
         // Checks if the locking script is valid
         require(
             ILockersManager(lockers).isLocker(_lockerLockingScript),
@@ -347,11 +437,11 @@ contract BurnRouterLogic is BurnRouterStorage,
         );
 
         // Get the target address of the locker from its locking script
-        address _lockerTargetAddress = ILockersManager(lockers).getLockerTargetAddress(_lockerLockingScript);
+        address _lockerTargetAddress = ILockersManager(lockers)
+            .getLockerTargetAddress(_lockerLockingScript);
 
         // Goes through provided indexes of burn requests to see if locker should be slashed
-        for (uint i = 0; i < _indices.length; i++) {
-
+        for (uint256 i = 0; i < _indices.length; i++) {
             BurnRouterLib.disputeBurnHelper(
                 burnRequests,
                 _lockerTargetAddress,
@@ -364,7 +454,8 @@ contract BurnRouterLogic is BurnRouterStorage,
             // Slashes locker and sends the slashed amount to the user
             ILockersManager(lockers).slashIdleLocker(
                 _lockerTargetAddress,
-                burnRequests[_lockerTargetAddress][_indices[i]].amount*slasherPercentageReward/MAX_SLASHER_REWARD, // Slasher reward
+                (burnRequests[_lockerTargetAddress][_indices[i]].amount *
+                    slasherPercentageReward) / MAX_SLASHER_REWARD, // Slasher reward
                 _msgSender(), // Slasher address
                 burnRequests[_lockerTargetAddress][_indices[i]].amount,
                 burnRequests[_lockerTargetAddress][_indices[i]].sender // User address
@@ -374,7 +465,8 @@ contract BurnRouterLogic is BurnRouterStorage,
                 burnRequests[_lockerTargetAddress][_indices[i]].sender,
                 _lockerTargetAddress,
                 _lockerLockingScript,
-                burnRequests[_lockerTargetAddress][_indices[i]].requestIdOfLocker
+                burnRequests[_lockerTargetAddress][_indices[i]]
+                    .requestIdOfLocker
             );
         }
     }
@@ -392,7 +484,7 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @param _outputVout Outputs of the spent transaction
     /// @param _locktimes Locktimes of input and output tx
     /// @param _inputIntermediateNodes Merkle inclusion proof for the malicious transaction
-    /// @param _indexesAndBlockNumbers Indices of malicious input in input tx, 
+    /// @param _indexesAndBlockNumbers Indices of malicious input in input tx,
     ///                                input tx in block and block number of input tx
     function disputeLocker(
         bytes memory _lockerLockingScript,
@@ -403,11 +495,15 @@ contract BurnRouterLogic is BurnRouterStorage,
         bytes memory _outputVout,
         bytes4[] memory _locktimes, // [inputTxLocktime, outputTxLocktime]
         bytes memory _inputIntermediateNodes,
-        uint[] memory _indexesAndBlockNumbers // [inputIndex, inputTxIndex, inputTxBlockNumber]
-    ) external payable nonReentrant onlyOwner override {
-
+        uint256[] memory _indexesAndBlockNumbers // [inputIndex, inputTxIndex, inputTxBlockNumber]
+    ) external payable override nonReentrant onlyOwner {
         // Finds input tx id and checks its inclusion
-        bytes32 _inputTxId = BitcoinHelper.calculateTxId(_versions[0], _inputVin, _inputVout, _locktimes[0]);
+        bytes32 _inputTxId = BitcoinHelper.calculateTxId(
+            _versions[0],
+            _inputVin,
+            _inputVout,
+            _locktimes[0]
+        );
 
         BurnRouterLib.disputeAndSlashLockerHelper(
             lockers,
@@ -422,7 +518,7 @@ contract BurnRouterLogic is BurnRouterStorage,
             _locktimes,
             _inputIntermediateNodes,
             _indexesAndBlockNumbers
-        );     
+        );
 
         // Slashes locker
         _slashLockerForDispute(
@@ -435,20 +531,20 @@ contract BurnRouterLogic is BurnRouterStorage,
 
     /// @notice Burns the exchanged teleBTC
     function _swapAndUnwrap(
-        uint _inputAmount,
+        uint256 _inputAmount,
         address _inputToken,
-        uint _exchangedTeleBTC, 
+        uint256 _exchangedTeleBTC,
         bytes memory _userScript,
         ScriptTypes _scriptType,
         bytes calldata _lockerLockingScript,
-        uint thirdParty
-    ) private returns (uint) {
-        (uint burntAmount) = _unwrap(
+        uint256 thirdParty
+    ) private returns (uint256) {
+        uint256 burntAmount = _unwrap(
             _inputToken,
             _inputAmount,
-            _exchangedTeleBTC, 
-            _userScript, 
-            _scriptType, 
+            _exchangedTeleBTC,
+            _userScript,
+            _scriptType,
             _lockerLockingScript,
             thirdParty
         );
@@ -460,26 +556,38 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @return _burntAmount Amount of BTC that user receives
     function _unwrap(
         address _inputToken,
-        uint _inputAmount,
-        uint _amount,
+        uint256 _inputAmount,
+        uint256 _amount,
         bytes memory _userScript,
         ScriptTypes _scriptType,
         bytes calldata _lockerLockingScript,
-        uint thirdParty
-    ) private returns (uint _burntAmount) {
+        uint256 thirdParty
+    ) private returns (uint256 _burntAmount) {
         // Checks validity of user script
-        BurnRouterLib.checkScriptTypeAndLocker(_userScript, _scriptType, lockers, _lockerLockingScript);
+        BurnRouterLib.checkScriptTypeAndLocker(
+            _userScript,
+            _scriptType,
+            lockers,
+            _lockerLockingScript
+        );
 
         // Gets the target address of locker
-        (uint remainingAmount, uint protocolFee, uint thirdPartyFee) = _getFees(_amount, thirdParty);
+        (
+            uint256 remainingAmount,
+            uint256 protocolFee,
+            uint256 thirdPartyFee
+        ) = _getFees(_amount, thirdParty);
 
         // Burns remained teleBTC
         ITeleBTC(teleBTC).approve(lockers, remainingAmount);
 
         // Reduces the Bitcoin fee to find the amount that user receives (called burntAmount)
-        _burntAmount = (ILockersManager(lockers).burn(_lockerLockingScript, remainingAmount)); 
-        
-        address _lockerTargetAddress = ILockersManager(lockers).getLockerTargetAddress(_lockerLockingScript);
+        _burntAmount = (
+            ILockersManager(lockers).burn(_lockerLockingScript, remainingAmount)
+        );
+
+        address _lockerTargetAddress = ILockersManager(lockers)
+            .getLockerTargetAddress(_lockerLockingScript);
 
         _saveBurnRequest(
             _amount,
@@ -489,18 +597,27 @@ contract BurnRouterLogic is BurnRouterStorage,
             BurnRouterLib.lastSubmittedHeight(relay),
             _lockerTargetAddress
         );
-        
+
         address inputToken = _inputToken;
-        uint[3] memory amounts = [_inputAmount, _amount, _burntAmount];
-        uint[4] memory fees = [bitcoinFee, remainingAmount - _burntAmount, protocolFee, thirdPartyFee];
+        uint256[3] memory amounts = [_inputAmount, _amount, _burntAmount];
+        uint256[4] memory fees = [
+            bitcoinFee,
+            remainingAmount - _burntAmount,
+            protocolFee,
+            thirdPartyFee
+        ];
 
         emit NewUnwrap(
-            _userScript, 
+            _userScript,
             _scriptType,
-            _lockerTargetAddress, 
+            _lockerTargetAddress,
             _msgSender(),
-            burnRequests[_lockerTargetAddress][burnRequests[_lockerTargetAddress].length - 1].requestIdOfLocker, // index of request
-            burnRequests[_lockerTargetAddress][burnRequests[_lockerTargetAddress].length - 1].deadline,
+            burnRequests[_lockerTargetAddress][
+                burnRequests[_lockerTargetAddress].length - 1
+            ].requestIdOfLocker, // index of request
+            burnRequests[_lockerTargetAddress][
+                burnRequests[_lockerTargetAddress].length - 1
+            ].deadline,
             thirdParty,
             inputToken,
             amounts,
@@ -510,29 +627,34 @@ contract BurnRouterLogic is BurnRouterStorage,
 
     /// @notice Exchanges input token for teleBTC
     /// @dev Reverts if exchange fails
-    /// @return Amount of exchanged teleBTC 
+    /// @return Amount of exchanged teleBTC
     function _exchange(
         address _exchangeConnector,
-        uint[] calldata _amounts,
+        uint256[] calldata _amounts,
         bool _isFixedToken,
         address[] calldata _path,
         uint256 _deadline
-    ) private returns (uint) {
-        require(_path[_path.length - 1] == teleBTC, "BurnRouterLogic: invalid path");
+    ) private returns (uint256) {
+        require(
+            _path[_path.length - 1] == teleBTC,
+            "BurnRouterLogic: invalid path"
+        );
         require(_amounts.length == 2, "BurnRouterLogic: wrong amounts");
         // Transfers user's input token
 
         IERC20(_path[0]).transferFrom(_msgSender(), address(this), _amounts[0]);
 
         IERC20(_path[0]).approve(_exchangeConnector, _amounts[0]); // Gives approval to exchange connector
-        (bool result, uint[] memory amounts) = IExchangeConnector(_exchangeConnector).swap(
-            _amounts[0], 
-            _amounts[1], 
-            _path, 
-            address(this), 
-            _deadline, 
-            _isFixedToken
-        );
+        (bool result, uint256[] memory amounts) = IExchangeConnector(
+            _exchangeConnector
+        ).swap(
+                _amounts[0],
+                _amounts[1],
+                _path,
+                address(this),
+                _deadline,
+                _isFixedToken
+            );
         require(result, "BurnRouterLogic: exchange failed");
         return amounts[amounts.length - 1]; // Amount of exchanged teleBTC
     }
@@ -546,18 +668,18 @@ contract BurnRouterLogic is BurnRouterStorage,
         bytes memory _inputVout,
         bytes memory _lockerLockingScript,
         bytes32 _inputTxId,
-        uint _inputBlockNumber
+        uint256 _inputBlockNumber
     ) private {
-
         // Finds total value of malicious transaction
-        uint totalValue = BitcoinHelper.parseOutputsTotalValue(_inputVout);
+        uint256 totalValue = BitcoinHelper.parseOutputsTotalValue(_inputVout);
 
         // Gets the target address of the locker from its Bitcoin address
-        address _lockerTargetAddress = ILockersManager(lockers).getLockerTargetAddress(_lockerLockingScript);
+        address _lockerTargetAddress = ILockersManager(lockers)
+            .getLockerTargetAddress(_lockerLockingScript);
 
         ILockersManager(lockers).slashThiefLocker(
             _lockerTargetAddress,
-            totalValue*slasherPercentageReward/MAX_SLASHER_REWARD, // Slasher reward
+            (totalValue * slasherPercentageReward) / MAX_SLASHER_REWARD, // Slasher reward
             _msgSender(), // Slasher address
             totalValue
         );
@@ -568,7 +690,9 @@ contract BurnRouterLogic is BurnRouterStorage,
             _lockerLockingScript,
             _inputBlockNumber,
             _inputTxId,
-            totalValue + totalValue*slasherPercentageReward/MAX_SLASHER_REWARD
+            totalValue +
+                (totalValue * slasherPercentageReward) /
+                MAX_SLASHER_REWARD
         );
     }
 
@@ -581,13 +705,13 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @return paidOutputCounter Number of executed burn requests
     function _checkPaidBurnRequests(
         bytes32 txId,
-        uint _paidBlockNumber,
+        uint256 _paidBlockNumber,
         address _lockerTargetAddress,
         bytes memory _vout,
-        uint[] memory _burnReqIndexes,
-        uint[] memory _voutIndexes
-    ) private returns (uint paidOutputCounter) {
-        uint parsedAmount;
+        uint256[] memory _burnReqIndexes,
+        uint256[] memory _voutIndexes
+    ) private returns (uint256 paidOutputCounter) {
+        uint256 parsedAmount;
         /*
             Below variable is for checking that every output in vout (except one)
             is related to a cc burn request so that we can
@@ -595,10 +719,9 @@ contract BurnRouterLogic is BurnRouterStorage,
         */
         paidOutputCounter = 0;
 
-        uint tempVoutIndex;
+        uint256 tempVoutIndex;
         // TODO test
-        for (uint i = 0; i < _burnReqIndexes.length; i++) {
-
+        for (uint256 i = 0; i < _burnReqIndexes.length; i++) {
             // prevent from sending repeated vout indexes
             if (i == 0) {
                 tempVoutIndex = _voutIndexes[i];
@@ -612,27 +735,36 @@ contract BurnRouterLogic is BurnRouterStorage,
                 tempVoutIndex = _voutIndexes[i];
             }
 
-            uint _burnReqIndex = _burnReqIndexes[i];
+            uint256 _burnReqIndex = _burnReqIndexes[i];
             // Checks that the request has not been paid and its deadline has not passed
             if (
-                !burnRequests[_lockerTargetAddress][_burnReqIndex].isTransferred &&
-                burnRequests[_lockerTargetAddress][_burnReqIndex].deadline >= _paidBlockNumber
+                !burnRequests[_lockerTargetAddress][_burnReqIndex]
+                    .isTransferred &&
+                burnRequests[_lockerTargetAddress][_burnReqIndex].deadline >=
+                _paidBlockNumber
             ) {
-
-                parsedAmount = BitcoinHelper.parseValueFromSpecificOutputHavingScript(
-                    _vout,
-                    _voutIndexes[i],
-                    burnRequests[_lockerTargetAddress][_burnReqIndex].userScript,
-                    burnRequests[_lockerTargetAddress][_burnReqIndex].scriptType
-                );
+                parsedAmount = BitcoinHelper
+                    .parseValueFromSpecificOutputHavingScript(
+                        _vout,
+                        _voutIndexes[i],
+                        burnRequests[_lockerTargetAddress][_burnReqIndex]
+                            .userScript,
+                        burnRequests[_lockerTargetAddress][_burnReqIndex]
+                            .scriptType
+                    );
 
                 // Checks that locker has sent required teleBTC amount
-                if (burnRequests[_lockerTargetAddress][_burnReqIndex].burntAmount == parsedAmount) {
-                    burnRequests[_lockerTargetAddress][_burnReqIndex].isTransferred = true;
+                if (
+                    burnRequests[_lockerTargetAddress][_burnReqIndex]
+                        .burntAmount == parsedAmount
+                ) {
+                    burnRequests[_lockerTargetAddress][_burnReqIndex]
+                        .isTransferred = true;
                     paidOutputCounter = paidOutputCounter + 1;
                     emit PaidUnwrap(
                         _lockerTargetAddress,
-                        burnRequests[_lockerTargetAddress][_burnReqIndex].requestIdOfLocker,
+                        burnRequests[_lockerTargetAddress][_burnReqIndex]
+                            .requestIdOfLocker,
                         txId,
                         _voutIndexes[i]
                     );
@@ -648,11 +780,11 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @param _lastSubmittedHeight Last block header height submitted on the relay contract
     /// @param _lockerTargetAddress Locker's target chain address that the request belongs to
     function _saveBurnRequest(
-        uint _amount,
-        uint _burntAmount,
+        uint256 _amount,
+        uint256 _burntAmount,
         bytes memory _userScript,
         ScriptTypes _scriptType,
-        uint _lastSubmittedHeight,
+        uint256 _lastSubmittedHeight,
         address _lockerTargetAddress
     ) private {
         burnRequest memory request;
@@ -664,7 +796,9 @@ contract BurnRouterLogic is BurnRouterStorage,
         request.deadline = _lastSubmittedHeight + transferDeadline;
         request.isTransferred = false;
         request.requestIdOfLocker = burnRequestCounter[_lockerTargetAddress];
-        burnRequestCounter[_lockerTargetAddress] = burnRequestCounter[_lockerTargetAddress] + 1;
+        burnRequestCounter[_lockerTargetAddress] =
+            burnRequestCounter[_lockerTargetAddress] +
+            1;
         burnRequests[_lockerTargetAddress].push(request);
     }
 
@@ -674,19 +808,29 @@ contract BurnRouterLogic is BurnRouterStorage,
     /// @return remainingAmount amount after reducing fees
     /// @return _protocolFee fee of protocol
     /// @return _thirdPartyFee fee of third party
-    function _getFees(
-        uint _amount,
-        uint _thirdParty
-    ) private returns (uint remainingAmount, uint _protocolFee, uint _thirdPartyFee) {
-        // Calculates protocol fee
-        _protocolFee = _amount * protocolPercentageFee / MAX_PROTOCOL_FEE;
-        _thirdPartyFee = _amount * thirdPartyFee[_thirdParty] / MAX_PROTOCOL_FEE;
-        // note: to avoid dust, we require _amount to be greater than (2  * networkFee)
-        require(_amount > _protocolFee + 2 * bitcoinFee, "BurnRouterLogic: low amount");
-       
+    function _getFees(uint256 _amount, uint256 _thirdParty)
+        private
+        returns (
+            uint256 remainingAmount,
+            uint256 _protocolFee,
+            uint256 _thirdPartyFee
+        )
+    {
+        // Find protocol and third-party fee
+        _protocolFee = (_amount * protocolPercentageFee) / MAX_PROTOCOL_FEE;
+        _thirdPartyFee =
+            (_amount * thirdPartyFee[_thirdParty]) /
+            MAX_PROTOCOL_FEE;
+
         remainingAmount = _amount - _protocolFee - _thirdPartyFee - bitcoinFee;
 
-        // Transfers protocol fee
+        // Note: to avoid dust amount, we require remainingAmount to be greater than networkFee
+        require(
+            remainingAmount >= bitcoinFee,
+            "BurnRouterLogic: low amount"
+        );
+
+        // Send protocol fee
         if (_protocolFee > 0) {
             require(
                 ITeleBTC(teleBTC).transfer(treasury, _protocolFee),
@@ -694,10 +838,13 @@ contract BurnRouterLogic is BurnRouterStorage,
             );
         }
 
-        // Transfers third party fee
+        // Send third party fee
         if (_thirdPartyFee > 0) {
             require(
-                ITeleBTC(teleBTC).transfer(thirdPartyAddress[_thirdParty], _thirdPartyFee),
+                ITeleBTC(teleBTC).transfer(
+                    thirdPartyAddress[_thirdParty],
+                    _thirdPartyFee
+                ),
                 "BurnRouterLogic: third party fee transfer failed"
             );
         }
@@ -709,5 +856,4 @@ contract BurnRouterLogic is BurnRouterStorage,
             );
         }
     }
-
 }
