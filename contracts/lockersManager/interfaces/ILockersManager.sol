@@ -58,12 +58,25 @@ interface ILockersManager {
         uint inactivationDelay;
     }
 
+    struct becomeLockerArguments {
+        ILockersManager.lockersLibConstants libConstants;
+        ILockersManager.lockersLibParam libParams;
+        address theLockerTargetAddress;
+        address collateralToken;
+        uint256 _lockedTDTAmount;
+        uint256 _lockedNativeTokenAmount;
+        bytes _candidateLockingScript;
+        ScriptTypes _lockerRescueType;
+        bytes _lockerRescueScript;
+    }
+
      // Events
 
     event RequestAddLocker(
         address indexed lockerTargetAddress,
         bytes lockerLockingScript,
         uint TDTLockedAmount,
+        address indexed collateralToken,
         uint nativeTokenLockedAmount
     );
 
@@ -71,6 +84,7 @@ interface ILockersManager {
         address indexed lockerTargetAddress,
         bytes lockerLockingScript,
         uint TDTLockedAmount,
+        address indexed collateralToken,
         uint nativeTokenLockedAmount
     );
 
@@ -79,6 +93,7 @@ interface ILockersManager {
         uint indexed inactivationTimestamp,
         bytes lockerLockingScript,
         uint TDTLockedAmount,
+        address indexed collateralToken,
         uint nativeTokenLockedAmount,
         uint netMinted
     );
@@ -87,6 +102,7 @@ interface ILockersManager {
         address indexed lockerTargetAddress,
         bytes lockerLockingScript,
         uint TDTLockedAmount,
+        address indexed collateralToken,
         uint nativeTokenLockedAmount,
         uint netMinted
     );
@@ -95,19 +111,23 @@ interface ILockersManager {
         address indexed lockerTargetAddress,
         bytes lockerLockingScript,
         uint TDTLockedAmount,
+        address indexed collateralToken,
         uint nativeTokenLockedAmount,
-        uint addingTime
+        uint addingTime,
+        uint reliabilityFactor
     );
 
     event LockerRemoved(
         address indexed lockerTargetAddress,
         bytes lockerLockingScript,
         uint TDTUnlockedAmount,
+        address indexed collateralToken,
         uint nativeTokenUnlockedAmount
     );
 
     event LockerSlashed(
         address indexed lockerTargetAddress,
+        address collateralToken,
         uint rewardAmount,
         address indexed rewardRecipient,
         uint amount,
@@ -120,6 +140,7 @@ interface ILockersManager {
     event LockerLiquidated(
         address indexed lockerTargetAddress,
         address indexed liquidatorAddress,
+        address indexed collateralToken,
         uint collateralAmount,
         uint teleBTCAmount,
         uint liquidateTime
@@ -128,6 +149,7 @@ interface ILockersManager {
     event LockerSlashedCollateralSold(
         address indexed lockerTargetAddress,
         address indexed buyerAddress,
+        address indexed collateralToken,
         uint slashingAmount,
         uint teleBTCAmount,
         uint slashingTime
@@ -135,6 +157,7 @@ interface ILockersManager {
 
     event CollateralAdded(
         address indexed lockerTargetAddress,
+        address indexed collateralToken,
         uint addedCollateral,
         uint totalCollateral,
         uint addingTime
@@ -142,6 +165,7 @@ interface ILockersManager {
 
     event CollateralRemoved(
         address indexed lockerTargetAddress,
+        address indexed collateralToken,
         uint removedCollateral,
         uint totalCollateral,
         uint removingTime
@@ -160,6 +184,11 @@ interface ILockersManager {
         uint burntAmount,
         uint lockerFee,
         uint burningTime
+    );
+
+    event NewCollateralToken(
+        address token,
+        uint decimal
     );
 
     event MinterAdded(
@@ -181,6 +210,12 @@ interface ILockersManager {
     event NewLockerPercentageFee(
         uint oldLockerPercentageFee,
         uint newLockerPercentageFee
+    );
+
+    event NewReliabilityFactor(
+        address lockerTargetAddress,
+        uint oldReliabilityFactor,
+        uint newReliabilityFactor
     );
 
     event NewPriceWithDiscountRatio(
@@ -266,7 +301,7 @@ interface ILockersManager {
 
     function isLockerActive(address _lockerTargetAddress) external view returns (bool);
 
-    function priceOfOneUnitOfCollateralInBTC() external view returns (uint);
+    function priceOfOneUnitOfCollateralInBTC(address _token) external view returns (uint);
 
     function isMinter(address account) external view returns(bool);
 
@@ -278,6 +313,8 @@ interface ILockersManager {
 
     function unPauseLocker() external;
 
+    function addCollateralToken (address _token, uint _decimal) external;
+    
     function addMinter(address _account) external;
 
     function removeMinter(address _account) external;
@@ -306,6 +343,8 @@ interface ILockersManager {
 
     function setTeleBTC(address _teleBTC) external;
 
+    function setLockerReliabilityFactor(address _lockerTargetAddress, uint _reliabilityFactor) external;
+
     function setCollateralRatio(uint _collateralRatio) external;
 
     function setLiquidationRatio(uint _liquidationRatio) external;
@@ -326,6 +365,7 @@ interface ILockersManager {
 
     function requestToBecomeLocker(
         bytes calldata _lockerLockingScript,
+        address _collateralToken,
         uint _lockedTSTAmount,
         uint _lockedNativeTokenAmount,
         ScriptTypes _lockerRescueType,
@@ -334,7 +374,7 @@ interface ILockersManager {
 
     function revokeRequest() external returns (bool);
 
-    function addLocker(address _lockerTargetAddress) external returns (bool);
+    function addLocker(address _lockerTargetAddress, uint256 _lockerReliabilityFactor) external returns (bool);
 
     function requestInactivation() external returns (bool);
 
