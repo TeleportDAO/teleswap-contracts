@@ -4,55 +4,36 @@ pragma solidity >=0.8.0 <=0.8.4;
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 
 interface IEthConnectorLogic {
-
     // Events
 
     event MsgSent(
-        uint uniqueCounter,
+        uint256 uniqueCounter,
         string functionName,
         bytes data,
-        address sourceChainInputToken, 
-        uint amount
+        address sourceChainInputToken,
+        uint256 amount
     );
 
-    event MinAmountUpdated(
-        address token, 
-        uint minAmount
-    );
+    event AcrossUpdated(address oldAcross, address newAcross);
 
-    event MinModifierUpdated( 
-        uint oldMinModifier,
-        uint newMinModifier
-    );
-
-    event AcrossUpdated( 
-        address oldAcross,
-        address newAcross
-    );
-
-    event PolygonConnectorUpdated( 
+    event PolygonConnectorUpdated(
         address oldPolygonConnector,
         address newPolygonConnector
     );
 
-    event PolygonTeleBtcUpdated( 
+    event PolygonTeleBtcUpdated(
         address oldPolygonTeleBtc,
         address newPolygonTeleBtc
     );
 
-    event WrappedNativeTokenUpdated( 
+    event WrappedNativeTokenUpdated(
         address oldWrappedNativeToken,
         address newWrappedNativeToken
     );
 
-
     function setAcross(address _across) external;
 
     function setPolygonConnectorProxy(address _polygonConnector) external;
-
-    function setMinAmount(address _token, uint _minAmount) external;
-
-    function setMinModifier(uint _minModifier) external;
 
     function setPolygonTeleBTC(address _polygonTeleBTC) external;
 
@@ -61,19 +42,18 @@ interface IEthConnectorLogic {
     function exchangeForBtcAcross(
         address _token,
         address _exchangeConnector,
-        uint[] calldata _amounts,
+        uint256[] calldata _amounts,
         address[] calldata _path,
         bytes memory _userScript,
         ScriptTypes _scriptType,
         bytes calldata _lockerLockingScript,
         int64 _relayerFeePercentage,
-        uint thirdParty
-	) external payable;
+        uint256 thirdParty
+    ) external payable;
 
     function emergencyWithdraw(
         address _token,
         address _to,
-        uint _amount
+        uint256 _amount
     ) external;
-
 }
