@@ -11,7 +11,7 @@
 	"acceptable_delay": 7200,
 	"chain_id": 137,
 	"treasury": "0x4234c3aBeA751301579448594D3EA2398452a982",
-	"across": "0x4234c3aBeA751301579448594D3EA2398452a982",
+	"across": "0xC70e09dE70B69f0914c53D5777226DC3192673cd",
 	"chain_link_oracles": {
 		"matic_usd": "0x001382149eBa3441043c1c66972b4772963f5D43",
 		"btc_usd": "0xe7656e23fE8077D438aEfbec2fAbDf2D8e070C4f",

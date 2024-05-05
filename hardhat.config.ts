@@ -48,6 +48,11 @@ const config: HardhatUserConfig = {
 			chainId: 1,
 			accounts: [process.env.PRIVATE_KEY ?? ""]
 		},
+		sepolia: {
+			url: "https://ethereum-sepolia-rpc.publicnode.com",
+			chainId: 11155111,
+			accounts: [process.env.PRIVATE_KEY ?? ""]
+		},
 		polygon: {
 			url: "https://rpc-mainnet.maticvigil.com/",
 			chainId: 137,
@@ -59,7 +64,7 @@ const config: HardhatUserConfig = {
 			accounts: [process.env.PRIVATE_KEY ?? ""]
 		},
 		amoy: {
-			url: "https://polygon-amoy-bor-rpc.publicnode.com",
+			url: "https://rpc-amoy.polygon.technology",
 			chainId: 80002,
 			accounts: [process.env.PRIVATE_KEY ?? ""]
 		},
@@ -92,7 +97,6 @@ const config: HardhatUserConfig = {
 		},
   	},
   	gasReporter: {
-		// enabled: process.env.REPORT_GAS !== undefined,
 		enabled: true,
 		currency: "USD",
   	},

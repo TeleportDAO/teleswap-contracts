@@ -1,11 +1,16 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
+// import config from 'config'
+// import { BigNumber } from 'ethers';
+import verify from "../helper-functions";
+
+import * as dotenv from "dotenv";
+dotenv.config();
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts, network } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
-
     if (
         network.name == "hardhat" ||
         network.name == "amoy" ||
@@ -13,17 +18,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         network.name == "bsc" ||
         network.name == "bsc_testnet"
     ) {
-        const tokenName = "TeleportSystemToken";
-        const tokenSymbol = "TST";
-
-        await deploy("ERC20", {
+        const deployedContract = await deploy("CcTransferRouterLogic", {
             from: deployer,
             log: true,
             skipIfAlreadyDeployed: true,
-            args: [tokenName, tokenSymbol],
         });
+
+        if (
+            network.name != "hardhat" &&
+            process.env.ETHERSCAN_API_KEY &&
+            process.env.VERIFY_OPTION == "1"
+        ) {
+            await verify(
+                deployedContract.address,
+                [],
+                "contracts/routers/CcTransferRouterLogic.sol:CcTransferRouterLogic"
+            );
+        }
     }
 };
 
 export default func;
-func.tags = ["TeleportSystemToken"];
+func.tags = ["CcTransferRouterLogic"];

@@ -60,6 +60,7 @@
 		"test": "hardhat test",
 		"deploy": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json",
 		"config": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json --deploy-scripts scripts",
+		"config-connector": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json --deploy-scripts scripts/connector",
 		"lint": "commitlint --from=HEAD",
 		"prepare": "husky install"
 	}
