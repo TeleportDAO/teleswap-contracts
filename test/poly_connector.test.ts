@@ -180,7 +180,6 @@ describe("PolyConnector", async () => {
             mockLockers.address,
             burnRouter.address,
             acrossAddress,
-            acrossAddress,
             137
         );
 
@@ -189,7 +188,6 @@ describe("PolyConnector", async () => {
         await PolyConnectorWithMockedAccross.initialize(
             mockLockers.address,
             burnRouter.address,
-            signer1Address,
             signer1Address,
             137
         );
@@ -469,15 +467,15 @@ describe("PolyConnector", async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
-        //write test setEthConnectorProxy and getEthConnectorProxy
-        it("should set and get the EthConnectorProxy", async () => {
-            await PolyConnector.setEthConnectorProxy(mockExchangeConnector.address);
-            expect(await PolyConnector.ethConnectorProxy()).to.equal(mockExchangeConnector.address);
+        //write test setSourceChainConnector and getSourceChainConnectorProxy
+        it("should set and get the SourceChainConnectorProxy", async () => {
+            await PolyConnector.setSourceChainConnector(mockExchangeConnector.address);
+            expect(await PolyConnector.sourceChainConnector()).to.equal(mockExchangeConnector.address);
         });
 
-        //write test setEthConnectorProxy that only owner can change
-        it("should not set the EthConnectorProxy if not owner", async () => {
-            await expect(PolyConnector.connect(signer1).setEthConnectorProxy(mockExchangeConnector.address)).to.be.revertedWith("Ownable: caller is not the owner");
+        //write test setSourceChainConnector that only owner can change
+        it("should not set the SourceChainConnectorProxy if not owner", async () => {
+            await expect(PolyConnector.connect(signer1).setSourceChainConnector(mockExchangeConnector.address)).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
         //write test setLockerProxy and getLockerProxy
@@ -514,23 +512,23 @@ describe("PolyConnector", async () => {
             await expect(PolyConnector.connect(signer1).setAcross(mockAcross.address)).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
-        //write test setAcrossV3 and getAcrossV3
+        //write test setAcross and getAcrossV3
         it("should set and get the AcrossV3", async () => {
-            await PolyConnector.setAcrossV3(mockAcross.address);
-            expect(await PolyConnector.acrossV3()).to.equal(mockAcross.address);
+            await PolyConnector.setAcross(mockAcross.address);
+            expect(await PolyConnector.across()).to.equal(mockAcross.address);
         });
 
-        //write test setAcrossV3 that only owner can change
+        //write test setAcross that only owner can change
         it("should not set the AcrossV3 if not owner", async () => {
-            await expect(PolyConnector.connect(signer1).setAcrossV3(mockAcross.address)).to.be.revertedWith("Ownable: caller is not the owner");
+            await expect(PolyConnector.connect(signer1).setAcross(mockAcross.address)).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
         it("can't set addresses to zero address", async () => {
-            await expect(PolyConnector.setEthConnectorProxy(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
+            await expect(PolyConnector.setSourceChainConnector(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
             await expect(PolyConnector.setLockersProxy(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
             await expect(PolyConnector.setBurnRouterProxy(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
             await expect(PolyConnector.setAcross(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
-            await expect(PolyConnector.setAcrossV3(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
+            await expect(PolyConnector.setAcross(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
         });
 
 
@@ -645,204 +643,6 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     message
                 )
-            ).to.be.revertedWith("PolygonConnectorLogic: not acrossV3");
-        });
-
-        it("should not handle across message if purpose is not exchangeForBtcAcross", async () => {
-
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes',
-                'uint'
-            ], [
-                "test",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                0
-            ])
-
-            await expect(
-                PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
-                    inputToken.address,
-                    requestAmount,
-                    signer1Address,
-                    message
-                )
-            ).to.not.emit(PolyConnector, "NewBurn");
-        });
-
-        it("should not handle across message if ccExchangeAndBurn fails", async () => {
-            await setLockersIsLocker(false);
-
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes',
-                'uint'
-            ], [
-                "exchangeForBtcAcross",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                0
-            ])
-
-            await setSwap(false, [requestAmount, telebtcAmount])
-
-            await expect(
-                PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
-                    inputToken.address,
-                    requestAmount,
-                    signer1Address,
-                    message
-                )
-            ).to.emit(PolyConnector, "FailedBurn").withArgs(
-                mockExchangeConnector.address,
-                inputToken.address,
-                requestAmount,
-                signer1Address,
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                [inputToken.address, teleBTC.address]
-            );
-        });
-    });
-
-    describe("#Handle across message", async () => {
-
-        let protocolFee = Math.floor(telebtcAmount*PROTOCOL_PERCENTAGE_FEE/10000);
-        
-        beforeEach(async () => {
-            // Sends teleBTC to burnRouter (since we mock swap)
-
-            snapshotId = await takeSnapshot(signer1.provider);
-
-            await TeleBTCSigner1.transfer(
-                burnRouter.address,
-                telebtcAmount
-            );
-
-        });
-
-        afterEach(async () => {
-            await revertProvider(signer1.provider, snapshotId);
-        });
-
-        it("should handle across message", async () => {
-
-            let burntAmount: number;
-            burntAmount = telebtcAmount - BITCOIN_FEE - protocolFee;
-
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes',
-                'uint'
-            ], [
-                "exchangeForBtcAcross",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                0
-            ])
-
-            await setLockersBurnReturn(burntAmount);
-            
-            await inputToken.transfer(
-                PolyConnector.address,
-                requestAmount
-            );
-
-            await expect(
-                PolyConnector.connect(acrossSinger).handleAcrossMessage(
-                    inputToken.address,
-                    requestAmount,
-                    true,
-                    signer1Address,
-                    message
-                )
-            ).to.emit(PolyConnector, "NewBurn").withArgs(
-                mockExchangeConnector.address,
-                inputToken.address,
-                requestAmount,
-                signer1Address,
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER_TARGET_ADDRESS,
-                0,
-                [inputToken.address, teleBTC.address]
-            );
-        });
-
-        it("should not handle across message if not across", async () => {
-
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes',
-                'uint'
-            ], [
-                "exchangeForBtcAcross",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                0
-            ])
-
-            await expect(
-                PolyConnector.connect(signer1).handleAcrossMessage(
-                    inputToken.address,
-                    requestAmount,
-                    true,
-                    signer1Address,
-                    message
-                )
             ).to.be.revertedWith("PolygonConnectorLogic: not across");
         });
 
@@ -873,10 +673,9 @@ describe("PolyConnector", async () => {
             ])
 
             await expect(
-                PolyConnector.connect(acrossSinger).handleAcrossMessage(
+                PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
                     inputToken.address,
                     requestAmount,
-                    true,
                     signer1Address,
                     message
                 )
@@ -913,10 +712,9 @@ describe("PolyConnector", async () => {
             await setSwap(false, [requestAmount, telebtcAmount])
 
             await expect(
-                PolyConnector.connect(acrossSinger).handleAcrossMessage(
+                PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
                     inputToken.address,
                     requestAmount,
-                    true,
                     signer1Address,
                     message
                 )

@@ -3,7 +3,7 @@ pragma solidity >=0.8.0 <=0.8.4;
 
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 
-interface IEthConnectorLogic {
+interface IEthConnector {
     // Events
 
     event MsgSent(
@@ -16,9 +16,9 @@ interface IEthConnectorLogic {
 
     event AcrossUpdated(address oldAcross, address newAcross);
 
-    event PolygonConnectorUpdated(
-        address oldPolygonConnector,
-        address newPolygonConnector
+    event TargetChainConnectorUpdated(
+        address oldTargetChainConnector,
+        address newTargetChainConnector
     );
 
     event PolygonTeleBtcUpdated(
@@ -33,9 +33,9 @@ interface IEthConnectorLogic {
 
     function setAcross(address _across) external;
 
-    function setPolygonConnectorProxy(address _polygonConnector) external;
+    function setTargetChainConnectorProxy(address _targetChainConnector) external;
 
-    function setPolygonTeleBTC(address _polygonTeleBTC) external;
+    function setTargetChainTeleBTC(address _targetChainTeleBTC) external;
 
     function setWrappedNativeToken(address _wrappedNativeToken) external;
 

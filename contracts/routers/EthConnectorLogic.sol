@@ -7,125 +7,71 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./EthConnectorStorage.sol";
-import "./interfaces/IEthConnectorLogic.sol";
+import "./interfaces/IEthConnector.sol";
 
-contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage, 
-    OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
-
+contract EthConnectorLogic is
+    IEthConnector,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    PausableUpgradeable,
+    EthConnectorStorage
+{
     error ZeroAddress();
 
     modifier nonZeroAddress(address _address) {
-        if (_address == address(0))
-            revert ZeroAddress();
+        if (_address == address(0)) revert ZeroAddress();
         _;
     }
 
     function initialize(
-        address _polygonTeleBTC,
+        address _targetChainTeleBTC,
         address _across,
         address _wrappedNativeToken,
-        uint _targetChainId
+        uint256 _targetChainId
     ) public initializer {
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
         PausableUpgradeable.__Pausable_init();
-        
-        _setPolygonTeleBTC(_polygonTeleBTC);
+
+        _setTargetChainTeleBTC(_targetChainTeleBTC);
         _setAcross(_across);
         _setWrappedNativeToken(_wrappedNativeToken);
         targetChainId = _targetChainId;
-        _setMinModifier(ONE_HUNDRED_PERCENT);
         uniqueCounter = 0;
     }
 
-    /// @notice Setter for min exchange amount of a token
-    /// @dev Exchanging below the min amount is not possible since withdrawing 
-    ///      funds in the case of failure becomes impossible (due to Across bridge fee)
-    function setMinAmount(address _token, uint _minAmount) external override onlyOwner nonZeroAddress(_token){
-        _setMinAmount(_token, _minAmount);
-    }
-
-    /// @notice Setter for min amount modifier
-    /// @dev In the case of network fee changes, instead of 
-    ///      updating min amount for all tokens, we only update this modifier
-    function setMinModifier(uint _minModifier) external override onlyOwner {
-        _setMinModifier(_minModifier);
-    }
+    receive() external payable {}
 
     /// @notice Setter for Across
     function setAcross(address _across) external override onlyOwner {
         _setAcross(_across);
     }
 
-    /// @notice Setter for PolygonConnectorProxy
-    function setPolygonConnectorProxy(address _polygonConnectorProxy) external override onlyOwner {
-        _setPolygonConnectorProxy(_polygonConnectorProxy);
+    /// @notice Setter for TargetChainConnectorProxy
+    function setTargetChainConnectorProxy(address _targetChainConnectorProxy)
+        external
+        override
+        onlyOwner
+    {
+        _setTargetChainConnectorProxy(_targetChainConnectorProxy);
     }
 
-    /// @notice Setter for PolygonTeleBTC
-    function setPolygonTeleBTC(address _polygonTeleBTC) external override onlyOwner {
-        _setPolygonTeleBTC(_polygonTeleBTC);
+    /// @notice Setter for TargetChainTeleBTC
+    function setTargetChainTeleBTC(address _targetChainTeleBTC)
+        external
+        override
+        onlyOwner
+    {
+        _setTargetChainTeleBTC(_targetChainTeleBTC);
     }
 
     /// @notice Setter for WrappedNativeToken
-    function setWrappedNativeToken(address _wrappedNativeToken) external override onlyOwner {
+    function setWrappedNativeToken(address _wrappedNativeToken)
+        external
+        override
+        onlyOwner
+    {
         _setWrappedNativeToken(_wrappedNativeToken);
-    }
-
-    // 
-
-    function _setMinAmount(address _token, uint _minAmount) nonZeroAddress(_token) private {
-        emit MinAmountUpdated(
-            _token,
-            _minAmount
-        );
-
-        minAmounts[_token] = _minAmount;
-    }
-
-    function _setMinModifier(uint _minModifier) private {
-        emit MinModifierUpdated(
-            minModifier,
-            _minModifier
-        );
-
-        minModifier = _minModifier;
-    }
-
-    function _setAcross(address _across) private nonZeroAddress(_across){
-        emit AcrossUpdated(
-            across,
-            _across
-        );
-
-        across = _across;
-    }
-
-    function _setPolygonConnectorProxy(address _polygonConnectorProxy) private nonZeroAddress(_polygonConnectorProxy){
-        emit PolygonConnectorUpdated(
-            polygonConnectorProxy,
-            _polygonConnectorProxy
-        );
-
-        polygonConnectorProxy = _polygonConnectorProxy;
-    }
-
-    function _setPolygonTeleBTC(address _polygonTeleBTC) private nonZeroAddress(_polygonTeleBTC){
-        emit PolygonTeleBtcUpdated(
-            polygonTeleBTC,
-            _polygonTeleBTC
-        );
-        
-        polygonTeleBTC = _polygonTeleBTC;
-    }
-
-    function _setWrappedNativeToken(address _wrappedNativeToken) private nonZeroAddress(_wrappedNativeToken){
-        emit WrappedNativeTokenUpdated(
-            wrappedNativeToken,
-            _wrappedNativeToken
-        );
-        
-        wrappedNativeToken = _wrappedNativeToken;
     }
 
     /// @notice Withdraws tokens in the emergency case
@@ -133,12 +79,10 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
     function emergencyWithdraw(
         address _token,
         address _to,
-        uint _amount
+        uint256 _amount
     ) external override onlyOwner {
-        if (_token == ETH_ADDR) 
-            _to.call{value: _amount}("");
-        else
-            IERC20(_token).transfer(_to, _amount);
+        if (_token == ETH_ADDR) _to.call{value: _amount}("");
+        else IERC20(_token).transfer(_to, _amount);
     }
 
     /// @notice Requests exchanging token for BTC
@@ -154,32 +98,31 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
     function exchangeForBtcAcross(
         address _token,
         address _exchangeConnector,
-        uint[] calldata _amounts,
+        uint256[] calldata _amounts,
         address[] calldata _path,
         bytes memory _userScript,
         ScriptTypes _scriptType,
         bytes calldata _lockerLockingScript,
         int64 _relayerFeePercentage,
-        uint thirdParty
-	) external payable override nonReentrant() {
-
+        uint256 thirdParty
+    ) external payable override nonReentrant {
         _checkRequest(_token, _amounts, _path);
 
         // Sends msg to Polygon
-        
+
         bytes memory message = abi.encode(
             "exchangeForBtcAcross",
             uniqueCounter,
             msg.sender,
-            _exchangeConnector, 
+            _exchangeConnector,
             _amounts[1], // Min output amount to receive
-            _path, 
+            _path,
             _userScript,
             _scriptType,
             _lockerLockingScript,
             thirdParty
         );
-        
+
         emit MsgSent(
             uniqueCounter,
             "putBidAcross",
@@ -201,11 +144,10 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
     /// @notice Sends tokens and message using Across bridge
     function _sendMsgUsingAcross(
         address _token,
-        uint _amount,
+        uint256 _amount,
         bytes memory _message,
         int64 _relayerFeePercentage
     ) internal {
-
         if (_token == ETH_ADDR) {
             require(msg.value == _amount, "EthManagerLogic: wrong value");
             _token = wrappedNativeToken;
@@ -213,16 +155,9 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
             require(msg.value == 0, "EthManagerLogic: wrong value");
 
             // Transfers tokens from user to contract
-            IERC20(_token).transferFrom(
-                msg.sender,
-                address(this),
-                _amount
-            );
+            IERC20(_token).transferFrom(msg.sender, address(this), _amount);
 
-            IERC20(_token).approve(
-                across, 
-                _amount
-            );
+            IERC20(_token).approve(across, _amount);
         }
 
         // Calling across for transferring token and msg
@@ -230,7 +165,7 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
             across,
             abi.encodeWithSignature(
                 "deposit(address,address,uint256,uint256,int64,uint32,bytes,uint256)",
-                polygonConnectorProxy,
+                targetChainConnectorProxy,
                 _token,
                 _amount,
                 targetChainId,
@@ -240,37 +175,58 @@ contract EthConnectorLogic is IEthConnectorLogic, EthConnectorStorage,
                 115792089237316195423570985008687907853269984665640564039457584007913129639935
             ),
             msg.value
-        );  
+        );
     }
 
     /// @notice Checks validity of request
-    /// @dev Token should be acceptable, input amount should be >= min, 
-    ///      last token of path should be teleBTC, and amounts array length should be 2 
+    /// @dev Token should be acceptable, input amount should be >= min,
+    ///      last token of path should be teleBTC, and amounts array length should be 2
     function _checkRequest(
         address _token,
-        uint[] calldata _amounts,
+        uint256[] calldata _amounts,
         address[] calldata _path
     ) internal view {
-        // Checks that amount is greater than min
-        // Note: if the amount is lower than min, 
-        //       it may become impossible to withdraw funds in future
         require(
-            minAmounts[_token] > 0,
-            "EthManagerLogic: token not supported"
-        );
-        require(
-            _amounts[0] >= (minAmounts[_token] * minModifier / ONE_HUNDRED_PERCENT),
-            "EthManagerLogic: low amount"
-        );
-
-        //TODO remove this check
-        require(
-            _path[_path.length - 1] == polygonTeleBTC, 
+            _path[_path.length - 1] == targetChainTeleBTC,
             "EthManagerLogic: invalid path"
         );
 
         require(_amounts.length == 2, "EthManagerLogic: wrong amounts");
     }
 
-    receive() external payable {}
+    function _setAcross(address _across) private nonZeroAddress(_across) {
+        emit AcrossUpdated(across, _across);
+
+        across = _across;
+    }
+
+    function _setTargetChainConnectorProxy(address _targetChainConnectorProxy)
+        private
+        nonZeroAddress(_targetChainConnectorProxy)
+    {
+        emit TargetChainConnectorUpdated(
+            targetChainConnectorProxy,
+            _targetChainConnectorProxy
+        );
+
+        targetChainConnectorProxy = _targetChainConnectorProxy;
+    }
+
+    function _setTargetChainTeleBTC(address _targetChainTeleBTC)
+        private
+        nonZeroAddress(_targetChainTeleBTC)
+    {
+        emit PolygonTeleBtcUpdated(targetChainTeleBTC, _targetChainTeleBTC);
+
+        targetChainTeleBTC = _targetChainTeleBTC;
+    }
+
+    function _setWrappedNativeToken(address _wrappedNativeToken)
+        private
+        nonZeroAddress(_wrappedNativeToken)
+    {
+        emit WrappedNativeTokenUpdated(wrappedNativeToken, _wrappedNativeToken);
+
+        wrappedNativeToken = _wrappedNativeToken;
+    }
 }

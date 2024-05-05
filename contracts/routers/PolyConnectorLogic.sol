@@ -11,17 +11,21 @@ import "./interfaces/IBurnRouter.sol";
 import "./BurnRouterStorage.sol";
 import "../lockersManager/interfaces/ILockersManager.sol";
 import "./PolyConnectorStorage.sol";
-import "./interfaces/IPolyConnectorLogic.sol";
+import "./interfaces/IPolyConnector.sol";
 import "./interfaces/AcrossMessageHandler.sol";
 
-contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage, 
-    OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable, AcrossMessageHandler {
-
+contract PolyConnectorLogic is
+    IPolyConnector,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    PausableUpgradeable,
+    AcrossMessageHandler,
+    PolyConnectorStorage
+{
     error ZeroAddress();
 
     modifier nonZeroAddress(address _address) {
-        if (_address == address(0))
-            revert ZeroAddress();
+        if (_address == address(0)) revert ZeroAddress();
         _;
     }
 
@@ -29,7 +33,6 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
         address _lockersProxy,
         address _burnRouterProxy,
         address _across,
-        address _acrossV3,
         uint256 _sourceChainId
     ) public initializer {
         OwnableUpgradeable.__Ownable_init();
@@ -39,77 +42,64 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
         lockersProxy = _lockersProxy;
         burnRouterProxy = _burnRouterProxy;
         across = _across;
-        acrossV3 = _acrossV3;
         sourceChainId = _sourceChainId;
     }
 
-    /// @notice Setter for EthConnectorProxy
-    function setEthConnectorProxy(address _ethConnectorProxy) external override onlyOwner nonZeroAddress(_ethConnectorProxy) {
-        ethConnectorProxy = _ethConnectorProxy;
+    /// @notice Setter for SourceChainConnector
+    function setSourceChainConnector(address _sourceChainConnector)
+        external
+        override
+        onlyOwner
+        nonZeroAddress(_sourceChainConnector)
+    {
+        sourceChainConnector = _sourceChainConnector;
     }
 
     /// @notice Setter for LockersProxy
-    function setLockersProxy(address _lockersProxy) external override onlyOwner nonZeroAddress(_lockersProxy){
+    function setLockersProxy(address _lockersProxy)
+        external
+        override
+        onlyOwner
+        nonZeroAddress(_lockersProxy)
+    {
         lockersProxy = _lockersProxy;
     }
 
     /// @notice Setter for BurnRouterProxy
-    function setBurnRouterProxy(address _burnRouterProxy) external override onlyOwner nonZeroAddress(_burnRouterProxy){
+    function setBurnRouterProxy(address _burnRouterProxy)
+        external
+        override
+        onlyOwner
+        nonZeroAddress(_burnRouterProxy)
+    {
         burnRouterProxy = _burnRouterProxy;
     }
 
-    /// @notice Setter for Across
-    function setAcross(address _across) external override onlyOwner nonZeroAddress(_across){
-        across = _across;
-    }
-
-    // TODO check across v3 functions
     /// @notice Setter for AcrossV3
-    function setAcrossV3(address _acrossV3) external override onlyOwner nonZeroAddress(_acrossV3){
-        acrossV3 = _acrossV3;
-    }
-
-    /// @notice Processes requests coming from Ethereum (using Across)
-    /// @dev Only Across can call this. Will be reverted if tokens have not been received fully yet.
-    /// @param _tokenSent Address of exchanging token
-    /// @param _amount Amount received by the contract (after reducing fees)
-    /// @param _fillCompleted True if all tokens have been received
-    /// @param _relayer Addres of relayer who submitted the request
-    /// @param _message that user sent (from Ethereum)
-    function handleAcrossMessage(
-        address _tokenSent,
-        uint256 _amount,
-        bool _fillCompleted,
-        address _relayer,
-        bytes memory _message
-    ) external nonReentrant override {
-        // Checks the msg origin and fill completion (full amount has been received)
-        require(msg.sender == across, "PolygonConnectorLogic: not across");
-
-        // // FIXME: handle cases the fillCompleted is not true
-        require(_fillCompleted, "PolygonConnectorLogic: partial fill");
-
-        // Determines the function call
-        (string memory purpose, uint uniqueCounter) = abi.decode(_message, (string, uint));
-        emit MsgReceived(uniqueCounter, purpose, _message);
-
-        if (_isEqualString(purpose, "exchangeForBtcAcross")) {
-            _exchangeForBtcAcross(_amount, _message, _tokenSent);
-        }
+    function setAcross(address _across)
+        external
+        override
+        onlyOwner
+        nonZeroAddress(_across)
+    {
+        across = _across;
     }
 
     /// @notice Process requests coming from Ethereum (using Across V3)
     function handleV3AcrossMessage(
         address _tokenSent,
         uint256 _amount,
-        address _relayer, 
+        address _relayer,
         bytes memory _message
-    ) external nonReentrant override {
+    ) external override nonReentrant {
         // Checks the msg origin and fill completion (full amount has been received)
-        require(msg.sender == acrossV3, "PolygonConnectorLogic: not acrossV3");
+        require(msg.sender == across, "PolygonConnectorLogic: not across");
 
         // Determines the function call
-        (string memory purpose, uint uniqueCounter) = abi.decode(_message, (string, uint));
+        (string memory purpose, uint256 uniqueCounter) = abi.decode(
+            _message,
+            (string, uint256)
+        );
         emit MsgReceived(uniqueCounter, purpose, _message);
 
         if (_isEqualString(purpose, "exchangeForBtcAcross")) {
@@ -126,31 +116,15 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
 
     function withdrawFundsToEth(
         bytes memory _message,
-        uint8 _v, 
-        bytes32 _r, 
+        uint8 _v,
+        bytes32 _r,
         bytes32 _s
-    ) external nonReentrant override {
-
-        (
-            address _token, 
-            uint256 _amount, 
-            int64 _relayerFeePercentage
-        ) = abi.decode(
-            _message,
-            (
-                address,
-                uint256, 
-                int64
-            )
-        );
+    ) external override nonReentrant {
+        (address _token, uint256 _amount, int64 _relayerFeePercentage) = abi
+            .decode(_message, (address, uint256, int64));
 
         // Verifies the signature and finds the buyer
-        address user = _verifySig(
-            _message,
-            _r,
-            _s,
-            _v
-        );
+        address user = _verifySig(_message, _r, _s, _v);
 
         // Checks that bid exists
         require(
@@ -158,15 +132,9 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
             "PolygonConnectorLogic: low balance"
         );
 
-        // TODO test onchain 
         // Sends token back to the buyer
-        _sendTokenUsingAcross(
-            user,
-            _token,
-            _amount,
-            _relayerFeePercentage
-        );
-        
+        _sendTokenUsingAcross(user, _token, _amount, _relayerFeePercentage);
+
         // Delets the bid
         failedReqs[user][_token] -= _amount;
     }
@@ -180,13 +148,13 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
 
     function retrySwapAndUnwrap(
         bytes memory _message,
-        uint8 _v, 
-        bytes32 _r, 
+        uint8 _v,
+        bytes32 _r,
         bytes32 _s
-    ) external nonReentrant override {
+    ) external override nonReentrant {
         (
-            address _token, 
-            uint256 _amount, 
+            address _token,
+            uint256 _amount,
             address exchangeConnector,
             uint256 minOutputAmount,
             bytes memory userScript,
@@ -194,26 +162,21 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
             bytes memory lockerLockingScript,
             address[] memory path
         ) = abi.decode(
-            _message,
-            (
-                address,
-                uint256, 
-                address,
-                uint256,
-                bytes,
-                ScriptTypes,
-                bytes,
-                address[]
-            )
-        );
+                _message,
+                (
+                    address,
+                    uint256,
+                    address,
+                    uint256,
+                    bytes,
+                    ScriptTypes,
+                    bytes,
+                    address[]
+                )
+            );
 
         // Verifies the signature and finds the buyer
-        address user = _verifySig(
-            _message,
-            _r,
-            _s,
-            _v
-        );
+        address user = _verifySig(_message, _r, _s, _v);
 
         // Checks that bid exists
         require(
@@ -223,25 +186,26 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
 
         failedReqs[user][_token] -= _amount;
 
-        uint[] memory amounts = new uint[](2);
+        uint256[] memory amounts = new uint256[](2);
         amounts[0] = _amount;
         amounts[1] = minOutputAmount;
 
         IERC20(path[0]).approve(burnRouterProxy, _amount);
         IBurnRouter(burnRouterProxy).swapAndUnwrap(
-            exchangeConnector, 
-            amounts, 
+            exchangeConnector,
+            amounts,
             true, // Input token amount is fixed
-            path, 
-            block.timestamp, 
-            userScript, 
-            scriptType, 
+            path,
+            block.timestamp,
+            userScript,
+            scriptType,
             lockerLockingScript,
             0
         );
 
-        address lockerTargetAddress = ILockersManager(lockersProxy).getLockerTargetAddress(lockerLockingScript);
-        
+        address lockerTargetAddress = ILockersManager(lockersProxy)
+            .getLockerTargetAddress(lockerLockingScript);
+
         emit NewBurn(
             exchangeConnector,
             _token,
@@ -257,16 +221,29 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
         );
     }
 
-    
+    /// @notice Withdraws tokens in the emergency case
+    /// @dev Only owner can call this
+    function emergencyWithdraw(
+        address _token,
+        address _to,
+        uint256 _amount
+    ) external override onlyOwner {
+        if (_token == ETH_ADDR) _to.call{value: _amount}("");
+        else IERC20(_token).transfer(_to, _amount);
+    }
+
+    receive() external payable {}
+
     /// @notice Helper for exchanging token for BTC
     function _exchangeForBtcAcross(
         uint256 _amount,
         bytes memory _message,
         address _tokenSent
     ) internal {
-        IPolyConnectorLogic.exchangeForBtcArguments memory arguments;
+        IPolyConnector.exchangeForBtcArguments memory arguments;
         (
-            ,,
+            ,
+            ,
             arguments.user,
             arguments.exchangeConnector,
             arguments.minOutputAmount,
@@ -276,38 +253,40 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
             arguments.lockerLockingScript,
             arguments.thirdParty
         ) = abi.decode(
-            _message, 
+            _message,
             (
                 string,
-                uint,
+                uint256,
                 address,
                 address,
-                uint,
+                uint256,
                 address[],
                 bytes,
                 ScriptTypes,
                 bytes,
-                uint
+                uint256
             )
         );
 
-        uint[] memory amounts = new uint[](2);
+        uint256[] memory amounts = new uint256[](2);
         amounts[0] = _amount;
         amounts[1] = arguments.minOutputAmount;
 
         IERC20(arguments.path[0]).approve(burnRouterProxy, _amount);
-        
-        try IBurnRouter(burnRouterProxy).swapAndUnwrap(
-            arguments.exchangeConnector, 
-            amounts, 
-            true, // Input token amount is fixed
-            arguments.path, 
-            block.timestamp, 
-            arguments.userScript, 
-            arguments.scriptType, 
-            arguments.lockerLockingScript,
-            arguments.thirdParty
-        ) {
+
+        try
+            IBurnRouter(burnRouterProxy).swapAndUnwrap(
+                arguments.exchangeConnector,
+                amounts,
+                true, // Input token amount is fixed
+                arguments.path,
+                block.timestamp,
+                arguments.userScript,
+                arguments.scriptType,
+                arguments.lockerLockingScript,
+                arguments.thirdParty
+            )
+        {
             emit NewBurn(
                 arguments.exchangeConnector,
                 _tokenSent,
@@ -315,9 +294,13 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
                 arguments.user,
                 arguments.userScript,
                 arguments.scriptType,
-                ILockersManager(lockersProxy).getLockerTargetAddress(arguments.lockerLockingScript),
+                ILockersManager(lockersProxy).getLockerTargetAddress(
+                    arguments.lockerLockingScript
+                ),
                 BurnRouterStorage(burnRouterProxy).burnRequestCounter(
-                    ILockersManager(lockersProxy).getLockerTargetAddress(arguments.lockerLockingScript)
+                    ILockersManager(lockersProxy).getLockerTargetAddress(
+                        arguments.lockerLockingScript
+                    )
                 ) - 1,
                 arguments.path
             );
@@ -339,32 +322,16 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
         }
     }
 
-    /// @notice Withdraws tokens in the emergency case
-    /// @dev Only owner can call this
-    function emergencyWithdraw(
-        address _token,
-        address _to,
-        uint _amount
-    ) external override onlyOwner {
-        if (_token == ETH_ADDR) 
-            _to.call{value: _amount}("");
-        else
-            IERC20(_token).transfer(_to, _amount);
-    }
-
     /// @notice Sends tokens to Ethereum using Across
     /// @dev This will be used for withdrawing funds
     function _sendTokenUsingAcross(
         address _user,
         address _token,
-        uint _amount,
+        uint256 _amount,
         int64 _relayerFeePercentage
     ) internal {
         bytes memory nullData;
-        IERC20(_token).approve(
-            across, 
-            _amount
-        );
+        IERC20(_token).approve(across, _amount);
 
         SpokePoolInterface(across).depositFor(
             _user,
@@ -379,7 +346,6 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
         );
     }
 
-    // TODO: move to a library
     function _verifySig(
         bytes memory message,
         bytes32 r,
@@ -402,10 +368,12 @@ contract PolyConnectorLogic is IPolyConnectorLogic, PolyConnectorStorage,
     }
 
     /// @notice Checks if two strings are equal
-    function _isEqualString(string memory _a, string memory _b) internal pure returns (bool) {
-        return keccak256(abi.encodePacked(_a)) == keccak256(abi.encodePacked(_b));
+    function _isEqualString(string memory _a, string memory _b)
+        internal
+        pure
+        returns (bool)
+    {
+        return
+            keccak256(abi.encodePacked(_a)) == keccak256(abi.encodePacked(_b));
     }
-
-    receive() external payable {}
-
 }

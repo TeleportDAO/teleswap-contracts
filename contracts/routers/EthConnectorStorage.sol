@@ -1,25 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <=0.8.4;
 
-import "./interfaces/IEthConnectorLogic.sol";
+import "./interfaces/IEthConnector.sol";
 
-abstract contract EthConnectorStorage {
+abstract contract EthConnectorStorage is IEthConnector {
     
     uint constant public ONE_HUNDRED_PERCENT = 10000;
     address constant public ETH_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     // ^ Native token representative
 
     address public across; // Across bridge
-    address public polygonConnectorProxy;
-    address public polygonTeleBTC;
+    address public targetChainConnectorProxy;
+    address public targetChainTeleBTC;
     uint public targetChainId;
     address public wrappedNativeToken;
-
-    // This mapping specifies the min biding amount for each token
-    mapping(address => uint) public minAmounts;
-
-    // Initial value is 10000 (owner can change it) 
-    uint public minModifier;
-
     uint public uniqueCounter;
 }

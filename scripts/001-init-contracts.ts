@@ -30,6 +30,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         "CcExchangeRouterProxy"
     );
     const ccExchangeRouterLib = await deployments.get("CcExchangeRouterLib");
+    const polyConnectorLogic = await deployments.get("PolyConnectorLogic");
+    const polyConnectorProxy = await deployments.get("PolyConnectorProxy");
 
     const minTDTLockedAmount = 0;
     const startingBlockHeight = config.get("starting_block_height");
@@ -58,6 +60,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const transferDeadLine = config.get("cc_burn.transfer_deadLine");
     const chainID = config.get("chain_id");
     const across = config.get("across");
+    const sourceConnectorChainId = config.get("source_connector_chain_id");
 
     logger
         .color("blue")
@@ -328,6 +331,50 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("Initialize TeleBTCLogic: ", initializeTx.hash);
     } else {
         console.log("TeleBTCLogic is already initialized");
+    }
+
+    logger
+        .color("blue")
+        .log("-------------------------------------------------");
+    logger.color("blue").bold().log("Initialize PolyConnector ...");
+    const polyConnectorLogicFactory = await ethers.getContractFactory(
+        "PolyConnectorLogic"
+    );
+    const polyConnectorProxyInstance =
+        await polyConnectorLogicFactory.attach(
+            polyConnectorLogic.address
+        );
+    const polyConnectorLogicInstance =
+        await polyConnectorLogicFactory.attach(
+            polyConnectorProxy.address
+        );
+
+    let _across = await polyConnectorProxyInstance.across();
+    if (_across == ZERO_ADD) {
+        const initializeTx = await polyConnectorProxyInstance.initialize(
+            lockersManagerProxy.address,
+            lockersManagerProxy.address,
+            across,
+            sourceConnectorChainId
+        );
+        await initializeTx.wait(1);
+        console.log("Initialized PolyConnectorProxy: ", initializeTx.hash);
+    } else {
+        console.log("PolyConnectorProxy is already initialized");
+    }
+
+    let _acrossLogic = await polyConnectorLogicInstance.across();
+    if (_acrossLogic == ZERO_ADD) {
+        const initializeTx = await polyConnectorLogicInstance.initialize(
+            lockersManagerProxy.address,
+            lockersManagerProxy.address,
+            across,
+            sourceConnectorChainId
+        );
+        await initializeTx.wait(1);
+        console.log("Initialized PolyConnectorLogic: ", initializeTx.hash);
+    } else {
+        console.log("PolyConnectorLogic is already initialized");
     }
 };
 

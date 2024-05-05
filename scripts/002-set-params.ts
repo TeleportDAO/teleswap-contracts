@@ -146,7 +146,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         .log("-------------------------------------------------");
     logger.color("blue").bold().log("Add routers as minter and burner ...");
 
-    const isCCTransferMinter = await lockersInstance.isMinter(
+    const isCCTransferMinter = await lockersInstance.minters(
         ccTransferRouterProxy.address
     );
 
@@ -163,7 +163,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("CcTransferRouterProxy is already minter");
     }
 
-    const isCCExchangeMinter = await lockersInstance.isMinter(
+    const isCCExchangeMinter = await lockersInstance.minters(
         ccExchangeRouterProxy.address
     );
 
@@ -181,7 +181,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("CcExchangeRouterProxy is already minter");
     }
 
-    const isCCBurnerBurner = await lockersInstance.isBurner(
+    const isCCBurnerBurner = await lockersInstance.burners(
         burnRouterProxy.address
     );
 
@@ -342,7 +342,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     let tx;
 
     // TARGET NATIVE TOKEN
-    const wrappedMatic = config.get("wrapped_matic");
+    const wrappedMatic = config.get("wrapped_native_token");
     const maticUSDOracle = config.get("chain_link_oracles.matic_usd");
     const checkMaticUSDTx = await priceOracleInstance.ChainlinkPriceProxy(
         wrappedMatic

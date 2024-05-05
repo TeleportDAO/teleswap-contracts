@@ -1,31 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <=0.8.4;
 
-import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
-import "./interfaces/IPolyConnectorLogic.sol";
+import "./interfaces/IPolyConnector.sol";
 
-abstract contract PolyConnectorStorage {
-    
+abstract contract PolyConnectorStorage is IPolyConnector {
     struct Bid {
-        uint amount; 
+        uint256 amount;
         address token;
     }
-   
-    address constant public ETH_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE; 
-
-    address public lockersProxy;
-    address public burnRouterProxy;
-    address public ethConnectorProxy;
-    address public across;
-    address public acrossV3;
-    uint256 public sourceChainId;
-
-    mapping(address => mapping(address => uint)) public failedReqs;
-    // ^ Mapping from [user][token] to amount
 
     struct UserScriptData {
         bytes userScript;
         ScriptTypes scriptType;
     }
 
+    address public constant ETH_ADDR =
+        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+    address public override lockersProxy;
+    address public override burnRouterProxy;
+    address public override sourceChainConnector;
+    address public override across;
+    uint256 public override sourceChainId;
+    mapping(address => mapping(address => uint256)) public override failedReqs;
+    // ^ Mapping from [user][token] to amount
 }

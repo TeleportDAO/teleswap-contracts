@@ -207,29 +207,29 @@ describe("EthConnector", async () => {
             ).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
-        it("should set and get the PolygonConnectorProxy", async () => {
-            await EthConnector.setPolygonConnectorProxy(ONE_ADDRESS);
-            expect(await EthConnector.polygonConnectorProxy()).to.equal(
+        it("should set and get the TargetChainConnectorProxy", async () => {
+            await EthConnector.setTargetChainConnectorProxy(ONE_ADDRESS);
+            expect(await EthConnector.targetChainConnectorProxy()).to.equal(
                 ONE_ADDRESS
             );
         });
 
-        it("should not set the PolygonConnectorProxy if not owner", async () => {
+        it("should not set the TargetChainConnectorProxy if not owner", async () => {
             await expect(
-                EthConnector.connect(signer1).setPolygonConnectorProxy(
+                EthConnector.connect(signer1).setTargetChainConnectorProxy(
                     ONE_ADDRESS
                 )
             ).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
-        it("should set and get the PolygonTeleBTC", async () => {
-            await EthConnector.setPolygonTeleBTC(ONE_ADDRESS);
-            expect(await EthConnector.polygonTeleBTC()).to.equal(ONE_ADDRESS);
+        it("should set and get the TargetChainTeleBTC", async () => {
+            await EthConnector.setTargetChainTeleBTC(ONE_ADDRESS);
+            expect(await EthConnector.targetChainTeleBTC()).to.equal(ONE_ADDRESS);
         });
 
-        it("should not set the PolygonTeleBTC if not owner", async () => {
+        it("should not set the TargetChainTeleBTC if not owner", async () => {
             await expect(
-                EthConnector.connect(signer1).setPolygonTeleBTC(ONE_ADDRESS)
+                EthConnector.connect(signer1).setTargetChainTeleBTC(ONE_ADDRESS)
             ).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
@@ -251,10 +251,10 @@ describe("EthConnector", async () => {
                 EthConnector.setAcross(ZERO_ADDRESS)
             ).to.be.revertedWith("ZeroAddress()");
             await expect(
-                EthConnector.setPolygonConnectorProxy(ZERO_ADDRESS)
+                EthConnector.setTargetChainConnectorProxy(ZERO_ADDRESS)
             ).to.be.revertedWith("ZeroAddress()");
             await expect(
-                EthConnector.setPolygonTeleBTC(ZERO_ADDRESS)
+                EthConnector.setTargetChainTeleBTC(ZERO_ADDRESS)
             ).to.be.revertedWith("ZeroAddress()");
             await expect(
                 EthConnector.setWrappedNativeToken(ZERO_ADDRESS)
