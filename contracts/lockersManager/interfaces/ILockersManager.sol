@@ -234,33 +234,29 @@ interface ILockersManager {
 
     function totalNumberOfLockers() external view returns (uint256);
 
-    function getLockerTargetAddress(bytes calldata _lockerLockingScript)
-        external
-        view
-        returns (address);
+    function getLockerTargetAddress(
+        bytes calldata _lockerLockingScript
+    ) external view returns (address);
 
-    function isLocker(bytes calldata _lockerLockingScript)
-        external
-        view
-        returns (bool);
+    function isLocker(
+        bytes calldata _lockerLockingScript
+    ) external view returns (bool);
 
     function getNumberOfLockers() external view returns (uint256);
 
-    function getLockerLockingScript(address _lockerTargetAddress)
-        external
-        view
-        returns (bytes memory);
+    function getLockerLockingScript(
+        address _lockerTargetAddress
+    ) external view returns (bytes memory);
 
-    function isLockerActive(address _lockerTargetAddress)
-        external
-        view
-        returns (bool);
+    function isLockerActive(
+        address _lockerTargetAddress
+    ) external view returns (bool);
 
     function priceOfOneUnitOfCollateralInBTC() external view returns (uint256);
 
     function getLockerCapacity(
         address _lockerTargetAddress
-    ) external view returns (uint);
+    ) external view returns (uint256);
 
     function minters(address) external view returns (bool);
 
@@ -286,22 +282,26 @@ interface ILockersManager {
         uint256 _amount
     ) external returns (uint256);
 
-    function burn(bytes calldata _lockerLockingScript, uint256 _amount)
-        external
-        returns (uint256);
+    function burn(
+        bytes calldata _lockerLockingScript,
+        uint256 _amount
+    ) external returns (uint256);
 
     function setTST(address _TST) external;
 
     function setLockerPercentageFee(uint256 _lockerPercentageFee) external;
 
-    function setPriceWithDiscountRatio(uint256 _priceWithDiscountRatio)
-        external;
+    function setPriceWithDiscountRatio(
+        uint256 _priceWithDiscountRatio
+    ) external;
 
-    function setMinRequiredTDTLockedAmount(uint256 _minRequiredTDTLockedAmount)
-        external;
+    function setMinRequiredTDTLockedAmount(
+        uint256 _minRequiredTDTLockedAmount
+    ) external;
 
-    function setMinRequiredTNTLockedAmount(uint256 _minRequiredTNTLockedAmount)
-        external;
+    function setMinRequiredTNTLockedAmount(
+        uint256 _minRequiredTNTLockedAmount
+    ) external;
 
     function setPriceOracle(address _priceOracle) external;
 
@@ -313,19 +313,19 @@ interface ILockersManager {
 
     function setLiquidationRatio(uint256 _liquidationRatio) external;
 
-    function liquidateLocker(address _lockerTargetAddress, uint256 _btcAmount)
-        external
-        returns (bool);
+    function liquidateLocker(
+        address _lockerTargetAddress,
+        uint256 _btcAmount
+    ) external returns (bool);
 
     function addCollateral(
         address _lockerTargetAddress,
         uint256 _addingNativeTokenAmount
     ) external payable returns (bool);
 
-    function removeCollateral(uint256 _removingNativeTokenAmount)
-        external
-        payable
-        returns (bool);
+    function removeCollateral(
+        uint256 _removingNativeTokenAmount
+    ) external payable returns (bool);
 
     function requestToBecomeLocker(
         bytes calldata _lockerLockingScript,

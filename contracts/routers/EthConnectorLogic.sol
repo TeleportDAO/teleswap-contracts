@@ -48,29 +48,23 @@ contract EthConnectorLogic is
     }
 
     /// @notice Setter for TargetChainConnectorProxy
-    function setTargetChainConnectorProxy(address _targetChainConnectorProxy)
-        external
-        override
-        onlyOwner
-    {
+    function setTargetChainConnectorProxy(
+        address _targetChainConnectorProxy
+    ) external override onlyOwner {
         _setTargetChainConnectorProxy(_targetChainConnectorProxy);
     }
 
     /// @notice Setter for TargetChainTeleBTC
-    function setTargetChainTeleBTC(address _targetChainTeleBTC)
-        external
-        override
-        onlyOwner
-    {
+    function setTargetChainTeleBTC(
+        address _targetChainTeleBTC
+    ) external override onlyOwner {
         _setTargetChainTeleBTC(_targetChainTeleBTC);
     }
 
     /// @notice Setter for WrappedNativeToken
-    function setWrappedNativeToken(address _wrappedNativeToken)
-        external
-        override
-        onlyOwner
-    {
+    function setWrappedNativeToken(
+        address _wrappedNativeToken
+    ) external override onlyOwner {
         _setWrappedNativeToken(_wrappedNativeToken);
     }
 
@@ -86,6 +80,7 @@ contract EthConnectorLogic is
     }
 
     /// @notice Requests exchanging token for BTC
+    /// @dev To find teleBTCAmount, _relayerFeePercentage should be reduced from the inputTokenAmount
     /// @param _token Address of input token (on the current chain)
     /// @param _exchangeConnector Address of exchange connector to be used
     /// @param _amounts [inputTokenAmount, teleBTCAmount]
@@ -94,7 +89,7 @@ contract EthConnectorLogic is
     /// @param _scriptType User script type
     /// @param _lockerLockingScript	of locker that should execute the burn request
     /// @param _relayerFeePercentage Fee percentage for relayer
-    /// @param thirdParty Id of third party
+    /// @param _thirdParty Id of third party
     function swapAndUnwrap(
         address _token,
         address _exchangeConnector,
@@ -104,32 +99,26 @@ contract EthConnectorLogic is
         ScriptTypes _scriptType,
         bytes calldata _lockerLockingScript,
         int64 _relayerFeePercentage,
-        uint256 thirdParty
+        uint256 _thirdParty
     ) external payable override nonReentrant {
-        _checkRequest(_token, _amounts, _path);
+        _checkRequest(_amounts, _path);
 
         // Sends msg to Polygon
 
         bytes memory message = abi.encode(
             "swapAndUnwrap",
             uniqueCounter,
-            msg.sender,
+            _msgSender(),
             _exchangeConnector,
             _amounts[1], // Min output amount to receive
             _path,
             _userScript,
             _scriptType,
             _lockerLockingScript,
-            thirdParty
+            _thirdParty
         );
 
-        emit MsgSent(
-            uniqueCounter,
-            "swapAndUnwrapAcross",
-            message,
-            _token,
-            _amounts[0]
-        );
+        emit MsgSent(uniqueCounter, message, _token, _amounts[0]);
 
         uniqueCounter++;
 
@@ -155,34 +144,33 @@ contract EthConnectorLogic is
             require(msg.value == 0, "EthManagerLogic: wrong value");
 
             // Transfers tokens from user to contract
-            IERC20(_token).transferFrom(msg.sender, address(this), _amount);
+            IERC20(_token).transferFrom(_msgSender(), address(this), _amount);
 
             IERC20(_token).approve(across, _amount);
         }
 
-        // Calling across for transferring token and msg
-        Address.functionCallWithValue(
-            across,
-            abi.encodeWithSignature(
-                "deposit(address,address,uint256,uint256,int64,uint32,bytes,uint256)",
-                targetChainConnectorProxy,
-                _token,
-                _amount,
-                targetChainId,
-                _relayerFeePercentage,
-                uint32(block.timestamp),
-                _message,
-                115792089237316195423570985008687907853269984665640564039457584007913129639935
-            ),
-            msg.value
-        );
+        // // Calling across for transferring token and msg
+        // Address.functionCallWithValue(
+        //     across,
+        //     abi.encodeWithSignature(
+        //         "deposit(address,address,uint256,uint256,int64,uint32,bytes,uint256)",
+        //         targetChainConnectorProxy,
+        //         _token,
+        //         _amount,
+        //         targetChainId,
+        //         _relayerFeePercentage,
+        //         uint32(block.timestamp),
+        //         _message,
+        //         115792089237316195423570985008687907853269984665640564039457584007913129639935
+        //     ),
+        //     msg.value
+        // );
     }
 
     /// @notice Checks validity of request
     /// @dev Token should be acceptable, input amount should be >= min,
     ///      last token of path should be teleBTC, and amounts array length should be 2
     function _checkRequest(
-        address _token,
         uint256[] calldata _amounts,
         address[] calldata _path
     ) internal view {
@@ -196,14 +184,12 @@ contract EthConnectorLogic is
 
     function _setAcross(address _across) private nonZeroAddress(_across) {
         emit AcrossUpdated(across, _across);
-
         across = _across;
     }
 
-    function _setTargetChainConnectorProxy(address _targetChainConnectorProxy)
-        private
-        nonZeroAddress(_targetChainConnectorProxy)
-    {
+    function _setTargetChainConnectorProxy(
+        address _targetChainConnectorProxy
+    ) private nonZeroAddress(_targetChainConnectorProxy) {
         emit TargetChainConnectorUpdated(
             targetChainConnectorProxy,
             _targetChainConnectorProxy
@@ -212,19 +198,16 @@ contract EthConnectorLogic is
         targetChainConnectorProxy = _targetChainConnectorProxy;
     }
 
-    function _setTargetChainTeleBTC(address _targetChainTeleBTC)
-        private
-        nonZeroAddress(_targetChainTeleBTC)
-    {
-        emit PolygonTeleBtcUpdated(targetChainTeleBTC, _targetChainTeleBTC);
-
+    function _setTargetChainTeleBTC(
+        address _targetChainTeleBTC
+    ) private nonZeroAddress(_targetChainTeleBTC) {
+        emit TargetChainTeleBTCUpdated(targetChainTeleBTC, _targetChainTeleBTC);
         targetChainTeleBTC = _targetChainTeleBTC;
     }
 
-    function _setWrappedNativeToken(address _wrappedNativeToken)
-        private
-        nonZeroAddress(_wrappedNativeToken)
-    {
+    function _setWrappedNativeToken(
+        address _wrappedNativeToken
+    ) private nonZeroAddress(_wrappedNativeToken) {
         emit WrappedNativeTokenUpdated(wrappedNativeToken, _wrappedNativeToken);
 
         wrappedNativeToken = _wrappedNativeToken;

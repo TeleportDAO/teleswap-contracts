@@ -8,7 +8,6 @@ interface IEthConnector {
 
     event MsgSent(
         uint256 uniqueCounter,
-        string functionName,
         bytes data,
         address sourceChainInputToken,
         uint256 amount
@@ -21,9 +20,9 @@ interface IEthConnector {
         address newTargetChainConnector
     );
 
-    event PolygonTeleBtcUpdated(
-        address oldPolygonTeleBtc,
-        address newPolygonTeleBtc
+    event TargetChainTeleBTCUpdated(
+        address oldTeleBtc,
+        address newTeleBtc
     );
 
     event WrappedNativeTokenUpdated(
@@ -48,7 +47,7 @@ interface IEthConnector {
         ScriptTypes _scriptType,
         bytes calldata _lockerLockingScript,
         int64 _relayerFeePercentage,
-        uint256 thirdParty
+        uint256 _thirdParty
     ) external payable;
 
     function emergencyWithdraw(
