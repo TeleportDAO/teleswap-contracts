@@ -125,7 +125,7 @@ contract EthConnectorLogic is
 
         emit MsgSent(
             uniqueCounter,
-            "putBidAcross",
+            "swapAndUnwrapAcross",
             message,
             _token,
             _amounts[0]

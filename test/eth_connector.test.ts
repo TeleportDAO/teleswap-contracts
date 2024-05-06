@@ -371,7 +371,7 @@ describe("EthConnector", async () => {
                 .to.emit(EthConnector, "MsgSent")
                 .withArgs(
                     "0",
-                    "putBidAcross",
+                    "swapAndUnwrapAcross",
                     message,
                     inputToken.address,
                     requestAmount
@@ -425,7 +425,7 @@ describe("EthConnector", async () => {
                 .to.emit(EthConnector, "MsgSent")
                 .withArgs(
                     "0",
-                    "putBidAcross",
+                    "swapAndUnwrapAcross",
                     message,
                     ETH_ADDRESS,
                     requestAmount
