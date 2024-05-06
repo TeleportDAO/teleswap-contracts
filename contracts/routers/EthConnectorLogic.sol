@@ -95,7 +95,7 @@ contract EthConnectorLogic is
     /// @param _lockerLockingScript	of locker that should execute the burn request
     /// @param _relayerFeePercentage Fee percentage for relayer
     /// @param thirdParty Id of third party
-    function exchangeForBtcAcross(
+    function swapAndUnwrap(
         address _token,
         address _exchangeConnector,
         uint256[] calldata _amounts,
@@ -111,7 +111,7 @@ contract EthConnectorLogic is
         // Sends msg to Polygon
 
         bytes memory message = abi.encode(
-            "exchangeForBtcAcross",
+            "swapAndUnwrap",
             uniqueCounter,
             msg.sender,
             _exchangeConnector,

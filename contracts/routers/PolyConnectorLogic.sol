@@ -93,7 +93,7 @@ contract PolyConnectorLogic is
         bytes memory _message
     ) external override nonReentrant {
         // Checks the msg origin and fill completion (full amount has been received)
-        require(msg.sender == across, "PolygonConnectorLogic: not across");
+        // require(msg.sender == across, "PolygonConnectorLogic: not across");
 
         // Determines the function call
         (string memory purpose, uint256 uniqueCounter) = abi.decode(
@@ -102,8 +102,8 @@ contract PolyConnectorLogic is
         );
         emit MsgReceived(uniqueCounter, purpose, _message);
 
-        if (_isEqualString(purpose, "exchangeForBtcAcross")) {
-            _exchangeForBtcAcross(_amount, _message, _tokenSent);
+        if (_isEqualString(purpose, "swapAndUnwrap")) {
+            _swapAndUnwrap(_amount, _message, _tokenSent);
         }
     }
 
@@ -206,7 +206,7 @@ contract PolyConnectorLogic is
         address lockerTargetAddress = ILockersManager(lockersProxy)
             .getLockerTargetAddress(lockerLockingScript);
 
-        emit NewBurn(
+        emit NewSwapAndUnwrap(
             exchangeConnector,
             _token,
             _amount,
@@ -235,7 +235,7 @@ contract PolyConnectorLogic is
     receive() external payable {}
 
     /// @notice Helper for exchanging token for BTC
-    function _exchangeForBtcAcross(
+    function _swapAndUnwrap(
         uint256 _amount,
         bytes memory _message,
         address _tokenSent
@@ -287,7 +287,7 @@ contract PolyConnectorLogic is
                 arguments.thirdParty
             )
         {
-            emit NewBurn(
+            emit NewSwapAndUnwrap(
                 arguments.exchangeConnector,
                 _tokenSent,
                 _amount,
@@ -310,7 +310,7 @@ contract PolyConnectorLogic is
 
             // Saves token amount so user can withdraw it in future
             failedReqs[arguments.user][_tokenSent] += _amount;
-            emit FailedBurn(
+            emit FailedSwapAndUnwrap(
                 arguments.exchangeConnector,
                 _tokenSent,
                 _amount,

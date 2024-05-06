@@ -571,7 +571,7 @@ describe("PolyConnector", async () => {
                 'bytes',
                 'uint'
             ], [
-                "exchangeForBtcAcross",
+                "swapAndUnwrap",
                 "1",
                 signer1Address,
                 mockExchangeConnector.address,
@@ -624,7 +624,7 @@ describe("PolyConnector", async () => {
                 'bytes',
                 'uint'
             ], [
-                "exchangeForBtcAcross",
+                "swapAndUnwrap",
                 "1",
                 signer1Address,
                 mockExchangeConnector.address,
@@ -646,7 +646,7 @@ describe("PolyConnector", async () => {
             ).to.be.revertedWith("PolygonConnectorLogic: not across");
         });
 
-        it("should not handle across message if purpose is not exchangeForBtcAcross", async () => {
+        it("should not handle across message if purpose is not swapAndUnwrap", async () => {
 
             let message = abiUtils.encodeParameters([
                 'string',
@@ -697,7 +697,7 @@ describe("PolyConnector", async () => {
                 'bytes',
                 'uint'
             ], [
-                "exchangeForBtcAcross",
+                "swapAndUnwrap",
                 "1",
                 signer1Address,
                 mockExchangeConnector.address,
@@ -760,7 +760,7 @@ describe("PolyConnector", async () => {
                 'bytes',
                 'uint'
             ], [
-                "exchangeForBtcAcross",
+                "swapAndUnwrap",
                 "1",
                 signer1Address,
                 mockExchangeConnector.address,
@@ -873,7 +873,7 @@ describe("PolyConnector", async () => {
                 'uint',
                 'bytes'
             ], [
-                "exchangeForBtcAcross",
+                "swapAndUnwrap",
                 "1",
                 signer1Address,
                 mockExchangeConnector.address,
@@ -956,7 +956,7 @@ describe("PolyConnector", async () => {
                 'uint',
                 'bytes'
             ], [
-                "exchangeForBtcAcross",
+                "swapAndUnwrap",
                 "1",
                 signer1Address,
                 mockExchangeConnector.address,
@@ -1039,7 +1039,7 @@ describe("PolyConnector", async () => {
                 'uint',
                 'bytes'
             ], [
-                "exchangeForBtcAcross",
+                "swapAndUnwrap",
                 "1",
                 signer1Address,
                 mockExchangeConnector.address,
@@ -1151,7 +1151,7 @@ describe("PolyConnector", async () => {
         //         'uint',
         //         'bytes'
         //     ], [
-        //         "exchangeForBtcAcross",
+        //         "swapAndUnwrap",
         //         "1",
         //         signer1Address,
         //         mockExchangeConnector.address,
@@ -1230,7 +1230,7 @@ describe("PolyConnector", async () => {
                 'uint',
                 'bytes'
             ], [
-                "exchangeForBtcAcross",
+                "swapAndUnwrap",
                 "1",
                 signer1Address,
                 mockExchangeConnector.address,
@@ -1307,7 +1307,7 @@ describe("PolyConnector", async () => {
                 'uint',
                 'bytes'
             ], [
-                "exchangeForBtcAcross",
+                "swapAndUnwrap",
                 "1",
                 signer1Address,
                 mockExchangeConnector.address,
@@ -1384,7 +1384,7 @@ describe("PolyConnector", async () => {
         //         'uint',
         //         'bytes'
         //     ], [
-        //         "exchangeForBtcAcross",
+        //         "swapAndUnwrap",
         //         "1",
         //         signer1Address,
         //         mockExchangeConnector.address,

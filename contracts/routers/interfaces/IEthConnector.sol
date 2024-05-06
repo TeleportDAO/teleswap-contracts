@@ -39,7 +39,7 @@ interface IEthConnector {
 
     function setWrappedNativeToken(address _wrappedNativeToken) external;
 
-    function exchangeForBtcAcross(
+    function swapAndUnwrap(
         address _token,
         address _exchangeConnector,
         uint256[] calldata _amounts,

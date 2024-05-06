@@ -4,7 +4,7 @@ pragma solidity >=0.8.0 <=0.8.4;
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 
 interface IPolyConnector {
-    /// @notice Structure for _exchangeForBtcAcross function
+    /// @notice Structure for _swapAndUnwrap function
     struct exchangeForBtcArguments {
         address user;
         address exchangeConnector;
@@ -18,7 +18,7 @@ interface IPolyConnector {
 
     // Events
 
-    event NewBurn(
+    event NewSwapAndUnwrap(
         address exchangeConnector,
         address inputToken,
         uint256 inputAmount,
@@ -30,7 +30,7 @@ interface IPolyConnector {
         address[] path
     );
 
-    event FailedBurn(
+    event FailedSwapAndUnwrap(
         address exchangeConnector,
         address inputToken,
         uint256 inputAmount,
@@ -76,9 +76,6 @@ interface IPolyConnector {
 
     function withdrawFundsToEth(
         bytes memory _message,
-        // address _token,
-        // uint _amount,
-        // int64 _relayerFeePercentage,
         uint8 _v,
         bytes32 _r,
         bytes32 _s

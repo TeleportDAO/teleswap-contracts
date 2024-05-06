@@ -278,7 +278,7 @@ describe("EthConnector", async () => {
 
         it("fails because last token of path is not telebtc", async () => {
             await expect(
-                EthConnector.exchangeForBtcAcross(
+                EthConnector.swapAndUnwrap(
                     inputToken.address,
                     ONE_ADDRESS,
                     [requestAmount, telebtcAmount],
@@ -294,7 +294,7 @@ describe("EthConnector", async () => {
 
         it("fails because amounts list length is greater than 2", async () => {
             await expect(
-                EthConnector.exchangeForBtcAcross(
+                EthConnector.swapAndUnwrap(
                     inputToken.address,
                     ONE_ADDRESS,
                     [requestAmount, telebtcAmount, 100],
@@ -312,7 +312,7 @@ describe("EthConnector", async () => {
         ////// _sendMsgUsingAcross test start
         it("fails because amount is incorrect (ETH)", async () => {
             await expect(
-                EthConnector.exchangeForBtcAcross(
+                EthConnector.swapAndUnwrap(
                     ETH_ADDRESS,
                     ONE_ADDRESS,
                     [requestAmount, telebtcAmount],
@@ -327,7 +327,7 @@ describe("EthConnector", async () => {
         });
         ////// _sendMsgUsingAcross test end
 
-        it("Handle exchangeForBtcAcross (TOKEN)", async () => {
+        it("Handle swapAndUnwrap (TOKEN)", async () => {
             let message = await abiUtils.encodeParameters(
                 [
                     "string",
@@ -342,7 +342,7 @@ describe("EthConnector", async () => {
                     "uint",
                 ],
                 [
-                    "exchangeForBtcAcross",
+                    "swapAndUnwrap",
                     0,
                     deployerAddress,
                     ONE_ADDRESS,
@@ -356,7 +356,7 @@ describe("EthConnector", async () => {
             );
 
             await expect(
-                EthConnector.exchangeForBtcAcross(
+                EthConnector.swapAndUnwrap(
                     inputToken.address,
                     ONE_ADDRESS,
                     [requestAmount, telebtcAmount],
@@ -378,7 +378,7 @@ describe("EthConnector", async () => {
                 );
         });
 
-        it("Handle exchangeForBtcAcross (ETH)", async () => {
+        it("Handle swapAndUnwrap (ETH)", async () => {
             let message = await abiUtils.encodeParameters(
                 [
                     "string",
@@ -393,7 +393,7 @@ describe("EthConnector", async () => {
                     "uint",
                 ],
                 [
-                    "exchangeForBtcAcross",
+                    "swapAndUnwrap",
                     0,
                     deployerAddress,
                     ONE_ADDRESS,
@@ -407,7 +407,7 @@ describe("EthConnector", async () => {
             );
 
             await expect(
-                EthConnector.exchangeForBtcAcross(
+                EthConnector.swapAndUnwrap(
                     ETH_ADDRESS,
                     ONE_ADDRESS,
                     [requestAmount, telebtcAmount],
@@ -434,7 +434,7 @@ describe("EthConnector", async () => {
 
         it("fails because amount is incorrect (TOKEN)", async () => {
             await expect(
-                EthConnector.exchangeForBtcAcross(
+                EthConnector.swapAndUnwrap(
                     inputToken.address,
                     ONE_ADDRESS,
                     [requestAmount, telebtcAmount],
