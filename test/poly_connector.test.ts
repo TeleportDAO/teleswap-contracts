@@ -597,7 +597,7 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     message
                 )
-            ).to.emit(PolyConnector, "NewBurn").withArgs(
+            ).to.emit(PolyConnector, "NewSwapAndUnwrap").withArgs(
                 mockExchangeConnector.address,
                 inputToken.address,
                 requestAmount,
@@ -679,7 +679,7 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     message
                 )
-            ).to.not.emit(PolyConnector, "NewBurn");
+            ).to.not.emit(PolyConnector, "NewSwapAndUnwrap");
         });
 
         it("should not handle across message if ccExchangeAndBurn fails", async () => {
@@ -718,7 +718,7 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     message
                 )
-            ).to.emit(PolyConnector, "FailedBurn").withArgs(
+            ).to.emit(PolyConnector, "FailedSwapAndUnwrap").withArgs(
                 mockExchangeConnector.address,
                 inputToken.address,
                 requestAmount,
@@ -842,7 +842,7 @@ describe("PolyConnector", async () => {
                         rsv.r,
                         rsv.s
                     )
-                ).to.emit(PolyConnector, "NewBurn").withArgs(
+                ).to.emit(PolyConnector, "NewSwapAndUnwrap").withArgs(
                     mockExchangeConnector.address,
                     inputToken.address,
                     requestAmount,
@@ -1120,7 +1120,7 @@ describe("PolyConnector", async () => {
                         rsv.r,
                         rsv.s
                     )
-                ).to.emit(PolyConnector, "NewBurn").withArgs(
+                ).to.emit(PolyConnector, "NewSwapAndUnwrap").withArgs(
                     mockExchangeConnector.address,
                     inputToken.address,
                     requestAmount - 10,
