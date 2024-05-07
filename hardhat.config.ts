@@ -101,7 +101,37 @@ const config: HardhatUserConfig = {
 		currency: "USD",
   	},
   	etherscan: {
-		apiKey: process.env.ETHERSCAN_API_KEY,
+		apiKey: {
+    		polygon: process.env.ETHERSCAN_API_KEY??"",
+			amoy: process.env.ETHERSCAN_API_KEY??"",
+			sepolia: process.env.ETHERSCAN_API_KEY??""
+  		},
+		customChains: [
+			{
+				network: "polygon",
+				chainId: 137,
+				urls: {
+					apiURL: "https://api.polygonscan.com/api",
+					browserURL: "https://polygonscan.com/"
+				}
+			},
+			{
+				network: "amoy",
+				chainId: 80002,
+				urls: {
+					apiURL: "https://api-amoy.polygonscan.com/api",
+					browserURL: "https://amoy.polygonscan.com/"
+				}
+			},
+			{
+				network: "sepolia",
+				chainId: 11155111,
+				urls: {
+					apiURL: "https://api-sepolia.etherscan.io/api",
+					browserURL: "https://sepolia.etherscan.io/"
+				}
+			}
+		]
   	},
 };
 

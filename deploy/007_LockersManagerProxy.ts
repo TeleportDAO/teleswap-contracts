@@ -34,7 +34,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             await verify(
                 deployedContract.address,
                 [lockersManagerLogic.address, proxyAdmin, "0x"],
-                "contracts/lockers/LockersManagerProxy.sol:LockersManagerProxy"
+                "contracts/lockersManager/LockersManagerProxy.sol:LockersManagerProxy"
             );
         }
     }
