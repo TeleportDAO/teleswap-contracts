@@ -27,7 +27,8 @@ contract EthConnectorLogic is
         address _targetChainTeleBTC,
         address _across,
         address _wrappedNativeToken,
-        uint256 _targetChainId
+        uint256 _targetChainId,
+        uint256 _currChainId
     ) public initializer {
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
@@ -37,6 +38,7 @@ contract EthConnectorLogic is
         _setAcross(_across);
         _setWrappedNativeToken(_wrappedNativeToken);
         targetChainId = _targetChainId;
+        currChainId = _currChainId;
         uniqueCounter = 0;
     }
 
@@ -66,6 +68,13 @@ contract EthConnectorLogic is
         address _wrappedNativeToken
     ) external override onlyOwner {
         _setWrappedNativeToken(_wrappedNativeToken);
+    }
+
+    // TODO: Remove this function
+    function setCurrChainId(
+        uint256 _currChainId
+    ) external onlyOwner {
+        currChainId = _currChainId;
     }
 
     /// @notice Withdraws tokens in the emergency case
@@ -108,6 +117,7 @@ contract EthConnectorLogic is
         bytes memory message = abi.encode(
             "swapAndUnwrap",
             uniqueCounter,
+            currChainId,
             _msgSender(),
             _exchangeConnector,
             _amounts[1], // Min output amount to receive

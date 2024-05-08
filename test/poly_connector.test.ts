@@ -524,11 +524,11 @@ describe("PolyConnector", async () => {
         });
 
         it("can't set addresses to zero address", async () => {
-            await expect(PolyConnector.setSourceChainConnector(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
-            await expect(PolyConnector.setLockersProxy(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
-            await expect(PolyConnector.setBurnRouterProxy(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
-            await expect(PolyConnector.setAcross(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
-            await expect(PolyConnector.setAcross(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
+            await expect(PolyConnector.setSourceChainConnector(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress");
+            await expect(PolyConnector.setLockersProxy(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress");
+            await expect(PolyConnector.setBurnRouterProxy(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress");
+            await expect(PolyConnector.setAcross(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress");
+            await expect(PolyConnector.setAcross(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress");
         });
 
 
@@ -562,6 +562,7 @@ describe("PolyConnector", async () => {
             let message = abiUtils.encodeParameters([
                 'string',
                 'uint',
+                'uint',
                 'address',
                 'address',
                 'uint',
@@ -573,6 +574,7 @@ describe("PolyConnector", async () => {
             ], [
                 "swapAndUnwrap",
                 "1",
+                1,
                 signer1Address,
                 mockExchangeConnector.address,
                 telebtcAmount,
@@ -598,6 +600,7 @@ describe("PolyConnector", async () => {
                     message
                 )
             ).to.emit(PolyConnector, "NewSwapAndUnwrap").withArgs(
+                1,
                 mockExchangeConnector.address,
                 inputToken.address,
                 requestAmount,
@@ -615,6 +618,7 @@ describe("PolyConnector", async () => {
             let message = abiUtils.encodeParameters([
                 'string',
                 'uint',
+                'uint',
                 'address',
                 'address',
                 'uint',
@@ -626,6 +630,7 @@ describe("PolyConnector", async () => {
             ], [
                 "swapAndUnwrap",
                 "1",
+                1,
                 signer1Address,
                 mockExchangeConnector.address,
                 telebtcAmount,
@@ -651,6 +656,7 @@ describe("PolyConnector", async () => {
             let message = abiUtils.encodeParameters([
                 'string',
                 'uint',
+                'uint',
                 'address',
                 'address',
                 'uint',
@@ -662,6 +668,7 @@ describe("PolyConnector", async () => {
             ], [
                 "test",
                 "1",
+                1,
                 signer1Address,
                 mockExchangeConnector.address,
                 telebtcAmount,
@@ -688,6 +695,7 @@ describe("PolyConnector", async () => {
             let message = abiUtils.encodeParameters([
                 'string',
                 'uint',
+                'uint',
                 'address',
                 'address',
                 'uint',
@@ -699,6 +707,7 @@ describe("PolyConnector", async () => {
             ], [
                 "swapAndUnwrap",
                 "1",
+                1,
                 signer1Address,
                 mockExchangeConnector.address,
                 telebtcAmount,
@@ -719,6 +728,7 @@ describe("PolyConnector", async () => {
                     message
                 )
             ).to.emit(PolyConnector, "FailedSwapAndUnwrap").withArgs(
+                1,
                 mockExchangeConnector.address,
                 inputToken.address,
                 requestAmount,
@@ -751,6 +761,7 @@ describe("PolyConnector", async () => {
             let message = abiUtils.encodeParameters([
                 'string',
                 'uint',
+                'uint',
                 'address',
                 'address',
                 'uint',
@@ -762,6 +773,7 @@ describe("PolyConnector", async () => {
             ], [
                 "swapAndUnwrap",
                 "1",
+                1,
                 signer1Address,
                 mockExchangeConnector.address,
                 telebtcAmount,
@@ -843,6 +855,7 @@ describe("PolyConnector", async () => {
                         rsv.s
                     )
                 ).to.emit(PolyConnector, "NewSwapAndUnwrap").withArgs(
+                    1,
                     mockExchangeConnector.address,
                     inputToken.address,
                     requestAmount,
@@ -865,6 +878,7 @@ describe("PolyConnector", async () => {
             let message = abiUtils.encodeParameters([
                 'string',
                 'uint',
+                'uint',
                 'address',
                 'address',
                 'uint',
@@ -875,6 +889,7 @@ describe("PolyConnector", async () => {
             ], [
                 "swapAndUnwrap",
                 "1",
+                1,
                 signer1Address,
                 mockExchangeConnector.address,
                 telebtcAmount,
@@ -948,6 +963,7 @@ describe("PolyConnector", async () => {
             let message = abiUtils.encodeParameters([
                 'string',
                 'uint',
+                'uint',
                 'address',
                 'address',
                 'uint',
@@ -958,6 +974,7 @@ describe("PolyConnector", async () => {
             ], [
                 "swapAndUnwrap",
                 "1",
+                1,
                 signer1Address,
                 mockExchangeConnector.address,
                 telebtcAmount,
@@ -1031,6 +1048,7 @@ describe("PolyConnector", async () => {
             let message = abiUtils.encodeParameters([
                 'string',
                 'uint',
+                'uint',
                 'address',
                 'address',
                 'uint',
@@ -1041,6 +1059,7 @@ describe("PolyConnector", async () => {
             ], [
                 "swapAndUnwrap",
                 "1",
+                1,
                 signer1Address,
                 mockExchangeConnector.address,
                 telebtcAmount,
@@ -1121,6 +1140,7 @@ describe("PolyConnector", async () => {
                         rsv.s
                     )
                 ).to.emit(PolyConnector, "NewSwapAndUnwrap").withArgs(
+                    1,
                     mockExchangeConnector.address,
                     inputToken.address,
                     requestAmount - 10,
@@ -1222,6 +1242,7 @@ describe("PolyConnector", async () => {
             let message = abiUtils.encodeParameters([
                 'string',
                 'uint',
+                'uint',
                 'address',
                 'address',
                 'uint',
@@ -1232,6 +1253,7 @@ describe("PolyConnector", async () => {
             ], [
                 "swapAndUnwrap",
                 "1",
+                1,
                 signer1Address,
                 mockExchangeConnector.address,
                 telebtcAmount,
@@ -1299,6 +1321,7 @@ describe("PolyConnector", async () => {
             let message = abiUtils.encodeParameters([
                 'string',
                 'uint',
+                'uint',
                 'address',
                 'address',
                 'uint',
@@ -1309,6 +1332,7 @@ describe("PolyConnector", async () => {
             ], [
                 "swapAndUnwrap",
                 "1",
+                1,
                 signer1Address,
                 mockExchangeConnector.address,
                 telebtcAmount,

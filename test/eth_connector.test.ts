@@ -122,7 +122,8 @@ describe("EthConnector", async () => {
             teleBTC.address,
             mockAcross.address,
             wrappedNativeToken.address,
-            137
+            137,
+            1
         );
 
         // Mints TeleBTC for user
@@ -249,16 +250,16 @@ describe("EthConnector", async () => {
         it("can't set addresses to zero address", async () => {
             await expect(
                 EthConnector.setAcross(ZERO_ADDRESS)
-            ).to.be.revertedWith("ZeroAddress()");
+            ).to.be.revertedWith("ZeroAddress");
             await expect(
                 EthConnector.setTargetChainConnectorProxy(ZERO_ADDRESS)
-            ).to.be.revertedWith("ZeroAddress()");
+            ).to.be.revertedWith("ZeroAddress");
             await expect(
                 EthConnector.setTargetChainTeleBTC(ZERO_ADDRESS)
-            ).to.be.revertedWith("ZeroAddress()");
+            ).to.be.revertedWith("ZeroAddress");
             await expect(
                 EthConnector.setWrappedNativeToken(ZERO_ADDRESS)
-            ).to.be.revertedWith("ZeroAddress()");
+            ).to.be.revertedWith("ZeroAddress");
         });
     });
 
@@ -332,6 +333,7 @@ describe("EthConnector", async () => {
                 [
                     "string",
                     "uint",
+                    "uint",
                     "address",
                     "address",
                     "uint",
@@ -344,6 +346,7 @@ describe("EthConnector", async () => {
                 [
                     "swapAndUnwrap",
                     0,
+                    1,
                     deployerAddress,
                     ONE_ADDRESS,
                     telebtcAmount,
@@ -382,6 +385,7 @@ describe("EthConnector", async () => {
                 [
                     "string",
                     "uint",
+                    "uint",
                     "address",
                     "address",
                     "uint",
@@ -394,6 +398,7 @@ describe("EthConnector", async () => {
                 [
                     "swapAndUnwrap",
                     0,
+                    1,
                     deployerAddress,
                     ONE_ADDRESS,
                     telebtcAmount,

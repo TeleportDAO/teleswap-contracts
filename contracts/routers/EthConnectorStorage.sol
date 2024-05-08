@@ -15,4 +15,5 @@ abstract contract EthConnectorStorage is IEthConnector {
     uint public targetChainId;
     address public wrappedNativeToken;
     uint public uniqueCounter;
+    uint256 public currChainId;
 }

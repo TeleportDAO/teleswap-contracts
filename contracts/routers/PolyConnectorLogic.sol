@@ -46,42 +46,30 @@ contract PolyConnectorLogic is
     }
 
     /// @notice Setter for SourceChainConnector
-    function setSourceChainConnector(address _sourceChainConnector)
-        external
-        override
-        onlyOwner
-        nonZeroAddress(_sourceChainConnector)
-    {
+    function setSourceChainConnector(
+        address _sourceChainConnector
+    ) external override onlyOwner nonZeroAddress(_sourceChainConnector) {
         sourceChainConnector = _sourceChainConnector;
     }
 
     /// @notice Setter for LockersProxy
-    function setLockersProxy(address _lockersProxy)
-        external
-        override
-        onlyOwner
-        nonZeroAddress(_lockersProxy)
-    {
+    function setLockersProxy(
+        address _lockersProxy
+    ) external override onlyOwner nonZeroAddress(_lockersProxy) {
         lockersProxy = _lockersProxy;
     }
 
     /// @notice Setter for BurnRouterProxy
-    function setBurnRouterProxy(address _burnRouterProxy)
-        external
-        override
-        onlyOwner
-        nonZeroAddress(_burnRouterProxy)
-    {
+    function setBurnRouterProxy(
+        address _burnRouterProxy
+    ) external override onlyOwner nonZeroAddress(_burnRouterProxy) {
         burnRouterProxy = _burnRouterProxy;
     }
 
     /// @notice Setter for AcrossV3
-    function setAcross(address _across)
-        external
-        override
-        onlyOwner
-        nonZeroAddress(_across)
-    {
+    function setAcross(
+        address _across
+    ) external override onlyOwner nonZeroAddress(_across) {
         across = _across;
     }
 
@@ -96,11 +84,9 @@ contract PolyConnectorLogic is
         // require(msg.sender == across, "PolygonConnectorLogic: not across");
 
         // Determines the function call
-        (string memory purpose, uint256 uniqueCounter) = abi.decode(
-            _message,
-            (string, uint256)
-        );
-        emit MsgReceived(uniqueCounter, purpose, _message);
+        (string memory purpose, uint256 uniqueCounter, uint256 chainId) = abi
+            .decode(_message, (string, uint256, uint256));
+        emit MsgReceived(purpose, uniqueCounter, chainId, _message);
 
         if (_isEqualString(purpose, "swapAndUnwrap")) {
             _swapAndUnwrap(_amount, _message, _tokenSent);
@@ -207,6 +193,7 @@ contract PolyConnectorLogic is
             .getLockerTargetAddress(lockerLockingScript);
 
         emit NewSwapAndUnwrap(
+            1,
             exchangeConnector,
             _token,
             _amount,
@@ -240,32 +227,8 @@ contract PolyConnectorLogic is
         bytes memory _message,
         address _tokenSent
     ) internal {
-        IPolyConnector.exchangeForBtcArguments memory arguments;
-        (
-            ,
-            ,
-            arguments.user,
-            arguments.exchangeConnector,
-            arguments.minOutputAmount,
-            arguments.path,
-            arguments.userScript,
-            arguments.scriptType,
-            arguments.lockerLockingScript,
-            arguments.thirdParty
-        ) = abi.decode(
-            _message,
-            (
-                string,
-                uint256,
-                address,
-                address,
-                uint256,
-                address[],
-                bytes,
-                ScriptTypes,
-                bytes,
-                uint256
-            )
+        IPolyConnector.exchangeForBtcArguments memory arguments = _decodeReq(
+            _message
         );
 
         uint256[] memory amounts = new uint256[](2);
@@ -288,6 +251,7 @@ contract PolyConnectorLogic is
             )
         {
             emit NewSwapAndUnwrap(
+                arguments.chainId,
                 arguments.exchangeConnector,
                 _tokenSent,
                 _amount,
@@ -311,6 +275,7 @@ contract PolyConnectorLogic is
             // Saves token amount so user can withdraw it in future
             failedReqs[arguments.user][_tokenSent] += _amount;
             emit FailedSwapAndUnwrap(
+                arguments.chainId,
                 arguments.exchangeConnector,
                 _tokenSent,
                 _amount,
@@ -320,6 +285,62 @@ contract PolyConnectorLogic is
                 arguments.path
             );
         }
+    }
+
+    function _decodeReq(
+        bytes memory _message
+    )
+        private
+        returns (IPolyConnector.exchangeForBtcArguments memory arguments)
+    {
+        (
+            ,
+            ,
+            // purpose,
+            // uniqueCounter
+            arguments.chainId,
+            arguments.user,
+            arguments.exchangeConnector,
+            arguments.minOutputAmount,
+            arguments.path,
+            arguments.userScript,
+            arguments.scriptType,
+            arguments.lockerLockingScript,
+            // arguments.thirdParty
+
+        ) = abi.decode(
+            _message,
+            (
+                string,
+                uint256,
+                uint256,
+                address,
+                address,
+                uint256,
+                address[],
+                bytes,
+                ScriptTypes,
+                bytes,
+                uint256
+            )
+        );
+
+        (, , , , , , , , , , arguments.thirdParty) = abi.decode(
+            _message,
+            (
+                string,
+                uint256,
+                uint256,
+                address,
+                address,
+                uint256,
+                address[],
+                bytes,
+                ScriptTypes,
+                bytes,
+                uint256
+            )
+        );
     }
 
     /// @notice Sends tokens to Ethereum using Across
@@ -368,11 +389,10 @@ contract PolyConnectorLogic is
     }
 
     /// @notice Checks if two strings are equal
-    function _isEqualString(string memory _a, string memory _b)
-        internal
-        pure
-        returns (bool)
-    {
+    function _isEqualString(
+        string memory _a,
+        string memory _b
+    ) internal pure returns (bool) {
         return
             keccak256(abi.encodePacked(_a)) == keccak256(abi.encodePacked(_b));
     }

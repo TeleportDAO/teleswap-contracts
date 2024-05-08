@@ -6,6 +6,7 @@ import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 interface IPolyConnector {
     /// @notice Structure for _swapAndUnwrap function
     struct exchangeForBtcArguments {
+        uint256 chainId;
         address user;
         address exchangeConnector;
         uint256 minOutputAmount;
@@ -19,6 +20,7 @@ interface IPolyConnector {
     // Events
 
     event NewSwapAndUnwrap(
+        uint256 chainId,
         address exchangeConnector,
         address inputToken,
         uint256 inputAmount,
@@ -31,6 +33,7 @@ interface IPolyConnector {
     );
 
     event FailedSwapAndUnwrap(
+        uint256 chainId,
         address exchangeConnector,
         address inputToken,
         uint256 inputAmount,
@@ -40,7 +43,12 @@ interface IPolyConnector {
         address[] path
     );
 
-    event MsgReceived(uint256 uniqueCounter, string functionName, bytes data);
+    event MsgReceived(
+        string functionName,
+        uint256 uniqueCounter,
+        uint256 chainId,
+        bytes data
+    );
 
     event AcrossUpdated(address oldAcross, address newAcross);
 
