@@ -60,7 +60,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const transferDeadLine = config.get("cc_burn.transfer_deadLine");
     const chainID = config.get("chain_id");
     const across = config.get("across");
-    const sourceConnectorChainId = config.get("source_connector_chain_id");
 
     logger
         .color("blue")
@@ -353,9 +352,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     if (_across == ZERO_ADD) {
         const initializeTx = await polyConnectorProxyInstance.initialize(
             lockersManagerProxy.address,
-            lockersManagerProxy.address,
-            across,
-            sourceConnectorChainId
+            burnRouterProxy.address,
+            across
         );
         await initializeTx.wait(1);
         console.log("Initialized PolyConnectorProxy: ", initializeTx.hash);
@@ -367,9 +365,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     if (_acrossLogic == ZERO_ADD) {
         const initializeTx = await polyConnectorLogicInstance.initialize(
             lockersManagerProxy.address,
-            lockersManagerProxy.address,
-            across,
-            sourceConnectorChainId
+            burnRouterProxy.address,
+            across
         );
         await initializeTx.wait(1);
         console.log("Initialized PolyConnectorLogic: ", initializeTx.hash);

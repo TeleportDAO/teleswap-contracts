@@ -7,12 +7,12 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
-import "./interfaces/IBurnRouter.sol";
-import "./BurnRouterStorage.sol";
+import "../routers/interfaces/IBurnRouter.sol";
+import "../routers/interfaces/AcrossMessageHandler.sol";
+import "../routers/BurnRouterStorage.sol";
 import "../lockersManager/interfaces/ILockersManager.sol";
 import "./PolyConnectorStorage.sol";
 import "./interfaces/IPolyConnector.sol";
-import "./interfaces/AcrossMessageHandler.sol";
 
 contract PolyConnectorLogic is
     IPolyConnector,
@@ -32,8 +32,7 @@ contract PolyConnectorLogic is
     function initialize(
         address _lockersProxy,
         address _burnRouterProxy,
-        address _across,
-        uint256 _sourceChainId
+        address _across
     ) public initializer {
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
@@ -42,14 +41,6 @@ contract PolyConnectorLogic is
         lockersProxy = _lockersProxy;
         burnRouterProxy = _burnRouterProxy;
         across = _across;
-        sourceChainId = _sourceChainId;
-    }
-
-    /// @notice Setter for SourceChainConnector
-    function setSourceChainConnector(
-        address _sourceChainConnector
-    ) external override onlyOwner nonZeroAddress(_sourceChainConnector) {
-        sourceChainConnector = _sourceChainConnector;
     }
 
     /// @notice Setter for LockersProxy
@@ -77,7 +68,7 @@ contract PolyConnectorLogic is
     function handleV3AcrossMessage(
         address _tokenSent,
         uint256 _amount,
-        address _relayer,
+        address,
         bytes memory _message
     ) external override nonReentrant {
         // Checks the msg origin and fill completion (full amount has been received)
@@ -93,52 +84,63 @@ contract PolyConnectorLogic is
         }
     }
 
-    /// @notice Withdraws user's bid
-    /// @dev User signs a message requesting for withdrawing a bid
+    /// @notice Send back tokens to the source chain
     /// @param _message The signed message
     /// @param _v Signature v
     /// @param _r Signature r
     /// @param _s Signature s
-
-    function withdrawFundsToEth(
+    function withdrawFundsToSourceChain(
         bytes memory _message,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
     ) external override nonReentrant {
-        (address _token, uint256 _amount, int64 _relayerFeePercentage) = abi
-            .decode(_message, (address, uint256, int64));
-
-        // Verifies the signature and finds the buyer
+        // Find user address after verifying the signature
         address user = _verifySig(_message, _r, _s, _v);
+
+        (
+            uint256 _chainId,
+            address _token,
+            uint256 _amount,
+            int64 _relayerFeePercentage
+        ) = abi.decode(_message, (uint256, address, uint256, int64));
 
         // Checks that bid exists
         require(
-            _amount > 0 && failedReqs[user][_token] >= _amount,
+            _amount > 0 && failedReqs[user][_chainId][_token] >= _amount,
             "PolygonConnectorLogic: low balance"
         );
 
         // Sends token back to the buyer
-        _sendTokenUsingAcross(user, _token, _amount, _relayerFeePercentage);
+        _sendTokenUsingAcross(
+            user,
+            _chainId,
+            _token,
+            _amount,
+            _relayerFeePercentage
+        );
 
         // Delets the bid
-        failedReqs[user][_token] -= _amount;
+        failedReqs[user][_chainId][_token] -= _amount;
     }
 
-    /// @notice Retry failed exchange and burn requests
+    /// @notice Retry to swap and unwrap tokens
     /// @dev User signs a message for retrying its request
     /// @param _message The signed message
     /// @param _v Signature v
     /// @param _r Signature r
     /// @param _s Signature s
-
     function retrySwapAndUnwrap(
         bytes memory _message,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
     ) external override nonReentrant {
+        // Find user address after verifying the signature
+        address user = _verifySig(_message, _r, _s, _v);
+
         (
+            uint256 _chainId,
             address _token,
             uint256 _amount,
             address exchangeConnector,
@@ -150,6 +152,7 @@ contract PolyConnectorLogic is
         ) = abi.decode(
                 _message,
                 (
+                    uint256,
                     address,
                     uint256,
                     address,
@@ -161,16 +164,12 @@ contract PolyConnectorLogic is
                 )
             );
 
-        // Verifies the signature and finds the buyer
-        address user = _verifySig(_message, _r, _s, _v);
-
-        // Checks that bid exists
         require(
-            _amount > 0 && failedReqs[user][_token] >= _amount,
+            _amount > 0 && failedReqs[user][_chainId][_token] >= _amount,
             "PolygonConnectorLogic: low balance"
         );
 
-        failedReqs[user][_token] -= _amount;
+        failedReqs[user][_chainId][_token] -= _amount;
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = _amount;
@@ -193,7 +192,7 @@ contract PolyConnectorLogic is
             .getLockerTargetAddress(lockerLockingScript);
 
         emit NewSwapAndUnwrap(
-            1,
+            _chainId,
             exchangeConnector,
             _token,
             _amount,
@@ -273,7 +272,9 @@ contract PolyConnectorLogic is
             IERC20(arguments.path[0]).approve(burnRouterProxy, 0);
 
             // Saves token amount so user can withdraw it in future
-            failedReqs[arguments.user][_tokenSent] += _amount;
+            failedReqs[arguments.user][arguments.chainId][
+                _tokenSent
+            ] += _amount;
             emit FailedSwapAndUnwrap(
                 arguments.chainId,
                 arguments.exchangeConnector,
@@ -291,6 +292,7 @@ contract PolyConnectorLogic is
         bytes memory _message
     )
         private
+        pure
         returns (IPolyConnector.exchangeForBtcArguments memory arguments)
     {
         (
@@ -347,6 +349,7 @@ contract PolyConnectorLogic is
     /// @dev This will be used for withdrawing funds
     function _sendTokenUsingAcross(
         address _user,
+        uint256 _chainId,
         address _token,
         uint256 _amount,
         int64 _relayerFeePercentage
@@ -359,7 +362,7 @@ contract PolyConnectorLogic is
             _user,
             _token,
             _amount,
-            sourceChainId,
+            _chainId,
             _relayerFeePercentage,
             uint32(block.timestamp),
             nullData,

@@ -33,7 +33,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             await verify(
                 deployedContract.address,
                 [connectorName, uniswapV2Router02],
-                "contracts/connectors/UniswapV2Connector.sol:UniswapV2Connector"
+                "contracts/swap_connectors/UniswapV2Connector.sol:UniswapV2Connector"
             );
         }
     }

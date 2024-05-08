@@ -64,25 +64,19 @@ interface IPolyConnector {
 
     function burnRouterProxy() external view returns (address);
 
-    function sourceChainConnector() external view returns (address);
-
     function across() external view returns (address);
 
-    function sourceChainId() external view returns (uint256);
-
-    function failedReqs(address, address) external returns (uint256);
+    function failedReqs(address, uint256, address) external returns (uint256);
 
     // State-changing functions
 
     function setAcross(address _across) external;
 
-    function setSourceChainConnector(address _sourceChainConnector) external;
-
     function setBurnRouterProxy(address _burnRouterProxy) external;
 
     function setLockersProxy(address _lockersProxy) external;
 
-    function withdrawFundsToEth(
+    function withdrawFundsToSourceChain(
         bytes memory _message,
         uint8 _v,
         bytes32 _r,

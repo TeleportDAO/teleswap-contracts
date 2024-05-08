@@ -4,7 +4,7 @@ pragma solidity >=0.8.0 <=0.8.4;
 import "./CcExchangeRouterStorage.sol";
 import "./CcExchangeRouterStorageV2.sol";
 import "./interfaces/IBurnRouter.sol";
-import "../connectors/interfaces/IExchangeConnector.sol";
+import "../swap_connectors/interfaces/IExchangeConnector.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../lockersManager/interfaces/ILockersManager.sol";
 import "../libraries/CcExchangeRouterLib.sol";

@@ -29,7 +29,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             await verify(
                 deployedContract.address,
                 [],
-                "contracts/routers/EthConnectorLogic.sol:EthConnectorLogic"
+                "contracts/connectors/EthConnectorLogic.sol:EthConnectorLogic"
             );
         }
     }

@@ -33,7 +33,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             await verify(
                 deployedContract.address,
                 [ethConnectorLogic.address, proxyAdmin, "0x"],
-                "contracts/routers/EthConnectorProxy.sol:EthConnectorProxy"
+                "contracts/connectors/EthConnectorProxy.sol:EthConnectorProxy"
             );
         }
     }

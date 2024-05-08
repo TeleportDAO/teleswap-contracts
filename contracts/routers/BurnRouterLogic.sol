@@ -3,7 +3,7 @@ pragma solidity >=0.8.0 <=0.8.4;
 
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../lockersManager/interfaces/ILockersManager.sol";
-import "../connectors/interfaces/IExchangeConnector.sol";
+import "../swap_connectors/interfaces/IExchangeConnector.sol";
 import "../libraries/BurnRouterLib.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";

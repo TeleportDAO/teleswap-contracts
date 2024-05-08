@@ -33,7 +33,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             await verify(
                 deployedContract.address,
                 [polyConnectorLogic.address, proxyAdmin, "0x"],
-                "contracts/routers/PolyConnectorProxy.sol:PolyConnectorProxy"
+                "contracts/connectors/PolyConnectorProxy.sol:PolyConnectorProxy"
             );
         }
     }

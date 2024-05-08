@@ -19,9 +19,9 @@ abstract contract PolyConnectorStorage is IPolyConnector {
 
     address public override lockersProxy;
     address public override burnRouterProxy;
-    address public override sourceChainConnector;
     address public override across;
-    uint256 public override sourceChainId;
-    mapping(address => mapping(address => uint256)) public override failedReqs;
-    // ^ Mapping from [user][token] to amount
+    mapping(address => mapping(uint256 => mapping(address => uint256)))
+        public
+        override failedReqs;
+    // ^ Mapping from [user][chainId][token] to amount
 }
