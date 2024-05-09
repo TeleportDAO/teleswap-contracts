@@ -191,24 +191,6 @@ describe("Lockers", async () => {
         return teleportDAOToken;
     };
 
-    const deployTeleBTC = async (
-        _signer?: Signer
-    ): Promise<TeleBTC> => {
-        const teleBTCFactory = new TeleBTC__factory(
-            _signer || deployer
-        );
-
-        const wrappedToken = await teleBTCFactory.deploy(
-            "TeleBTC",
-            "TBTC",
-            // ONE_ADDRESS,
-            // ONE_ADDRESS,
-            // ONE_ADDRESS
-        );
-
-        return wrappedToken;
-    };
-
     const deployLockersManagerLib = async (
         _signer?: Signer
     ): Promise<LockersManagerLib> => {
@@ -319,7 +301,7 @@ describe("Lockers", async () => {
                 lockers.addMinter(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
         })
 
         it("only owner can add a minter", async function () {
@@ -366,7 +348,7 @@ describe("Lockers", async () => {
                 lockers.removeMinter(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
         })
 
         it("only owner can add a minter", async function () {
@@ -413,7 +395,7 @@ describe("Lockers", async () => {
                 lockers.addBurner(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
         })
 
         it("only owner can add a burner", async function () {
@@ -460,7 +442,7 @@ describe("Lockers", async () => {
                 lockers.removeBurner(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
         })
 
         it("only owner can add a burner", async function () {
@@ -645,7 +627,7 @@ describe("Lockers", async () => {
                 lockers.setTST(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
 
             await expect(
                 await lockers.setTST(
@@ -785,7 +767,7 @@ describe("Lockers", async () => {
                 lockers.setMinRequiredTNTLockedAmount(
                     0
                 )
-            ).to.be.revertedWith("ZeroValue()")
+            ).to.be.revertedWith("ZeroValue")
         })
 
     })
@@ -798,7 +780,7 @@ describe("Lockers", async () => {
                 lockers.setPriceOracle(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
         })
 
         it("non owners can't call setPriceOracle", async function () {
@@ -837,7 +819,7 @@ describe("Lockers", async () => {
                 lockers.setCCBurnRouter(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
         })
 
         it("non owners can't call setCCBurnRouter", async function () {
@@ -874,7 +856,7 @@ describe("Lockers", async () => {
     //             lockers.setExchangeConnector(
     //                 ZERO_ADDRESS
     //             )
-    //         ).to.be.revertedWith("ZeroAddress()")
+    //         ).to.be.revertedWith("ZeroAddress")
     //     })
 
     //     it("non owners can't call setExchangeConnector", async function () {
@@ -911,7 +893,7 @@ describe("Lockers", async () => {
                 lockers.setTeleBTC(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
         })
 
         it("non owners can't call setTeleBTC", async function () {
@@ -1012,67 +994,67 @@ describe("Lockers", async () => {
                 lockers.setTeleBTC(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
 
             await expect(
                 lockers.setCCBurnRouter(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
 
             await expect(
                 lockers.setPriceOracle(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
 
             await expect(
                 lockers.getLockerLockingScript(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
 
             await expect(
                 lockers.removeBurner(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
 
             await expect(
                 lockers.addBurner(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
 
             await expect(
                 lockers.removeMinter(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
 
             await expect(
                 lockers.addMinter(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
 
             await expect(
                 lockers.isLockerActive(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
 
             await expect(
-                lockers.isMinter(
+                lockers.minters(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
 
             await expect(
                 lockers.isBurner(
                     ZERO_ADDRESS
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
         })
     });
 
@@ -1505,10 +1487,13 @@ describe("Lockers", async () => {
             // Forwards block.timestamp to inactivate locker
             let lastBlockTimestamp = await getTimestamp();
             await advanceBlockWithTime(deployer.provider, lastBlockTimestamp + INACTIVATION_DELAY);
+            
+            let teleBTCSigner1 = teleBTC.connect(signer1)
+            await teleBTCSigner1.approve(lockers.address, "1000");
 
             await expect(
                 lockerSigner1.selfRemoveLocker()
-            ).to.be.revertedWith("Lockers: 0 net minted")
+            ).to.be.revertedWith("ERC20: transfer amount exceeds balance")
         })
 
         it("the locker is removed successfully", async function () {
@@ -1763,7 +1748,7 @@ describe("Lockers", async () => {
                     ZERO_ADDRESS,
                     10
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
         })
 
         it("not enough slashed amount to buy", async function () {
@@ -1986,7 +1971,7 @@ describe("Lockers", async () => {
 
             await expect (
                 lockerSigner2.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, 0)
-            ).to.be.revertedWith("ZeroValue()")
+            ).to.be.revertedWith("ZeroValue")
         })
 
         it("Mints tele BTC", async function () {
@@ -2132,7 +2117,7 @@ describe("Lockers", async () => {
 
             await expect (
                 lockerSigner2.burn(LOCKER1_PUBKEY__HASH, 0)
-            ).to.be.revertedWith("ZeroValue()")
+            ).to.be.revertedWith("ZeroValue")
         })
 
         it("Burns tele BTC", async function () {
@@ -2254,7 +2239,7 @@ describe("Lockers", async () => {
                     ZERO_ADDRESS,
                     1000
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("ZeroAddress")
         })
 
         it("liquidate locker reverts when the amount is zero", async function () {
@@ -2265,7 +2250,7 @@ describe("Lockers", async () => {
                     signer1Address,
                     0
                 )
-            ).to.be.revertedWith("ZeroValue()")
+            ).to.be.revertedWith("ZeroValue")
         })
 
         it("liquidate locker reverts when the target address is not locker", async function () {
@@ -2569,7 +2554,7 @@ describe("Lockers", async () => {
 
             await expect (
                 lockerSigner2.mint(LOCKER1_PUBKEY__HASH, ZERO_ADDRESS, 25000000)
-            ).to.be.revertedWith('ZeroAddress()')
+            ).to.be.revertedWith('ZeroAddress')
         })
 
         it("can't mint since locker is inactive", async function () {

@@ -73,21 +73,17 @@ contract BurnRouterLogic is
     /// @notice Returns true is request has been processed
     /// @param _lockerTargetAddress Locker address on the target chain
     /// @param _index the request for the locker
-    function isTransferred(address _lockerTargetAddress, uint256 _index)
-        external
-        view
-        override
-        returns (bool)
-    {
+    function isTransferred(
+        address _lockerTargetAddress,
+        uint256 _index
+    ) external view override returns (bool) {
         return burnRequests[_lockerTargetAddress][_index].isTransferred;
     }
 
     /// @notice Setter for starting block number
-    function setStartingBlockNumber(uint256 _startingBlockNumber)
-        public
-        override
-        onlyOwner
-    {
+    function setStartingBlockNumber(
+        uint256 _startingBlockNumber
+    ) public override onlyOwner {
         require(
             _startingBlockNumber > startingBlockNumber,
             "BurnRouterLogic: low startingBlockNumber"
@@ -98,12 +94,9 @@ contract BurnRouterLogic is
     /// @notice Updates relay contract address
     /// @dev Only owner can call this
     /// @param _relay The new relay contract address
-    function setRelay(address _relay)
-        public
-        override
-        onlyOwner
-        nonZeroAddress(_relay)
-    {
+    function setRelay(
+        address _relay
+    ) public override onlyOwner nonZeroAddress(_relay) {
         emit NewRelay(relay, _relay);
         relay = _relay;
     }
@@ -111,12 +104,9 @@ contract BurnRouterLogic is
     /// @notice Updates lockers contract address
     /// @dev Only owner can call this
     /// @param _lockers The new lockers contract address
-    function setLockers(address _lockers)
-        public
-        override
-        onlyOwner
-        nonZeroAddress(_lockers)
-    {
+    function setLockers(
+        address _lockers
+    ) public override onlyOwner nonZeroAddress(_lockers) {
         emit NewLockers(lockers, _lockers);
         lockers = _lockers;
     }
@@ -124,12 +114,9 @@ contract BurnRouterLogic is
     /// @notice Updates teleBTC contract address
     /// @dev Only owner can call this
     /// @param _teleBTC The new teleBTC contract address
-    function setTeleBTC(address _teleBTC)
-        public
-        override
-        onlyOwner
-        nonZeroAddress(_teleBTC)
-    {
+    function setTeleBTC(
+        address _teleBTC
+    ) public override onlyOwner nonZeroAddress(_teleBTC) {
         emit NewTeleBTC(teleBTC, _teleBTC);
         teleBTC = _teleBTC;
     }
@@ -137,12 +124,9 @@ contract BurnRouterLogic is
     /// @notice Updates protocol treasury address
     /// @dev Only owner can call this
     /// @param _treasury The new treasury address
-    function setTreasury(address _treasury)
-        public
-        override
-        onlyOwner
-        nonZeroAddress(_treasury)
-    {
+    function setTreasury(
+        address _treasury
+    ) public override onlyOwner nonZeroAddress(_treasury) {
         emit NewTreasury(treasury, _treasury);
         treasury = _treasury;
     }
@@ -172,11 +156,9 @@ contract BurnRouterLogic is
     /// @notice Updates protocol percentage fee for burning tokens
     /// @dev Only owner can call this
     /// @param _protocolPercentageFee The new protocol percentage fee
-    function setProtocolPercentageFee(uint256 _protocolPercentageFee)
-        public
-        override
-        onlyOwner
-    {
+    function setProtocolPercentageFee(
+        uint256 _protocolPercentageFee
+    ) public override onlyOwner {
         require(
             MAX_PROTOCOL_FEE >= _protocolPercentageFee,
             "BurnRouterLogic: invalid fee"
@@ -191,11 +173,9 @@ contract BurnRouterLogic is
     /// @notice Updates slasher percentage reward for disputing lockers
     /// @dev Only owner can call this
     /// @param _slasherPercentageReward The new slasher percentage reward
-    function setSlasherPercentageReward(uint256 _slasherPercentageReward)
-        public
-        override
-        onlyOwner
-    {
+    function setSlasherPercentageReward(
+        uint256 _slasherPercentageReward
+    ) public override onlyOwner {
         require(
             MAX_SLASHER_REWARD >= _slasherPercentageReward,
             "BurnRouterLogic: invalid reward"
@@ -210,11 +190,9 @@ contract BurnRouterLogic is
     /// @notice Updates Bitcoin oracle
     /// @dev Only owner can call this
     /// @param _networkFeeOracle Address of oracle who can update burn fee
-    function setNetworkFeeOracle(address _networkFeeOracle)
-        public
-        override
-        onlyOwner
-    {
+    function setNetworkFeeOracle(
+        address _networkFeeOracle
+    ) public override onlyOwner {
         emit NewNetworkFeeOracle(bitcoinFeeOracle, _networkFeeOracle);
         bitcoinFeeOracle = _networkFeeOracle;
     }
@@ -222,11 +200,9 @@ contract BurnRouterLogic is
     /// @notice Updates Bitcoin transaction fee
     /// @dev Only owner can call this
     /// @param _networkFee The new Bitcoin transaction fee
-    function setNetworkFee(uint256 _networkFee)
-        public
-        override
-        onlyOracle(msg.sender)
-    {
+    function setNetworkFee(
+        uint256 _networkFee
+    ) public override onlyOracle(msg.sender) {
         emit NewNetworkFee(bitcoinFee, _networkFee);
         bitcoinFee = _networkFee;
     }
@@ -249,11 +225,10 @@ contract BurnRouterLogic is
     /// @notice                             Setter for third party fee
     /// @dev                                Only owner can call this
     /// @param _thirdPartyFee               third party fee
-    function setThirdPartyFee(uint256 _thirdPartyId, uint256 _thirdPartyFee)
-        public
-        override
-        onlyOwner
-    {
+    function setThirdPartyFee(
+        uint256 _thirdPartyId,
+        uint256 _thirdPartyFee
+    ) public override onlyOwner {
         emit NewThirdPartyFee(
             _thirdPartyId,
             thirdPartyFee[_thirdPartyId],
@@ -366,6 +341,16 @@ contract BurnRouterLogic is
         uint256[] memory _burnReqIndexes,
         uint256[] memory _voutIndexes
     ) external payable override nonReentrant returns (bool) {
+        // Get the Locker target address
+        address _lockerTargetAddress = ILockersManager(lockers)
+            .getLockerTargetAddress(_lockerLockingScript);
+
+        // It's more safe to only allow the Locker to call this function
+        require(
+            _msgSender() == _lockerTargetAddress,
+            "BurnRouterLogic: not locker"
+        );
+
         BurnRouterLib.burnProofHelper(
             _blockNumber,
             startingBlockNumber,
@@ -394,11 +379,7 @@ contract BurnRouterLogic is
             "BurnRouterLogic: not finalized"
         );
 
-        // Get the target address of the locker from its locking script
-        address _lockerTargetAddress = ILockersManager(lockers)
-            .getLockerTargetAddress(_lockerLockingScript);
-
-        // Checks the paid burn requests
+        // Mark the burn requests that are paid by this transaction
         uint256 paidOutputCounter = _checkPaidBurnRequests(
             txId,
             _blockNumber,
@@ -408,16 +389,16 @@ contract BurnRouterLogic is
             _voutIndexes
         );
 
-        /*
-            Checks if there is an output that goes back to the locker
-            Sets isUsedAsBurnProof of txId true if all the outputs (except one) were used to pay cc burn requests
-        */
-        BurnRouterLib.updateIsUsedAsBurnProof(
-            isUsedAsBurnProof,
-            paidOutputCounter,
-            _vout,
-            _lockerLockingScript,
-            txId
+        // Mark the Bitcoin tx as used for burn proof so Locker cannot use it again
+        require(
+            BurnRouterLib.updateIsUsedAsBurnProof(
+                isUsedAsBurnProof,
+                paidOutputCounter,
+                _vout,
+                _lockerLockingScript,
+                txId
+            ),
+            "BurnRouterLogic: invalid burn proof"
         );
 
         return true;
@@ -808,7 +789,10 @@ contract BurnRouterLogic is
     /// @return remainingAmount amount after reducing fees
     /// @return _protocolFee fee of protocol
     /// @return _thirdPartyFee fee of third party
-    function _getFees(uint256 _amount, uint256 _thirdParty)
+    function _getFees(
+        uint256 _amount,
+        uint256 _thirdParty
+    )
         private
         returns (
             uint256 remainingAmount,
@@ -825,10 +809,7 @@ contract BurnRouterLogic is
         remainingAmount = _amount - _protocolFee - _thirdPartyFee - bitcoinFee;
 
         // Note: to avoid dust amount, we require remainingAmount to be greater than networkFee
-        require(
-            remainingAmount >= bitcoinFee,
-            "BurnRouterLogic: low amount"
-        );
+        require(remainingAmount >= bitcoinFee, "BurnRouterLogic: low amount");
 
         // Send protocol fee
         if (_protocolFee > 0) {
