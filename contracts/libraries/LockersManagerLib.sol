@@ -246,17 +246,17 @@ library LockersManagerLib {
         uint256 antecedent = (libConstants.UpperHealthFactor *
             theLocker.netMinted *
             libParams.liquidationRatio *
-            (10**libConstants.NativeTokenDecimal)) -
+            (10 ** libConstants.NativeTokenDecimal)) -
             (theLocker.nativeTokenLockedAmount *
                 _priceOfOneUnitOfCollateral *
-                (10**teleBTCDecimal));
+                (10 ** teleBTCDecimal));
 
         uint256 consequent = ((libConstants.UpperHealthFactor *
             libParams.liquidationRatio *
             _priceOfOneUnitOfCollateral *
             libParams.priceWithDiscountRatio) /
             libConstants.OneHundredPercent) -
-            (_priceOfOneUnitOfCollateral * (10**teleBTCDecimal));
+            (_priceOfOneUnitOfCollateral * (10 ** teleBTCDecimal));
 
         return antecedent / consequent;
     }
@@ -270,10 +270,10 @@ library LockersManagerLib {
         return
             (_priceOfOneUnitOfCollateral *
                 theLocker.nativeTokenLockedAmount *
-                (10**(1 + ERC20(libParams.teleBTC).decimals()))) /
+                (10 ** (1 + ERC20(libParams.teleBTC).decimals()))) /
             (theLocker.netMinted *
                 libParams.liquidationRatio *
-                (10**(1 + libConstants.NativeTokenDecimal)));
+                (10 ** (1 + libConstants.NativeTokenDecimal)));
     }
 
     function neededTeleBTCToBuyCollateral(
@@ -287,7 +287,7 @@ library LockersManagerLib {
                 _priceOfCollateral *
                 libParams.priceWithDiscountRatio) /
             (libConstants.OneHundredPercent *
-                (10**libConstants.NativeTokenDecimal));
+                (10 ** libConstants.NativeTokenDecimal));
     }
 
     function addToCollateral(
@@ -318,11 +318,11 @@ library LockersManagerLib {
             _priceOfOneUnitOfCollateral *
             libConstants.OneHundredPercent) /
             (libParams.collateralRatio *
-                (10**libConstants.NativeTokenDecimal)) -
+                (10 ** libConstants.NativeTokenDecimal)) -
             theLocker.netMinted;
 
         uint256 maxRemovableCollateral = (lockerCapacity *
-            (10**libConstants.NativeTokenDecimal)) /
+            (10 ** libConstants.NativeTokenDecimal)) /
             _priceOfOneUnitOfCollateral;
 
         require(
@@ -347,7 +347,7 @@ library LockersManagerLib {
     ) public view returns (uint256) {
         return
             IPriceOracle(libParams.priceOracle).equivalentOutputAmount(
-                (10**libConstants.NativeTokenDecimal), // 1 Ether is 10^18 wei
+                (10 ** libConstants.NativeTokenDecimal), // 1 Ether is 10^18 wei
                 libConstants.NativeTokenDecimal,
                 ITeleBTC(libParams.teleBTC).decimals(),
                 libConstants.NativeToken,

@@ -9,20 +9,23 @@ import "../routers/interfaces/ICcExchangeRouter.sol";
 import "../libraries/RequestParser.sol";
 
 library CcExchangeRouterLib {
-
     /// @notice Parses and stores exchange request if it's valid
     function ccExchangeHelper(
         ICcExchangeRouter.TxAndProof memory _txAndProof,
-        mapping(bytes32 => ICcExchangeRouter.ccExchangeRequest) storage ccExchangeRequests,
-        mapping(bytes32 => ICcExchangeRouter.extendedCcExchangeRequest) storage extendedCcExchangeRequests,
+        mapping(bytes32 => ICcExchangeRouter.ccExchangeRequest)
+            storage ccExchangeRequests,
+        mapping(bytes32 => ICcExchangeRouter.extendedCcExchangeRequest)
+            storage extendedCcExchangeRequests,
         address _teleBTC,
         bytes memory _lockerLockingScript,
         address _relay
     ) external returns (bytes32) {
-
         // Finds tx id
         bytes32 txId = BitcoinHelper.calculateTxId(
-            _txAndProof.version, _txAndProof.vin, _txAndProof.vout, _txAndProof.locktime
+            _txAndProof.version,
+            _txAndProof.vin,
+            _txAndProof.vout,
+            _txAndProof.locktime
         );
 
         // Checks that the request has not been processed before
@@ -34,11 +37,12 @@ library CcExchangeRouterLib {
         // Extracts value and OP_RETURN data from the request
         ICcExchangeRouter.ccExchangeRequest memory request;
         bytes memory arbitraryData;
-        
-        (request.inputAmount, arbitraryData) = BitcoinHelper.parseValueAndDataHavingLockingScriptSmallPayload(
-            _txAndProof.vout, 
-            _lockerLockingScript
-        );
+
+        (request.inputAmount, arbitraryData) = BitcoinHelper
+            .parseValueAndDataHavingLockingScriptSmallPayload(
+                _txAndProof.vout,
+                _lockerLockingScript
+            );
 
         /*  
             Exchange requests structure:
@@ -59,15 +63,24 @@ library CcExchangeRouterLib {
         require(arbitraryData.length == 65, "ExchangeRouterLib: invalid len");
         require(request.inputAmount > 0, "ExchangeRouterLib: zero input");
 
-        extendedCcExchangeRequests[txId].chainId = RequestParser.parseChainId(arbitraryData);
-        extendedCcExchangeRequests[txId].bridgeFee = uint(RequestParser.parseArossFeePercentage(arbitraryData)) * (10**11);
-        extendedCcExchangeRequests[txId].thirdParty = RequestParser.parseThirdPartyId(arbitraryData);
-        
+        extendedCcExchangeRequests[txId].chainId = RequestParser.parseChainId(
+            arbitraryData
+        );
+        extendedCcExchangeRequests[txId].bridgeFee =
+            uint(RequestParser.parseArossFeePercentage(arbitraryData)) *
+            (10 ** 11);
+        extendedCcExchangeRequests[txId].thirdParty = RequestParser
+            .parseThirdPartyId(arbitraryData);
+
         request.appId = RequestParser.parseAppId(arbitraryData);
         address exchangeToken = RequestParser.parseExchangeToken(arbitraryData);
-        request.outputAmount = RequestParser.parseExchangeOutputAmount(arbitraryData);
+        request.outputAmount = RequestParser.parseExchangeOutputAmount(
+            arbitraryData
+        );
         request.isFixedToken = true; // Note: we assume input amount is fixed
-        request.recipientAddress = RequestParser.parseRecipientAddress(arbitraryData);
+        request.recipientAddress = RequestParser.parseRecipientAddress(
+            arbitraryData
+        );
 
         // Note: default exchange path is: [teleBTC, exchangeToken]
         request.path = new address[](2);
@@ -77,24 +90,26 @@ library CcExchangeRouterLib {
         // Finds Teleporter fee
         uint networkFee = RequestParser.parseNetworkFee(arbitraryData);
 
-        require(networkFee <= request.inputAmount, "ExchangeRouterLib: wrong fee");
+        require(
+            networkFee <= request.inputAmount,
+            "ExchangeRouterLib: wrong fee"
+        );
         request.fee = networkFee;
-        
+
         // Note: speed now determines using fillers to speed up filling request (speed = 1) or not
         request.speed = RequestParser.parseSpeed(arbitraryData);
-        require(request.speed == 0, "ExchangeRouterLib: filler is not supported");
-    
+        require(
+            request.speed == 0,
+            "ExchangeRouterLib: filler is not supported"
+        );
+
         request.isUsed = true;
 
         // Saves request
         ccExchangeRequests[txId] = request;
 
         require(
-            _isConfirmed(
-                _txAndProof,
-                _relay,
-                txId
-            ),
+            _isConfirmed(_txAndProof, _relay, txId),
             "ExchangeRouter: not finalized"
         );
 
@@ -135,7 +150,10 @@ library CcExchangeRouterLib {
         bytes32 _txId
     ) internal returns (bool) {
         // Finds fee amount
-        uint feeAmount = _getFinalizedBlockHeaderFee(_relay, _txAndProof.blockNumber);
+        uint feeAmount = _getFinalizedBlockHeaderFee(
+            _relay,
+            _txAndProof.blockNumber
+        );
         require(msg.value >= feeAmount, "ExchangeRouterLib: low fee");
 
         // Calls relay contract
@@ -158,7 +176,7 @@ library CcExchangeRouterLib {
     }
 
     function _getFinalizedBlockHeaderFee(
-        address _relay, 
+        address _relay,
         uint _blockNumber
     ) private view returns (uint) {
         return IBitcoinRelay(_relay).getBlockHeaderFee(_blockNumber, 0);

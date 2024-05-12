@@ -103,6 +103,7 @@ const config: HardhatUserConfig = {
   	etherscan: {
 		apiKey: {
     		polygon: process.env.ETHERSCAN_API_KEY??"",
+			bsc: process.env.ETHERSCAN_API_KEY??"",
 			amoy: process.env.ETHERSCAN_API_KEY??"",
 			sepolia: process.env.ETHERSCAN_API_KEY??""
   		},
@@ -113,6 +114,14 @@ const config: HardhatUserConfig = {
 				urls: {
 					apiURL: "https://api.polygonscan.com/api",
 					browserURL: "https://polygonscan.com/"
+				}
+			},
+			{
+				network: "bsc",
+				chainId: 56,
+				urls: {
+					apiURL: "https://api.bscscan.com/api",
+					browserURL: "https://bscscan.com/"
 				}
 			},
 			{

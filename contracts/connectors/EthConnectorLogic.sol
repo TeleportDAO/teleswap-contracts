@@ -70,13 +70,6 @@ contract EthConnectorLogic is
         _setWrappedNativeToken(_wrappedNativeToken);
     }
 
-    // TODO: Remove this function
-    function setCurrChainId(
-        uint256 _currChainId
-    ) external onlyOwner {
-        currChainId = _currChainId;
-    }
-
     /// @notice Withdraws tokens in the emergency case
     /// @dev Only owner can call this
     function emergencyWithdraw(
@@ -159,22 +152,22 @@ contract EthConnectorLogic is
             IERC20(_token).approve(across, _amount);
         }
 
-        // // Calling across for transferring token and msg
-        // Address.functionCallWithValue(
-        //     across,
-        //     abi.encodeWithSignature(
-        //         "deposit(address,address,uint256,uint256,int64,uint32,bytes,uint256)",
-        //         targetChainConnectorProxy,
-        //         _token,
-        //         _amount,
-        //         targetChainId,
-        //         _relayerFeePercentage,
-        //         uint32(block.timestamp),
-        //         _message,
-        //         115792089237316195423570985008687907853269984665640564039457584007913129639935
-        //     ),
-        //     msg.value
-        // );
+        // Call across for transferring token and msg
+        Address.functionCallWithValue(
+            across,
+            abi.encodeWithSignature(
+                "deposit(address,address,uint256,uint256,int64,uint32,bytes,uint256)",
+                targetChainConnectorProxy,
+                _token,
+                _amount,
+                targetChainId,
+                _relayerFeePercentage,
+                uint32(block.timestamp),
+                _message,
+                115792089237316195423570985008687907853269984665640564039457584007913129639935
+            ),
+            msg.value
+        );
     }
 
     /// @notice Checks validity of request

@@ -699,9 +699,8 @@ contract BurnRouterLogic is
             set "isUsedAsBurnProof = true" for the whole txId
         */
         paidOutputCounter = 0;
-
         uint256 tempVoutIndex;
-        // TODO test
+        
         for (uint256 i = 0; i < _burnReqIndexes.length; i++) {
             // prevent from sending repeated vout indexes
             if (i == 0) {

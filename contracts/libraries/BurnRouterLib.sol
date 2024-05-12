@@ -230,7 +230,6 @@ library BurnRouterLib {
             feeAmount
         );
 
-        //TODO?
         // Sends extra ETH back to msg.sender
         Address.sendValue(payable(msg.sender), msg.value - feeAmount);
 
