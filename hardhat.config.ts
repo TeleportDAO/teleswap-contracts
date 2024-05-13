@@ -48,6 +48,11 @@ const config: HardhatUserConfig = {
 			chainId: 1,
 			accounts: [process.env.PRIVATE_KEY ?? ""]
 		},
+		arbitrum: {
+			url: "https://arbitrum-one.publicnode.com",
+			chainId: 42161,
+			accounts: [process.env.PRIVATE_KEY ?? ""]
+		},
 		sepolia: {
 			url: "https://ethereum-sepolia-rpc.publicnode.com",
 			chainId: 11155111,
@@ -104,6 +109,7 @@ const config: HardhatUserConfig = {
 		apiKey: {
     		polygon: process.env.ETHERSCAN_API_KEY??"",
 			bsc: process.env.ETHERSCAN_API_KEY??"",
+			arbitrum: process.env.ETHERSCAN_API_KEY??"",
 			amoy: process.env.ETHERSCAN_API_KEY??"",
 			sepolia: process.env.ETHERSCAN_API_KEY??""
   		},
@@ -122,6 +128,14 @@ const config: HardhatUserConfig = {
 				urls: {
 					apiURL: "https://api.bscscan.com/api",
 					browserURL: "https://bscscan.com/"
+				}
+			},
+			{
+				network: "arbitrum",
+				chainId: 42161,
+				urls: {
+					apiURL: "https://api.arbiscan.io/api",
+					browserURL: "https://arbiscan.com/"
 				}
 			},
 			{

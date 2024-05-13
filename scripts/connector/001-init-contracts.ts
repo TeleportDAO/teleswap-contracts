@@ -15,6 +15,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const across = config.get("across");
     const wrappedNativeToken = config.get("wrapped_native_token");
     const targetChainId = config.get("target_chain_id");
+    const sourceChainId = config.get("source_chain_id");
 
     logger
         .color("blue")
@@ -38,7 +39,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             polygonTeleBTC,
             across,
             wrappedNativeToken,
-            targetChainId
+            targetChainId,
+            sourceChainId
         );
         await initializeTx.wait(1);
         console.log("Initialized ethConnectorProxy: ", initializeTx.hash);
@@ -53,7 +55,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             polygonTeleBTC,
             across,
             wrappedNativeToken,
-            targetChainId
+            targetChainId,
+            sourceChainId
         );
         await initializeTx.wait(1);
         console.log("Initialized ethConnectorLogic: ", initializeTx.hash);
