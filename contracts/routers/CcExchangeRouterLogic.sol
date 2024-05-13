@@ -12,6 +12,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "solidity-bytes-utils/contracts/BytesLib.sol";
 import "@across-protocol/contracts-v2/contracts/interfaces/SpokePoolInterface.sol";
+import "hardhat/console.sol";
 
 contract CcExchangeRouterLogic is
     CcExchangeRouterStorage,
@@ -84,12 +85,12 @@ contract CcExchangeRouterLogic is
     }
 
     /// @notice Address of special Teleporter that can submit requests
-    function setInstantRouter(address _instantRouter)
+    function setSpecialTeleporter(address _specialTeleporter)
         external
         override
         onlyOwner
     {
-        _setInstantRouter(_instantRouter);
+        _setSpecialTeleporter(_specialTeleporter);
     }
 
     /// @notice Update LockersManager address
@@ -178,14 +179,12 @@ contract CcExchangeRouterLogic is
     }
 
     /// @notice Setter for chain id mapping
-    /// @dev Requests are submitted on the middle chain and the final token is sent to the destination chain.
-    /// @dev For example, for Ethereum, the middle chain is Polygon and the destination chain is Ethereum.
+    /// @dev After processing a request, the exchanged token is sent to the destination chain.
     function setChainIdMapping(
-        uint256 _mappedId,
-        uint256 _middleChain,
-        uint256 _destinationChain
+        uint256 _destinationChain,
+        uint256 _mappedId
     ) external override onlyOwner {
-        _setChainIdMapping(_middleChain, _destinationChain, _mappedId);
+        _setChainIdMapping(_destinationChain, _mappedId);
     }
 
     /// @notice Support a new token on specific chain
@@ -236,20 +235,8 @@ contract CcExchangeRouterLogic is
         return ccExchangeRequests[_txId].isUsed ? true : false;
     }
 
-    /// @notice Return the middle chain and destination chain from chainId
-    function extractChainId(uint256 chainId)
-        public
-        view
-        returns (uint256, uint256)
-    {
-        return (
-            chainIdMapping[chainId].middleChain,
-            chainIdMapping[chainId].destinationChain
-        );
-    }
-
-    /// @notice Return the destination chain from chainId
-    function extractDestinationChainId(uint256 chainId)
+    /// @notice Return the destination chain
+    function getDestChainId(uint256 chainId)
         public
         view
         returns (uint256)
@@ -276,7 +263,7 @@ contract CcExchangeRouterLogic is
     ) external payable virtual override nonReentrant returns (bool) {
         // Basic checks
         require(
-            _msgSender() == instantRouter,
+            _msgSender() == specialTeleporter,
             "ExchangeRouter: invalid sender"
         ); // Only Teleporter can submit requests
         require(
@@ -304,27 +291,10 @@ contract CcExchangeRouterLogic is
             relay
         );
 
-        // Extract the middle chain Id (the chain user is sending the request to)
-        // and destination chain Id (the final chain that user gets its token on it) from chainId
-        (uint256 middleChainId, uint256 destinationChainId) = extractChainId(
+        // Find destination chain Id (the final chain that user gets its token on it) from chainId
+        uint256 destinationChainId = getDestChainId(
             extendedCcExchangeRequests[txId].chainId
         );
-
-        // Middle chain Id must be equal to the current chain
-        require(middleChainId == chainId, "ExchangeRouter: wrong chain");
-
-        // Either the destination chain should be the current chain or the destination chain should be supported
-        require(
-            isChainSupported[destinationChainId] ||
-                destinationChainId == chainId,
-            "ExchangeRouter: invalid chain id"
-        );
-
-        if (middleChainId == destinationChainId)
-            require(
-                extendedCcExchangeRequests[txId].bridgeFee == 0,
-                "ExchangeRouter: invalid brdige fee"
-            );
 
         ccExchangeRequest memory request = ccExchangeRequests[txId];
 
@@ -354,10 +324,19 @@ contract CcExchangeRouterLogic is
 
         // } else {
         if (destinationChainId == chainId) {
+            require(
+                extendedCcExchangeRequests[txId].bridgeFee == 0,
+                "ExchangeRouter: invalid brdige fee"
+            );
+
             // Requests that belongs to the current chain
             // Normal exchange request for a request which has not been filled
             _wrapAndSwap(_exchangeConnector, _lockerLockingScript, txId, _path);
         } else {
+            require(
+                isChainSupported[destinationChainId],
+                "ExchangeRouter: invalid chain id"
+            );
             // Requests that belongs to the other chain
             // Exchange and send to other chain for a request which has not been filled
             _wrapAndSwapToOtherChain(
@@ -709,11 +688,12 @@ contract CcExchangeRouterLogic is
         uint256 _acrossRelayerFee
     ) private {
         IERC20(_token).approve(across, _amount);
+
         SpokePoolInterface(across).deposit(
             _user,
             _token,
             _amount,
-            extractDestinationChainId(_chainId),
+            getDestChainId(_chainId),
             int64(uint64(_acrossRelayerFee)),
             uint32(block.timestamp),
             "0x", // Null data
@@ -1083,13 +1063,13 @@ contract CcExchangeRouterLogic is
         relay = _relay;
     }
 
-    /// @notice Internal setter for instantRouter contract address
-    function _setInstantRouter(address _instantRouter)
+    /// @notice Internal setter for specialTeleporter address
+    function _setSpecialTeleporter(address _specialTeleporter)
         private
-        nonZeroAddress(_instantRouter)
+        nonZeroAddress(_specialTeleporter)
     {
-        emit NewInstantRouter(instantRouter, _instantRouter);
-        instantRouter = _instantRouter;
+        emit NewSpecialTeleporter(specialTeleporter, _specialTeleporter);
+        specialTeleporter = _specialTeleporter;
     }
 
     /// @notice Internal setter for lockers contract address
@@ -1147,8 +1127,7 @@ contract CcExchangeRouterLogic is
         burnRouter = _burnRouter;
     }
 
-    /// @notice                             Internal setter for third party address
-    /// @param _thirdPartyAddress           third party address
+    /// @notice Internal setter for third party address
     function _setThirdPartyAddress(
         uint256 _thirdPartyId,
         address _thirdPartyAddress
@@ -1161,8 +1140,7 @@ contract CcExchangeRouterLogic is
         thirdPartyAddress[_thirdPartyId] = _thirdPartyAddress;
     }
 
-    /// @notice                             Internal setter for third party fee
-    /// @param _thirdPartyFee               third party fee
+    /// @notice Internal setter for third party fee
     function _setThirdPartyFee(uint256 _thirdPartyId, uint256 _thirdPartyFee)
         private
     {
@@ -1174,22 +1152,20 @@ contract CcExchangeRouterLogic is
         thirdPartyFee[_thirdPartyId] = _thirdPartyFee;
     }
 
-    /// @notice                             Internal setter for wrappedNativeToken
-    /// @param _wrappedNativeToken          wrappedNativeToken address
+    /// @notice Internal setter for wrappedNativeToken
     function _setWrappedNativeToken(address _wrappedNativeToken) private {
         emit NewWrappedNativeToken(wrappedNativeToken, _wrappedNativeToken);
         wrappedNativeToken = _wrappedNativeToken;
     }
 
-    /// @notice                             Internal setter for chain id mapping
+    /// @notice Internal setter for chain id mapping
     function _setChainIdMapping(
-        uint256 _middleChain,
         uint256 _destinationChain,
         uint256 _mappedId
     ) private {
-        emit NewChainIdMapping(_mappedId, _middleChain, _destinationChain);
+        emit NewChainIdMapping(_destinationChain, _mappedId);
         chainIdMapping[_mappedId] = chainIdStruct(
-            _middleChain,
+            chainId,
             _destinationChain
         );
     }

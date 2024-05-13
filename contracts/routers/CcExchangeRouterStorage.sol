@@ -13,7 +13,7 @@ abstract contract CcExchangeRouterStorage is ICcExchangeRouter {
     uint public override chainId;
     uint public override protocolPercentageFee; // A number between 0 to 10000
     address public override relay;
-    address public override instantRouter;
+    address public override specialTeleporter;
     address public override lockers;
     address public override teleBTC;
     address public override treasury;
