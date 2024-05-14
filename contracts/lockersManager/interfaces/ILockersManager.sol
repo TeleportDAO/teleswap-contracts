@@ -63,6 +63,7 @@ interface ILockersManager {
         ILockersManager.lockersLibParam libParams;
         address theLockerTargetAddress;
         address collateralToken;
+        uint256 collateralDecimal;
         uint256 _lockedTDTAmount;
         uint256 _lockedNativeTokenAmount;
         bytes _candidateLockingScript;
@@ -93,7 +94,7 @@ interface ILockersManager {
         uint indexed inactivationTimestamp,
         bytes lockerLockingScript,
         uint TDTLockedAmount,
-        address indexed collateralToken,
+        address collateralToken,
         uint nativeTokenLockedAmount,
         uint netMinted
     );
@@ -102,7 +103,7 @@ interface ILockersManager {
         address indexed lockerTargetAddress,
         bytes lockerLockingScript,
         uint TDTLockedAmount,
-        address indexed collateralToken,
+        address collateralToken,
         uint nativeTokenLockedAmount,
         uint netMinted
     );
@@ -140,7 +141,7 @@ interface ILockersManager {
     event LockerLiquidated(
         address indexed lockerTargetAddress,
         address indexed liquidatorAddress,
-        address indexed collateralToken,
+        address collateralToken,
         uint collateralAmount,
         uint teleBTCAmount,
         uint liquidateTime
@@ -276,9 +277,7 @@ interface ILockersManager {
     function priceOracle() external view returns(address);
 
     function minRequiredTDTLockedAmount() external view returns(uint);
-
     function minRequiredTNTLockedAmount() external view returns(uint);
-
     function lockerPercentageFee() external view returns(uint);
 
     function collateralRatio() external view returns(uint);
@@ -334,8 +333,6 @@ interface ILockersManager {
     function setPriceWithDiscountRatio(uint _priceWithDiscountRatio) external;
 
     function setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) external;
-
-    function setMinRequiredTNTLockedAmount(uint _minRequiredTNTLockedAmount) external;
 
     function setPriceOracle(address _priceOracle) external;
 
@@ -401,5 +398,9 @@ interface ILockersManager {
         address _lockerTargetAddress,
         uint _collateralAmount
     ) external returns (bool);
+
+    function getLockerCapacity(
+        bytes calldata _lockerLockingScript
+    ) external view returns (uint256 theLockerCapacity);
 
 }

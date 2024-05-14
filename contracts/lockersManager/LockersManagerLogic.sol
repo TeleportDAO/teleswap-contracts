@@ -12,7 +12,6 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "hardhat/console.sol";
 
 //TODO tartib
 contract LockersManagerLogic is
@@ -24,6 +23,14 @@ contract LockersManagerLogic is
 {
     error ZeroAddress();
     error ZeroValue();
+    error NotBurner();
+    error NotMinter();
+    error NotLocker();
+    error TransferFailed();
+    error LockerActive();
+    error InvalidValue();
+    error AlreadyHasRole();
+    error NotRequested();
 
     using LockersManagerLib for *;
     using SafeERC20 for IERC20;
@@ -33,7 +40,6 @@ contract LockersManagerLogic is
         address _priceOracle,
         address _ccBurnRouter,
         uint256 _minRequiredTDTLockedAmount,
-        uint256 _minRequiredTNTLockedAmount,
         uint256 _collateralRatio,
         uint256 _liquidationRatio,
         uint256 _lockerPercentageFee,
@@ -47,7 +53,6 @@ contract LockersManagerLogic is
         setCCBurnRouter(_ccBurnRouter);
         setPriceOracle(_priceOracle);
         setMinRequiredTDTLockedAmount(_minRequiredTDTLockedAmount);
-        setMinRequiredTNTLockedAmount(_minRequiredTNTLockedAmount);
         setCollateralRatio(_collateralRatio);
         setLiquidationRatio(_liquidationRatio);
         setLockerPercentageFee(_lockerPercentageFee);
@@ -74,18 +79,19 @@ contract LockersManagerLogic is
     }
 
     modifier onlyMinter() {
-        require(isMinter(_msgSender()), "Lockers: only minters can mint");
+        if (!isMinter(_msgSender())) revert NotMinter();
         _;
     }
 
     modifier onlyBurner() {
-        require(isBurner(_msgSender()), "Lockers: only burners can burn");
+        if (!isBurner(_msgSender())) revert NotBurner();
         _;
     }
 
     // *************** External functions ***************
 
     // @notice Whitelist new collateral token with decimal
+    // @notice Set _decimal to 0 to remove token from whitelist
     function addCollateralToken (address _token, uint _decimal) external
         override
         nonZeroAddress(_token)
@@ -102,7 +108,9 @@ contract LockersManagerLogic is
         nonZeroAddress(_account)
         onlyOwner
     {
-        require(!isMinter(_account), "Lockers: account already has role");
+        if (isMinter(_account))
+            revert AlreadyHasRole();
+            
         minters[_account] = true;
         emit MinterAdded(_account);
     }
@@ -111,34 +119,37 @@ contract LockersManagerLogic is
     function removeMinter(address _account)
         external
         override
-        nonZeroAddress(_account)
         onlyOwner
     {
-        require(isMinter(_account), "Lockers: account does not have role");
+        if (!isMinter(_account))
+            revert NotMinter();
+            
         minters[_account] = false;
         emit MinterRemoved(_account);
     }
 
     /// @notice Give an account access to burn
     function addBurner(address _account)
-        external
+        public
         override
         nonZeroAddress(_account)
         onlyOwner
     {
-        require(!isBurner(_account), "Lockers: account already has role");
+        if (isBurner(_account))
+            revert AlreadyHasRole();
+
         burners[_account] = true;
         emit BurnerAdded(_account);
     }
 
     /// @notice Remove an account's access to burn
     function removeBurner(address _account)
-        external
+        public
         override
-        nonZeroAddress(_account)
         onlyOwner
     {
-        require(isBurner(_account), "Lockers: account does not have role");
+        // if (!isBurner(_account)) 
+        //     revert NotBurner();
         burners[_account] = false;
         emit BurnerRemoved(_account);
     }
@@ -186,7 +197,6 @@ contract LockersManagerLogic is
         external
         view
         override
-        nonZeroAddress(_lockerTargetAddress)
         returns (bytes memory)
     {
         return lockersMapping[_lockerTargetAddress].lockerLockingScript;
@@ -197,7 +207,6 @@ contract LockersManagerLogic is
         public
         override
         onlyOwner
-        nonZeroAddress(_TST)
     {
         emit NewTST(TeleportDAOToken, _TST);
         TeleportDAOToken = _TST;
@@ -211,10 +220,7 @@ contract LockersManagerLogic is
         override
         onlyOwner
     {
-        require(
-            _lockerPercentageFee <= MAX_LOCKER_FEE,
-            "Lockers: invalid locker fee"
-        );
+        if (_lockerPercentageFee > MAX_LOCKER_FEE) revert InvalidValue();
         emit NewLockerPercentageFee(lockerPercentageFee, _lockerPercentageFee);
         lockerPercentageFee = _lockerPercentageFee;
         libParams.lockerPercentageFee = lockerPercentageFee;
@@ -227,10 +233,7 @@ contract LockersManagerLogic is
         override
         onlyOwner
     {
-        require(
-            _priceWithDiscountRatio <= ONE_HUNDRED_PERCENT,
-            "Lockers: less than 100%"
-        );
+        if (_priceWithDiscountRatio > ONE_HUNDRED_PERCENT) revert InvalidValue();
         emit NewPriceWithDiscountRatio(
             priceWithDiscountRatio,
             _priceWithDiscountRatio
@@ -254,21 +257,6 @@ contract LockersManagerLogic is
         libParams.minRequiredTDTLockedAmount = minRequiredTDTLockedAmount;
     }
 
-    /// @notice Update the required native token bond to become Locker
-    function setMinRequiredTNTLockedAmount(uint256 _minRequiredTNTLockedAmount)
-        public
-        override
-        nonZeroValue(_minRequiredTNTLockedAmount)
-        onlyOwner
-    {
-        emit NewMinRequiredTNTLockedAmount(
-            minRequiredTNTLockedAmount,
-            _minRequiredTNTLockedAmount
-        );
-        minRequiredTNTLockedAmount = _minRequiredTNTLockedAmount;
-        libParams.minRequiredTNTLockedAmount = minRequiredTNTLockedAmount;
-    }
-
     /// @notice Update the price oracle
     /// @dev This oracle is used to get the price of native token in BTC
     function setPriceOracle(address _priceOracle)
@@ -290,12 +278,10 @@ contract LockersManagerLogic is
         onlyOwner
     {
         emit NewCCBurnRouter(ccBurnRouter, _ccBurnRouter);
-        emit BurnerRemoved(ccBurnRouter);
-        burners[ccBurnRouter] = false;
+        removeBurner(ccBurnRouter);
         ccBurnRouter = _ccBurnRouter;
         libParams.ccBurnRouter = ccBurnRouter;
-        emit BurnerAdded(ccBurnRouter);
-        burners[ccBurnRouter] = true;
+        addBurner(ccBurnRouter);
     }
 
     /// @notice Update wrapped BTC address
@@ -310,12 +296,12 @@ contract LockersManagerLogic is
         libParams.teleBTC = teleBTC;
     }
 
-    // TOOD divide by a maxReliabilityPercentage
     /// @notice Update locker reliability factor
     /// @dev This ratio is used as a helper to calculate the maximum mintable TeleBTC by a Locker
     function setLockerReliabilityFactor(address lockerTargetAddress, uint reliabilityFactor)
         public
         override
+        nonZeroValue(reliabilityFactor)
         onlyOwner
     {
         emit NewReliabilityFactor(lockerTargetAddress, lockerReliabilityFactor[lockerTargetAddress], reliabilityFactor);
@@ -329,7 +315,7 @@ contract LockersManagerLogic is
         override
         onlyOwner
     {
-        require(_collateralRatio > liquidationRatio, "Lockers: must CR > LR");
+        if (_collateralRatio <= liquidationRatio) revert InvalidValue();
         emit NewCollateralRatio(collateralRatio, _collateralRatio);
         collateralRatio = _collateralRatio;
         libParams.collateralRatio = collateralRatio;
@@ -341,7 +327,7 @@ contract LockersManagerLogic is
         override
         onlyOwner
     {
-        require(collateralRatio > _liquidationRatio, "Lockers: must CR > LR");
+        if (collateralRatio <= _liquidationRatio) revert InvalidValue();
         emit NewLiquidationRatio(liquidationRatio, _liquidationRatio);
         liquidationRatio = _liquidationRatio;
         libParams.liquidationRatio = liquidationRatio;
@@ -363,10 +349,6 @@ contract LockersManagerLogic is
         ScriptTypes _lockerRescueType,
         bytes calldata _lockerRescueScript
     ) external payable override nonReentrant returns (bool) {
-        require (collateralDecimal[_collateralToken] != 0, "Lockers: not whitelisted");
-        lockerCollateralToken[_msgSender()] = _collateralToken;
-
-        
         LockersManagerLib.requestToBecomeLocker(
             lockersMapping,
             becomeLockerArguments(  
@@ -374,6 +356,7 @@ contract LockersManagerLogic is
                 libParams,
                 lockerTargetAddress[_candidateLockingScript],
                 _collateralToken,
+                collateralDecimal[_collateralToken],
                 _lockedTSTAmount,
                 _lockedNativeTokenAmount,
                 _candidateLockingScript,
@@ -381,17 +364,16 @@ contract LockersManagerLogic is
                 _lockerRescueScript
             )
         );
+
+        lockerCollateralToken[_msgSender()] = _collateralToken;
         
         if (_collateralToken != NATIVE_TOKEN) {
-            require(
-                IERC20(_collateralToken).transferFrom(
-                    msg.sender,
-                    address(this),
-                    _lockedNativeTokenAmount
-                ),  "Lockers: transfer failed"
+            IERC20(_collateralToken).safeTransferFrom(
+                _msgSender(),
+                address(this),
+                _lockedNativeTokenAmount
             );
         }
-
 
         if (libParams.teleportDAOToken != address(0)) {
             IERC20(libParams.teleportDAOToken).safeTransferFrom(
@@ -418,13 +400,15 @@ contract LockersManagerLogic is
     /// @dev Send back TST and TNT collateral to the candidate
     /// @return True if the candidate is removed successfully
     function revokeRequest() external override nonReentrant returns (bool) {
-        require(lockersMapping[_msgSender()].isCandidate, "Lockers: no req");
+        if (!lockersMapping[_msgSender()].isCandidate)
+            revert NotRequested();
 
         // Loads locker's information
         locker memory lockerRequest = lockersMapping[_msgSender()];
 
         // Removes candidate from lockersMapping
         delete lockersMapping[_msgSender()];
+
         totalNumberOfCandidates = totalNumberOfCandidates - 1;
 
         // Sends back TDT and TNT collateral
@@ -447,11 +431,13 @@ contract LockersManagerLogic is
 
         emit RevokeAddLockerRequest(
             _msgSender(),
-            lockersMapping[_msgSender()].lockerLockingScript,
-            lockersMapping[_msgSender()].TDTLockedAmount,
+            lockerRequest.lockerLockingScript,
+            lockerRequest.TDTLockedAmount,
             lockerCollateralToken[_msgSender()],
-            lockersMapping[_msgSender()].nativeTokenLockedAmount
+            lockerRequest.nativeTokenLockedAmount
         );
+
+        delete lockerCollateralToken[_msgSender()];
 
         return true;
     }
@@ -469,10 +455,8 @@ contract LockersManagerLogic is
         onlyOwner
         returns (bool)
     {
-        require(
-            lockersMapping[_lockerTargetAddress].isCandidate,
-            "Lockers: no request"
-        );
+        if(!lockersMapping[_lockerTargetAddress].isCandidate)
+            revert NotRequested();
 
         // Updates locker's status
         lockersMapping[_lockerTargetAddress].isCandidate = false;
@@ -512,14 +496,12 @@ contract LockersManagerLogic is
         nonReentrant
         returns (bool)
     {
-        require(
-            lockersMapping[_msgSender()].isLocker,
-            "Lockers: input address is not a valid locker"
-        );
+        if (!lockersMapping[_msgSender()].isLocker)
+            revert NotLocker();
 
         require(
             lockerInactivationTimestamp[_msgSender()] == 0,
-            "Lockers: locker has already requested"
+            "Lockers: already requested"
         );
 
         lockerInactivationTimestamp[_msgSender()] =
@@ -544,10 +526,8 @@ contract LockersManagerLogic is
     ///      Note: lockerInactivationTimestamp = 0 means that the Locker is active
     /// @return True if activated successfully
     function requestActivation() external override nonReentrant returns (bool) {
-        require(
-            lockersMapping[_msgSender()].isLocker,
-            "Lockers: input address is not a valid locker"
-        );
+        if (!lockersMapping[_msgSender()].isLocker)
+            revert NotLocker();
 
         lockerInactivationTimestamp[_msgSender()] = 0;
 
@@ -572,9 +552,10 @@ contract LockersManagerLogic is
     function selfRemoveLocker() external override nonReentrant returns (bool) {
         locker memory _removingLocker = lockersMapping[_msgSender()];
 
-        require(_removingLocker.isLocker, "Lockers: no locker");
+        if (!_removingLocker.isLocker)
+            revert NotLocker();
 
-        require(!isLockerActive(_msgSender()), "Lockers: still active");
+        if (isLockerActive(_msgSender())) revert LockerActive();
 
         require(_removingLocker.netMinted == 0, "Lockers: 0 net minted");
 
@@ -635,29 +616,35 @@ contract LockersManagerLogic is
         uint256 _amount,
         address _recipient
     ) external override nonReentrant whenNotPaused returns (bool) {
-        require(
-            _msgSender() == ccBurnRouter,
-            "Lockers: message sender is not ccBurn"
-        );
-
         //TODO check tests for this cause locker collateral token was wrong
-        uint256 equivalentNativeToken = LockersManagerLib.slashIdleLocker(
+        (uint256 equivalentNativeToken, uint256 rewardAmountInNativeToken) = LockersManagerLib.slashIdleLocker(
             lockersMapping[_lockerTargetAddress],
-            libParams,
             lockerCollateralToken[_lockerTargetAddress],
             collateralDecimal[lockerCollateralToken[_lockerTargetAddress]],
+            libParams,
             _rewardAmount,
             _amount
         );
 
-        // Transfers TNT to user
-        payable(_recipient).transfer(
-            (equivalentNativeToken * _amount) / (_amount + _rewardAmount)
-        );
-        // Transfers TNT to slasher
-        uint256 rewardAmountInNativeToken = equivalentNativeToken -
-            ((equivalentNativeToken * _amount) / (_amount + _rewardAmount));
-        payable(_slasher).transfer(rewardAmountInNativeToken);
+        if (lockerCollateralToken[_lockerTargetAddress] == NATIVE_TOKEN) {
+            Address.sendValue(
+                payable(_recipient),
+                equivalentNativeToken - rewardAmountInNativeToken
+            );
+            Address.sendValue(
+                payable(_slasher),
+                rewardAmountInNativeToken
+            );
+        } else {
+            IERC20(lockerCollateralToken[_lockerTargetAddress]).transfer(
+                _recipient,
+                equivalentNativeToken - rewardAmountInNativeToken
+            );
+            IERC20(lockerCollateralToken[_lockerTargetAddress]).transfer(
+                _slasher,
+                rewardAmountInNativeToken
+            );
+        }
 
         emit LockerSlashed(
             _lockerTargetAddress,
@@ -689,10 +676,6 @@ contract LockersManagerLogic is
         address _slasher,
         uint256 _amount
     ) external override nonReentrant whenNotPaused returns (bool) {
-        require(
-            _msgSender() == ccBurnRouter,
-            "Lockers: message sender is not ccBurn"
-        );
         //TODO check tests for this cause locker collateral token was wrong
         address collateralToken = lockerCollateralToken[_lockerTargetAddress];
         (
@@ -700,6 +683,7 @@ contract LockersManagerLogic is
             uint256 neededNativeTokenForSlash
         ) = LockersManagerLib.slashThiefLocker(
                 lockersMapping[_lockerTargetAddress],
+                lockerReliabilityFactor[_lockerTargetAddress],
                 libConstants,
                 libParams,
                 collateralToken,
@@ -708,7 +692,17 @@ contract LockersManagerLogic is
                 _amount
             );
 
-        payable(_slasher).transfer(rewardInNativeToken);
+        if (lockerCollateralToken[_lockerTargetAddress] == NATIVE_TOKEN) {
+            Address.sendValue(
+                payable(_slasher),
+                rewardInNativeToken
+            );
+        } else {
+            IERC20(lockerCollateralToken[_lockerTargetAddress]).transfer(
+                _slasher,
+                rewardInNativeToken
+            );
+        }
 
         emit LockerSlashed(
             _lockerTargetAddress,
@@ -737,7 +731,6 @@ contract LockersManagerLogic is
     )
         external
         override
-        nonZeroAddress(_lockerTargetAddress)
         nonZeroValue(_collateralAmount)
         nonReentrant
         whenNotPaused
@@ -749,7 +742,8 @@ contract LockersManagerLogic is
             libParams,
             lockerCollateralToken[_lockerTargetAddress],
             collateralDecimal[lockerCollateralToken[_lockerTargetAddress]],
-            _collateralAmount
+            _collateralAmount,
+            lockerReliabilityFactor[_lockerTargetAddress]
         );
 
         locker memory theLiquidatingLocker = lockersMapping[
@@ -817,7 +811,7 @@ contract LockersManagerLogic is
     )
         external
         override
-        nonZeroAddress(_lockerTargetAddress)
+        nonZeroValue(_collateralAmount)
         nonReentrant
         whenNotPaused
         returns (bool)
@@ -828,11 +822,14 @@ contract LockersManagerLogic is
         );
 
         // Burns user's TeleBTC
-        ITeleBTC(teleBTC).transferFrom(
-            _msgSender(),
-            address(this),
-            neededTeleBTC
-        );
+        if (!
+            ITeleBTC(teleBTC).transferFrom(
+                _msgSender(),
+                address(this),
+                neededTeleBTC
+            )
+        ) revert TransferFailed();
+
         ITeleBTC(teleBTC).burn(neededTeleBTC);
         
         // Sends bought collateral to user
@@ -858,6 +855,7 @@ contract LockersManagerLogic is
     }
 
     /// @notice                                 Increases TNT collateral of the locker
+    /// @notice                                 Not neccessary to fill _addingNativeTokenAmount if collateral token is native token
     /// @param _lockerTargetAddress             Locker's target chain address
     /// @param _addingNativeTokenAmount         Amount of added collateral
     /// @return                                 True if collateral is added successfully
@@ -866,13 +864,11 @@ contract LockersManagerLogic is
         uint256 _addingNativeTokenAmount 
     ) external payable override nonReentrant returns (bool) {
 
-        if (lockerCollateralToken[_lockerTargetAddress] == NATIVE_TOKEN) {
-            require (msg.value == _addingNativeTokenAmount, "Lockers: wrong value");
-        }
-
-        LockersManagerLib.addToCollateral(
+        LockersManagerLib.addCollateralHelper(
+            libConstants,
             lockersMapping[_lockerTargetAddress],
-            _addingNativeTokenAmount
+            _addingNativeTokenAmount,
+            lockerCollateralToken[_lockerTargetAddress]
         );
 
         emit CollateralAdded(
@@ -893,22 +889,21 @@ contract LockersManagerLogic is
         external
         payable
         override
+        nonZeroValue(_removingNativeTokenAmount)
         nonReentrant
         returns (bool)
     {
-        require(!isLockerActive(_msgSender()), "Lockers: still active");
-
-        uint256 priceOfOnUnitOfCollateral = priceOfOneUnitOfCollateralInBTC(lockerCollateralToken[_msgSender()]);
-
         LockersManagerLib.removeFromCollateral(
             lockersMapping[_msgSender()],
             libConstants,
             libParams,
             lockerReliabilityFactor[_msgSender()],
+            lockerCollateralToken[_msgSender()],
             collateralDecimal[lockerCollateralToken[_msgSender()]],
-            priceOfOnUnitOfCollateral,
             _removingNativeTokenAmount
         );
+
+        if (isLockerActive(_msgSender())) revert LockerActive();
 
         if (lockerCollateralToken[_msgSender()] == NATIVE_TOKEN) {
             Address.sendValue(payable(_msgSender()), _removingNativeTokenAmount);
@@ -944,7 +939,6 @@ contract LockersManagerLogic is
         external
         override
         nonZeroAddress(_receiver)
-        nonZeroValue(_amount)
         nonReentrant
         whenNotPaused
         onlyMinter
@@ -954,20 +948,21 @@ contract LockersManagerLogic is
             _lockerLockingScript
         ];
 
-        require(_lockerTargetAddress != address(0), "Lockers: address is zero");
+        if (_lockerTargetAddress == address(0))
+            revert ZeroAddress();
+            
+        require(isLockerActive(_lockerTargetAddress), "Lockers: not active");
 
         LockersManagerLib.getLockerCapacity(
             libConstants,
             libParams,
-            lockerCollateralToken[_msgSender()],
-            collateralDecimal[lockerCollateralToken[_msgSender()]],
+            lockerCollateralToken[_lockerTargetAddress],
+            collateralDecimal[lockerCollateralToken[_lockerTargetAddress]],
             lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
             lockerReliabilityFactor[_lockerTargetAddress],
             lockersMapping[_lockerTargetAddress].netMinted,
             _amount
         );
-
-        require(isLockerActive(_lockerTargetAddress), "Lockers: not active");
 
         lockersMapping[_lockerTargetAddress].netMinted =
             lockersMapping[_lockerTargetAddress].netMinted +
@@ -993,6 +988,30 @@ contract LockersManagerLogic is
         return _amount - lockerFee;
     }
 
+    function getLockerCapacity(
+        bytes calldata _lockerLockingScript
+    )
+        external
+        view
+        override
+        returns (uint256 theLockerCapacity)
+    {
+        address _lockerTargetAddress = lockerTargetAddress[
+            _lockerLockingScript
+        ];
+
+        return LockersManagerLib.getLockerCapacity(
+            libConstants,
+            libParams,
+            lockerCollateralToken[_lockerTargetAddress],
+            collateralDecimal[lockerCollateralToken[_lockerTargetAddress]],
+            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
+            lockerReliabilityFactor[_lockerTargetAddress],
+            lockersMapping[_lockerTargetAddress].netMinted,
+            0
+        );
+    }
+
     /// @notice                       Burn teleBTC of an account
     /// @dev                          Burn teleBTC and also get the locker's fee
     /// @param _lockerLockingScript   Locking script of a locker
@@ -1001,7 +1020,6 @@ contract LockersManagerLogic is
     function burn(bytes calldata _lockerLockingScript, uint256 _amount)
         external
         override
-        nonZeroValue(_amount)
         nonReentrant
         whenNotPaused
         onlyBurner
@@ -1012,15 +1030,14 @@ contract LockersManagerLogic is
         ];
 
         // Transfers teleBTC from user
-        require(
+        if (!
             ITeleBTC(teleBTC).transferFrom(
                 _msgSender(),
                 address(this),
                 _amount
-            ),
-            "Lockers: transferFrom failed"
-        );
-
+            )
+        ) revert TransferFailed();
+        
         uint256 lockerFee = (_amount * lockerPercentageFee) / MAX_LOCKER_FEE;
         uint256 remainedAmount = _amount - lockerFee;
         uint256 netMinted = lockersMapping[_lockerTargetAddress].netMinted;
@@ -1033,10 +1050,10 @@ contract LockersManagerLogic is
 
         // Burns teleBTC and sends rest of it to locker
         require(ITeleBTC(teleBTC).burn(remainedAmount), "Lockers: burn failed");
-        require(
-            ITeleBTC(teleBTC).transfer(_lockerTargetAddress, lockerFee),
-            "Lockers: lockerFee failed"
-        );
+        
+        if (!ITeleBTC(teleBTC).transfer(_lockerTargetAddress, lockerFee))
+            revert TransferFailed();
+
 
         emit BurnByLocker(
             _lockerTargetAddress,
@@ -1063,7 +1080,6 @@ contract LockersManagerLogic is
         public
         view
         override
-        nonZeroAddress(_lockerTargetAddress)
         returns (bool)
     {
         if (lockerInactivationTimestamp[_lockerTargetAddress] == 0) {
@@ -1084,12 +1100,11 @@ contract LockersManagerLogic is
     function priceOfOneUnitOfCollateralInBTC(
         address collateralToken
     )
-        public
+        external
         view
         override
         returns (uint256)
     {
-        require (collateralDecimal[collateralToken] != 0, "Lockers: not whitelisted");
         return
             LockersManagerLib.priceOfOneUnitOfCollateralInBTC(
                 collateralToken,
@@ -1105,7 +1120,6 @@ contract LockersManagerLogic is
         public
         view
         override
-        nonZeroAddress(account)
         returns (bool)
     {
         return minters[account];
@@ -1118,7 +1132,6 @@ contract LockersManagerLogic is
         public
         view
         override
-        nonZeroAddress(account)
         returns (bool)
     {
         return burners[account];
