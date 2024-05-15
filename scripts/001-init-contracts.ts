@@ -60,6 +60,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const transferDeadLine = config.get("cc_burn.transfer_deadLine");
     const chainID = config.get("chain_id");
     const across = config.get("across");
+    const wrappedNativeToken = config.get("wrapped_native_token");
 
     logger
         .color("blue")
@@ -203,7 +204,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             transferDeadLine,
             protocolPercentageFee,
             slasherPercentageReward,
-            bitcoinFee
+            bitcoinFee,
+            wrappedNativeToken
         );
         await initializeTx.wait(1);
         console.log("Initialized BurnRouterProxy: ", initializeTx.hash);
@@ -222,7 +224,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             transferDeadLine,
             protocolPercentageFee,
             slasherPercentageReward,
-            bitcoinFee
+            bitcoinFee,
+            wrappedNativeToken
         );
         await initializeTx.wait(1);
         console.log("Initialized BurnRouterLogic: ", initializeTx.hash);

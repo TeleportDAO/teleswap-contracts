@@ -70,7 +70,7 @@ contract EthConnectorLogic is
         _setWrappedNativeToken(_wrappedNativeToken);
     }
 
-    /// @notice Withdraws tokens in the emergency case
+    /// @notice Withdraw tokens in the emergency case
     /// @dev Only owner can call this
     function emergencyWithdraw(
         address _token,
@@ -81,7 +81,7 @@ contract EthConnectorLogic is
         else IERC20(_token).transfer(_to, _amount);
     }
 
-    /// @notice Requests exchanging token for BTC
+    /// @notice Request exchanging token for BTC
     /// @dev To find teleBTCAmount, _relayerFeePercentage should be reduced from the inputTokenAmount
     /// @param _token Address of input token (on the current chain)
     /// @param _exchangeConnector Address of exchange connector to be used
@@ -105,8 +105,7 @@ contract EthConnectorLogic is
     ) external payable override nonReentrant {
         _checkRequest(_amounts, _path);
 
-        // Sends msg to Polygon
-
+        // Send msg to Polygon
         bytes memory message = abi.encode(
             "swapAndUnwrap",
             uniqueCounter,
@@ -133,7 +132,7 @@ contract EthConnectorLogic is
         );
     }
 
-    /// @notice Sends tokens and message using Across bridge
+    /// @notice Send tokens and message using Across bridge
     function _sendMsgUsingAcross(
         address _token,
         uint256 _amount,
@@ -146,9 +145,8 @@ contract EthConnectorLogic is
         } else {
             require(msg.value == 0, "EthManagerLogic: wrong value");
 
-            // Transfers tokens from user to contract
+            // Transfer tokens from user to contract
             IERC20(_token).transferFrom(_msgSender(), address(this), _amount);
-
             IERC20(_token).approve(across, _amount);
         }
 
@@ -170,7 +168,7 @@ contract EthConnectorLogic is
         );
     }
 
-    /// @notice Checks validity of request
+    /// @notice Check validity of request
     /// @dev Token should be acceptable, input amount should be >= min,
     ///      last token of path should be teleBTC, and amounts array length should be 2
     function _checkRequest(

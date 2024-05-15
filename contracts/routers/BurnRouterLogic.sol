@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <=0.8.4;
 
-import "../erc20/interfaces/ITeleBTC.sol";
+import "../erc20/interfaces/IWETH.sol";
 import "../lockersManager/interfaces/ILockersManager.sol";
 import "../swap_connectors/interfaces/IExchangeConnector.sol";
 import "../libraries/BurnRouterLib.sol";
@@ -50,7 +50,8 @@ contract BurnRouterLogic is
         uint256 _transferDeadline,
         uint256 _protocolPercentageFee,
         uint256 _slasherPercentageReward,
-        uint256 _networkFee
+        uint256 _networkFee,
+        address _wrappedNativeToken
     ) public initializer {
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
@@ -64,6 +65,7 @@ contract BurnRouterLogic is
         setSlasherPercentageReward(_slasherPercentageReward);
         setNetworkFeeOracle(owner());
         setNetworkFee(_networkFee);
+        setWrappedNativeToken(_wrappedNativeToken);
     }
 
     receive() external payable {}
@@ -237,6 +239,14 @@ contract BurnRouterLogic is
         thirdPartyFee[_thirdPartyId] = _thirdPartyFee;
     }
 
+    /// @notice Change the wrapped native token address
+    function setWrappedNativeToken(
+        address _wrappedNativeToken
+    ) public override onlyOwner {
+        emit NewWrappedNativeToken(wrappedNativeToken, _wrappedNativeToken);
+        wrappedNativeToken = _wrappedNativeToken;
+    }
+
     /// @notice Records users burn request
     /// @dev After submitting the burn request, Locker has a limited time
     ///      to send BTC and provide burn proof
@@ -255,11 +265,7 @@ contract BurnRouterLogic is
     ) external override nonReentrant returns (uint256) {
         // Transfers user's teleBTC to contract
         require(
-            ITeleBTC(teleBTC).transferFrom(
-                _msgSender(),
-                address(this),
-                _amount
-            ),
+            IWETH(teleBTC).transferFrom(_msgSender(), address(this), _amount),
             "BurnRouterLogic: transferFrom failed"
         );
 
@@ -295,7 +301,7 @@ contract BurnRouterLogic is
         ScriptTypes _scriptType,
         bytes calldata _lockerLockingScript,
         uint256 thirdParty
-    ) external override nonReentrant returns (uint256) {
+    ) external payable override nonReentrant returns (uint256) {
         uint256 _exchangedTeleBTC = _exchange(
             _exchangeConnector,
             _amounts,
@@ -347,7 +353,8 @@ contract BurnRouterLogic is
 
         // It's more safe to only allow the Locker to call this function
         require(
-            _msgSender() == _lockerTargetAddress,
+            _msgSender() == _lockerTargetAddress ||
+                _msgSender() == bitcoinFeeOracle,
             "BurnRouterLogic: not locker"
         );
 
@@ -560,7 +567,7 @@ contract BurnRouterLogic is
         ) = _getFees(_amount, thirdParty);
 
         // Burns remained teleBTC
-        ITeleBTC(teleBTC).approve(lockers, remainingAmount);
+        IWETH(teleBTC).approve(lockers, remainingAmount);
 
         // Reduces the Bitcoin fee to find the amount that user receives (called burntAmount)
         _burntAmount = (
@@ -621,11 +628,29 @@ contract BurnRouterLogic is
             "BurnRouterLogic: invalid path"
         );
         require(_amounts.length == 2, "BurnRouterLogic: wrong amounts");
-        // Transfers user's input token
 
-        IERC20(_path[0]).transferFrom(_msgSender(), address(this), _amounts[0]);
+        if (msg.value != 0) {
+            require(
+                msg.value == _amounts[0],
+                "BurnRouterLogic: invalid amount"
+            );
+            require(
+                wrappedNativeToken == _path[0],
+                "BurnRouterLogic: invalid path"
+            );
+            // Mint wrapped native token
+            IWETH(wrappedNativeToken).deposit{value: msg.value}();
+        } else {
+            // Transfer user input token to contract
+            IWETH(_path[0]).transferFrom(
+                _msgSender(),
+                address(this),
+                _amounts[0]
+            );
+        }
 
-        IERC20(_path[0]).approve(_exchangeConnector, _amounts[0]); // Gives approval to exchange connector
+        // Give approval to exchange connector
+        IWETH(_path[0]).approve(_exchangeConnector, _amounts[0]);
         (bool result, uint256[] memory amounts) = IExchangeConnector(
             _exchangeConnector
         ).swap(
@@ -700,7 +725,7 @@ contract BurnRouterLogic is
         */
         paidOutputCounter = 0;
         uint256 tempVoutIndex;
-        
+
         for (uint256 i = 0; i < _burnReqIndexes.length; i++) {
             // prevent from sending repeated vout indexes
             if (i == 0) {
@@ -813,7 +838,7 @@ contract BurnRouterLogic is
         // Send protocol fee
         if (_protocolFee > 0) {
             require(
-                ITeleBTC(teleBTC).transfer(treasury, _protocolFee),
+                IWETH(teleBTC).transfer(treasury, _protocolFee),
                 "BurnRouterLogic: fee transfer failed"
             );
         }
@@ -821,7 +846,7 @@ contract BurnRouterLogic is
         // Send third party fee
         if (_thirdPartyFee > 0) {
             require(
-                ITeleBTC(teleBTC).transfer(
+                IWETH(teleBTC).transfer(
                     thirdPartyAddress[_thirdParty],
                     _thirdPartyFee
                 ),
@@ -831,7 +856,7 @@ contract BurnRouterLogic is
 
         if (bitcoinFee > 0) {
             require(
-                ITeleBTC(teleBTC).transfer(lockers, bitcoinFee),
+                IWETH(teleBTC).transfer(lockers, bitcoinFee),
                 "BurnRouterLogic: network fee transfer failed"
             );
         }

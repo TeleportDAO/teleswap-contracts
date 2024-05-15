@@ -78,7 +78,7 @@ describe("BurnRouter", async () => {
     let USER_SCRIPT_P2WPKH = "0x751e76e8199196d454941c45d1b3a323f1433bd6";
     let USER_SCRIPT_P2WPKH_TYPE = 3; // P2WPKH
 
-    let MAX_PROTOCOL_FEE = 10000;
+    // TODO: ADD TEST FOR PAYABLE SWAP AND UNWRAP
     before(async () => {
 
         [proxyAdmin, deployer, signer1, signer2] = await ethers.getSigners();
@@ -146,7 +146,8 @@ describe("BurnRouter", async () => {
             TRANSFER_DEADLINE,
             PROTOCOL_PERCENTAGE_FEE,
             SLASHER_PERCENTAGE_REWARD,
-            BITCOIN_FEE
+            BITCOIN_FEE,
+            ZERO_ADDRESS
         );
 
         // Deploys input token
@@ -169,7 +170,10 @@ describe("BurnRouter", async () => {
 
         // Connects signer1 and signer2 to burnRouter
         burnRouterSigner1 = await burnRouter.connect(signer1);
-        burnRouterSigner2 = await burnRouter.connect(signer2)
+        burnRouterSigner2 = await burnRouter.connect(signer2);
+
+        // Set signer2 as network fee oracle (signer2 can also submit burn proofs)
+        await burnRouter.setNetworkFeeOracle(await signer2.getAddress());
     });
 
     async function moveBlocks(amount: number) {
@@ -180,21 +184,6 @@ describe("BurnRouter", async () => {
           })
         }
     }
-
-    const deployTeleBTC = async (
-        _signer?: Signer
-    ): Promise<TeleBTC> => {
-        const teleBTCFactory = new TeleBTC__factory(
-            _signer || deployer
-        );
-
-        const teleBTC = await teleBTCFactory.deploy(
-            "Teleport Wrapped BTC",
-            "TeleBTC"
-        );
-
-        return teleBTC;
-    };
 
     const deployBurnRouterLib = async (
         _signer?: Signer
@@ -1556,11 +1545,10 @@ describe("BurnRouter", async () => {
 
         it("Sets bitcoin fee", async function () {
             await expect(
-                burnRouter.setNetworkFee(100)
+                burnRouterSigner2.setNetworkFee(100)
             ).to.emit(
                 burnRouter, "NewNetworkFee"
             ).withArgs(BITCOIN_FEE, 100);
-
 
             await expect(
                 await burnRouter.bitcoinFee()
@@ -1626,19 +1614,19 @@ describe("BurnRouter", async () => {
         it("Reverts since given address is zero", async function () {
             await expect(
                 burnRouter.setRelay(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
 
             await expect(
                 burnRouter.setLockers(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
 
             await expect(
                 burnRouter.setTeleBTC(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
 
             await expect(
                 burnRouter.setTreasury(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
         })
 
         it("Reverts since given address is zero", async function () {
