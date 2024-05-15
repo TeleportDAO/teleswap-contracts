@@ -87,19 +87,15 @@ contract EthConnectorLogic is
     /// @param _exchangeConnector Address of exchange connector to be used
     /// @param _amounts [inputTokenAmount, teleBTCAmount]
     /// @param _path of exchanging inputToken to teleBTC (these are Polygon token addresses, so _path[0] != _token)
-    /// @param _userScript User script hash
-    /// @param _scriptType User script type
-    /// @param _lockerLockingScript	of locker that should execute the burn request
     /// @param _relayerFeePercentage Fee percentage for relayer
     /// @param _thirdParty Id of third party
     function swapAndUnwrap(
         address _token,
         address _exchangeConnector,
         uint256[] calldata _amounts,
+        bool _isInputFixed,
         address[] calldata _path,
-        bytes memory _userScript,
-        ScriptTypes _scriptType,
-        bytes calldata _lockerLockingScript,
+        UserAndLockerScript calldata _scripts,
         int64 _relayerFeePercentage,
         uint256 _thirdParty
     ) external payable override nonReentrant {
@@ -112,11 +108,10 @@ contract EthConnectorLogic is
             currChainId,
             _msgSender(),
             _exchangeConnector,
-            _amounts[1], // Min output amount to receive
+            _amounts[1],
+            _isInputFixed,
             _path,
-            _userScript,
-            _scriptType,
-            _lockerLockingScript,
+            _scripts,
             _thirdParty
         );
 

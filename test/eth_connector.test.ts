@@ -17,7 +17,6 @@ import { ERC20 } from "../src/types/ERC20";
 import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 import { EthConnectorProxy__factory } from "../src/types/factories/EthConnectorProxy__factory";
 import { EthConnectorLogic__factory } from "../src/types/factories/EthConnectorLogic__factory";
-import { BurnRouterLib } from "../src/types/BurnRouterLib";
 import { takeSnapshot, revertProvider } from "./block_utils";
 import { network } from "hardhat";
 
@@ -43,16 +42,11 @@ describe("EthConnector", async () => {
     // Contracts
     let teleBTC: TeleBTC;
     let inputToken: ERC20;
-    let inputTokenSigner1: ERC20;
     let wrappedNativeToken: ERC20;
     let polygonToken: ERC20;
-    let TeleBTCSigner1: TeleBTC;
     let EthConnector: Contract;
 
     // Mock contracts
-    let mockAddress: MockContract;
-    let mockLockers: MockContract;
-    let mockExchangeConnector: MockContract;
     let mockAcross: MockContract;
 
     // Constants
@@ -64,24 +58,14 @@ describe("EthConnector", async () => {
         This one is set so that:
         userRequestedAmount * (1 - lockerFee / 10000 - PROTOCOL_PERCENTAGE_FEE / 10000) - BITCOIN_FEE = 100000000
     */
-    let userRequestedAmount = BigNumber.from(100060030);
     let requestAmount = 100;
     let telebtcAmount = 100000000000;
-    let TRANSFER_DEADLINE = 20;
-    let PROTOCOL_PERCENTAGE_FEE = 5; // means 0.05%
-    let SLASHER_PERCENTAGE_REWARD = 5; // means 0.05%
     let RELAYER_FEE = 10000; // estimation of Bitcoin transaction fee in Satoshi
-    let TREASURY = "0x0000000000000000000000000000000000000002";
 
     let LOCKER_TARGET_ADDRESS = ONE_ADDRESS;
-    let LOCKER1_LOCKING_SCRIPT =
-        "0x76a914748284390f9e263a4b766a75d0633c50426eb87587ac";
 
     let USER_SCRIPT_P2PKH = "0x12ab8dc588ca9d5787dde7eb29569da63c3a238c";
     let USER_SCRIPT_P2PKH_TYPE = 1; // P2PKH
-
-    let USER_SCRIPT_P2WPKH = "0x751e76e8199196d454941c45d1b3a323f1433bd6";
-    let USER_SCRIPT_P2WPKH_TYPE = 3; // P2WPKH
 
     before(async () => {
         [proxyAdmin, deployer, signer1, signer2, acrossSinger] =
@@ -128,7 +112,6 @@ describe("EthConnector", async () => {
 
         // Mints TeleBTC for user
         await teleBTC.addMinter(signer1Address);
-        TeleBTCSigner1 = await teleBTC.connect(signer1);
 
         await teleBTC.setMaxMintLimit(oneHundred.mul(2));
         await moveBlocks(2020);
@@ -182,11 +165,6 @@ describe("EthConnector", async () => {
 
         return await ethConnectorLogic.attach(ethConnectorProxy.address);
     };
-
-    async function mintTeleBTCForTest(): Promise<void> {
-        let TeleBTCSigner1 = await teleBTC.connect(signer1);
-        await TeleBTCSigner1.mint(signer1Address, oneHundred);
-    }
 
     describe("#setters", async () => {
         beforeEach(async () => {
@@ -283,10 +261,13 @@ describe("EthConnector", async () => {
                     inputToken.address,
                     ONE_ADDRESS,
                     [requestAmount, telebtcAmount],
+                    true,
                     [polygonToken.address, inputToken.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER_TARGET_ADDRESS,
+                    { 
+                        userScript: USER_SCRIPT_P2PKH,
+                        scriptType: USER_SCRIPT_P2PKH_TYPE,
+                        lockerLockingScript: LOCKER_TARGET_ADDRESS
+                    },
                     RELAYER_FEE,
                     0
                 )
@@ -299,10 +280,13 @@ describe("EthConnector", async () => {
                     inputToken.address,
                     ONE_ADDRESS,
                     [requestAmount, telebtcAmount, 100],
+                    true,
                     [polygonToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER_TARGET_ADDRESS,
+                    { 
+                        userScript: USER_SCRIPT_P2PKH,
+                        scriptType: USER_SCRIPT_P2PKH_TYPE,
+                        lockerLockingScript: LOCKER_TARGET_ADDRESS
+                    },
                     RELAYER_FEE,
                     0
                 )
@@ -317,10 +301,13 @@ describe("EthConnector", async () => {
                     ETH_ADDRESS,
                     ONE_ADDRESS,
                     [requestAmount, telebtcAmount],
+                    true,
                     [polygonToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER_TARGET_ADDRESS,
+                    { 
+                        userScript: USER_SCRIPT_P2PKH,
+                        scriptType: USER_SCRIPT_P2PKH_TYPE,
+                        lockerLockingScript: LOCKER_TARGET_ADDRESS
+                    },
                     RELAYER_FEE,
                     0
                 )
@@ -337,11 +324,16 @@ describe("EthConnector", async () => {
                     "address",
                     "address",
                     "uint",
+                    "bool",
                     "address[]",
-                    "bytes",
-                    "uint",
-                    "bytes",
-                    "uint",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
                 ],
                 [
                     "swapAndUnwrap",
@@ -350,11 +342,14 @@ describe("EthConnector", async () => {
                     deployerAddress,
                     ONE_ADDRESS,
                     telebtcAmount,
+                    true,
                     [polygonToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER_TARGET_ADDRESS,
-                    0,
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0
                 ]
             );
 
@@ -363,10 +358,13 @@ describe("EthConnector", async () => {
                     inputToken.address,
                     ONE_ADDRESS,
                     [requestAmount, telebtcAmount],
+                    true,
                     [polygonToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER_TARGET_ADDRESS,
+                    { 
+                        userScript: USER_SCRIPT_P2PKH,
+                        scriptType: USER_SCRIPT_P2PKH_TYPE,
+                        lockerLockingScript: LOCKER_TARGET_ADDRESS
+                    },
                     RELAYER_FEE,
                     0
                 )
@@ -389,11 +387,16 @@ describe("EthConnector", async () => {
                     "address",
                     "address",
                     "uint",
+                    "bool",
                     "address[]",
-                    "bytes",
-                    "uint",
-                    "bytes",
-                    "uint",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
                 ],
                 [
                     "swapAndUnwrap",
@@ -402,10 +405,13 @@ describe("EthConnector", async () => {
                     deployerAddress,
                     ONE_ADDRESS,
                     telebtcAmount,
+                    true,
                     [polygonToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER_TARGET_ADDRESS,
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
                     0,
                 ]
             );
@@ -415,10 +421,13 @@ describe("EthConnector", async () => {
                     ETH_ADDRESS,
                     ONE_ADDRESS,
                     [requestAmount, telebtcAmount],
+                    true,
                     [polygonToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER_TARGET_ADDRESS,
+                    { 
+                        userScript: USER_SCRIPT_P2PKH,
+                        scriptType: USER_SCRIPT_P2PKH_TYPE,
+                        lockerLockingScript: LOCKER_TARGET_ADDRESS
+                    },
                     RELAYER_FEE,
                     0,
                     {
@@ -441,10 +450,13 @@ describe("EthConnector", async () => {
                     inputToken.address,
                     ONE_ADDRESS,
                     [requestAmount, telebtcAmount],
+                    true,
                     [polygonToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER_TARGET_ADDRESS,
+                    { 
+                        userScript: USER_SCRIPT_P2PKH,
+                        scriptType: USER_SCRIPT_P2PKH_TYPE,
+                        lockerLockingScript: LOCKER_TARGET_ADDRESS
+                    },
                     RELAYER_FEE,
                     0,
                     {

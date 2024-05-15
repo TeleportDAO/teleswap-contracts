@@ -137,7 +137,8 @@ describe("PolyConnector", async () => {
             TRANSFER_DEADLINE,
             PROTOCOL_PERCENTAGE_FEE,
             SLASHER_PERCENTAGE_REWARD,
-            BITCOIN_FEE
+            BITCOIN_FEE,
+            ONE_ADDRESS
         );
 
         PolyConnector = await deployPolyConnector();
@@ -417,11 +418,16 @@ describe("PolyConnector", async () => {
                     "address",
                     "address",
                     "uint",
+                    "bool",
                     "address[]",
-                    "bytes",
-                    "uint",
-                    "bytes",
-                    "uint",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
                 ],
                 [
                     "swapAndUnwrap",
@@ -430,11 +436,14 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     mockExchangeConnector.address,
                     telebtcAmount,
+                    true,
                     [inputToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER1_LOCKING_SCRIPT,
-                    0,
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0
                 ]
             );
 
@@ -474,11 +483,16 @@ describe("PolyConnector", async () => {
                     "address",
                     "address",
                     "uint",
+                    "bool",
                     "address[]",
-                    "bytes",
-                    "uint",
-                    "bytes",
-                    "uint",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
                 ],
                 [
                     "swapAndUnwrap",
@@ -487,10 +501,13 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     mockExchangeConnector.address,
                     telebtcAmount,
+                    true,
                     [inputToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER1_LOCKING_SCRIPT,
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
                     0,
                 ]
             );
@@ -514,11 +531,16 @@ describe("PolyConnector", async () => {
                     "address",
                     "address",
                     "uint",
+                    "bool",
                     "address[]",
-                    "bytes",
-                    "uint",
-                    "bytes",
-                    "uint",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
                 ],
                 [
                     "test",
@@ -527,10 +549,13 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     mockExchangeConnector.address,
                     telebtcAmount,
+                    true,
                     [inputToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER1_LOCKING_SCRIPT,
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
                     0,
                 ]
             );
@@ -556,11 +581,16 @@ describe("PolyConnector", async () => {
                     "address",
                     "address",
                     "uint",
+                    "bool",
                     "address[]",
-                    "bytes",
-                    "uint",
-                    "bytes",
-                    "uint",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
                 ],
                 [
                     "swapAndUnwrap",
@@ -569,10 +599,13 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     mockExchangeConnector.address,
                     telebtcAmount,
+                    true,
                     [inputToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER1_LOCKING_SCRIPT,
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
                     0,
                 ]
             );
@@ -624,11 +657,16 @@ describe("PolyConnector", async () => {
                     "address",
                     "address",
                     "uint",
+                    "bool",
                     "address[]",
-                    "bytes",
-                    "uint",
-                    "bytes",
-                    "uint",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
                 ],
                 [
                     "swapAndUnwrap",
@@ -637,10 +675,13 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     mockExchangeConnector.address,
                     telebtcAmount,
+                    true,
                     [inputToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER1_LOCKING_SCRIPT,
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
                     0,
                 ]
             );
@@ -754,10 +795,16 @@ describe("PolyConnector", async () => {
                     "address",
                     "address",
                     "uint",
+                    "bool",
                     "address[]",
-                    "bytes",
-                    "uint",
-                    "bytes",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
                 ],
                 [
                     "swapAndUnwrap",
@@ -766,10 +813,14 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     mockExchangeConnector.address,
                     telebtcAmount,
+                    true,
                     [inputToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER1_LOCKING_SCRIPT,
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0
                 ]
             );
 
@@ -842,10 +893,16 @@ describe("PolyConnector", async () => {
                     "address",
                     "address",
                     "uint",
+                    "bool",
                     "address[]",
-                    "bytes",
-                    "uint",
-                    "bytes",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
                 ],
                 [
                     "swapAndUnwrap",
@@ -854,10 +911,14 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     mockExchangeConnector.address,
                     telebtcAmount,
+                    true,
                     [inputToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER1_LOCKING_SCRIPT,
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0
                 ]
             );
 
@@ -930,10 +991,16 @@ describe("PolyConnector", async () => {
                     "address",
                     "address",
                     "uint",
+                    "bool",
                     "address[]",
-                    "bytes",
-                    "uint",
-                    "bytes",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
                 ],
                 [
                     "swapAndUnwrap",
@@ -942,10 +1009,14 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     mockExchangeConnector.address,
                     telebtcAmount,
+                    true,
                     [inputToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER1_LOCKING_SCRIPT,
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0
                 ]
             );
 
@@ -1137,10 +1208,16 @@ describe("PolyConnector", async () => {
                     "address",
                     "address",
                     "uint",
+                    "bool",
                     "address[]",
-                    "bytes",
-                    "uint",
-                    "bytes",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
                 ],
                 [
                     "swapAndUnwrap",
@@ -1149,10 +1226,14 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     mockExchangeConnector.address,
                     telebtcAmount,
+                    true,
                     [inputToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER1_LOCKING_SCRIPT,
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0
                 ]
             );
 
@@ -1215,10 +1296,16 @@ describe("PolyConnector", async () => {
                     "address",
                     "address",
                     "uint",
+                    "bool",
                     "address[]",
-                    "bytes",
-                    "uint",
-                    "bytes",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
                 ],
                 [
                     "swapAndUnwrap",
@@ -1227,10 +1314,14 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     mockExchangeConnector.address,
                     telebtcAmount,
+                    true,
                     [inputToken.address, teleBTC.address],
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER1_LOCKING_SCRIPT,
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0
                 ]
             );
 

@@ -4,16 +4,22 @@ pragma solidity >=0.8.0 <=0.8.4;
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 
 interface IPolyConnector {
-    /// @notice Structure for _swapAndUnwrap function
+    // Structs
+
+    struct UserAndLockerScript {
+        bytes userScript;
+        ScriptTypes scriptType;
+        bytes lockerLockingScript;
+    }
+
     struct exchangeForBtcArguments {
         uint256 chainId;
         address user;
         address exchangeConnector;
-        uint256 minOutputAmount;
+        uint256 outputAmount;
+        bool isInputFixed;
         address[] path;
-        bytes userScript;
-        ScriptTypes scriptType;
-        bytes lockerLockingScript;
+        UserAndLockerScript scripts;
         uint256 thirdParty;
     }
 

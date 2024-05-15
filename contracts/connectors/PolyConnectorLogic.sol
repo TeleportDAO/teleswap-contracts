@@ -72,7 +72,7 @@ contract PolyConnectorLogic is
         bytes memory _message
     ) external override nonReentrant {
         // Checks the msg origin and fill completion (full amount has been received)
-        // require(msg.sender == across, "PolygonConnectorLogic: not across");
+        require(msg.sender == across, "PolygonConnectorLogic: not across");
 
         // Determines the function call
         (string memory purpose, uint256 uniqueCounter, uint256 chainId) = abi
@@ -144,7 +144,7 @@ contract PolyConnectorLogic is
             address _token,
             uint256 _amount,
             address exchangeConnector,
-            uint256 minOutputAmount,
+            uint256 outputAmount,
             bytes memory userScript,
             ScriptTypes scriptType,
             bytes memory lockerLockingScript,
@@ -173,7 +173,7 @@ contract PolyConnectorLogic is
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = _amount;
-        amounts[1] = minOutputAmount;
+        amounts[1] = outputAmount;
 
         IERC20(path[0]).approve(burnRouterProxy, _amount);
         IBurnRouter(burnRouterProxy).swapAndUnwrap(
@@ -226,13 +226,13 @@ contract PolyConnectorLogic is
         bytes memory _message,
         address _tokenSent
     ) internal {
-        IPolyConnector.exchangeForBtcArguments memory arguments = _decodeReq(
+        exchangeForBtcArguments memory arguments = _decodeReq(
             _message
         );
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = _amount;
-        amounts[1] = arguments.minOutputAmount;
+        amounts[1] = arguments.outputAmount;
 
         IERC20(arguments.path[0]).approve(burnRouterProxy, _amount);
 
@@ -240,12 +240,12 @@ contract PolyConnectorLogic is
             IBurnRouter(burnRouterProxy).swapAndUnwrap(
                 arguments.exchangeConnector,
                 amounts,
-                true, // Input token amount is fixed
+                arguments.isInputFixed,
                 arguments.path,
                 block.timestamp,
-                arguments.userScript,
-                arguments.scriptType,
-                arguments.lockerLockingScript,
+                arguments.scripts.userScript,
+                arguments.scripts.scriptType,
+                arguments.scripts.lockerLockingScript,
                 arguments.thirdParty
             )
         {
@@ -255,23 +255,23 @@ contract PolyConnectorLogic is
                 _tokenSent,
                 _amount,
                 arguments.user,
-                arguments.userScript,
-                arguments.scriptType,
+                arguments.scripts.userScript,
+                arguments.scripts.scriptType,
                 ILockersManager(lockersProxy).getLockerTargetAddress(
-                    arguments.lockerLockingScript
+                    arguments.scripts.lockerLockingScript
                 ),
                 BurnRouterStorage(burnRouterProxy).burnRequestCounter(
                     ILockersManager(lockersProxy).getLockerTargetAddress(
-                        arguments.lockerLockingScript
+                        arguments.scripts.lockerLockingScript
                     )
                 ) - 1,
                 arguments.path
             );
         } catch {
-            // Removes spending allowance
+            // Remove spending allowance
             IERC20(arguments.path[0]).approve(burnRouterProxy, 0);
 
-            // Saves token amount so user can withdraw it in future
+            // Save token amount so user can withdraw it in future
             failedReqs[arguments.user][arguments.chainId][
                 _tokenSent
             ] += _amount;
@@ -281,8 +281,8 @@ contract PolyConnectorLogic is
                 _tokenSent,
                 _amount,
                 arguments.user,
-                arguments.userScript,
-                arguments.scriptType,
+                arguments.scripts.userScript,
+                arguments.scripts.scriptType,
                 arguments.path
             );
         }
@@ -293,7 +293,7 @@ contract PolyConnectorLogic is
     )
         private
         pure
-        returns (IPolyConnector.exchangeForBtcArguments memory arguments)
+        returns (exchangeForBtcArguments memory arguments)
     {
         (
             ,
@@ -303,12 +303,10 @@ contract PolyConnectorLogic is
             arguments.chainId,
             arguments.user,
             arguments.exchangeConnector,
-            arguments.minOutputAmount,
+            arguments.outputAmount,
+            arguments.isInputFixed,
             arguments.path,
-            arguments.userScript,
-            arguments.scriptType,
-            arguments.lockerLockingScript,
-            // arguments.thirdParty
+            arguments.scripts
 
         ) = abi.decode(
             _message,
@@ -319,15 +317,13 @@ contract PolyConnectorLogic is
                 address,
                 address,
                 uint256,
+                bool,
                 address[],
-                bytes,
-                ScriptTypes,
-                bytes,
-                uint256
+                UserAndLockerScript
             )
         );
 
-        (, , , , , , , , , , arguments.thirdParty) = abi.decode(
+        (, , , , , , , , , arguments.thirdParty) = abi.decode(
             _message,
             (
                 string,
@@ -336,10 +332,9 @@ contract PolyConnectorLogic is
                 address,
                 address,
                 uint256,
+                bool,
                 address[],
-                bytes,
-                ScriptTypes,
-                bytes,
+                UserAndLockerScript,
                 uint256
             )
         );

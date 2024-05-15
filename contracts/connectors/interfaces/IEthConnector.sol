@@ -4,6 +4,14 @@ pragma solidity >=0.8.0 <=0.8.4;
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 
 interface IEthConnector {
+    // Structs
+
+    struct UserAndLockerScript {
+        bytes userScript;
+        ScriptTypes scriptType;
+        bytes lockerLockingScript;
+    }
+
     // Events
 
     event MsgSent(
@@ -20,10 +28,7 @@ interface IEthConnector {
         address newTargetChainConnector
     );
 
-    event TargetChainTeleBTCUpdated(
-        address oldTeleBtc,
-        address newTeleBtc
-    );
+    event TargetChainTeleBTCUpdated(address oldTeleBtc, address newTeleBtc);
 
     event WrappedNativeTokenUpdated(
         address oldWrappedNativeToken,
@@ -32,7 +37,9 @@ interface IEthConnector {
 
     function setAcross(address _across) external;
 
-    function setTargetChainConnectorProxy(address _targetChainConnector) external;
+    function setTargetChainConnectorProxy(
+        address _targetChainConnector
+    ) external;
 
     function setTargetChainTeleBTC(address _targetChainTeleBTC) external;
 
@@ -42,10 +49,9 @@ interface IEthConnector {
         address _token,
         address _exchangeConnector,
         uint256[] calldata _amounts,
+        bool _isInputFixed,
         address[] calldata _path,
-        bytes memory _userScript,
-        ScriptTypes _scriptType,
-        bytes calldata _lockerLockingScript,
+        UserAndLockerScript calldata _scripts,
         int64 _relayerFeePercentage,
         uint256 _thirdParty
     ) external payable;

@@ -634,6 +634,8 @@ contract CcExchangeRouterLogic is
         ) = abi.decode(_message, (bytes32, uint256, uint256, address[], bytes));
 
         ccExchangeRequest memory exchangeReq = ccExchangeRequests[_txId];
+        // Use new output amount provided by user
+        ccExchangeRequests[_txId].outputAmount = _outputAmount;
         extendedCcExchangeRequest memory extendedReq = extendedCcExchangeRequests[_txId];
 
         /* Check that:
