@@ -43,14 +43,19 @@ const config: HardhatUserConfig = {
 		],
 	},
 	networks: {
-		mainnet: {
-			url: "https://eth.llamarpc.com",
+		ethereum: {
+			url: "https://ethereum-rpc.publicnode.com",
 			chainId: 1,
 			accounts: [process.env.PRIVATE_KEY ?? ""]
 		},
 		arbitrum: {
 			url: "https://arbitrum-one.publicnode.com",
 			chainId: 42161,
+			accounts: [process.env.PRIVATE_KEY ?? ""]
+		},
+		optimism: {
+			url: "https://optimism-rpc.publicnode.com",
+			chainId: 10,
 			accounts: [process.env.PRIVATE_KEY ?? ""]
 		},
 		sepolia: {
@@ -107,13 +112,23 @@ const config: HardhatUserConfig = {
   	},
   	etherscan: {
 		apiKey: {
+			ethereum: process.env.ETHERSCAN_API_KEY??"",
     		polygon: process.env.ETHERSCAN_API_KEY??"",
 			bsc: process.env.ETHERSCAN_API_KEY??"",
 			arbitrum: process.env.ETHERSCAN_API_KEY??"",
+			optimism: process.env.ETHERSCAN_API_KEY??"",
 			amoy: process.env.ETHERSCAN_API_KEY??"",
 			sepolia: process.env.ETHERSCAN_API_KEY??""
   		},
 		customChains: [
+			{
+				network: "ethereum",
+				chainId: 1,
+				urls: {
+					apiURL: "https://api.etherscan.io/api",
+					browserURL: "https://etherscan.io/"
+				}
+			},
 			{
 				network: "polygon",
 				chainId: 137,
@@ -136,6 +151,14 @@ const config: HardhatUserConfig = {
 				urls: {
 					apiURL: "https://api.arbiscan.io/api",
 					browserURL: "https://arbiscan.com/"
+				}
+			},
+			{
+				network: "optimism",
+				chainId: 10,
+				urls: {
+					apiURL: "https://api-optimistic.etherscan.io/api",
+					browserURL: "https://optimism.etherscan.io/"
 				}
 			},
 			{

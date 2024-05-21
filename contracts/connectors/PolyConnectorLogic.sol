@@ -71,10 +71,10 @@ contract PolyConnectorLogic is
         address,
         bytes memory _message
     ) external override nonReentrant {
-        // Checks the msg origin and fill completion (full amount has been received)
+        // Check the msg origin
         require(msg.sender == across, "PolygonConnectorLogic: not across");
 
-        // Determines the function call
+        // Determine the function call
         (string memory purpose, uint256 uniqueCounter, uint256 chainId) = abi
             .decode(_message, (string, uint256, uint256));
         emit MsgReceived(purpose, uniqueCounter, chainId, _message);
@@ -105,13 +105,12 @@ contract PolyConnectorLogic is
             int64 _relayerFeePercentage
         ) = abi.decode(_message, (uint256, address, uint256, int64));
 
-        // Checks that bid exists
         require(
             _amount > 0 && failedReqs[user][_chainId][_token] >= _amount,
             "PolygonConnectorLogic: low balance"
         );
 
-        // Sends token back to the buyer
+        // Send token back to the user
         _sendTokenUsingAcross(
             user,
             _chainId,
@@ -120,7 +119,7 @@ contract PolyConnectorLogic is
             _relayerFeePercentage
         );
 
-        // Delets the bid
+        // Update witholded amount
         failedReqs[user][_chainId][_token] -= _amount;
     }
 
@@ -234,7 +233,7 @@ contract PolyConnectorLogic is
         amounts[0] = _amount;
         amounts[1] = arguments.outputAmount;
 
-        IERC20(arguments.path[0]).approve(burnRouterProxy, _amount);
+        IERC20(_tokenSent).approve(burnRouterProxy, _amount);
 
         try
             IBurnRouter(burnRouterProxy).swapAndUnwrap(
