@@ -43,9 +43,24 @@ const config: HardhatUserConfig = {
 		],
 	},
 	networks: {
-		mainnet: {
-			url: "https://eth.llamarpc.com",
+		ethereum: {
+			url: "https://ethereum-rpc.publicnode.com",
 			chainId: 1,
+			accounts: [process.env.PRIVATE_KEY ?? ""]
+		},
+		arbitrum: {
+			url: "https://arbitrum-one.publicnode.com",
+			chainId: 42161,
+			accounts: [process.env.PRIVATE_KEY ?? ""]
+		},
+		optimism: {
+			url: "https://optimism-rpc.publicnode.com",
+			chainId: 10,
+			accounts: [process.env.PRIVATE_KEY ?? ""]
+		},
+		sepolia: {
+			url: "https://ethereum-sepolia-rpc.publicnode.com",
+			chainId: 11155111,
 			accounts: [process.env.PRIVATE_KEY ?? ""]
 		},
 		polygon: {
@@ -92,12 +107,77 @@ const config: HardhatUserConfig = {
 		},
   	},
   	gasReporter: {
-		// enabled: process.env.REPORT_GAS !== undefined,
 		enabled: true,
 		currency: "USD",
   	},
   	etherscan: {
-		apiKey: process.env.ETHERSCAN_API_KEY,
+		apiKey: {
+			ethereum: process.env.ETHERSCAN_API_KEY??"",
+    		polygon: process.env.ETHERSCAN_API_KEY??"",
+			bsc: process.env.ETHERSCAN_API_KEY??"",
+			arbitrum: process.env.ETHERSCAN_API_KEY??"",
+			optimism: process.env.ETHERSCAN_API_KEY??"",
+			amoy: process.env.ETHERSCAN_API_KEY??"",
+			sepolia: process.env.ETHERSCAN_API_KEY??""
+  		},
+		customChains: [
+			{
+				network: "ethereum",
+				chainId: 1,
+				urls: {
+					apiURL: "https://api.etherscan.io/api",
+					browserURL: "https://etherscan.io/"
+				}
+			},
+			{
+				network: "polygon",
+				chainId: 137,
+				urls: {
+					apiURL: "https://api.polygonscan.com/api",
+					browserURL: "https://polygonscan.com/"
+				}
+			},
+			{
+				network: "bsc",
+				chainId: 56,
+				urls: {
+					apiURL: "https://api.bscscan.com/api",
+					browserURL: "https://bscscan.com/"
+				}
+			},
+			{
+				network: "arbitrum",
+				chainId: 42161,
+				urls: {
+					apiURL: "https://api.arbiscan.io/api",
+					browserURL: "https://arbiscan.com/"
+				}
+			},
+			{
+				network: "optimism",
+				chainId: 10,
+				urls: {
+					apiURL: "https://api-optimistic.etherscan.io/api",
+					browserURL: "https://optimism.etherscan.io/"
+				}
+			},
+			{
+				network: "amoy",
+				chainId: 80002,
+				urls: {
+					apiURL: "https://api-amoy.polygonscan.com/api",
+					browserURL: "https://amoy.polygonscan.com/"
+				}
+			},
+			{
+				network: "sepolia",
+				chainId: 11155111,
+				urls: {
+					apiURL: "https://api-sepolia.etherscan.io/api",
+					browserURL: "https://sepolia.etherscan.io/"
+				}
+			}
+		]
   	},
 };
 

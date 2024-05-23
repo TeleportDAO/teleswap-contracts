@@ -21,20 +21,26 @@ library BurnRouterLib {
         bytes memory _vout,
         bytes memory _lockerLockingScript,
         bytes32 _txId
-    ) external {
+    ) external returns (bool) {
         uint256 parsedAmount = BitcoinHelper.parseValueHavingLockingScript(
             _vout,
             _lockerLockingScript
         );
         uint256 numberOfOutputs = BitcoinHelper.numberOfOutputs(_vout);
 
-        if (parsedAmount != 0 && _paidOutputCounter + 1 == numberOfOutputs) {
-            // One output sends the remaining value to locker
+        if (
+            (parsedAmount == 0 && _paidOutputCounter == numberOfOutputs) ||
+            (parsedAmount != 0 && _paidOutputCounter + 1 == numberOfOutputs)
+        ) {
+            /* 
+                Two cases are accepted:
+                1. All outputs pay cc burn requests
+                2. One output sends the remaining value to locker and rest pay cc burn requests
+            */
             _isUsedAsBurnProof[_txId] = true;
-        } else if (_paidOutputCounter == numberOfOutputs) {
-            // All output pays cc burn requests
-            _isUsedAsBurnProof[_txId] = true;
+            return true;
         }
+        return false;
     }
 
     function disputeBurnHelper(
@@ -163,7 +169,7 @@ library BurnRouterLib {
             "BurnRouterLogic: not for locker"
         );
     }
-    
+
     function burnProofHelper(
         uint256 _blockNumber,
         uint256 startingBlockNumber,
@@ -224,7 +230,6 @@ library BurnRouterLib {
             feeAmount
         );
 
-        //TODO?
         // Sends extra ETH back to msg.sender
         Address.sendValue(payable(msg.sender), msg.value - feeAmount);
 
@@ -265,19 +270,16 @@ library BurnRouterLib {
         return IBitcoinRelay(_relay).lastSubmittedHeight();
     }
 
-    function finalizationParameter(address _relay)
-        external
-        view
-        returns (uint256)
-    {
+    function finalizationParameter(
+        address _relay
+    ) external view returns (uint256) {
         return IBitcoinRelay(_relay).finalizationParameter();
     }
 
-    function getFinalizedBlockHeaderFee(address _relay, uint256 _blockNumber)
-        public
-        view
-        returns (uint256)
-    {
+    function getFinalizedBlockHeaderFee(
+        address _relay,
+        uint256 _blockNumber
+    ) public view returns (uint256) {
         return IBitcoinRelay(_relay).getBlockHeaderFee(_blockNumber, 0);
     }
 }

@@ -1,37 +1,32 @@
-const CC_BURN_REQUESTS = require('./test_fixtures/ccBurnRequests.json');
-require('dotenv').config({path:"../../.env"});
-
 import { expect } from "chai";
 import { deployments, ethers, waffle } from "hardhat";
 import { Signer, BigNumber } from "ethers";
-import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
+import {
+    deployMockContract,
+    MockContract,
+} from "@ethereum-waffle/mock-contract";
 import { Address } from "hardhat-deploy/types";
 import { Contract } from "@ethersproject/contracts";
-
-import { TeleBTCLogic } from "../src/types/TeleBTCLogic";
 import { TeleBTCLogic__factory } from "../src/types/factories/TeleBTCLogic__factory";
-import { TeleBTCProxy } from "../src/types/TeleBTCProxy";
 import { TeleBTCProxy__factory } from "../src/types/factories/TeleBTCProxy__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { Erc20__factory } from "../src/types/factories/Erc20__factory";
-
 import { PolyConnectorProxy__factory } from "../src/types/factories/PolyConnectorProxy__factory";
 import { PolyConnectorLogic__factory } from "../src/types/factories/PolyConnectorLogic__factory";
-
 import { BurnRouterLib } from "../src/types/BurnRouterLib";
 import { BurnRouterLib__factory } from "../src/types/factories/BurnRouterLib__factory";
-
 import { BurnRouterProxy__factory } from "../src/types/factories/BurnRouterProxy__factory";
 import { BurnRouterLogic__factory } from "../src/types/factories/BurnRouterLogic__factory";
 import { BurnRouterLogicLibraryAddresses } from "../src/types/factories/BurnRouterLogic__factory";
-
 import { takeSnapshot, revertProvider } from "./block_utils";
-import { network } from "hardhat"
+import { network } from "hardhat";
+import Web3 from "web3";
 
-import Web3 from 'web3'
-const abiUtils = new Web3().eth.abi
+const abiUtils = new Web3().eth.abi;
 const web3 = new Web3();
 const provider = waffle.provider;
+
+// TODO: ADD TESTS FOR CHAIN ID
 
 describe("PolyConnector", async () => {
     let snapshotId: any;
@@ -40,24 +35,19 @@ describe("PolyConnector", async () => {
     let proxyAdmin: Signer;
     let deployer: Signer;
     let signer1: Signer;
-    let signer2: Signer;
     let acrossSinger: Signer;
     let signer1Address: Address;
-    let deployerAddress: Address;
     let proxyAdminAddress: Address;
     let acrossAddress: Address;
 
     // Contracts
     let teleBTC: TeleBTC;
     let inputToken: ERC20;
-    let inputTokenSigner1: ERC20;
     let TeleBTCSigner1: TeleBTC;
     let PolyConnector: Contract;
     let PolyConnectorWithMockedAccross: Contract;
     let burnRouterLib: BurnRouterLib;
     let burnRouter: Contract;
-
-    let exchangeToken: ERC20;
 
     // Mock contracts
     let mockBitcoinRelay: MockContract;
@@ -68,63 +58,44 @@ describe("PolyConnector", async () => {
     // Constants
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     let ONE_ADDRESS = "0x0000000000000000000000000000000000000011";
-    let oneHundred = BigNumber.from(10).pow(8).mul(100)
+    let oneHundred = BigNumber.from(10).pow(8).mul(100);
     /*
         This one is set so that:
         userRequestedAmount * (1 - lockerFee / 10000 - PROTOCOL_PERCENTAGE_FEE / 10000) - BITCOIN_FEE = 100000000
     */
     let userRequestedAmount = BigNumber.from(100060030);
-    let requestAmount = 100
-    let telebtcAmount  = 1000000000
-    let TRANSFER_DEADLINE = 20
-    let PROTOCOL_PERCENTAGE_FEE = 5 // means 0.05%
-    let SLASHER_PERCENTAGE_REWARD = 5 // means 0.05%
-    let BITCOIN_FEE = 10000 // estimation of Bitcoin transaction fee in Satoshi
+    let requestAmount = 100;
+    let telebtcAmount = 1000000000;
+    let TRANSFER_DEADLINE = 20;
+    let PROTOCOL_PERCENTAGE_FEE = 5; // means 0.05%
+    let SLASHER_PERCENTAGE_REWARD = 5; // means 0.05%
+    let BITCOIN_FEE = 10000; // estimation of Bitcoin transaction fee in Satoshi
     let TREASURY = "0x0000000000000000000000000000000000000002";
 
     let LOCKER_TARGET_ADDRESS = ONE_ADDRESS;
-    let LOCKER1_LOCKING_SCRIPT = '0x76a914748284390f9e263a4b766a75d0633c50426eb87587ac';
+    let LOCKER1_LOCKING_SCRIPT =
+        "0x76a914748284390f9e263a4b766a75d0633c50426eb87587ac";
 
     let USER_SCRIPT_P2PKH = "0x12ab8dc588ca9d5787dde7eb29569da63c3a238c";
     let USER_SCRIPT_P2PKH_TYPE = 1; // P2PKH
 
-    let USER_SCRIPT_P2WPKH = "0x751e76e8199196d454941c45d1b3a323f1433bd6";
-    let USER_SCRIPT_P2WPKH_TYPE = 3; // P2WPKH
-
-    
     before(async () => {
-
-        [proxyAdmin, deployer, signer1, signer2, acrossSinger] = await ethers.getSigners();
+        [proxyAdmin, deployer, signer1, acrossSinger] =
+            await ethers.getSigners();
         proxyAdminAddress = await proxyAdmin.getAddress();
         signer1Address = await signer1.getAddress();
-        deployerAddress = await deployer.getAddress();
         acrossAddress = await acrossSinger.getAddress();
 
         // Mocks contracts
-    
-        const bitcoinRelay = await deployments.getArtifact(
-            "IBitcoinRelay"
-        );
-        mockBitcoinRelay = await deployMockContract(
-            deployer,
-            bitcoinRelay.abi
-        )
 
-        const lockers = await deployments.getArtifact(
-            "LockersManagerLogic"
-        );
-        mockLockers = await deployMockContract(
-            deployer,
-            lockers.abi
-        )
+        const bitcoinRelay = await deployments.getArtifact("IBitcoinRelay");
+        mockBitcoinRelay = await deployMockContract(deployer, bitcoinRelay.abi);
 
-        const across = await deployments.getArtifact(
-            "SpokePoolInterface"
-        );
-        mockAcross = await deployMockContract(
-            deployer,
-            across.abi
-        )
+        const lockers = await deployments.getArtifact("LockersManagerLogic");
+        mockLockers = await deployMockContract(deployer, lockers.abi);
+
+        const across = await deployments.getArtifact("SpokePoolInterface");
+        mockAcross = await deployMockContract(deployer, across.abi);
 
         const exchangeConnector = await deployments.getArtifact(
             "UniswapV2Connector"
@@ -132,7 +103,7 @@ describe("PolyConnector", async () => {
         mockExchangeConnector = await deployMockContract(
             deployer,
             exchangeConnector.abi
-        )
+        );
 
         // await mockExchangeConnector.mock.ccExchangeAndBurn
         //     .returns(100);
@@ -146,22 +117,17 @@ describe("PolyConnector", async () => {
 
         const teleBTCProxyFactory = new TeleBTCProxy__factory(deployer);
         const teleBTCProxy = await teleBTCProxyFactory.deploy(
-            teleBTCLogic.address,    
+            teleBTCLogic.address,
             proxyAdminAddress,
             "0x"
         );
-        
-        teleBTC = await teleBTCLogic.attach(
-            teleBTCProxy.address
-        );
 
-        await teleBTC.initialize(
-            "TeleportDAO-BTC",
-            "teleBTC"
-        );
+        teleBTC = await teleBTCLogic.attach(teleBTCProxy.address);
+
+        await teleBTC.initialize("TeleportDAO-BTC", "teleBTC");
 
         burnRouter = await deployBurnRouter();
-        
+
         await burnRouter.initialize(
             1,
             mockBitcoinRelay.address,
@@ -171,17 +137,16 @@ describe("PolyConnector", async () => {
             TRANSFER_DEADLINE,
             PROTOCOL_PERCENTAGE_FEE,
             SLASHER_PERCENTAGE_REWARD,
-            BITCOIN_FEE
+            BITCOIN_FEE,
+            ONE_ADDRESS
         );
-        
+
         PolyConnector = await deployPolyConnector();
 
         await PolyConnector.initialize(
             mockLockers.address,
             burnRouter.address,
-            acrossAddress,
-            acrossAddress,
-            137
+            acrossAddress
         );
 
         PolyConnectorWithMockedAccross = await deployPolyConnector();
@@ -189,26 +154,19 @@ describe("PolyConnector", async () => {
         await PolyConnectorWithMockedAccross.initialize(
             mockLockers.address,
             burnRouter.address,
-            signer1Address,
-            signer1Address,
-            137
+            signer1Address
         );
 
         // Deploys input token
         const erc20Factory = new Erc20__factory(deployer);
-        inputToken = await erc20Factory.deploy(
-            "TestToken",
-            "TT",
-            100000
-        );
-        inputTokenSigner1 = await inputToken.connect(signer1);
+        inputToken = await erc20Factory.deploy("TestToken", "TT", 100000);
 
         // Mints TeleBTC for user
-        await teleBTC.addMinter(signer1Address)
+        await teleBTC.addMinter(signer1Address);
         TeleBTCSigner1 = await teleBTC.connect(signer1);
 
         await teleBTC.setMaxMintLimit(oneHundred.mul(2));
-        await moveBlocks(2020)
+        await moveBlocks(2020);
 
         await TeleBTCSigner1.mint(signer1Address, telebtcAmount);
 
@@ -217,64 +175,47 @@ describe("PolyConnector", async () => {
         await setLockersIsLocker(true);
         await setLockersGetLockerTargetAddress();
         await setRelayLastSubmittedHeight(lastSubmittedHeight);
-        await setSwap(true, [requestAmount, telebtcAmount])
+        await setSwap(true, [requestAmount, telebtcAmount]);
 
-        let protocolFee = Math.floor(telebtcAmount*PROTOCOL_PERCENTAGE_FEE/10000);
+        let protocolFee = Math.floor(
+            (telebtcAmount * PROTOCOL_PERCENTAGE_FEE) / 10000
+        );
         let burntAmount: number;
         burntAmount = telebtcAmount - BITCOIN_FEE - protocolFee;
 
         await setLockersBurnReturn(burntAmount);
-
-        // Connects signer1 and signer2 to PolyConnector
-        // PolyConnectorSigner = await PolyConnector.connect(signer1);
-        // PolyConnectorSigner = await PolyConnector.connect(signer2);
     });
 
     async function moveBlocks(amount: number) {
         for (let index = 0; index < amount; index++) {
-          await network.provider.request({
-            method: "evm_mine",
-            params: [],
-          })
+            await network.provider.request({
+                method: "evm_mine",
+                params: [],
+            });
         }
     }
 
-    const deployTeleBTC = async (
-        _signer?: Signer
-    ): Promise<TeleBTC> => {
-        const teleBTCFactory = new TeleBTC__factory(
-            _signer || deployer
-        );
-
-        const teleBTC = await teleBTCFactory.deploy(
-            "Teleport Wrapped BTC",
-            "TeleBTC"
-        );
-
-        return teleBTC;
-    };
-
     const parseSignatureToRSV = (signatureHex: string) => {
         // Ensure the hex string starts with '0x'
-        if (!signatureHex.startsWith('0x')) {
-          throw new Error('Signature must start with 0x')
+        if (!signatureHex.startsWith("0x")) {
+            throw new Error("Signature must start with 0x");
         }
-      
+
         // Convert the hex string to a Buffer
-        const signatureBuffer = Buffer.from(signatureHex.slice(2), 'hex')
-      
+        const signatureBuffer = Buffer.from(signatureHex.slice(2), "hex");
+
         // Check the length of the signature (should be 65 bytes)
         if (signatureBuffer.length !== 65) {
-          throw new Error('Invalid signature length')
+            throw new Error("Invalid signature length");
         }
-      
+
         // Extract r, s, and v from the signature
-        const r = `0x${signatureBuffer.subarray(0, 32).toString('hex')}`
-        const s = `0x${signatureBuffer.subarray(32, 64).toString('hex')}`
-        const v = signatureBuffer[64]
-      
-        return { r, s, v }
-      }
+        const r = `0x${signatureBuffer.subarray(0, 32).toString("hex")}`;
+        const s = `0x${signatureBuffer.subarray(32, 64).toString("hex")}`;
+        const v = signatureBuffer[64];
+
+        return { r, s, v };
+    };
 
     const deployBurnRouterLib = async (
         _signer?: Signer
@@ -283,20 +224,18 @@ describe("PolyConnector", async () => {
             _signer || deployer
         );
 
-        const burnRouterLib = await BurnRouterLibFactory.deploy(
-        );
+        const burnRouterLib = await BurnRouterLibFactory.deploy();
 
         return burnRouterLib;
     };
 
-    const deployBurnRouter = async (
-        _signer?: Signer
-    ): Promise<Contract> => {
-        burnRouterLib = await deployBurnRouterLib()
+    const deployBurnRouter = async (_signer?: Signer): Promise<Contract> => {
+        burnRouterLib = await deployBurnRouterLib();
         let linkLibraryAddresses: BurnRouterLogicLibraryAddresses;
 
         linkLibraryAddresses = {
-            "contracts/libraries/BurnRouterLib.sol:BurnRouterLib": burnRouterLib.address,
+            "contracts/libraries/BurnRouterLib.sol:BurnRouterLib":
+                burnRouterLib.address,
         };
 
         // Deploys lockers logic
@@ -315,17 +254,12 @@ describe("PolyConnector", async () => {
             burnRouterLogic.address,
             proxyAdminAddress,
             "0x"
-        )
-
-        return await burnRouterLogic.attach(
-            burnRouterProxy.address
         );
 
+        return await burnRouterLogic.attach(burnRouterProxy.address);
     };
 
-    const deployPolyConnector = async (
-        _signer?: Signer
-    ): Promise<Contract> => {
+    const deployPolyConnector = async (_signer?: Signer): Promise<Contract> => {
         const PolyConnectorLogicFactory = new PolyConnectorLogic__factory(
             _signer || deployer
         );
@@ -340,127 +274,36 @@ describe("PolyConnector", async () => {
             PolyConnectorLogic.address,
             proxyAdminAddress,
             "0x"
-        )
-
-        return await PolyConnectorLogic.attach(
-            PolyConnectorProxy.address
         );
 
+        return await PolyConnectorLogic.attach(PolyConnectorProxy.address);
     };
 
-    async function setLockersSlashIdleLockerReturn(): Promise<void> {
-        await mockLockers.mock.slashIdleLocker
-            .returns(true);
-    }
-
-    async function setLockersSlashThiefLockerReturn(): Promise<void> {
-        await mockLockers.mock.slashThiefLocker
-            .returns(true);
-    }
-
     async function setLockersIsLocker(isLocker: boolean): Promise<void> {
-        await mockLockers.mock.isLocker
-            .returns(isLocker);
+        await mockLockers.mock.isLocker.returns(isLocker);
     }
 
     async function setLockersGetLockerTargetAddress(): Promise<void> {
-        await mockLockers.mock.getLockerTargetAddress
-            .returns(LOCKER_TARGET_ADDRESS);
+        await mockLockers.mock.getLockerTargetAddress.returns(
+            LOCKER_TARGET_ADDRESS
+        );
     }
 
     async function setLockersBurnReturn(burntAmount: number): Promise<void> {
-        await mockLockers.mock.burn
-            .returns(burntAmount);
+        await mockLockers.mock.burn.returns(burntAmount);
     }
 
-    async function setRelayLastSubmittedHeight(blockNumber: number): Promise<void> {
+    async function setRelayLastSubmittedHeight(
+        blockNumber: number
+    ): Promise<void> {
         await mockBitcoinRelay.mock.lastSubmittedHeight.returns(blockNumber);
     }
 
-    async function setRelayCheckTxProofReturn(isFinal: boolean, relayFee?: number): Promise<void> {
-        await mockBitcoinRelay.mock.getBlockHeaderFee.returns(relayFee || 0); // Fee of relay
-        await mockBitcoinRelay.mock.checkTxProof
-            .returns(isFinal);
-    }
-
     async function setSwap(result: boolean, amounts: number[]): Promise<void> {
-        await mockExchangeConnector.mock.swap
-            .returns(result, amounts);
-    }
-
-    async function mintTeleBTCForTest(): Promise<void> {
-        let TeleBTCSigner1 = await teleBTC.connect(signer1)
-        await TeleBTCSigner1.mint(signer1Address, oneHundred);
-    }
-
-    async function sendBurnRequest(
-        burnReqBlockNumber: number,
-        _userRequestedAmount: BigNumber,
-        USER_SCRIPT: any,
-        USER_SCRIPT_TYPE: any
-    ): Promise<number> {
-        // Gives allowance to PolyConnector
-        await TeleBTCSigner1.approve(
-            PolyConnector.address,
-            _userRequestedAmount
-        );
-
-        // Sets mock contracts outputs
-        await setRelayLastSubmittedHeight(burnReqBlockNumber);
-        await setLockersIsLocker(true);
-        let _burntAmount: number;
-        let protocolFee = Math.floor(_userRequestedAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
-        _burntAmount = _userRequestedAmount.toNumber() - protocolFee;
-        await setLockersBurnReturn(_burntAmount);
-        let burntAmount = _burntAmount * (_burntAmount - BITCOIN_FEE) / _burntAmount; 
-        // first burntAmount should have been
-        // burntAmount - lockerFee but in this case we have assumed lockerFee = 0
-
-        await setLockersGetLockerTargetAddress();
-
-        // Burns eleBTC
-        await PolyConnectorSigner.ccBurn(
-            _userRequestedAmount,
-            USER_SCRIPT,
-            USER_SCRIPT_TYPE,
-            LOCKER1_LOCKING_SCRIPT
-        );
-
-        return burntAmount;
-    }
-
-    async function provideProof(burnReqBlockNumber: number) {
-
-        // Set mocks contracts outputs
-        await setRelayCheckTxProofReturn(true);
-        await setLockersIsLocker(true);
-
-        let burntAmount: number;
-        let protocolFee = Math.floor(userRequestedAmount.toNumber()*PROTOCOL_PERCENTAGE_FEE/10000);
-        burntAmount = userRequestedAmount.toNumber() - BITCOIN_FEE - protocolFee;
-        await setLockersBurnReturn(burntAmount);
-
-        await setLockersGetLockerTargetAddress();
-
-        // Provide proof that the locker has paid the burnt amount to the user(s)
-        await expect(
-            await PolyConnectorSigner.burnProof(
-                CC_BURN_REQUESTS.burnProof_valid.version,
-                CC_BURN_REQUESTS.burnProof_valid.vin,
-                CC_BURN_REQUESTS.burnProof_valid.vout,
-                CC_BURN_REQUESTS.burnProof_valid.locktime,
-                burnReqBlockNumber,
-                CC_BURN_REQUESTS.burnProof_valid.intermediateNodes,
-                1,
-                LOCKER1_LOCKING_SCRIPT,
-                [0],
-                [0]
-            )
-        ).to.emit(PolyConnector, "PaidCCBurn")
+        await mockExchangeConnector.mock.swap.returns(result, amounts);
     }
 
     describe("#setters", async () => {
-
         beforeEach(async () => {
             snapshotId = await takeSnapshot(signer1.provider);
         });
@@ -469,38 +312,39 @@ describe("PolyConnector", async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
-        //write test setEthConnectorProxy and getEthConnectorProxy
-        it("should set and get the EthConnectorProxy", async () => {
-            await PolyConnector.setEthConnectorProxy(mockExchangeConnector.address);
-            expect(await PolyConnector.ethConnectorProxy()).to.equal(mockExchangeConnector.address);
-        });
-
-        //write test setEthConnectorProxy that only owner can change
-        it("should not set the EthConnectorProxy if not owner", async () => {
-            await expect(PolyConnector.connect(signer1).setEthConnectorProxy(mockExchangeConnector.address)).to.be.revertedWith("Ownable: caller is not the owner");
-        });
-
         //write test setLockerProxy and getLockerProxy
         it("should set and get the LockerProxy", async () => {
             await PolyConnector.setLockersProxy(mockLockers.address);
-            expect(await PolyConnector.lockersProxy()).to.equal(mockLockers.address);
+            expect(await PolyConnector.lockersProxy()).to.equal(
+                mockLockers.address
+            );
         });
 
         //write test setLockerProxy that only owner can change
         it("should not set the LockerProxy if not owner", async () => {
-            await expect(PolyConnector.connect(signer1).setLockersProxy(mockLockers.address)).to.be.revertedWith("Ownable: caller is not the owner");
+            await expect(
+                PolyConnector.connect(signer1).setLockersProxy(
+                    mockLockers.address
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
         //write test setBurnRouter and getBurnRouter
 
         it("should set and get the BurnRouter", async () => {
             await PolyConnector.setBurnRouterProxy(burnRouter.address);
-            expect(await PolyConnector.burnRouterProxy()).to.equal(burnRouter.address);
+            expect(await PolyConnector.burnRouterProxy()).to.equal(
+                burnRouter.address
+            );
         });
 
         //write test setBurnRouter that only owner can change
         it("should not set the BurnRouter if not owner", async () => {
-            await expect(PolyConnector.connect(signer1).setBurnRouterProxy(burnRouter.address)).to.be.revertedWith("Ownable: caller is not the owner");
+            await expect(
+                PolyConnector.connect(signer1).setBurnRouterProxy(
+                    burnRouter.address
+                )
+            ).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
         //write test setAcross and getAcross
@@ -509,47 +353,53 @@ describe("PolyConnector", async () => {
             expect(await PolyConnector.across()).to.equal(mockAcross.address);
         });
 
-        //write test setAcross that only owner can change  
+        //write test setAcross that only owner can change
         it("should not set the Across if not owner", async () => {
-            await expect(PolyConnector.connect(signer1).setAcross(mockAcross.address)).to.be.revertedWith("Ownable: caller is not the owner");
+            await expect(
+                PolyConnector.connect(signer1).setAcross(mockAcross.address)
+            ).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
-        //write test setAcrossV3 and getAcrossV3
+        //write test setAcross and getAcrossV3
         it("should set and get the AcrossV3", async () => {
-            await PolyConnector.setAcrossV3(mockAcross.address);
-            expect(await PolyConnector.acrossV3()).to.equal(mockAcross.address);
+            await PolyConnector.setAcross(mockAcross.address);
+            expect(await PolyConnector.across()).to.equal(mockAcross.address);
         });
 
-        //write test setAcrossV3 that only owner can change
+        //write test setAcross that only owner can change
         it("should not set the AcrossV3 if not owner", async () => {
-            await expect(PolyConnector.connect(signer1).setAcrossV3(mockAcross.address)).to.be.revertedWith("Ownable: caller is not the owner");
+            await expect(
+                PolyConnector.connect(signer1).setAcross(mockAcross.address)
+            ).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
         it("can't set addresses to zero address", async () => {
-            await expect(PolyConnector.setEthConnectorProxy(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
-            await expect(PolyConnector.setLockersProxy(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
-            await expect(PolyConnector.setBurnRouterProxy(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
-            await expect(PolyConnector.setAcross(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
-            await expect(PolyConnector.setAcrossV3(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
+            await expect(
+                PolyConnector.setLockersProxy(ZERO_ADDRESS)
+            ).to.be.revertedWith("ZeroAddress");
+            await expect(
+                PolyConnector.setBurnRouterProxy(ZERO_ADDRESS)
+            ).to.be.revertedWith("ZeroAddress");
+            await expect(
+                PolyConnector.setAcross(ZERO_ADDRESS)
+            ).to.be.revertedWith("ZeroAddress");
+            await expect(
+                PolyConnector.setAcross(ZERO_ADDRESS)
+            ).to.be.revertedWith("ZeroAddress");
         });
-
-
     });
 
     describe("#Handle across message V3", async () => {
+        let protocolFee = Math.floor(
+            (telebtcAmount * PROTOCOL_PERCENTAGE_FEE) / 10000
+        );
 
-        let protocolFee = Math.floor(telebtcAmount*PROTOCOL_PERCENTAGE_FEE/10000);
-        
         beforeEach(async () => {
             // Sends teleBTC to burnRouter (since we mock swap)
 
             snapshotId = await takeSnapshot(signer1.provider);
 
-            await TeleBTCSigner1.transfer(
-                burnRouter.address,
-                telebtcAmount
-            );
-
+            await TeleBTCSigner1.transfer(burnRouter.address, telebtcAmount);
         });
 
         afterEach(async () => {
@@ -557,40 +407,49 @@ describe("PolyConnector", async () => {
         });
 
         it("should handle across message", async () => {
-
             let burntAmount: number;
             burntAmount = telebtcAmount - BITCOIN_FEE - protocolFee;
 
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes',
-                'uint'
-            ], [
-                "exchangeForBtcAcross",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                0
-            ])
+            let message = abiUtils.encodeParameters(
+                [
+                    "string",
+                    "uint",
+                    "uint",
+                    "address",
+                    "address",
+                    "uint",
+                    "bool",
+                    "address[]",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
+                ],
+                [
+                    "swapAndUnwrap",
+                    "1",
+                    1,
+                    signer1Address,
+                    mockExchangeConnector.address,
+                    telebtcAmount,
+                    true,
+                    [inputToken.address, teleBTC.address],
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0
+                ]
+            );
 
             await setLockersBurnReturn(burntAmount);
-            
-            await inputToken.transfer(
-                PolyConnector.address,
-                requestAmount
-            );
+
+            await inputToken.transfer(PolyConnector.address, requestAmount);
 
             await expect(
                 PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
@@ -599,44 +458,59 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     message
                 )
-            ).to.emit(PolyConnector, "NewBurn").withArgs(
-                mockExchangeConnector.address,
-                inputToken.address,
-                requestAmount,
-                signer1Address,
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER_TARGET_ADDRESS,
-                0,
-                [inputToken.address, teleBTC.address]
-            );
+            )
+                .to.emit(PolyConnector, "NewSwapAndUnwrap")
+                .withArgs(
+                    1,
+                    mockExchangeConnector.address,
+                    inputToken.address,
+                    requestAmount,
+                    signer1Address,
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
+                    LOCKER_TARGET_ADDRESS,
+                    0,
+                    [inputToken.address, teleBTC.address]
+                );
         });
 
         it("should not handle across message if not across", async () => {
-
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes',
-                'uint'
-            ], [
-                "exchangeForBtcAcross",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                0
-            ])
+            let message = abiUtils.encodeParameters(
+                [
+                    "string",
+                    "uint",
+                    "uint",
+                    "address",
+                    "address",
+                    "uint",
+                    "bool",
+                    "address[]",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
+                ],
+                [
+                    "swapAndUnwrap",
+                    "1",
+                    1,
+                    signer1Address,
+                    mockExchangeConnector.address,
+                    telebtcAmount,
+                    true,
+                    [inputToken.address, teleBTC.address],
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0,
+                ]
+            );
 
             await expect(
                 PolyConnector.connect(signer1).handleV3AcrossMessage(
@@ -645,304 +519,129 @@ describe("PolyConnector", async () => {
                     signer1Address,
                     message
                 )
-            ).to.be.revertedWith("PolygonConnectorLogic: not acrossV3");
-        });
-
-        it("should not handle across message if purpose is not exchangeForBtcAcross", async () => {
-
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes',
-                'uint'
-            ], [
-                "test",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                0
-            ])
-
-            await expect(
-                PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
-                    inputToken.address,
-                    requestAmount,
-                    signer1Address,
-                    message
-                )
-            ).to.not.emit(PolyConnector, "NewBurn");
-        });
-
-        it("should not handle across message if ccExchangeAndBurn fails", async () => {
-            await setLockersIsLocker(false);
-
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes',
-                'uint'
-            ], [
-                "exchangeForBtcAcross",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                0
-            ])
-
-            await setSwap(false, [requestAmount, telebtcAmount])
-
-            await expect(
-                PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
-                    inputToken.address,
-                    requestAmount,
-                    signer1Address,
-                    message
-                )
-            ).to.emit(PolyConnector, "FailedBurn").withArgs(
-                mockExchangeConnector.address,
-                inputToken.address,
-                requestAmount,
-                signer1Address,
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                [inputToken.address, teleBTC.address]
-            );
-        });
-    });
-
-    describe("#Handle across message", async () => {
-
-        let protocolFee = Math.floor(telebtcAmount*PROTOCOL_PERCENTAGE_FEE/10000);
-        
-        beforeEach(async () => {
-            // Sends teleBTC to burnRouter (since we mock swap)
-
-            snapshotId = await takeSnapshot(signer1.provider);
-
-            await TeleBTCSigner1.transfer(
-                burnRouter.address,
-                telebtcAmount
-            );
-
-        });
-
-        afterEach(async () => {
-            await revertProvider(signer1.provider, snapshotId);
-        });
-
-        it("should handle across message", async () => {
-
-            let burntAmount: number;
-            burntAmount = telebtcAmount - BITCOIN_FEE - protocolFee;
-
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes',
-                'uint'
-            ], [
-                "exchangeForBtcAcross",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                0
-            ])
-
-            await setLockersBurnReturn(burntAmount);
-            
-            await inputToken.transfer(
-                PolyConnector.address,
-                requestAmount
-            );
-
-            await expect(
-                PolyConnector.connect(acrossSinger).handleAcrossMessage(
-                    inputToken.address,
-                    requestAmount,
-                    true,
-                    signer1Address,
-                    message
-                )
-            ).to.emit(PolyConnector, "NewBurn").withArgs(
-                mockExchangeConnector.address,
-                inputToken.address,
-                requestAmount,
-                signer1Address,
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER_TARGET_ADDRESS,
-                0,
-                [inputToken.address, teleBTC.address]
-            );
-        });
-
-        it("should not handle across message if not across", async () => {
-
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes',
-                'uint'
-            ], [
-                "exchangeForBtcAcross",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                0
-            ])
-
-            await expect(
-                PolyConnector.connect(signer1).handleAcrossMessage(
-                    inputToken.address,
-                    requestAmount,
-                    true,
-                    signer1Address,
-                    message
-                )
             ).to.be.revertedWith("PolygonConnectorLogic: not across");
         });
 
-        it("should not handle across message if purpose is not exchangeForBtcAcross", async () => {
-
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes',
-                'uint'
-            ], [
-                "test",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                0
-            ])
+        it("should not handle across message if purpose is not swapAndUnwrap", async () => {
+            let message = abiUtils.encodeParameters(
+                [
+                    "string",
+                    "uint",
+                    "uint",
+                    "address",
+                    "address",
+                    "uint",
+                    "bool",
+                    "address[]",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
+                ],
+                [
+                    "test",
+                    "1",
+                    1,
+                    signer1Address,
+                    mockExchangeConnector.address,
+                    telebtcAmount,
+                    true,
+                    [inputToken.address, teleBTC.address],
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0,
+                ]
+            );
 
             await expect(
-                PolyConnector.connect(acrossSinger).handleAcrossMessage(
+                PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
                     inputToken.address,
                     requestAmount,
-                    true,
                     signer1Address,
                     message
                 )
-            ).to.not.emit(PolyConnector, "NewBurn");
+            ).to.not.emit(PolyConnector, "NewSwapAndUnwrap");
         });
 
         it("should not handle across message if ccExchangeAndBurn fails", async () => {
             await setLockersIsLocker(false);
 
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes',
-                'uint'
-            ], [
-                "exchangeForBtcAcross",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                0
-            ])
+            let message = abiUtils.encodeParameters(
+                [
+                    "string",
+                    "uint",
+                    "uint",
+                    "address",
+                    "address",
+                    "uint",
+                    "bool",
+                    "address[]",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
+                ],
+                [
+                    "swapAndUnwrap",
+                    "1",
+                    1,
+                    signer1Address,
+                    mockExchangeConnector.address,
+                    telebtcAmount,
+                    true,
+                    [inputToken.address, teleBTC.address],
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0,
+                ]
+            );
 
-            await setSwap(false, [requestAmount, telebtcAmount])
+            await setSwap(false, [requestAmount, telebtcAmount]);
 
             await expect(
-                PolyConnector.connect(acrossSinger).handleAcrossMessage(
+                PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
                     inputToken.address,
                     requestAmount,
-                    true,
                     signer1Address,
                     message
                 )
-            ).to.emit(PolyConnector, "FailedBurn").withArgs(
-                mockExchangeConnector.address,
-                inputToken.address,
-                requestAmount,
-                signer1Address,
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                [inputToken.address, teleBTC.address]
-            );
+            )
+                .to.emit(PolyConnector, "FailedSwapAndUnwrap")
+                .withArgs(
+                    1,
+                    mockExchangeConnector.address,
+                    inputToken.address,
+                    requestAmount,
+                    signer1Address,
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
+                    [inputToken.address, teleBTC.address]
+                );
         });
     });
 
     describe("#Handle Failed CcExchangeAndBurn ", async () => {
-        let protocolFee = Math.floor(telebtcAmount*PROTOCOL_PERCENTAGE_FEE/10000);
+        let protocolFee = Math.floor(
+            (telebtcAmount * PROTOCOL_PERCENTAGE_FEE) / 10000
+        );
         beforeEach(async () => {
-
             snapshotId = await takeSnapshot(signer1.provider);
             // Sends teleBTC to burnRouter (since we mock swap)
-            await TeleBTCSigner1.transfer(
-                burnRouter.address,
-                telebtcAmount
-            );
-
+            await TeleBTCSigner1.transfer(burnRouter.address, telebtcAmount);
         });
 
         afterEach(async () => {
@@ -950,75 +649,91 @@ describe("PolyConnector", async () => {
         });
 
         it("can re do fail cc exchange", async () => {
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes',
-                'uint'
-            ], [
-                "exchangeForBtcAcross",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                0
-            ])
+            let message = abiUtils.encodeParameters(
+                [
+                    "string",
+                    "uint",
+                    "uint",
+                    "address",
+                    "address",
+                    "uint",
+                    "bool",
+                    "address[]",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
+                ],
+                [
+                    "swapAndUnwrap",
+                    "1",
+                    1,
+                    signer1Address,
+                    mockExchangeConnector.address,
+                    telebtcAmount,
+                    true,
+                    [inputToken.address, teleBTC.address],
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0,
+                ]
+            );
 
-            await setSwap(false, [requestAmount, telebtcAmount])
+            await setSwap(false, [requestAmount, telebtcAmount]);
 
             await PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
                 inputToken.address,
                 requestAmount,
                 signer1Address,
                 message
-            )
-        
-            await expect(
-                await PolyConnector.failedReqs(signer1Address, inputToken.address)
-            ).to.equal(BigNumber.from(requestAmount))
-
-            await inputToken.transfer(
-                PolyConnector.address,
-                requestAmount
             );
 
-            let reDoMessage = abiUtils.encodeParameters([
-                'address',
-                'uint256', 
-                'address',
-                'uint256',
-                'bytes',
-                'uint',
-                'bytes',
-                'address[]'
-            ], [
-                inputToken.address,
-                requestAmount,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                [inputToken.address, teleBTC.address]
-            ])
+            await expect(
+                await PolyConnector.failedReqs(
+                    signer1Address,
+                    1,
+                    inputToken.address
+                )
+            ).to.equal(BigNumber.from(requestAmount));
 
-            
-            let messageHex = await web3.utils.soliditySha3(
-                {
-                    type: 'bytes',
-                    value: reDoMessage
-                }
-            )
+            await inputToken.transfer(PolyConnector.address, requestAmount);
+
+            let reDoMessage = abiUtils.encodeParameters(
+                [
+                    "uint256",
+                    "address",
+                    "uint256",
+                    "address",
+                    "uint256",
+                    "bytes",
+                    "uint",
+                    "bytes",
+                    "address[]",
+                ],
+                [
+                    1,
+                    inputToken.address,
+                    requestAmount,
+                    mockExchangeConnector.address,
+                    telebtcAmount,
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
+                    LOCKER1_LOCKING_SCRIPT,
+                    [inputToken.address, teleBTC.address],
+                ]
+            );
+
+            let messageHex = await web3.utils.soliditySha3({
+                type: "bytes",
+                value: reDoMessage,
+            });
             if (messageHex != null) {
                 // let messageToSign = await web3.utils.soliditySha3(
                 //     {
@@ -1031,11 +746,13 @@ describe("PolyConnector", async () => {
                 //     }
                 // );
                 // console.log("message to sign: ", messageToSign)
-                let signature
-                let rsv
-                signature = await signer1.signMessage(ethers.utils.arrayify(messageHex))
-                rsv = await parseSignatureToRSV(signature) 
-                await setSwap(true, [requestAmount, telebtcAmount])
+                let signature;
+                let rsv;
+                signature = await signer1.signMessage(
+                    ethers.utils.arrayify(messageHex)
+                );
+                rsv = await parseSignatureToRSV(signature);
+                await setSwap(true, [requestAmount, telebtcAmount]);
 
                 await expect(
                     PolyConnector.connect(signer1).retrySwapAndUnwrap(
@@ -1044,95 +761,117 @@ describe("PolyConnector", async () => {
                         rsv.r,
                         rsv.s
                     )
-                ).to.emit(PolyConnector, "NewBurn").withArgs(
-                    mockExchangeConnector.address,
-                    inputToken.address,
-                    requestAmount,
-                    signer1Address,
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER_TARGET_ADDRESS,
-                    0,
-                    [inputToken.address, teleBTC.address]
-                );
+                )
+                    .to.emit(PolyConnector, "NewSwapAndUnwrap")
+                    .withArgs(
+                        1,
+                        mockExchangeConnector.address,
+                        inputToken.address,
+                        requestAmount,
+                        signer1Address,
+                        USER_SCRIPT_P2PKH,
+                        USER_SCRIPT_P2PKH_TYPE,
+                        LOCKER_TARGET_ADDRESS,
+                        0,
+                        [inputToken.address, teleBTC.address]
+                    );
 
                 await expect(
-                    await PolyConnector.failedReqs(signer1Address, inputToken.address)
-                ).to.equal(0)
+                    await PolyConnector.failedReqs(
+                        signer1Address,
+                        1,
+                        inputToken.address
+                    )
+                ).to.equal(0);
             }
-        
         });
 
         it("fail re do fail cc exchange because amount is greater than available", async () => {
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes'
-            ], [
-                "exchangeForBtcAcross",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT
-            ])
+            let message = abiUtils.encodeParameters(
+                [
+                    "string",
+                    "uint",
+                    "uint",
+                    "address",
+                    "address",
+                    "uint",
+                    "bool",
+                    "address[]",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
+                ],
+                [
+                    "swapAndUnwrap",
+                    "1",
+                    1,
+                    signer1Address,
+                    mockExchangeConnector.address,
+                    telebtcAmount,
+                    true,
+                    [inputToken.address, teleBTC.address],
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0
+                ]
+            );
 
-            await setSwap(false, [requestAmount, telebtcAmount])
+            await setSwap(false, [requestAmount, telebtcAmount]);
 
             await PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
                 inputToken.address,
                 requestAmount,
                 signer1Address,
                 message
-            )
-
-            await inputToken.transfer(
-                PolyConnector.address,
-                requestAmount
             );
 
-            let reDoMessage = abiUtils.encodeParameters([
-                'address',
-                'uint256', 
-                'address',
-                'uint256',
-                'bytes',
-                'uint',
-                'bytes',
-                'address[]'
-            ], [
-                inputToken.address,
-                requestAmount + 1,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                [inputToken.address, teleBTC.address]
-            ])
+            await inputToken.transfer(PolyConnector.address, requestAmount);
 
-            
-            let messageHex = await web3.utils.soliditySha3(
-                {
-                    type: 'bytes',
-                    value: reDoMessage
-                }
-            )
+            let reDoMessage = abiUtils.encodeParameters(
+                [
+                    "uint256",
+                    "address",
+                    "uint256",
+                    "address",
+                    "uint256",
+                    "bytes",
+                    "uint",
+                    "bytes",
+                    "address[]",
+                ],
+                [
+                    1,
+                    inputToken.address,
+                    requestAmount + 1,
+                    mockExchangeConnector.address,
+                    telebtcAmount,
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
+                    LOCKER1_LOCKING_SCRIPT,
+                    [inputToken.address, teleBTC.address],
+                ]
+            );
+
+            let messageHex = await web3.utils.soliditySha3({
+                type: "bytes",
+                value: reDoMessage,
+            });
             if (messageHex != null) {
-                let signature
-                let rsv
-                signature = await signer1.signMessage(ethers.utils.arrayify(messageHex))
-                rsv = await parseSignatureToRSV(signature) 
-                await setSwap(true, [requestAmount, telebtcAmount])
+                let signature;
+                let rsv;
+                signature = await signer1.signMessage(
+                    ethers.utils.arrayify(messageHex)
+                );
+                rsv = await parseSignatureToRSV(signature);
+                await setSwap(true, [requestAmount, telebtcAmount]);
 
                 await expect(
                     PolyConnector.connect(signer1).retrySwapAndUnwrap(
@@ -1141,81 +880,96 @@ describe("PolyConnector", async () => {
                         rsv.r,
                         rsv.s
                     )
-                ).to.be.revertedWith("PolygonConnectorLogic: low balance")
+                ).to.be.revertedWith("PolygonConnectorLogic: low balance");
             }
-        
         });
 
         it("fail re do fail cc exchange because amount is zero", async () => {
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes'
-            ], [
-                "exchangeForBtcAcross",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT
-            ])
+            let message = abiUtils.encodeParameters(
+                [
+                    "string",
+                    "uint",
+                    "uint",
+                    "address",
+                    "address",
+                    "uint",
+                    "bool",
+                    "address[]",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
+                ],
+                [
+                    "swapAndUnwrap",
+                    "1",
+                    1,
+                    signer1Address,
+                    mockExchangeConnector.address,
+                    telebtcAmount,
+                    true,
+                    [inputToken.address, teleBTC.address],
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0
+                ]
+            );
 
-            await setSwap(false, [requestAmount, telebtcAmount])
+            await setSwap(false, [requestAmount, telebtcAmount]);
 
             await PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
                 inputToken.address,
                 requestAmount,
                 signer1Address,
                 message
-            )
-
-            await inputToken.transfer(
-                PolyConnector.address,
-                requestAmount
             );
 
-            let reDoMessage = abiUtils.encodeParameters([
-                'address',
-                'uint256', 
-                'address',
-                'uint256',
-                'bytes',
-                'uint',
-                'bytes',
-                'address[]'
-            ], [
-                inputToken.address,
-                0,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                [inputToken.address, teleBTC.address]
-            ])
+            await inputToken.transfer(PolyConnector.address, requestAmount);
 
-            
-            let messageHex = await web3.utils.soliditySha3(
-                {
-                    type: 'bytes',
-                    value: reDoMessage
-                }
-            )
+            let reDoMessage = abiUtils.encodeParameters(
+                [
+                    "uint256",
+                    "address",
+                    "uint256",
+                    "address",
+                    "uint256",
+                    "bytes",
+                    "uint",
+                    "bytes",
+                    "address[]",
+                ],
+                [
+                    1,
+                    inputToken.address,
+                    0,
+                    mockExchangeConnector.address,
+                    telebtcAmount,
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
+                    LOCKER1_LOCKING_SCRIPT,
+                    [inputToken.address, teleBTC.address],
+                ]
+            );
+
+            let messageHex = await web3.utils.soliditySha3({
+                type: "bytes",
+                value: reDoMessage,
+            });
             if (messageHex != null) {
-                let signature
-                let rsv
-                signature = await signer1.signMessage(ethers.utils.arrayify(messageHex))
-                rsv = await parseSignatureToRSV(signature) 
-                await setSwap(true, [requestAmount, telebtcAmount])
+                let signature;
+                let rsv;
+                signature = await signer1.signMessage(
+                    ethers.utils.arrayify(messageHex)
+                );
+                rsv = await parseSignatureToRSV(signature);
+                await setSwap(true, [requestAmount, telebtcAmount]);
 
                 await expect(
                     PolyConnector.connect(signer1).retrySwapAndUnwrap(
@@ -1224,79 +978,96 @@ describe("PolyConnector", async () => {
                         rsv.r,
                         rsv.s
                     )
-                ).to.be.revertedWith("PolygonConnectorLogic: low balance")
+                ).to.be.revertedWith("PolygonConnectorLogic: low balance");
             }
-        
         });
 
         it("can re do fail cc exchange with less than request amount", async () => {
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes'
-            ], [
-                "exchangeForBtcAcross",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT
-            ])
+            let message = abiUtils.encodeParameters(
+                [
+                    "string",
+                    "uint",
+                    "uint",
+                    "address",
+                    "address",
+                    "uint",
+                    "bool",
+                    "address[]",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
+                ],
+                [
+                    "swapAndUnwrap",
+                    "1",
+                    1,
+                    signer1Address,
+                    mockExchangeConnector.address,
+                    telebtcAmount,
+                    true,
+                    [inputToken.address, teleBTC.address],
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0
+                ]
+            );
 
-            await setSwap(false, [requestAmount, telebtcAmount])
+            await setSwap(false, [requestAmount, telebtcAmount]);
 
             await PolyConnector.connect(acrossSinger).handleV3AcrossMessage(
                 inputToken.address,
                 requestAmount,
                 signer1Address,
                 message
-            )
-        
-            await expect(
-                await PolyConnector.failedReqs(signer1Address, inputToken.address)
-            ).to.equal(BigNumber.from(requestAmount))
-
-            await inputToken.transfer(
-                PolyConnector.address,
-                requestAmount
             );
 
-            let reDoMessage = abiUtils.encodeParameters([
-                'address',
-                'uint256', 
-                'address',
-                'uint256',
-                'bytes',
-                'uint',
-                'bytes',
-                'address[]'
-            ], [
-                inputToken.address,
-                requestAmount - 10,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT,
-                [inputToken.address, teleBTC.address]
-            ])
+            await expect(
+                await PolyConnector.failedReqs(
+                    signer1Address,
+                    1,
+                    inputToken.address
+                )
+            ).to.equal(BigNumber.from(requestAmount));
 
-            
-            let messageHex = await web3.utils.soliditySha3(
-                {
-                    type: 'bytes',
-                    value: reDoMessage
-                }
-            )
+            await inputToken.transfer(PolyConnector.address, requestAmount);
+
+            let reDoMessage = abiUtils.encodeParameters(
+                [
+                    "uint256",
+                    "address",
+                    "uint256",
+                    "address",
+                    "uint256",
+                    "bytes",
+                    "uint",
+                    "bytes",
+                    "address[]",
+                ],
+                [
+                    1,
+                    inputToken.address,
+                    requestAmount - 10,
+                    mockExchangeConnector.address,
+                    telebtcAmount,
+                    USER_SCRIPT_P2PKH,
+                    USER_SCRIPT_P2PKH_TYPE,
+                    LOCKER1_LOCKING_SCRIPT,
+                    [inputToken.address, teleBTC.address],
+                ]
+            );
+
+            let messageHex = await web3.utils.soliditySha3({
+                type: "bytes",
+                value: reDoMessage,
+            });
             if (messageHex != null) {
                 // let messageToSign = await web3.utils.soliditySha3(
                 //     {
@@ -1309,11 +1080,13 @@ describe("PolyConnector", async () => {
                 //     }
                 // );
                 // console.log("message to sign: ", messageToSign)
-                let signature
-                let rsv
-                signature = await signer1.signMessage(ethers.utils.arrayify(messageHex))
-                rsv = await parseSignatureToRSV(signature) 
-                await setSwap(true, [requestAmount, telebtcAmount])
+                let signature;
+                let rsv;
+                signature = await signer1.signMessage(
+                    ethers.utils.arrayify(messageHex)
+                );
+                rsv = await parseSignatureToRSV(signature);
+                await setSwap(true, [requestAmount, telebtcAmount]);
 
                 await expect(
                     PolyConnector.connect(signer1).retrySwapAndUnwrap(
@@ -1322,21 +1095,28 @@ describe("PolyConnector", async () => {
                         rsv.r,
                         rsv.s
                     )
-                ).to.emit(PolyConnector, "NewBurn").withArgs(
-                    mockExchangeConnector.address,
-                    inputToken.address,
-                    requestAmount - 10,
-                    signer1Address,
-                    USER_SCRIPT_P2PKH,
-                    USER_SCRIPT_P2PKH_TYPE,
-                    LOCKER_TARGET_ADDRESS,
-                    0,
-                    [inputToken.address, teleBTC.address]
-                );
+                )
+                    .to.emit(PolyConnector, "NewSwapAndUnwrap")
+                    .withArgs(
+                        1,
+                        mockExchangeConnector.address,
+                        inputToken.address,
+                        requestAmount - 10,
+                        signer1Address,
+                        USER_SCRIPT_P2PKH,
+                        USER_SCRIPT_P2PKH_TYPE,
+                        LOCKER_TARGET_ADDRESS,
+                        0,
+                        [inputToken.address, teleBTC.address]
+                    );
 
                 await expect(
-                    await PolyConnector.failedReqs(signer1Address, inputToken.address)
-                ).to.equal(10)
+                    await PolyConnector.failedReqs(
+                        signer1Address,
+                        1,
+                        inputToken.address
+                    )
+                ).to.equal(10);
             }
         });
 
@@ -1353,7 +1133,7 @@ describe("PolyConnector", async () => {
         //         'uint',
         //         'bytes'
         //     ], [
-        //         "exchangeForBtcAcross",
+        //         "swapAndUnwrap",
         //         "1",
         //         signer1Address,
         //         mockExchangeConnector.address,
@@ -1372,7 +1152,7 @@ describe("PolyConnector", async () => {
         //         signer1Address,
         //         message
         //     )
-            
+
         //     await expect(
         //         await PolyConnectorWithMockedAccross.failedReqs(signer1Address, inputToken.address)
         //     ).to.equal(BigNumber.from(requestAmount))
@@ -1392,7 +1172,6 @@ describe("PolyConnector", async () => {
         //         1000
         //     ])
 
-            
         //     let messageHex = await web3.utils.soliditySha3(
         //         {
         //             type: 'bytes',
@@ -1403,10 +1182,10 @@ describe("PolyConnector", async () => {
         //         let signature
         //         let rsv
         //         signature = await signer1.signMessage(ethers.utils.arrayify(messageHex))
-        //         rsv = await parseSignatureToRSV(signature) 
+        //         rsv = await parseSignatureToRSV(signature)
         //         await setSwap(true, [requestAmount, telebtcAmount])
-                
-        //         await PolyConnectorWithMockedAccross.connect(signer1).withdrawFundsToEth(
+
+        //         await PolyConnectorWithMockedAccross.connect(signer1).withdrawFundsToSourceChain(
         //             reDoMessage,
         //             rsv.v,
         //             rsv.r,
@@ -1417,161 +1196,183 @@ describe("PolyConnector", async () => {
         //             await PolyConnectorWithMockedAccross.failedReqs(signer1Address, inputToken.address)
         //         ).to.equal(0)
         //     }
-        
+
         // });
 
         it("can't withdraw Funds To Eth if amount is zero", async () => {
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes'
-            ], [
-                "exchangeForBtcAcross",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT
-            ])
+            let message = abiUtils.encodeParameters(
+                [
+                    "string",
+                    "uint",
+                    "uint",
+                    "address",
+                    "address",
+                    "uint",
+                    "bool",
+                    "address[]",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
+                ],
+                [
+                    "swapAndUnwrap",
+                    "1",
+                    1,
+                    signer1Address,
+                    mockExchangeConnector.address,
+                    telebtcAmount,
+                    true,
+                    [inputToken.address, teleBTC.address],
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0
+                ]
+            );
 
-            await setSwap(false, [requestAmount, telebtcAmount])
-            await mockAcross.mock.deposit.returns()
-            await PolyConnectorWithMockedAccross.connect(signer1).handleV3AcrossMessage(
+            await setSwap(false, [requestAmount, telebtcAmount]);
+            await mockAcross.mock.deposit.returns();
+            await PolyConnectorWithMockedAccross.connect(
+                signer1
+            ).handleV3AcrossMessage(
                 inputToken.address,
                 requestAmount,
                 signer1Address,
                 message
-            )
-            
+            );
+
             await expect(
-                await PolyConnectorWithMockedAccross.failedReqs(signer1Address, inputToken.address)
-            ).to.equal(BigNumber.from(requestAmount))
+                await PolyConnectorWithMockedAccross.failedReqs(
+                    signer1Address,
+                    1,
+                    inputToken.address
+                )
+            ).to.equal(BigNumber.from(requestAmount));
 
             await inputToken.transfer(
                 PolyConnectorWithMockedAccross.address,
                 requestAmount
             );
 
-            let reDoMessage = abiUtils.encodeParameters([
-                'address',
-                'uint',
-                'int64'
-            ], [
-                inputToken.address,
-                0,
-                1000
-            ])
+            let reDoMessage = abiUtils.encodeParameters(
+                ["uint256", "address", "uint", "int64"],
+                [1, inputToken.address, 0, 1000]
+            );
 
-            
-            let messageHex = await web3.utils.soliditySha3(
-                {
-                    type: 'bytes',
-                    value: reDoMessage
-                }
-            )
+            let messageHex = await web3.utils.soliditySha3({
+                type: "bytes",
+                value: reDoMessage,
+            });
             if (messageHex != null) {
-                let signature
-                let rsv
-                signature = await signer1.signMessage(ethers.utils.arrayify(messageHex))
-                rsv = await parseSignatureToRSV(signature) 
-                await setSwap(true, [requestAmount, telebtcAmount])
-                
-                await expect (
-                    PolyConnectorWithMockedAccross.connect(signer1).withdrawFundsToEth(
-                        reDoMessage,
-                        rsv.v,
-                        rsv.r,
-                        rsv.s
-                    )
-                ).to.be.revertedWith("PolygonConnectorLogic: low balance")
+                let signature;
+                let rsv;
+                signature = await signer1.signMessage(
+                    ethers.utils.arrayify(messageHex)
+                );
+                rsv = await parseSignatureToRSV(signature);
+                await setSwap(true, [requestAmount, telebtcAmount]);
+
+                await expect(
+                    PolyConnectorWithMockedAccross.connect(
+                        signer1
+                    ).withdrawFundsToSourceChain(reDoMessage, rsv.v, rsv.r, rsv.s)
+                ).to.be.revertedWith("PolygonConnectorLogic: low balance");
             }
-        
         });
 
         it("can't withdraw Funds To Eth if amount is greater than user request amount", async () => {
-            let message = abiUtils.encodeParameters([
-                'string',
-                'uint',
-                'address',
-                'address',
-                'uint',
-                'address[]',
-                'bytes',
-                'uint',
-                'bytes'
-            ], [
-                "exchangeForBtcAcross",
-                "1",
-                signer1Address,
-                mockExchangeConnector.address,
-                telebtcAmount,
-                [inputToken.address, teleBTC.address],
-                USER_SCRIPT_P2PKH,
-                USER_SCRIPT_P2PKH_TYPE,
-                LOCKER1_LOCKING_SCRIPT
-            ])
+            let message = abiUtils.encodeParameters(
+                [
+                    "string",
+                    "uint",
+                    "uint",
+                    "address",
+                    "address",
+                    "uint",
+                    "bool",
+                    "address[]",
+                    {
+                        "UserAndLockerScript": {
+                            "userScript": "bytes",
+                            "scriptType": "uint",
+                            "lockerLockingScript": "bytes"
+                        }
+                    },
+                    "uint"
+                ],
+                [
+                    "swapAndUnwrap",
+                    "1",
+                    1,
+                    signer1Address,
+                    mockExchangeConnector.address,
+                    telebtcAmount,
+                    true,
+                    [inputToken.address, teleBTC.address],
+                    { 
+                        "userScript": USER_SCRIPT_P2PKH,
+                        "scriptType": USER_SCRIPT_P2PKH_TYPE,
+                        "lockerLockingScript": LOCKER_TARGET_ADDRESS
+                    },
+                    0
+                ]
+            );
 
-            await setSwap(false, [requestAmount, telebtcAmount])
-            await mockAcross.mock.deposit.returns()
-            await PolyConnectorWithMockedAccross.connect(signer1).handleV3AcrossMessage(
+            await setSwap(false, [requestAmount, telebtcAmount]);
+            await mockAcross.mock.deposit.returns();
+            await PolyConnectorWithMockedAccross.connect(
+                signer1
+            ).handleV3AcrossMessage(
                 inputToken.address,
                 requestAmount,
                 signer1Address,
                 message
-            )
-            
+            );
+
             await expect(
-                await PolyConnectorWithMockedAccross.failedReqs(signer1Address, inputToken.address)
-            ).to.equal(BigNumber.from(requestAmount))
+                await PolyConnectorWithMockedAccross.failedReqs(
+                    signer1Address,
+                    1,
+                    inputToken.address
+                )
+            ).to.equal(BigNumber.from(requestAmount));
 
             await inputToken.transfer(
                 PolyConnectorWithMockedAccross.address,
                 requestAmount
             );
 
-            let reDoMessage = abiUtils.encodeParameters([
-                'address',
-                'uint',
-                'int64'
-            ], [
-                inputToken.address,
-                requestAmount + 1,
-                1000
-            ])
+            let reDoMessage = abiUtils.encodeParameters(
+                ["uint256", "address", "uint", "int64"],
+                [1, inputToken.address, requestAmount + 1, 1000]
+            );
 
-            
-            let messageHex = await web3.utils.soliditySha3(
-                {
-                    type: 'bytes',
-                    value: reDoMessage
-                }
-            )
+            let messageHex = await web3.utils.soliditySha3({
+                type: "bytes",
+                value: reDoMessage,
+            });
             if (messageHex != null) {
-                let signature
-                let rsv
-                signature = await signer1.signMessage(ethers.utils.arrayify(messageHex))
-                rsv = await parseSignatureToRSV(signature) 
-                await setSwap(true, [requestAmount, telebtcAmount])
-                
-                await expect (
-                    PolyConnectorWithMockedAccross.connect(signer1).withdrawFundsToEth(
-                        reDoMessage,
-                        rsv.v,
-                        rsv.r,
-                        rsv.s
-                    )
-                ).to.be.revertedWith("PolygonConnectorLogic: low balance")
+                let signature;
+                let rsv;
+                signature = await signer1.signMessage(
+                    ethers.utils.arrayify(messageHex)
+                );
+                rsv = await parseSignatureToRSV(signature);
+                await setSwap(true, [requestAmount, telebtcAmount]);
+
+                await expect(
+                    PolyConnectorWithMockedAccross.connect(
+                        signer1
+                    ).withdrawFundsToSourceChain(reDoMessage, rsv.v, rsv.r, rsv.s)
+                ).to.be.revertedWith("PolygonConnectorLogic: low balance");
             }
-        
         });
 
         // it("can withdraw Funds To Eth if amount is less than user request amount", async () => {
@@ -1586,7 +1387,7 @@ describe("PolyConnector", async () => {
         //         'uint',
         //         'bytes'
         //     ], [
-        //         "exchangeForBtcAcross",
+        //         "swapAndUnwrap",
         //         "1",
         //         signer1Address,
         //         mockExchangeConnector.address,
@@ -1605,7 +1406,7 @@ describe("PolyConnector", async () => {
         //         signer1Address,
         //         message
         //     )
-            
+
         //     await expect(
         //         await PolyConnectorWithMockedAccross.failedReqs(signer1Address, inputToken.address)
         //     ).to.equal(BigNumber.from(requestAmount))
@@ -1625,7 +1426,6 @@ describe("PolyConnector", async () => {
         //         1000
         //     ])
 
-            
         //     let messageHex = await web3.utils.soliditySha3(
         //         {
         //             type: 'bytes',
@@ -1636,10 +1436,10 @@ describe("PolyConnector", async () => {
         //         let signature
         //         let rsv
         //         signature = await signer1.signMessage(ethers.utils.arrayify(messageHex))
-        //         rsv = await parseSignatureToRSV(signature) 
+        //         rsv = await parseSignatureToRSV(signature)
         //         await setSwap(true, [requestAmount, telebtcAmount])
-                
-        //         await PolyConnectorWithMockedAccross.connect(signer1).withdrawFundsToEth(
+
+        //         await PolyConnectorWithMockedAccross.connect(signer1).withdrawFundsToSourceChain(
         //             reDoMessage,
         //             rsv.v,
         //             rsv.r,
@@ -1651,69 +1451,62 @@ describe("PolyConnector", async () => {
         //         ).to.equal(10)
         //     }
         // });
-
     });
 
     describe("#Handle emergencyWithdraw", async () => {
         //write test that handle emergency withdraw
         it("should handle emergency withdraw token", async () => {
-            await inputToken.transfer(
-                PolyConnector.address,
-                requestAmount
-            );
+            await inputToken.transfer(PolyConnector.address, requestAmount);
 
-            await expect (
+            await expect(
                 await inputToken.balanceOf(PolyConnector.address)
-            ).to.be.equal(requestAmount)
+            ).to.be.equal(requestAmount);
 
             await PolyConnector.emergencyWithdraw(
                 inputToken.address,
                 signer1Address,
                 requestAmount
-            )
+            );
 
-            await expect (
+            await expect(
                 await inputToken.balanceOf(PolyConnector.address)
-            ).to.be.equal(0)
+            ).to.be.equal(0);
 
-            await expect (
+            await expect(
                 await inputToken.balanceOf(signer1Address)
-            ).to.be.equal(requestAmount)
-
+            ).to.be.equal(requestAmount);
         });
 
         it("should handle emergency withdraw eth", async () => {
             let tx = {
                 to: PolyConnector.address,
-                value: 100
+                value: 100,
             };
             await signer1.sendTransaction(tx);
 
-            let beforeBalance = await signer1.getBalance()
-            beforeBalance.add(100)
+            let beforeBalance = await signer1.getBalance();
+            beforeBalance.add(100);
 
-            await expect (
+            await expect(
                 await provider.getBalance(PolyConnector.address)
-            ).to.be.equal(100)
+            ).to.be.equal(100);
 
             await PolyConnector.emergencyWithdraw(
                 "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
                 signer1Address,
                 100
-            )
-
+            );
         });
 
         // write test that only owner can emergency withdraw
         it("should not handle emergency withdraw if not owner", async () => {
-            await expect (
+            await expect(
                 PolyConnector.connect(signer1).emergencyWithdraw(
                     inputToken.address,
                     signer1Address,
                     requestAmount
                 )
-            ).to.be.revertedWith("Ownable: caller is not the owner")
+            ).to.be.revertedWith("Ownable: caller is not the owner");
         });
     });
-
 });

@@ -79,12 +79,12 @@ contract LockersManagerLogic is
     }
 
     modifier onlyMinter() {
-        if (!isMinter(_msgSender())) revert NotMinter();
+        if (!minters[_msgSender()]) revert NotMinter();
         _;
     }
 
     modifier onlyBurner() {
-        if (!isBurner(_msgSender())) revert NotBurner();
+        if (!burners[_msgSender()]) revert NotBurner();
         _;
     }
 
@@ -167,22 +167,46 @@ contract LockersManagerLogic is
     }
 
     /// @notice Return EVM address of _lockerLockingScript Locker
-    function getLockerTargetAddress(bytes calldata _lockerLockingScript)
-        external
-        view
-        override
-        returns (address)
-    {
+    function getLockerTargetAddress(
+        bytes calldata _lockerLockingScript
+    ) external view override returns (address) {
         return lockerTargetAddress[_lockerLockingScript];
     }
 
-    /// @notice Return true if _lockerLockingScript is Locker
-    function isLocker(bytes calldata _lockerLockingScript)
-        external
+    /// @notice Return how much TeleBTC can be minted by the Locker
+    /// @param _lockerTargetAddress Locker's target chain address
+    function getLockerCapacity(
+        address _lockerTargetAddress
+    )
+        public
         view
         override
-        returns (bool)
+        nonZeroAddress(_lockerTargetAddress)
+        returns (uint256)
     {
+        uint256 _lockerCollateralInTeleBTC = (LockersManagerLib
+            .lockerCollateralInTeleBTC(
+                lockersMapping[_lockerTargetAddress],
+                libConstants,
+                libParams
+            ) * ONE_HUNDRED_PERCENT) / collateralRatio;
+
+        if (
+            _lockerCollateralInTeleBTC >
+            lockersMapping[_lockerTargetAddress].netMinted
+        ) {
+            return
+                _lockerCollateralInTeleBTC -
+                lockersMapping[_lockerTargetAddress].netMinted;
+        } else {
+            return 0;
+        }
+    }
+
+    /// @notice Return true if _lockerLockingScript is Locker
+    function isLocker(
+        bytes calldata _lockerLockingScript
+    ) external view override returns (bool) {
         return
             lockersMapping[lockerTargetAddress[_lockerLockingScript]].isLocker;
     }
@@ -193,7 +217,9 @@ contract LockersManagerLogic is
     }
 
     /// @notice Return locking script of _lockerTargetAddress Locker
-    function getLockerLockingScript(address _lockerTargetAddress)
+    function getLockerLockingScript(
+        address _lockerTargetAddress
+    )
         external
         view
         override
@@ -203,6 +229,7 @@ contract LockersManagerLogic is
     }
 
     /// @notice Update TST contract address
+
     function setTST(address _TST)
         public
         override
@@ -244,11 +271,9 @@ contract LockersManagerLogic is
     }
 
     /// @notice Update the required TST bond to become Locker
-    function setMinRequiredTDTLockedAmount(uint256 _minRequiredTDTLockedAmount)
-        public
-        override
-        onlyOwner
-    {
+    function setMinRequiredTDTLockedAmount(
+        uint256 _minRequiredTDTLockedAmount
+    ) public override onlyOwner {
         emit NewMinRequiredTDTLockedAmount(
             minRequiredTDTLockedAmount,
             _minRequiredTDTLockedAmount
@@ -259,24 +284,18 @@ contract LockersManagerLogic is
 
     /// @notice Update the price oracle
     /// @dev This oracle is used to get the price of native token in BTC
-    function setPriceOracle(address _priceOracle)
-        public
-        override
-        nonZeroAddress(_priceOracle)
-        onlyOwner
-    {
+    function setPriceOracle(
+        address _priceOracle
+    ) public override nonZeroAddress(_priceOracle) onlyOwner {
         emit NewPriceOracle(priceOracle, _priceOracle);
         priceOracle = _priceOracle;
         libParams.priceOracle = priceOracle;
     }
 
     /// @notice Update burn router address
-    function setCCBurnRouter(address _ccBurnRouter)
-        public
-        override
-        nonZeroAddress(_ccBurnRouter)
-        onlyOwner
-    {
+    function setCCBurnRouter(
+        address _ccBurnRouter
+    ) public override nonZeroAddress(_ccBurnRouter) onlyOwner {
         emit NewCCBurnRouter(ccBurnRouter, _ccBurnRouter);
         removeBurner(ccBurnRouter);
         ccBurnRouter = _ccBurnRouter;
@@ -285,12 +304,9 @@ contract LockersManagerLogic is
     }
 
     /// @notice Update wrapped BTC address
-    function setTeleBTC(address _teleBTC)
-        public
-        override
-        nonZeroAddress(_teleBTC)
-        onlyOwner
-    {
+    function setTeleBTC(
+        address _teleBTC
+    ) public override nonZeroAddress(_teleBTC) onlyOwner {
         emit NewTeleBTC(teleBTC, _teleBTC);
         teleBTC = _teleBTC;
         libParams.teleBTC = teleBTC;
@@ -548,7 +564,7 @@ contract LockersManagerLogic is
     /// @notice Removes Locker from system and send back Locker TST and TNT collateral.
     /// @dev Only Locker can call this. The conditions for successful remove is:
     ///      1. Locker has been inactivated
-    ///      2. Locker net minted TeleBTC is 0
+    ///      2. Locker sends net minted TeleBTC to the contract
     ///      3. Locker is not being slashed
     /// @return True if locker is removed successfully
     function selfRemoveLocker() external override nonReentrant returns (bool) {
@@ -559,14 +575,20 @@ contract LockersManagerLogic is
 
         if (isLockerActive(_msgSender())) revert LockerActive();
 
-        require(_removingLocker.netMinted == 0, "Lockers: 0 net minted");
+        // Locker needs to make its netMinted 0 before leaving the system
+        ITeleBTC(teleBTC).transferFrom(
+            _msgSender(),
+            address(this),
+            _removingLocker.netMinted
+        );
+        ITeleBTC(teleBTC).burn(_removingLocker.netMinted);
 
         require(
             _removingLocker.slashingTeleBTCAmount == 0,
             "Lockers: 0 slashing TBTC"
         );
 
-        // Removes locker from lockersMapping
+        // Remove locker from lockersMapping
 
         delete lockerTargetAddress[
             lockersMapping[_msgSender()].lockerLockingScript
@@ -600,6 +622,55 @@ contract LockersManagerLogic is
             _removingLocker.lockerLockingScript,
             _removingLocker.TDTLockedAmount,
             lockerCollateralToken[_msgSender()],
+            _removingLocker.nativeTokenLockedAmount
+        );
+        return true;
+    }
+
+    function removeLockerByOwner(address _lockerTargetAddress)
+        external
+        onlyOwner
+        nonReentrant
+        returns (bool)
+    {
+        locker memory _removingLocker = lockersMapping[_lockerTargetAddress];
+
+        require(_removingLocker.isLocker, "Lockers: no locker");
+
+        ITeleBTC(teleBTC).transferFrom(
+            _msgSender(),
+            address(this),
+            _removingLocker.netMinted
+        );
+        ITeleBTC(teleBTC).burn(_removingLocker.netMinted);
+
+        require(
+            _removingLocker.slashingTeleBTCAmount == 0,
+            "Lockers: 0 slashing TBTC"
+        );
+
+        // Remove locker from lockersMapping
+
+        delete lockerTargetAddress[
+            lockersMapping[_lockerTargetAddress].lockerLockingScript
+        ];
+        delete lockersMapping[_lockerTargetAddress];
+        totalNumberOfLockers = totalNumberOfLockers - 1;
+
+        // Sends back TDT and TNT collateral
+        IERC20(TeleportDAOToken).safeTransfer(
+            _lockerTargetAddress,
+            _removingLocker.TDTLockedAmount
+        );
+        Address.sendValue(
+            payable(_lockerTargetAddress),
+            _removingLocker.nativeTokenLockedAmount
+        );
+
+        emit LockerRemoved(
+            _lockerTargetAddress,
+            _removingLocker.lockerLockingScript,
+            _removingLocker.TDTLockedAmount,
             _removingLocker.nativeTokenLockedAmount
         );
         return true;
@@ -1029,7 +1100,10 @@ contract LockersManagerLogic is
     /// @param _lockerLockingScript   Locking script of a locker
     /// @param _amount                Amount of the teleBTC which is minted, including the locker's fee
     /// @return uint                  The amount of teleBTC burnt
-    function burn(bytes calldata _lockerLockingScript, uint256 _amount)
+    function burn(
+        bytes calldata _lockerLockingScript,
+        uint256 _amount
+    )
         external
         override
         nonReentrant
@@ -1139,29 +1213,5 @@ contract LockersManagerLogic is
                 collateralDecimal[collateralToken],
                 libParams
             );
-    }
-
-    /// @notice                Check if an account is minter
-    /// @param  account        The account which intended to be checked
-    /// @return bool
-    function isMinter(address account)
-        public
-        view
-        override
-        returns (bool)
-    {
-        return minters[account];
-    }
-
-    /// @notice                Check if an account is burner
-    /// @param  account        The account which intended to be checked
-    /// @return bool
-    function isBurner(address account)
-        public
-        view
-        override
-        returns (bool)
-    {
-        return burners[account];
     }
 }

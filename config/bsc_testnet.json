@@ -5,7 +5,7 @@
 	"starting_block_height": "123",
 	"uniswap_v2_router_02": "0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3",
 	"uniswap_v2_factory": "0xB7926C0430Afb07AA7DEfDE6DA862aE0Bde767bc ",
-	"wrapped_matic": "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd",
+	"wrapped_native_token": "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd",
 	"usdt_token": "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd",
 	"usdc_token": "0x64544969ed7EBf5f083679233325356EbE738930",
 	"acceptable_delay": 7200,

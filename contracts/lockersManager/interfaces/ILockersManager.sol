@@ -4,7 +4,6 @@ pragma solidity >=0.8.0 <=0.8.4;
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 
 interface ILockersManager {
-
     /// @notice                             Structure for registering lockers
     /// @dev
     /// @param lockerLockingScript          Locker redeem script
@@ -23,22 +22,22 @@ interface ILockersManager {
         bytes lockerLockingScript;
         ScriptTypes lockerRescueType;
         bytes lockerRescueScript;
-        uint TDTLockedAmount;
-        uint nativeTokenLockedAmount;
-        uint netMinted;
-        uint slashingTeleBTCAmount;
-        uint reservedNativeTokenForSlash;
+        uint256 TDTLockedAmount;
+        uint256 nativeTokenLockedAmount;
+        uint256 netMinted;
+        uint256 slashingTeleBTCAmount;
+        uint256 reservedNativeTokenForSlash;
         bool isLocker;
         bool isCandidate;
         bool isScriptHash;
     }
 
     struct lockersLibConstants {
-        uint OneHundredPercent;
-        uint HealthFactor;
-        uint UpperHealthFactor;
-        uint MaxLockerFee;
-        uint NativeTokenDecimal;
+        uint256 OneHundredPercent;
+        uint256 HealthFactor;
+        uint256 UpperHealthFactor;
+        uint256 MaxLockerFee;
+        uint256 NativeTokenDecimal;
         address NativeToken;
     }
 
@@ -48,14 +47,13 @@ interface ILockersManager {
         address ccBurnRouter;
         address exchangeConnector;
         address priceOracle;
-
-        uint minRequiredTDTLockedAmount;
-        uint minRequiredTNTLockedAmount;
-        uint lockerPercentageFee;
-        uint collateralRatio;
-        uint liquidationRatio;
-        uint priceWithDiscountRatio;
-        uint inactivationDelay;
+        uint256 minRequiredTDTLockedAmount;
+        uint256 minRequiredTNTLockedAmount;
+        uint256 lockerPercentageFee;
+        uint256 collateralRatio;
+        uint256 liquidationRatio;
+        uint256 priceWithDiscountRatio;
+        uint256 inactivationDelay;
     }
 
     struct becomeLockerArguments {
@@ -91,7 +89,7 @@ interface ILockersManager {
 
     event RequestInactivateLocker(
         address indexed lockerTargetAddress,
-        uint indexed inactivationTimestamp,
+        uint256 indexed inactivationTimestamp,
         bytes lockerLockingScript,
         uint TDTLockedAmount,
         address collateralToken,
@@ -131,10 +129,10 @@ interface ILockersManager {
         address collateralToken,
         uint rewardAmount,
         address indexed rewardRecipient,
-        uint amount,
+        uint256 amount,
         address indexed recipient,
-        uint slashedCollateralAmount,
-        uint slashTime,
+        uint256 slashedCollateralAmount,
+        uint256 slashTime,
         bool isForCCBurn
     );
 
@@ -175,16 +173,16 @@ interface ILockersManager {
     event MintByLocker(
         address indexed lockerTargetAddress,
         address indexed receiver,
-        uint mintedAmount,
-        uint lockerFee,
-        uint mintingTime
+        uint256 mintedAmount,
+        uint256 lockerFee,
+        uint256 mintingTime
     );
 
     event BurnByLocker(
         address indexed lockerTargetAddress,
-        uint burntAmount,
-        uint lockerFee,
-        uint burningTime
+        uint256 burntAmount,
+        uint256 lockerFee,
+        uint256 burningTime
     );
 
     event NewCollateralToken(
@@ -196,21 +194,15 @@ interface ILockersManager {
         address indexed account
     );
 
-    event MinterRemoved(
-        address indexed account
-    );
+    event MinterRemoved(address indexed account);
 
-    event BurnerAdded(
-        address indexed account
-    );
-    
-    event BurnerRemoved(
-        address indexed account
-    );
+    event BurnerAdded(address indexed account);
+
+    event BurnerRemoved(address indexed account);
 
     event NewLockerPercentageFee(
-        uint oldLockerPercentageFee,
-        uint newLockerPercentageFee
+        uint256 oldLockerPercentageFee,
+        uint256 newLockerPercentageFee
     );
 
     event NewReliabilityFactor(
@@ -220,93 +212,95 @@ interface ILockersManager {
     );
 
     event NewPriceWithDiscountRatio(
-        uint oldPriceWithDiscountRatio,
-        uint newPriceWithDiscountRatio
+        uint256 oldPriceWithDiscountRatio,
+        uint256 newPriceWithDiscountRatio
     );
 
     event NewMinRequiredTDTLockedAmount(
-        uint oldMinRequiredTDTLockedAmount,
-        uint newMinRequiredTDTLockedAmount
+        uint256 oldMinRequiredTDTLockedAmount,
+        uint256 newMinRequiredTDTLockedAmount
     );
 
     event NewMinRequiredTNTLockedAmount(
-        uint oldMinRequiredTNTLockedAmount,
-        uint newMinRequiredTNTLockedAmount
+        uint256 oldMinRequiredTNTLockedAmount,
+        uint256 newMinRequiredTNTLockedAmount
     );
 
-    event NewPriceOracle(
-        address oldPriceOracle,
-        address newPriceOracle
-    );
+    event NewPriceOracle(address oldPriceOracle, address newPriceOracle);
 
-    event NewCCBurnRouter(
-        address oldCCBurnRouter,
-        address newCCBurnRouter
-    );
+    event NewCCBurnRouter(address oldCCBurnRouter, address newCCBurnRouter);
 
-    event NewTST(
-        address oldTST,
-        address newTST
-    ); 
+    event NewTST(address oldTST, address newTST);
 
-    event NewTeleBTC(
-        address oldTeleBTC,
-        address newTeleBTC
-    );   
+    event NewTeleBTC(address oldTeleBTC, address newTeleBTC);
 
     event NewCollateralRatio(
-        uint oldCollateralRatio,
-        uint newCollateralRatio
-    );  
+        uint256 oldCollateralRatio,
+        uint256 newCollateralRatio
+    );
 
     event NewLiquidationRatio(
-        uint oldLiquidationRatio,
-        uint newLiquidationRatio
-    );   
+        uint256 oldLiquidationRatio,
+        uint256 newLiquidationRatio
+    );
 
     // Read-only functions
 
-    function TeleportDAOToken() external view returns(address);
+    function TeleportDAOToken() external view returns (address);
 
-    function teleBTC() external view returns(address);
+    function teleBTC() external view returns (address);
 
-    function ccBurnRouter() external view returns(address);
+    function ccBurnRouter() external view returns (address);
 
-    function exchangeConnector() external view returns(address);
+    function exchangeConnector() external view returns (address);
 
-    function priceOracle() external view returns(address);
+    function priceOracle() external view returns (address);
 
-    function minRequiredTDTLockedAmount() external view returns(uint);
-    function minRequiredTNTLockedAmount() external view returns(uint);
-    function lockerPercentageFee() external view returns(uint);
+    function minRequiredTDTLockedAmount() external view returns (uint256);
 
-    function collateralRatio() external view returns(uint);
+    function minRequiredTNTLockedAmount() external view returns (uint256);
 
-    function liquidationRatio() external view returns(uint);
+    function lockerPercentageFee() external view returns (uint256);
 
-    function priceWithDiscountRatio() external view returns(uint);
+    function collateralRatio() external view returns (uint256);
 
-    function totalNumberOfCandidates() external view returns(uint);
+    function liquidationRatio() external view returns (uint256);
 
-    function totalNumberOfLockers() external view returns(uint);
+    function priceWithDiscountRatio() external view returns (uint256);
 
-    function getLockerTargetAddress(bytes calldata _lockerLockingScript) external view returns (address);
+    function totalNumberOfCandidates() external view returns (uint256);
 
-    function isLocker(bytes calldata _lockerLockingScript) external view returns (bool);
+    function totalNumberOfLockers() external view returns (uint256);
 
-    function getNumberOfLockers() external view returns (uint);
+    function getLockerTargetAddress(
+        bytes calldata _lockerLockingScript
+    ) external view returns (address);
 
-    function getLockerLockingScript(address _lockerTargetAddress) external view returns (bytes memory);
+    function isLocker(
+        bytes calldata _lockerLockingScript
+    ) external view returns (bool);
 
-    function isLockerActive(address _lockerTargetAddress) external view returns (bool);
+    function getNumberOfLockers() external view returns (uint256);
+
+    function getLockerLockingScript(
+        address _lockerTargetAddress
+    ) external view returns (bytes memory);
+
+    function isLockerActive(
+        address _lockerTargetAddress
+    ) external view returns (bool);
 
     function getLockersHealthFactor (address _lockerTargetAddress) external view returns (uint256);
     
     function priceOfOneUnitOfCollateralInBTC(address _token) external view returns (uint);
 
-    function isMinter(address account) external view returns(bool);
+    function getLockerCapacity(
+        address _lockerTargetAddress
+    ) external view returns (uint256);
 
-    function isBurner(address account) external view returns(bool);
+    function minters(address) external view returns (bool);
+
+    function burners(address) external view returns (bool);
 
     // State-changing functions
 
@@ -324,17 +318,28 @@ interface ILockersManager {
 
     function removeBurner(address _account) external;
 
-    function mint(bytes calldata _lockerLockingScript, address _receiver, uint _amount) external returns(uint);
+    function mint(
+        bytes calldata _lockerLockingScript,
+        address _receiver,
+        uint256 _amount
+    ) external returns (uint256);
 
-    function burn(bytes calldata _lockerLockingScript, uint256 _amount) external returns(uint);
+    function burn(
+        bytes calldata _lockerLockingScript,
+        uint256 _amount
+    ) external returns (uint256);
 
     function setTST(address _TST) external;
 
-    function setLockerPercentageFee(uint _lockerPercentageFee) external;
+    function setLockerPercentageFee(uint256 _lockerPercentageFee) external;
 
-    function setPriceWithDiscountRatio(uint _priceWithDiscountRatio) external;
+    function setPriceWithDiscountRatio(
+        uint256 _priceWithDiscountRatio
+    ) external;
 
-    function setMinRequiredTDTLockedAmount(uint _minRequiredTDTLockedAmount) external;
+    function setMinRequiredTDTLockedAmount(
+        uint256 _minRequiredTDTLockedAmount
+    ) external;
 
     function setPriceOracle(address _priceOracle) external;
 
@@ -346,20 +351,20 @@ interface ILockersManager {
 
     function setCollateralRatio(uint _collateralRatio) external;
 
-    function setLiquidationRatio(uint _liquidationRatio) external;
+    function setLiquidationRatio(uint256 _liquidationRatio) external;
 
     function liquidateLocker(
         address _lockerTargetAddress,
-        uint _btcAmount
+        uint256 _btcAmount
     ) external returns (bool);
 
     function addCollateral(
         address _lockerTargetAddress,
-        uint _addingNativeTokenAmount
+        uint256 _addingNativeTokenAmount
     ) external payable returns (bool);
 
     function removeCollateral(
-        uint _removingNativeTokenAmount
+        uint256 _removingNativeTokenAmount
     ) external payable returns (bool);
 
     function requestToBecomeLocker(
@@ -383,22 +388,22 @@ interface ILockersManager {
 
     function slashIdleLocker(
         address _lockerTargetAddress,
-        uint _rewardAmount,
+        uint256 _rewardAmount,
         address _slasher,
-        uint _amount,
+        uint256 _amount,
         address _recipient
-    ) external returns(bool);
+    ) external returns (bool);
 
     function slashThiefLocker(
         address _lockerTargetAddress,
-        uint _rewardAmount,
+        uint256 _rewardAmount,
         address _slasher,
-        uint _amount
-    ) external returns(bool);
+        uint256 _amount
+    ) external returns (bool);
 
     function buySlashedCollateralOfLocker(
         address _lockerTargetAddress,
-        uint _collateralAmount
+        uint256 _collateralAmount
     ) external returns (bool);
 
     function getLockerCapacity(

@@ -261,64 +261,63 @@ interface ICcExchangeRouter {
         address exchangeConnector
     );
 
-    /// @notice Emits when relay contract updated
+    /// @notice Emit when relay contract updated
     event NewRelay(
         address oldRelay, 
         address newRelay
     );
 
-    /// @notice Emits when instant router contract updated
-    event NewInstantRouter(
-        address oldInstantRouter, 
-        address newInstantRouter
+    /// @notice Emits when special Teleporter addr updated
+    event NewSpecialTeleporter(
+        address oldSpecialTeleporter, 
+        address newSpecialTeleporter
     );
 
-    /// @notice Emits when lockers contract updated
+    /// @notice Emit when lockers contract updated
     event NewLockers(
         address oldLockers, 
         address newLockers
     );
 
-    /// @notice Emits when telebtc contract updated
+    /// @notice Emit when telebtc contract updated
     event NewTeleBTC(
         address oldTeleBTC, 
         address newTeleBTC
     );
 
-    /// @notice Emits when protocol fee updated
+    /// @notice Emit when protocol fee updated
     event NewProtocolPercentageFee(
         uint oldProtocolPercentageFee, 
         uint newProtocolPercentageFee
     );
 
-    /// @notice Emits when treasury address updated
+    /// @notice Emit when treasury address updated
     event NewTreasury(
         address oldTreasury, 
         address newTreasury
     );
 
-    /// @notice                     Emits when changes made to third party address
+    /// @notice Emit when third party address updated
 	event NewThirdPartyAddress(
 		uint thirdPartyId,
 		address oldThirdPartyAddress, 
 		address newThirdPartyAddress
 	);
 
-	/// @notice                     Emits when changes made to third party fee
+	/// @notice Emit when third party fee updated
 	event NewThirdPartyFee(
 		uint thirdPartyId,
 		uint oldThirdPartyFee, 
 		uint newThirdPartyFee
 	);
 
-    /// @notice                     Emits when changes made to chain id mapping
+    /// @notice Emit when new chain id mapping added
     event NewChainIdMapping(
-        uint mappedId,
-        uint middleChain,
-        uint destinationChain
+        uint destinationChain,
+        uint mappedChainId
     );
 
-    /// @notice                     Emits when changes made to wrapped native token
+    /// @notice Emits when wrapped native token addr updated
     event NewWrappedNativeToken(
         address oldWrappedNativeToken,
         address newWrappedNativeToken
@@ -338,7 +337,7 @@ interface ICcExchangeRouter {
 
     function relay() external view returns (address);
 
-    function instantRouter() external view returns (address);
+    function specialTeleporter() external view returns (address);
 
     function lockers() external view returns (address);
 
@@ -362,7 +361,7 @@ interface ICcExchangeRouter {
 
     function setRelay(address _relay) external;
 
-    function setInstantRouter(address _instantRouter) external;
+    function setSpecialTeleporter(address _specialTeleporter) external;
 
     function setLockers(address _lockers) external;
 
@@ -386,7 +385,7 @@ interface ICcExchangeRouter {
 
     function setWrappedNativeToken(address _wrappedNativeToken) external;
 
-    function setChainIdMapping(uint _mappedId, uint _middleChain, uint _destinationChain) external;
+    function setChainIdMapping(uint _destinationChain, uint _mappedId) external;
     
     function wrapAndSwap(
         TxAndProof memory _txAndProof,
