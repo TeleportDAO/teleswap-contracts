@@ -300,6 +300,8 @@ interface ILockersManager {
 
     function isLockerActive(address _lockerTargetAddress) external view returns (bool);
 
+    function getLockersHealthFactor (address _lockerTargetAddress) external view returns (uint256);
+    
     function priceOfOneUnitOfCollateralInBTC(address _token) external view returns (uint);
 
     function isMinter(address account) external view returns(bool);

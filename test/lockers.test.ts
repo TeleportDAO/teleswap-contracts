@@ -15,10 +15,10 @@ import { TeleBTCLogic__factory } from "../src/types/factories/TeleBTCLogic__fact
 import { TeleBTCProxy__factory } from "../src/types/factories/TeleBTCProxy__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { Erc20__factory } from "../src/types/factories/Erc20__factory";
+const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 
 
 import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
-
 describe("Lockers", async () => {
 
     let snapshotId: any;
@@ -29,12 +29,18 @@ describe("Lockers", async () => {
     let telePortTokenInitialSupply = BigNumber.from(10).pow(18).mul(10000);
     let minRequiredTDTLockedAmount = BigNumber.from(10).pow(18).mul(500);
     let minRequiredNativeTokenLockedAmount = BigNumber.from(10).pow(18).mul(5);
+    let minRequiredExchangeTokenLockedAmount = BigNumber.from(10).pow(18).mul(10);
     let btcAmountToSlash = BigNumber.from(10).pow(8).mul(1)
     let collateralRatio = 20000;
     let liquidationRatio = 15000;
     const LOCKER_PERCENTAGE_FEE = 20; // Means %0.2
     const PRICE_WITH_DISCOUNT_RATIO = 9500; // Means %95
     const INACTIVATION_DELAY = 10000;
+    const ONE_HOUNDRED_PERCENT = 10000;
+    const UPPER_HEALTH_FACTOR = 12500;
+    const NATIVE_TOKEN_DECIMAL = 18
+    const NATIVE_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000001"
+    const FEE_ESTIMATE = BigNumber.from(10).pow(15)
 
     // Bitcoin public key (32 bytes)
     let LOCKER1 = '0x03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd';
@@ -50,11 +56,13 @@ describe("Lockers", async () => {
     let deployer: Signer;
     let signer1: Signer;
     let signer2: Signer;
+    let signer3: Signer;
     let ccBurnSimulator: Signer;
     let proxyAdminAddress: Address;
     let deployerAddress: Address;
     let signer1Address: Address;
     let signer2Address: Address;
+    let signer3Address: Address;
     let ccBurnSimulatorAddress: Address;
 
     // Contracts
@@ -70,14 +78,17 @@ describe("Lockers", async () => {
     let mockPriceOracle: MockContract;
     let mockCCBurnRouter: MockContract;
 
+    let exchangeToken: ERC20;
+
     before(async () => {
         // Sets accounts
-        [proxyAdmin, deployer, signer1, signer2,ccBurnSimulator] = await ethers.getSigners();
+        [proxyAdmin, deployer, signer1, signer2,ccBurnSimulator, signer3] = await ethers.getSigners();
         proxyAdminAddress = await proxyAdmin.getAddress()
         deployerAddress = await deployer.getAddress();
         signer1Address = await signer1.getAddress();
         signer2Address = await signer2.getAddress();
         ccBurnSimulatorAddress = await ccBurnSimulator.getAddress();
+        signer3Address = await signer3.getAddress();
 
         teleportDAOToken = await deployTelePortDaoToken()
 
@@ -136,7 +147,6 @@ describe("Lockers", async () => {
             mockPriceOracle.address,
             ccBurnSimulatorAddress,
             minRequiredTDTLockedAmount,
-            minRequiredNativeTokenLockedAmount,
             collateralRatio,
             liquidationRatio,
             LOCKER_PERCENTAGE_FEE,
@@ -156,6 +166,23 @@ describe("Lockers", async () => {
         // lockersAsAdmin = await lockers.connect(proxyAdmin)
 
         // await lockers.setTeleBTC(teleBTC.address)
+
+        // whitelist native token
+        await lockers.addCollateralToken(NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL)
+
+        // Deploys exchange token
+        const erc20Factory = new Erc20__factory(deployer);
+        exchangeToken = await erc20Factory.deploy(
+            "TestToken",
+            "TT",
+            minRequiredExchangeTokenLockedAmount.mul(10)
+        );
+
+        await exchangeToken.transfer(signer1Address, minRequiredExchangeTokenLockedAmount)
+
+        // whitelist exchange token
+        await lockers.addCollateralToken(exchangeToken.address, await exchangeToken.decimals())
+
 
     });
 
@@ -269,7 +296,6 @@ describe("Lockers", async () => {
                     mockPriceOracle.address,
                     ONE_ADDRESS,
                     minRequiredTDTLockedAmount,
-                    minRequiredNativeTokenLockedAmount,
                     collateralRatio,
                     liquidationRatio,
                     LOCKER_PERCENTAGE_FEE,
@@ -285,13 +311,12 @@ describe("Lockers", async () => {
                     mockPriceOracle.address,
                     ONE_ADDRESS,
                     minRequiredTDTLockedAmount,
-                    minRequiredNativeTokenLockedAmount,
                     liquidationRatio,
                     collateralRatio,
                     LOCKER_PERCENTAGE_FEE,
                     PRICE_WITH_DISCOUNT_RATIO
                 )
-            ).to.be.revertedWith("Lockers: must CR > LR")
+            ).to.be.revertedWith("InvalidValue()")
         })
 
         it("initialize cant be called with Price discount greater than 100%", async function () {
@@ -301,13 +326,12 @@ describe("Lockers", async () => {
                     mockPriceOracle.address,
                     ONE_ADDRESS,
                     minRequiredTDTLockedAmount,
-                    minRequiredNativeTokenLockedAmount,
                     collateralRatio,
                     liquidationRatio,
                     LOCKER_PERCENTAGE_FEE,
                     PRICE_WITH_DISCOUNT_RATIO + 10000
                 )
-            ).to.be.revertedWith("Lockers: less than 100%")
+            ).to.be.revertedWith("InvalidValue()")
         })
 
     })
@@ -354,20 +378,12 @@ describe("Lockers", async () => {
                 lockers.addMinter(
                     ONE_ADDRESS
                 )
-            ).to.be.revertedWith("Lockers: account already has role")
+            ).to.be.revertedWith("AlreadyHasRole()")
         })
 
     })
 
     describe("#removeMinter", async () => {
-
-        it("can't remove zero address as minter", async function () {
-            await expect(
-                lockers.removeMinter(
-                    ZERO_ADDRESS
-                )
-            ).to.be.revertedWith("ZeroAddress()")
-        })
 
         it("only owner can add a minter", async function () {
 
@@ -386,7 +402,7 @@ describe("Lockers", async () => {
                 lockers.removeMinter(
                     ONE_ADDRESS
                 )
-            ).to.be.revertedWith("Lockers: account does not have role")
+            ).to.be.revertedWith("NotMinter()")
         })
 
         it("owner successfully removes an account from minters", async function () {
@@ -448,20 +464,11 @@ describe("Lockers", async () => {
                 lockers.addBurner(
                     ONE_ADDRESS
                 )
-            ).to.be.revertedWith("Lockers: account already has role")
+            ).to.be.revertedWith("AlreadyHasRole()")
         })
-
     })
 
     describe("#removeBurner", async () => {
-
-        it("can't remove zero address as burner", async function () {
-            await expect(
-                lockers.removeBurner(
-                    ZERO_ADDRESS
-                )
-            ).to.be.revertedWith("ZeroAddress()")
-        })
 
         it("only owner can add a burner", async function () {
 
@@ -474,14 +481,14 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("Ownable: caller is not the owner")
         })
 
-        it("owner can't remove an account from burners that it's not burner ATM", async function () {
+        // it("owner can't remove an account from burners that it's not burner ATM", async function () {
 
-            await expect(
-                lockers.removeBurner(
-                    ONE_ADDRESS
-                )
-            ).to.be.revertedWith("Lockers: account does not have role")
-        })
+        //     await expect(
+        //         lockers.removeBurner(
+        //             ONE_ADDRESS
+        //         )
+        //     ).to.be.revertedWith("Lockers: account does not have role")
+        // })
 
         it("owner successfully removes an account from burner", async function () {
 
@@ -642,12 +649,6 @@ describe("Lockers", async () => {
         it("only owner can call setTeleportDAOToken", async function () {
 
             await expect(
-                lockers.setTST(
-                    ZERO_ADDRESS
-                )
-            ).to.be.revertedWith("ZeroAddress()")
-
-            await expect(
                 await lockers.setTST(
                     ONE_ADDRESS
                 )
@@ -668,7 +669,7 @@ describe("Lockers", async () => {
                 lockers.setLockerPercentageFee(
                     10001
                 )
-            ).to.be.revertedWith("Lockers: invalid locker fee")
+            ).to.be.revertedWith("InvalidValue()")
         })
 
         it("non owners can't call setLockerPercentageFee", async function () {
@@ -752,44 +753,6 @@ describe("Lockers", async () => {
         })
     })
 
-    describe("#setMinRequiredTNTLockedAmount",async () => {
-        it("non owners can't call setMinRequiredTNTLockedAmount", async function () {
-            let lockerSigner1 = lockers.connect(signer1)
-
-            await expect(
-                lockerSigner1.setMinRequiredTNTLockedAmount(
-                    REQUIRED_LOCKED_AMOUNT
-                )
-            ).to.be.revertedWith("Ownable: caller is not the owner")
-        })
-
-        it("only owner can call setMinRequiredTNTLockedAmount", async function () {
-
-            await expect(
-                await lockers.setMinRequiredTNTLockedAmount(
-                    REQUIRED_LOCKED_AMOUNT + 55
-                )
-            ).to.emit(
-                lockers, "NewMinRequiredTNTLockedAmount"
-            ).withArgs(minRequiredNativeTokenLockedAmount, REQUIRED_LOCKED_AMOUNT + 55);
-
-
-            expect(
-                await lockers.minRequiredTNTLockedAmount()
-            ).to.equal(REQUIRED_LOCKED_AMOUNT + 55)
-        })
-
-        it("can't set amount setMinRequiredTNTLockedAmount to zero", async function () {
-
-            await expect(
-                lockers.setMinRequiredTNTLockedAmount(
-                    0
-                )
-            ).to.be.revertedWith("ZeroValue()")
-        })
-
-    })
-
     describe("#setPriceOracle",async () => {
 
         it("price oracle can't be zero address", async function () {
@@ -827,7 +790,6 @@ describe("Lockers", async () => {
             ).to.equal(ONE_ADDRESS)
         })
     })
-
 
     describe("#setCCBurnRouter",async () => {
 
@@ -973,7 +935,7 @@ describe("Lockers", async () => {
                 lockers.setCollateralRatio(
                     10
                 )
-            ).to.be.revertedWith("Lockers: must CR > LR")
+            ).to.be.revertedWith("InvalidValue()")
         })
     })
 
@@ -1005,7 +967,6 @@ describe("Lockers", async () => {
         })
     })
 
-
     describe("#modifiers", async () => {
         it("can't set zero address", async function () {
             await expect(
@@ -1027,25 +988,7 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("ZeroAddress()")
 
             await expect(
-                lockers.getLockerLockingScript(
-                    ZERO_ADDRESS
-                )
-            ).to.be.revertedWith("ZeroAddress()")
-
-            await expect(
-                lockers.removeBurner(
-                    ZERO_ADDRESS
-                )
-            ).to.be.revertedWith("ZeroAddress()")
-
-            await expect(
                 lockers.addBurner(
-                    ZERO_ADDRESS
-                )
-            ).to.be.revertedWith("ZeroAddress()")
-
-            await expect(
-                lockers.removeMinter(
                     ZERO_ADDRESS
                 )
             ).to.be.revertedWith("ZeroAddress()")
@@ -1056,23 +999,6 @@ describe("Lockers", async () => {
                 )
             ).to.be.revertedWith("ZeroAddress()")
 
-            await expect(
-                lockers.isLockerActive(
-                    ZERO_ADDRESS
-                )
-            ).to.be.revertedWith("ZeroAddress()")
-
-            await expect(
-                lockers.isMinter(
-                    ZERO_ADDRESS
-                )
-            ).to.be.revertedWith("ZeroAddress()")
-
-            await expect(
-                lockers.isBurner(
-                    ZERO_ADDRESS
-                )
-            ).to.be.revertedWith("ZeroAddress()")
         })
     });
 
@@ -1085,6 +1011,7 @@ describe("Lockers", async () => {
                 lockerSigner1.requestToBecomeLocker(
                     // LOCKER1,
                     LOCKER1_PUBKEY__HASH,
+                    NATIVE_TOKEN_ADDRESS,
                     minRequiredTDTLockedAmount.sub(1),
                     minRequiredNativeTokenLockedAmount,
                     LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1101,6 +1028,7 @@ describe("Lockers", async () => {
                 lockerSigner1.requestToBecomeLocker(
                     // LOCKER1,
                     LOCKER1_PUBKEY__HASH,
+                    NATIVE_TOKEN_ADDRESS,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
                     LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1117,16 +1045,101 @@ describe("Lockers", async () => {
                 lockerSigner1.requestToBecomeLocker(
                     // LOCKER1,
                     LOCKER1_PUBKEY__HASH,
+                    NATIVE_TOKEN_ADDRESS,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
                     LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
                     LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount.sub(10)}
                 )
-            ).to.be.revertedWith("Lockers: low TNT")
+            ).to.be.revertedWith("Lockers: wrong msg value")
         })
 
         it("successful request to become locker", async function () {
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+            
+            let oldBalanceTST = await teleportDAOToken.balanceOf(signer1Address)
+            let oldBalance = await ethers.provider.getBalance(signer1Address)
+            await expect(
+                await lockerSigner1.requestToBecomeLocker(
+                    // LOCKER1,
+                    LOCKER1_PUBKEY__HASH,
+                    NATIVE_TOKEN_ADDRESS,
+                    minRequiredTDTLockedAmount,
+                    minRequiredNativeTokenLockedAmount,
+                    LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                    LOCKER_RESCUE_SCRIPT_P2PKH,
+                    {value: minRequiredNativeTokenLockedAmount}
+                )
+            ).to.emit(lockers, "RequestAddLocker").withArgs(
+                signer1Address,
+                LOCKER1_PUBKEY__HASH,
+                minRequiredTDTLockedAmount,
+                NATIVE_TOKEN_ADDRESS,
+                minRequiredNativeTokenLockedAmount
+            )
+
+            await expect(
+                await lockers.totalNumberOfCandidates()
+            ).to.equal(1)
+
+            let newBalance = await ethers.provider.getBalance(signer1Address)
+            let newBalanceTST = await teleportDAOToken.balanceOf(signer1Address)
+
+            await expect (oldBalanceTST.sub(newBalanceTST)).to.be.equal(minRequiredTDTLockedAmount)
+            await expect (oldBalance.sub(newBalance)).to.be.closeTo(minRequiredNativeTokenLockedAmount, FEE_ESTIMATE)
+        })
+
+        it("successful request to become locker (exchange token)", async function () {
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            await exchangeToken.connect(signer1).approve(lockers.address, minRequiredExchangeTokenLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+            let oldBalanceTST = await teleportDAOToken.balanceOf(signer1Address)
+            let oldBalanceToken = await exchangeToken.balanceOf(signer1Address)
+            await expect(
+                await lockerSigner1.requestToBecomeLocker(
+                    // LOCKER1,
+                    LOCKER1_PUBKEY__HASH,
+                    exchangeToken.address,
+                    minRequiredTDTLockedAmount,
+                    minRequiredExchangeTokenLockedAmount,
+                    LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                    LOCKER_RESCUE_SCRIPT_P2PKH,
+                    {value: 0}
+                )
+            ).to.emit(lockers, "RequestAddLocker").withArgs(
+                signer1Address,
+                LOCKER1_PUBKEY__HASH,
+                minRequiredTDTLockedAmount,
+                exchangeToken.address,
+                minRequiredExchangeTokenLockedAmount
+            )
+
+            expect(
+                await lockers.totalNumberOfCandidates()
+            ).to.equal(1)
+
+            let newBalanceTST = await teleportDAOToken.balanceOf(signer1Address)
+            let newBalanceToken = await exchangeToken.balanceOf(signer1Address)
+
+            await expect (oldBalanceTST.sub(newBalanceTST)).to.be.equal(minRequiredTDTLockedAmount)
+            await expect (oldBalanceToken.sub(newBalanceToken)).to.be.equal(minRequiredExchangeTokenLockedAmount)
+
+        })
+
+        it("failed to request to become locker with exchange token because msg value is not zero", async function () {
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
@@ -1137,20 +1150,43 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
-                await lockerSigner1.requestToBecomeLocker(
+                lockerSigner1.requestToBecomeLocker(
                     // LOCKER1,
                     LOCKER1_PUBKEY__HASH,
+                    exchangeToken.address,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
                     LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
                     LOCKER_RESCUE_SCRIPT_P2PKH,
                     {value: minRequiredNativeTokenLockedAmount}
                 )
-            ).to.emit(lockers, "RequestAddLocker")
+            ).to.be.revertedWith("Lockers: wrong msg value")
 
-            expect(
-                await lockers.totalNumberOfCandidates()
-            ).to.equal(1)
+        })
+
+        it("failed to request to become locker because token is not whitelisted", async function () {
+            await lockers.addCollateralToken(exchangeToken.address, 0)
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect(
+                lockerSigner1.requestToBecomeLocker(
+                    // LOCKER1,
+                    LOCKER1_PUBKEY__HASH,
+                    exchangeToken.address,
+                    minRequiredTDTLockedAmount,
+                    minRequiredNativeTokenLockedAmount,
+                    LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                    LOCKER_RESCUE_SCRIPT_P2PKH,
+                    {value: minRequiredNativeTokenLockedAmount}
+                )
+            ).to.be.revertedWith("Lockers: not whitelisted")
 
         })
 
@@ -1167,6 +1203,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1178,6 +1215,7 @@ describe("Lockers", async () => {
                 lockerSigner1.requestToBecomeLocker(
                     // LOCKER1,
                     LOCKER1_PUBKEY__HASH,
+                    NATIVE_TOKEN_ADDRESS,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
                     LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1187,7 +1225,6 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("Lockers: is candidate")
 
         })
-
 
         it("a redeem script hash can't be used twice", async function () {
 
@@ -1202,6 +1239,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1209,7 +1247,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            await lockers.addLocker(signer1Address)
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
 
             let lockerSigner2 = lockers.connect(signer2)
 
@@ -1217,6 +1255,7 @@ describe("Lockers", async () => {
                 lockerSigner2.requestToBecomeLocker(
                     // LOCKER1,
                     LOCKER1_PUBKEY__HASH,
+                    NATIVE_TOKEN_ADDRESS,
                     minRequiredTDTLockedAmount,
                     minRequiredNativeTokenLockedAmount,
                     LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1226,10 +1265,7 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("Lockers: used locking script")
 
         })
-
     });
-
-
 
     describe("#revokeRequest", async () => {
 
@@ -1238,7 +1274,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.revokeRequest()
-            ).to.be.revertedWith("Lockers: no req")
+            ).to.be.revertedWith("NotRequested()")
         })
 
         it("successful revoke", async function () {
@@ -1251,9 +1287,13 @@ describe("Lockers", async () => {
 
             let lockerSigner1 = lockers.connect(signer1)
 
+            let oldBalanceTST = await teleportDAOToken.balanceOf(signer1Address)
+            let oldBalance = await ethers.provider.getBalance(signer1Address);
+
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1263,9 +1303,54 @@ describe("Lockers", async () => {
 
             await lockerSigner1.revokeRequest()
 
+            let newBalance = await ethers.provider.getBalance(signer1Address)
+            let newBalanceTST = await teleportDAOToken.balanceOf(signer1Address)
+
+            await expect(
+                await lockers.totalNumberOfCandidates()
+            ).to.equal(0)
+
+            await expect (newBalanceTST.sub(oldBalanceTST)).to.be.equal(0)
+            await expect (oldBalance.sub(newBalance)).to.be.closeTo(BigNumber.from(0), FEE_ESTIMATE)
+        })
+
+        it("successful revoke (exchange token)", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+            await exchangeToken.connect(signer1).approve(lockers.address, minRequiredExchangeTokenLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+            let oldBalanceTST = await teleportDAOToken.balanceOf(signer1Address)
+            let oldBalanceToken = await exchangeToken.balanceOf(signer1Address)
+            await lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                exchangeToken.address,
+                minRequiredTDTLockedAmount,
+                minRequiredExchangeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: 0}
+            )
+
+            await expect (
+                await exchangeToken.balanceOf(signer1Address)
+            ).to.be.equal(0)
+
+            await lockerSigner1.revokeRequest()
+
             expect(
                 await lockers.totalNumberOfCandidates()
             ).to.equal(0)
+
+            let newBalanceTST = await teleportDAOToken.balanceOf(signer1Address)
+            let newBalanceToken = await exchangeToken.balanceOf(signer1Address)
+            await expect (oldBalanceTST.sub(newBalanceTST)).to.be.equal(0)
+            await expect (oldBalanceToken.sub(newBalanceToken)).to.be.equal(0)
         })
 
     });
@@ -1276,14 +1361,14 @@ describe("Lockers", async () => {
             let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
-                lockerSigner1.addLocker(signer1Address)
+                lockerSigner1.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
             ).to.be.revertedWith("Ownable: caller is not the owner")
         })
 
         it("trying to add a non existing request as a locker", async function () {
             await expect(
-                lockers.addLocker(signer1Address)
-            ).to.be.revertedWith("Lockers: no request")
+                lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
+            ).to.be.revertedWith("NotRequested()")
         })
 
         it("adding a locker", async function () {
@@ -1299,6 +1384,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1307,8 +1393,16 @@ describe("Lockers", async () => {
             )
 
             await expect(
-                await lockers.addLocker(signer1Address)
-            ).to.emit(lockers, "LockerAdded")
+                await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
+            ).to.emit(lockers, "LockerAdded").withArgs(
+                signer1Address,
+                LOCKER1_PUBKEY__HASH,
+                minRequiredTDTLockedAmount,
+                NATIVE_TOKEN_ADDRESS,
+                minRequiredNativeTokenLockedAmount,
+                ONE_HOUNDRED_PERCENT,
+                anyValue
+            )
 
             expect(
                 await lockers.totalNumberOfCandidates()
@@ -1346,6 +1440,76 @@ describe("Lockers", async () => {
             ).to.equal(LOCKER1_PUBKEY__HASH)
         })
 
+        it("adding a locker (exchange token)", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            await exchangeToken.connect(signer1).approve(lockers.address, minRequiredExchangeTokenLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                exchangeToken.address,
+                minRequiredTDTLockedAmount,
+                minRequiredExchangeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: 0}
+            )
+
+            await expect(
+                await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
+            ).to.emit(lockers, "LockerAdded").withArgs(
+                signer1Address,
+                LOCKER1_PUBKEY__HASH,
+                minRequiredTDTLockedAmount,
+                exchangeToken.address,
+                minRequiredExchangeTokenLockedAmount,
+                ONE_HOUNDRED_PERCENT,
+                anyValue
+            )
+
+            expect(
+                await lockers.totalNumberOfCandidates()
+            ).to.equal(0)
+
+            expect(
+                await lockers.totalNumberOfLockers()
+            ).to.equal(1)
+
+            expect(
+                await lockers.getNumberOfLockers()
+            ).to.equal(1)
+
+            let theLockerMapping = await lockers.lockersMapping(signer1Address)
+            expect(
+                theLockerMapping[0]
+            ).to.equal(LOCKER1_PUBKEY__HASH)
+
+            expect(
+                await lockers.getLockerTargetAddress(
+                    LOCKER1_PUBKEY__HASH
+                )
+            ).to.equal(signer1Address)
+
+            expect(
+                await lockers.isLocker(
+                    LOCKER1_PUBKEY__HASH
+                )
+            ).to.equal(true)
+
+            expect(
+                await lockers.getLockerLockingScript(
+                    signer1Address
+                )
+            ).to.equal(LOCKER1_PUBKEY__HASH)
+        })
     });
 
     describe("#requestInactivation", async () => {
@@ -1355,7 +1519,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.requestInactivation()
-            ).to.be.revertedWith("Lockers: input address is not a valid locker")
+            ).to.be.revertedWith("NotLocker()")
         })
 
         it("successfully request to be removed", async function () {
@@ -1371,6 +1535,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1378,16 +1543,26 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            await lockers.addLocker(signer1Address)
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
 
             await expect(
                 await lockerSigner1.requestInactivation()
-            ).to.emit(lockers, "RequestInactivateLocker")
+            ).to.emit(lockers, "RequestInactivateLocker").withArgs(
+                signer1Address,
+                anyValue,
+                LOCKER1_PUBKEY__HASH,
+                minRequiredTDTLockedAmount,
+                NATIVE_TOKEN_ADDRESS,
+                minRequiredNativeTokenLockedAmount,
+                0
+            )
 
             await expect(
                 lockerSigner1.requestInactivation()
-            ).to.be.revertedWith("Lockers: locker has already requested")
+            ).to.be.revertedWith("Lockers: already requested")
         })
+
+        //TODO add test for lockerInactivationTimestamp
 
     });
 
@@ -1398,7 +1573,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.requestActivation()
-            ).to.be.revertedWith("Lockers: input address is not a valid locker")
+            ).to.be.revertedWith("NotLocker()")
         })
 
         it("successfully request to be activated", async function () {
@@ -1414,6 +1589,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1421,15 +1597,62 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            await lockers.addLocker(signer1Address)
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
 
             await expect(
                 await lockerSigner1.requestInactivation()
             ).to.emit(lockers, "RequestInactivateLocker")
 
             await expect(
-                lockerSigner1.requestActivation()
-            ).to.emit(lockers, "ActivateLocker")
+                await lockerSigner1.requestActivation()
+            ).to.emit(lockers, "ActivateLocker").withArgs(
+                signer1Address,
+                LOCKER1_PUBKEY__HASH,
+                minRequiredTDTLockedAmount,
+                NATIVE_TOKEN_ADDRESS,
+                minRequiredNativeTokenLockedAmount,
+                0
+            )
+        })
+
+        it("successfully request to be activated(exchange token)", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+            await exchangeToken.connect(signer1).approve(lockers.address, minRequiredExchangeTokenLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                exchangeToken.address,
+                minRequiredTDTLockedAmount,
+                minRequiredExchangeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: 0}
+            )
+
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
+
+            await expect(
+                await lockerSigner1.requestInactivation()
+            ).to.emit(lockers, "RequestInactivateLocker")
+
+            await expect(
+                await lockerSigner1.requestActivation()
+            ).to.emit(lockers, "ActivateLocker").withArgs(
+                signer1Address,
+                LOCKER1_PUBKEY__HASH,
+                minRequiredTDTLockedAmount,
+                exchangeToken.address,
+                minRequiredExchangeTokenLockedAmount,
+                0
+            )
         })
 
     });
@@ -1442,7 +1665,7 @@ describe("Lockers", async () => {
 
             await expect(
                 lockerSigner1.selfRemoveLocker()
-            ).to.be.revertedWith("Lockers: no locker")
+            ).to.be.revertedWith("NotLocker()")
         })
 
         it("can't remove a locker if it doesn't request to be removed", async function () {
@@ -1458,6 +1681,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1465,11 +1689,11 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            await lockers.addLocker(signer1Address)
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
 
             await expect(
                 lockerSigner1.selfRemoveLocker()
-            ).to.be.revertedWith("Lockers: still active")
+            ).to.be.revertedWith("LockerActive()")
         })
 
         it("the locker can't be removed because netMinted is not zero", async function () {
@@ -1485,6 +1709,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1492,7 +1717,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            await lockers.addLocker(signer1Address)
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
             await lockers.addMinter(signer2Address);
@@ -1521,9 +1746,13 @@ describe("Lockers", async () => {
 
             let lockerSigner1 = lockers.connect(signer1)
 
+            let oldBalanceTST = await teleportDAOToken.balanceOf(signer1Address)
+            let oldBalance = await ethers.provider.getBalance(signer1Address)
+
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1531,7 +1760,65 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            await lockers.addLocker(signer1Address)
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
+
+            await lockerSigner1.requestInactivation()
+            
+            // Forwards block.timestamp to inactivate locker
+            let lastBlockTimestamp = await getTimestamp();
+            await advanceBlockWithTime(deployer.provider, lastBlockTimestamp + INACTIVATION_DELAY);
+
+            await expect(
+                await lockerSigner1.selfRemoveLocker()
+            ).to.emit(lockers, "LockerRemoved").withArgs(
+                signer1Address,
+                LOCKER1_PUBKEY__HASH,
+                minRequiredTDTLockedAmount,
+                NATIVE_TOKEN_ADDRESS,
+                minRequiredNativeTokenLockedAmount
+            )
+
+            expect(
+                await lockers.totalNumberOfLockers()
+            ).to.equal(0)
+
+            let newBalance = await ethers.provider.getBalance(signer1Address)
+            let newBalanceTST = await teleportDAOToken.balanceOf(signer1Address)
+
+            await expect (oldBalanceTST.sub(newBalanceTST)).to.be.equal(0)
+            await expect (oldBalance.sub(newBalance)).to.be.closeTo(BigNumber.from(0), FEE_ESTIMATE)
+        })
+
+        it("the locker is removed successfully (exchange token)", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+            await exchangeToken.connect(signer1).approve(lockers.address, minRequiredExchangeTokenLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            let oldBalanceTST = await teleportDAOToken.balanceOf(signer1Address)
+            let oldBalanceToken = await exchangeToken.balanceOf(signer1Address)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                exchangeToken.address,
+                minRequiredTDTLockedAmount,
+                minRequiredExchangeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: 0}
+            )
+
+            await expect (
+                await exchangeToken.balanceOf(signer1Address)
+            ).to.be.equal(0)
+
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
 
             await lockerSigner1.requestInactivation()
 
@@ -1541,7 +1828,18 @@ describe("Lockers", async () => {
 
             await expect(
                 await lockerSigner1.selfRemoveLocker()
-            ).to.emit(lockers, "LockerRemoved")
+            ).to.emit(lockers, "LockerRemoved").withArgs(
+                signer1Address,
+                LOCKER1_PUBKEY__HASH,
+                minRequiredTDTLockedAmount,
+                exchangeToken.address,
+                minRequiredExchangeTokenLockedAmount
+            )
+
+            let newBalanceTST = await teleportDAOToken.balanceOf(signer1Address)
+            let newBalanceToken = await exchangeToken.balanceOf(signer1Address)
+            await expect (oldBalanceTST.sub(newBalanceTST)).to.be.equal(0)
+            await expect (oldBalanceToken.sub(newBalanceToken)).to.be.equal(0)
 
             expect(
                 await lockers.totalNumberOfLockers()
@@ -1549,7 +1847,6 @@ describe("Lockers", async () => {
         })
 
     });
-
 
     describe("#slashIdleLocker", async () => {
 
@@ -1564,7 +1861,7 @@ describe("Lockers", async () => {
                     btcAmountToSlash,
                     ccBurnSimulatorAddress
                 )
-            ).to.be.revertedWith("Lockers: message sender is not ccBurn")
+            ).to.be.revertedWith("NotCCBurn()")
         })
 
         it("slash locker reverts when the target address is not locker", async function () {
@@ -1600,6 +1897,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1608,7 +1906,7 @@ describe("Lockers", async () => {
             )
 
             await expect(
-                await lockers.addLocker(signer1Address)
+                await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
             ).to.emit(lockers, "LockerAdded")
 
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
@@ -1628,9 +1926,15 @@ describe("Lockers", async () => {
 
         it("cc burn can slash a locker", async function () {
 
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
-            // await mockExchangeConnector.mock.getInputAmount.returns(true, minRequiredTDTLockedAmount.div(10))
-            // await mockExchangeConnector.mock.swap.returns(true, [2500, 5000])
+            let _equivalentOutputAmount = 10000
+            let reward = 30000
+            let amount = 10000
+            let rewardPlusAmount = reward + amount
+
+            let oldBalanceSinger2 = await ethers.provider.getBalance(signer2Address)
+            let oldBalanceSinger3 = await ethers.provider.getBalance(signer3Address)
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(_equivalentOutputAmount)
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
 
@@ -1643,6 +1947,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1651,7 +1956,7 @@ describe("Lockers", async () => {
             )
 
             await expect(
-                await lockers.addLocker(signer1Address)
+                await lockers.addLocker(signer1Address, 1)
             ).to.emit(lockers, "LockerAdded")
 
             let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
@@ -1659,12 +1964,99 @@ describe("Lockers", async () => {
             await expect(
                 await lockerCCBurnSigner.slashIdleLocker(
                     signer1Address,
-                    0,
-                    deployerAddress,
-                    10000,
-                    ccBurnSimulatorAddress
+                    reward,
+                    signer2Address,
+                    amount,
+                    signer3Address
                 )
-            ).to.emit(lockers, "LockerSlashed")
+            ).to.emit(lockers, "LockerSlashed").withArgs(
+                signer1Address,
+                NATIVE_TOKEN_ADDRESS,
+                _equivalentOutputAmount * reward / rewardPlusAmount,
+                signer2Address,
+                _equivalentOutputAmount,
+                signer3Address,
+                _equivalentOutputAmount,
+                anyValue,
+                true
+            )
+            
+            let newBalanceSinger2 = await ethers.provider.getBalance(signer2Address)
+            let newBalanceSinger3 = await ethers.provider.getBalance(signer3Address)
+
+            await expect (
+                newBalanceSinger2.sub(oldBalanceSinger2)
+            ).to.be.equal((_equivalentOutputAmount * reward / rewardPlusAmount))
+
+            await expect (
+                newBalanceSinger3.sub(oldBalanceSinger3)
+            ).to.be.equal((_equivalentOutputAmount * amount / rewardPlusAmount))
+        })
+
+
+        it("cc burn can slash a locker (token collateral)", async function () {
+
+            let _equivalentOutputAmount = 10000
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(_equivalentOutputAmount)
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await exchangeToken.connect(signer1).approve(lockers.address, minRequiredExchangeTokenLockedAmount)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                exchangeToken.address,
+                minRequiredTDTLockedAmount,
+                minRequiredExchangeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: 0}
+            )
+
+            await expect(
+                await lockers.addLocker(signer1Address, 1)
+            ).to.emit(lockers, "LockerAdded")
+
+            let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
+
+            let reward = 30000
+            let amount = 10000
+            let rewardPlusAmount = reward + amount
+
+            await expect(
+                await lockerCCBurnSigner.slashIdleLocker(
+                    signer1Address,
+                    reward,
+                    signer2Address,
+                    amount,
+                    signer3Address
+                )
+            ).to.emit(lockers, "LockerSlashed").withArgs(
+                signer1Address,
+                exchangeToken.address,
+                _equivalentOutputAmount * reward / rewardPlusAmount,
+                signer2Address,
+                _equivalentOutputAmount,
+                signer3Address,
+                _equivalentOutputAmount,
+                anyValue,
+                true
+            )
+
+            await expect (
+                await exchangeToken.balanceOf(signer2Address)
+            ).to.be.equal((_equivalentOutputAmount * reward / rewardPlusAmount))
+
+            await expect (
+                await exchangeToken.balanceOf(signer3Address)
+            ).to.be.equal((_equivalentOutputAmount * amount / rewardPlusAmount))
 
         })
 
@@ -1682,7 +2074,7 @@ describe("Lockers", async () => {
                     deployerAddress,
                     btcAmountToSlash
                 )
-            ).to.be.revertedWith("Lockers: message sender is not ccBurn")
+            ).to.be.revertedWith("NotCCBurn()")
         })
 
         it("slash locker reverts when the target address is not locker", async function () {
@@ -1702,6 +2094,8 @@ describe("Lockers", async () => {
 
             let TNTAmount = 10000;
             let TeleBTCAmount = 1000;
+            let reward = 1000;
+            let oldBalanceSinger2 = await ethers.provider.getBalance(signer2Address)
             // Initialize mock contract (how much TNT locker should be penalized)
             await mockPriceOracle.mock.equivalentOutputAmount.returns(TNTAmount)
 
@@ -1713,6 +2107,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1720,7 +2115,129 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
             await expect(
-                await lockers.addLocker(signer1Address)
+                await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
+            ).to.emit(lockers, "LockerAdded")
+
+            // Locker mints some TeleBTC and gets BTC on Bitcoin
+            await lockers.addMinter(signer1Address);
+            await lockerSigner1.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, TeleBTCAmount);
+
+            // ccBurn calls to slash the locker
+            let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
+            
+            await expect(
+                await lockerCCBurnSigner.slashThiefLocker(
+                    signer1Address,
+                    reward,
+                    signer2Address,
+                    TeleBTCAmount
+                )
+            ).to.emit(lockers, "LockerSlashed").withArgs(
+                signer1Address,
+                NATIVE_TOKEN_ADDRESS,
+                TNTAmount * reward / TeleBTCAmount,
+                signer2Address,
+                TeleBTCAmount,
+                lockers.address,
+                TNTAmount * liquidationRatio / ONE_HOUNDRED_PERCENT + TNTAmount * reward / TeleBTCAmount,
+                anyValue,
+                false
+            )
+
+            let newBalanceSinger2 = await ethers.provider.getBalance(signer2Address)
+            await expect(
+                newBalanceSinger2.sub(oldBalanceSinger2)
+            ).to.be.equal(TNTAmount * reward / TeleBTCAmount)
+
+        })
+
+        it("cc burn can slash a locker (reliability factor = 3/4)", async function () {
+
+            let TNTAmount = 10000;
+            let TeleBTCAmount = 1000;
+            let reward = 1000;
+            let oldBalanceSinger2 = await ethers.provider.getBalance(signer2Address)
+            // Initialize mock contract (how much TNT locker should be penalized)
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(TNTAmount)
+
+            // Signer 1 becomes a locker
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+            let lockerSigner1 = lockers.connect(signer1)
+            await lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: minRequiredNativeTokenLockedAmount}
+            )
+            await expect(
+                await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT*3/4)
+            ).to.emit(lockers, "LockerAdded")
+
+            // Locker mints some TeleBTC and gets BTC on Bitcoin
+            await lockers.addMinter(signer1Address);
+            await lockerSigner1.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, TeleBTCAmount);
+
+            // ccBurn calls to slash the locker
+            let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
+            
+            await expect(
+                await lockerCCBurnSigner.slashThiefLocker(
+                    signer1Address,
+                    reward,
+                    signer2Address,
+                    TeleBTCAmount
+                )
+            ).to.emit(lockers, "LockerSlashed").withArgs(
+                signer1Address,
+                NATIVE_TOKEN_ADDRESS,
+                TNTAmount * reward / TeleBTCAmount,
+                signer2Address,
+                TeleBTCAmount,
+                lockers.address,
+                TNTAmount * liquidationRatio * 3 / (4 * ONE_HOUNDRED_PERCENT) + TNTAmount * reward / TeleBTCAmount,
+                anyValue,
+                false
+            )
+
+            let newBalanceSinger2 = await ethers.provider.getBalance(signer2Address)
+            await expect(
+                newBalanceSinger2.sub(oldBalanceSinger2)
+            ).to.be.equal(TNTAmount * reward / TeleBTCAmount)
+
+        })
+
+        it("cc burn can slash a locker (token collateral)", async function () {
+            let TNTAmount = 10000;
+            let TeleBTCAmount = 1000;
+            let reward = 1000;
+            // Initialize mock contract (how much TNT locker should be penalized)
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(TNTAmount)
+
+            // Signer 1 becomes a locker
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+            let lockerSigner1 = lockers.connect(signer1)
+            await exchangeToken.connect(signer1).approve(lockers.address, minRequiredExchangeTokenLockedAmount)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                exchangeToken.address,
+                minRequiredTDTLockedAmount,
+                minRequiredExchangeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: 0}
+            )
+            await expect(
+                await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
             ).to.emit(lockers, "LockerAdded")
 
             // Locker mints some TeleBTC and gets BTC on Bitcoin
@@ -1733,11 +2250,25 @@ describe("Lockers", async () => {
             await expect(
                 await lockerCCBurnSigner.slashThiefLocker(
                     signer1Address,
-                    0,
-                    deployerAddress,
+                    reward,
+                    signer2Address,
                     TeleBTCAmount
                 )
-            ).to.emit(lockers, "LockerSlashed")
+            ).to.emit(lockers, "LockerSlashed").withArgs(
+                signer1Address,
+                exchangeToken.address,
+                TNTAmount * reward / TeleBTCAmount,
+                signer2Address,
+                TeleBTCAmount,
+                lockers.address,
+                TNTAmount * liquidationRatio / ONE_HOUNDRED_PERCENT + TNTAmount * reward / TeleBTCAmount,
+                anyValue,
+                false
+            )
+
+            await expect(
+                await exchangeToken.balanceOf(signer2Address)
+            ).to.be.equal(TNTAmount * reward / TeleBTCAmount)
 
         })
     });
@@ -1763,7 +2294,7 @@ describe("Lockers", async () => {
                     ZERO_ADDRESS,
                     10
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("Lockers: input address is not a valid locker")
         })
 
         it("not enough slashed amount to buy", async function () {
@@ -1781,6 +2312,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1788,7 +2320,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
             await expect(
-                await lockers.addLocker(signer1Address)
+                await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
             ).to.emit(lockers, "LockerAdded")
 
             // Locker mints some TeleBTC and gets BTC on Bitcoin
@@ -1806,7 +2338,6 @@ describe("Lockers", async () => {
                     TeleBTCAmount
                 )
             ).to.emit(lockerCCBurnSigner, "LockerSlashed")
-            
 
             // Someone buys slashed collateral with discount
             let lockerSigner2 = lockers.connect(signer2)
@@ -1816,7 +2347,6 @@ describe("Lockers", async () => {
                     TNTAmount * liquidationRatio + 1
                 )
             ).to.be.revertedWith("Lockers: not enough slashed collateral to buy")
-
         })
 
         it("can't slash because needed BTC is more than existing", async function () {
@@ -1834,6 +2364,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1841,7 +2372,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
             await expect(
-                await lockers.addLocker(signer1Address)
+                await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
             ).to.emit(lockers, "LockerAdded")
 
             // Locker mints some TeleBTC and gets BTC on Bitcoin
@@ -1888,6 +2419,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1895,7 +2427,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
             await expect(
-                await lockers.addLocker(signer1Address)
+                await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
             ).to.emit(lockers, "LockerAdded")
 
             // Locker mints some TeleBTC and gets BTC on Bitcoin
@@ -1928,14 +2460,105 @@ describe("Lockers", async () => {
 
             await teleBTCSigner2.approve(lockers.address, 1 + TeleBTCAmount*95/100) // add 1 bcz of precision loss
 
+            let collateralAmount = BigNumber.from(10).pow(18).mul(1)
+
+            //TODO concept?
+            let neededTeleBTC = theLocker.slashingTeleBTCAmount.mul(collateralAmount).div(theLocker.reservedNativeTokenForSlash).add(1)
+
             // Someone buys slashed collateral with discount
             let lockerSigner2 = lockers.connect(signer2)
             await expect(
                 await lockerSigner2.buySlashedCollateralOfLocker(
                     signer1Address,
-                    BigNumber.from(10).pow(18).mul(1)
+                    collateralAmount
                 )
-            ).to.emit(lockers, "LockerSlashedCollateralSold")
+            ).to.emit(lockers, "LockerSlashedCollateralSold").withArgs(
+                signer1Address,
+                signer2Address,
+                NATIVE_TOKEN_ADDRESS,
+                collateralAmount,
+                neededTeleBTC, 
+                anyValue
+            )
+
+        })
+
+        it("can buy slashing amount (exchange Token)", async function () {
+
+            let TNTAmount = 10000;
+            let TeleBTCAmount = 1000;
+            // Initialize mock contract (how much TNT locker should be penalized)
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(TNTAmount)
+
+            // Signer 1 becomes a locker
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+            await exchangeToken.connect(signer1).approve(lockers.address, minRequiredExchangeTokenLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+            await lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                exchangeToken.address,
+                minRequiredTDTLockedAmount,
+                minRequiredExchangeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: 0}
+            )
+            await expect(
+                await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
+            ).to.emit(lockers, "LockerAdded")
+
+            // Locker mints some TeleBTC and gets BTC on Bitcoin
+            await lockers.addMinter(signer1Address);
+            await lockerSigner1.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, TeleBTCAmount);
+
+            // ccBurn calls to slash the locker
+            let lockerCCBurnSigner = await lockers.connect(ccBurnSimulator)
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(minRequiredExchangeTokenLockedAmount.div(5))
+
+            await lockerCCBurnSigner.slashThiefLocker(
+                signer1Address,
+                0,
+                deployerAddress,
+                TeleBTCAmount
+            );
+
+            let theLocker = await lockers.lockersMapping(signer1Address)
+
+            expect(
+                theLocker[6]
+            ).to.equal(TeleBTCAmount)
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(TeleBTCAmount)
+
+            await teleBTC.mint(signer2Address, 10000000)
+
+            let teleBTCSigner2 = await teleBTC.connect(signer2);
+
+            await teleBTCSigner2.approve(lockers.address, 1 + TeleBTCAmount*95/100) // add 1 bcz of precision loss
+            // Someone buys slashed collateral with discount
+            let lockerSigner2 = lockers.connect(signer2)
+            
+            let collateralAmount = minRequiredExchangeTokenLockedAmount.div(5)
+            let neededTeleBTC = theLocker.slashingTeleBTCAmount.mul(collateralAmount).div(theLocker.reservedNativeTokenForSlash).add(1)
+
+            await expect(
+                lockerSigner2.buySlashedCollateralOfLocker(
+                    signer1Address,
+                    collateralAmount
+                )
+            ).to.emit(lockers, "LockerSlashedCollateralSold").withArgs(
+                signer1Address,
+                signer2Address,
+                exchangeToken.address,
+                collateralAmount,
+                neededTeleBTC,
+                anyValue
+            )
 
         })
 
@@ -1967,6 +2590,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -1974,7 +2598,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await lockers.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
 
             let lockerSigner2 = lockers.connect(signer2)
 
@@ -1982,11 +2606,7 @@ describe("Lockers", async () => {
 
             await expect (
                 lockerSigner2.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, amount)
-            ).to.be.revertedWith("Lockers: only minters can mint")
-
-            await expect (
-                lockerSigner2.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, 0)
-            ).to.be.revertedWith("ZeroValue()")
+            ).to.be.revertedWith("NotMinter()")
         })
 
         it("Mints tele BTC", async function () {
@@ -2002,6 +2622,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2009,7 +2630,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await lockers.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
 
             await lockers.addMinter(signer2Address);
 
@@ -2051,6 +2672,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2058,14 +2680,14 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await lockers.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address, 1);
 
             await lockers.addMinter(signer2Address);
 
             let lockerSigner2 = lockers.connect(signer2)
 
             await expect(
-                lockerSigner2.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, 5001)
+                lockerSigner2.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, "25000000000000000000001")
             ).to.be.revertedWith("Lockers: insufficient capacity")
 
         })
@@ -2097,6 +2719,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2104,7 +2727,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            await lockers.addLocker(signer1Address)
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
 
             await lockers.addMinter(signer2Address)
 
@@ -2128,11 +2751,8 @@ describe("Lockers", async () => {
 
             await expect (
                 lockerSigner2.burn(LOCKER1_PUBKEY__HASH, amount)
-            ).to.be.revertedWith("Lockers: only burners can burn")
+            ).to.be.revertedWith("NotBurner()")
 
-            await expect (
-                lockerSigner2.burn(LOCKER1_PUBKEY__HASH, 0)
-            ).to.be.revertedWith("ZeroValue()")
         })
 
         it("Burns tele BTC", async function () {
@@ -2148,6 +2768,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2155,7 +2776,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            await lockers.addLocker(signer1Address)
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
 
             await lockers.addMinter(signer2Address)
             await lockers.addBurner(signer2Address)
@@ -2203,6 +2824,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2210,7 +2832,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             )
 
-            await lockers.addLocker(signer1Address)
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT)
 
             await lockers.addMinter(signer2Address)
             await lockers.addBurner(signer2Address)
@@ -2238,6 +2860,11 @@ describe("Lockers", async () => {
 
     describe("#liquidateLocker", async () => {
 
+        const calculateNeededTeleBTC = async (_amount, _address, _decimal) => {
+            let res1 = (_amount.mul(await lockers.priceOfOneUnitOfCollateralInBTC(_address)).mul(PRICE_WITH_DISCOUNT_RATIO))
+            let res2 = BigNumber.from(ONE_HOUNDRED_PERCENT).mul(BigNumber.from(10).pow(_decimal))
+            return res1.div(res2).add(1)
+        }
         beforeEach(async () => {
             snapshotId = await takeSnapshot(signer1.provider);
         });
@@ -2254,7 +2881,7 @@ describe("Lockers", async () => {
                     ZERO_ADDRESS,
                     1000
                 )
-            ).to.be.revertedWith("ZeroAddress()")
+            ).to.be.revertedWith("Lockers: input address is not a valid locker")
         })
 
         it("liquidate locker reverts when the amount is zero", async function () {
@@ -2294,6 +2921,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2301,7 +2929,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await lockers.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
 
             await lockers.addMinter(signer2Address);
 
@@ -2330,6 +2958,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2337,7 +2966,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await lockers.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
 
             await lockers.addMinter(signer2Address);
 
@@ -2375,6 +3004,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2382,7 +3012,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await lockers.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
 
             await lockers.addMinter(signer2Address);
 
@@ -2399,24 +3029,282 @@ describe("Lockers", async () => {
             let signer2NativeTokenBalanceBefore = await teleBTC.provider.getBalance(signer2Address)
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(7000000);
+            let collateralAmount = BigNumber.from(10).pow(18).mul(2)
+
+
+            let oldHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
+            await expect(Number(oldHealthFactor)).to.be.lessThan(ONE_HOUNDRED_PERCENT)
+
+            let neededTeleBTC = await calculateNeededTeleBTC(collateralAmount, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL)
 
             await expect(
                 await lockerSigner2.liquidateLocker(
                     signer1Address,
-                    BigNumber.from(10).pow(18).mul(2)
+                    collateralAmount
                 )
-            ).to.emit(lockerSigner2, "LockerLiquidated")
-            
+            ).to.emit(lockerSigner2, "LockerLiquidated").withArgs(
+                signer1Address,
+                signer2Address,
+                NATIVE_TOKEN_ADDRESS,
+                collateralAmount,
+                neededTeleBTC,
+                anyValue
+            )
 
             let signer2NativeTokenBalanceAfter = await teleBTC.provider.getBalance(signer2Address)
 
-            expect(
+            await expect(
                 signer2NativeTokenBalanceAfter.sub(signer2NativeTokenBalanceBefore)
             ).to.be.closeTo(BigNumber.from(10).pow(18).mul(2), BigNumber.from(10).pow(15).mul(1))
 
+            // because we use mock for ccburn, we have to burn it manually
+            await teleBTC.mint(signer2Address, 10000000)
+            await lockers.addBurner(signer2Address)
+            await teleBTCSigner2.approve(lockers.address, neededTeleBTC)
+            await lockerSigner2.burn(LOCKER1_PUBKEY__HASH, neededTeleBTC)
+
+            let newHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
+            await expect (Number(newHealthFactor)).to.be.greaterThan(Number(oldHealthFactor))
 
         });
 
+        it("successfully liquidate the locker (exchange token)", async function () {
+
+            await lockers.setCCBurnRouter(mockCCBurnRouter.address);
+            await mockCCBurnRouter.mock.unwrap.returns(8000);
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+            await exchangeToken.connect(signer1).approve(lockers.address, minRequiredExchangeTokenLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                exchangeToken.address,
+                minRequiredTDTLockedAmount,
+                minRequiredExchangeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: 0}
+            );
+
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
+
+            await lockers.addMinter(signer2Address);
+
+            let lockerSigner2 = lockers.connect(signer2)
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(50000000);
+            await lockerSigner2.mint(LOCKER1_PUBKEY__HASH, signer2Address, 25000000);
+
+
+            let teleBTCSigner2 = await teleBTC.connect(signer2);
+
+            await teleBTCSigner2.approve(lockers.address, 13300000 + 1) // add 1 bcz of precision loss
+
+            let signer2NativeTokenBalanceBefore = await exchangeToken.balanceOf(signer2Address)
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(3000000);
+            let collateralAmount = BigNumber.from(10).pow(18).mul(2)
+
+            let oldHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
+            await expect(Number(oldHealthFactor)).to.be.lessThan(ONE_HOUNDRED_PERCENT)
+
+            let neededTeleBTC = await calculateNeededTeleBTC(collateralAmount, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL)
+
+            await expect(
+                await lockerSigner2.liquidateLocker(
+                    signer1Address,
+                    collateralAmount
+                )
+            ).to.emit(lockerSigner2, "LockerLiquidated").withArgs(
+                signer1Address,
+                signer2Address,
+                exchangeToken.address,
+                collateralAmount,
+                neededTeleBTC,
+                anyValue
+            )
+
+            let signer2NativeTokenBalanceAfter = await exchangeToken.balanceOf(signer2Address)
+
+            await expect(
+                signer2NativeTokenBalanceAfter.sub(signer2NativeTokenBalanceBefore)
+            ).to.be.equal(collateralAmount)
+
+            // because we use mock for ccburn, we have to burn it manually
+            await teleBTC.mint(signer2Address, 10000000)
+            await lockers.addBurner(signer2Address)
+            await teleBTCSigner2.approve(lockers.address, neededTeleBTC)
+            await lockerSigner2.burn(LOCKER1_PUBKEY__HASH, neededTeleBTC)
+
+            let newHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
+            await expect (Number(newHealthFactor)).to.be.greaterThan(Number(oldHealthFactor))
+
+        });
+
+        it("only can liquidate locker till it reaches upper health factor", async function () {
+                
+            await lockers.setCCBurnRouter(mockCCBurnRouter.address);
+            await mockCCBurnRouter.mock.unwrap.returns(8000);
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: minRequiredNativeTokenLockedAmount}
+            );
+
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
+
+            await lockers.addMinter(signer2Address);
+
+            let lockerSigner2 = lockers.connect(signer2)
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(50000000);
+            await lockerSigner2.mint(LOCKER1_PUBKEY__HASH, signer2Address, 25000000);
+
+
+            let teleBTCSigner2 = await teleBTC.connect(signer2);
+
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(7000000);
+
+            const calculateHealthFactor = async (mid, priceOfOneUnitOfCollateral) => {
+                let neededTeleBTC = await calculateNeededTeleBTC(mid, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL)
+                let res1 = priceOfOneUnitOfCollateral.mul(minRequiredNativeTokenLockedAmount.sub(mid)).mul(ONE_HOUNDRED_PERCENT).mul(BigNumber.from(10).pow(1 + await teleBTC.decimals()))
+                let res2 = (((await lockers.lockersMapping(signer1Address)).netMinted).sub(neededTeleBTC)).mul(liquidationRatio).mul(ONE_HOUNDRED_PERCENT).mul(BigNumber.from(10).pow(1 + await exchangeToken.decimals()))
+
+                if (res2 <= 0) return true
+                return res1.div(res2) > UPPER_HEALTH_FACTOR
+            }
+
+            await teleBTC.mint(signer2Address, 10000000)
+            let l = BigNumber.from(0), r = minRequiredNativeTokenLockedAmount
+            while (r.sub(l) > BigNumber.from(1)) {
+                let mid = (l.add(r)).div(2)
+                if (await calculateHealthFactor(mid, await lockers.priceOfOneUnitOfCollateralInBTC(exchangeToken.address)))
+                    r = mid;
+                else
+                    l = mid
+            }
+            await teleBTCSigner2.approve(lockers.address, l.add(1)) // add 1 bcz of precision loss
+            await expect(
+                lockerSigner2.liquidateLocker(
+                    signer1Address,
+                    l.div(BigNumber.from(10).pow(14)).mul(BigNumber.from(10).pow(14))
+                )
+            ).to.be.revertedWith("Lockers: not enough collateral to buy")
+                
+            l = l.div(BigNumber.from(10).pow(15)).mul(BigNumber.from(10).pow(15))
+            await lockerSigner2.liquidateLocker(
+                signer1Address,
+                l
+            )
+
+            await lockers.addBurner(signer2Address)
+            let neededTeleBTC = await calculateNeededTeleBTC(l, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL)
+
+            // because we use mock for ccburn, we have to burn it manually
+            await teleBTCSigner2.approve(lockers.address, neededTeleBTC)
+            await lockerSigner2.burn(LOCKER1_PUBKEY__HASH, neededTeleBTC)
+
+            let newHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
+            await expect(UPPER_HEALTH_FACTOR - Number(newHealthFactor)).to.be.lessThan(50)
+            
+        });
+
+        it("only can liquidate locker till it reaches upper health factor (reliability factor = 3/4)", async function () {
+                
+            await lockers.setCCBurnRouter(mockCCBurnRouter.address);
+            await mockCCBurnRouter.mock.unwrap.returns(8000);
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: minRequiredNativeTokenLockedAmount}
+            );
+
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT * 3 / 4);
+
+            await lockers.addMinter(signer2Address);
+
+            let lockerSigner2 = lockers.connect(signer2)
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(50000000);
+            await lockerSigner2.mint(LOCKER1_PUBKEY__HASH, signer2Address, 25000000);
+
+
+            let teleBTCSigner2 = await teleBTC.connect(signer2);
+
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(3500000);
+
+            let oldHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
+            await expect(Number(oldHealthFactor)).to.be.lessThan(ONE_HOUNDRED_PERCENT)
+
+            await teleBTC.mint(signer2Address, 10000000)
+            //maximum buyable will be greater than nativeLockedAmount
+            await teleBTCSigner2.approve(lockers.address, minRequiredNativeTokenLockedAmount.add(1)) // add 1 bcz of precision loss
+
+            await expect(
+                lockerSigner2.liquidateLocker(
+                    signer1Address,
+                    minRequiredNativeTokenLockedAmount.add(1)
+                )
+            ).to.be.revertedWith("Lockers: not enough collateral to buy")
+                
+            await lockerSigner2.liquidateLocker(
+                signer1Address,
+                minRequiredNativeTokenLockedAmount
+            )
+
+            // because we use mock for ccburn, we have to burn it manually
+            await lockers.addBurner(signer2Address)
+            let neededTeleBTC = await calculateNeededTeleBTC(minRequiredNativeTokenLockedAmount, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL)
+            await teleBTCSigner2.approve(lockers.address, neededTeleBTC)
+            await lockerSigner2.burn(LOCKER1_PUBKEY__HASH, neededTeleBTC)
+
+            let newHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
+            await expect(Number(newHealthFactor)).to.be.equal(0)
+            
+        });
     });
 
     describe("#addCollateral", async () => {
@@ -2432,41 +3320,6 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("Lockers: no locker");
         })
 
-
-        it("reverts because of insufficient msg value", async function () {
-
-            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
-
-            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
-
-            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
-
-            let lockerSigner1 = lockers.connect(signer1)
-
-            await lockerSigner1.requestToBecomeLocker(
-                // LOCKER1,
-                LOCKER1_PUBKEY__HASH,
-                minRequiredTDTLockedAmount,
-                minRequiredNativeTokenLockedAmount,
-                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
-                LOCKER_RESCUE_SCRIPT_P2PKH,
-                {value: minRequiredNativeTokenLockedAmount}
-            );
-
-            await lockers.addLocker(signer1Address);
-
-            let lockerSigner2 = lockers.connect(signer2)
-
-            await expect(
-                lockerSigner2.addCollateral(
-                    signer1Address,
-                    10001,
-                    {value: 10000}
-                )
-            ).to.be.revertedWith("Lockers: msg value")
-
-        })
-
         it("adding collateral to the locker", async function () {
 
             await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
@@ -2480,6 +3333,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2487,7 +3341,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await lockers.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
 
             let theLockerBefore = await lockers.lockersMapping(signer1Address)
 
@@ -2497,7 +3351,13 @@ describe("Lockers", async () => {
                     10000,
                     {value: 10000}
                 )
-            ).to.emit(lockerSigner1, "CollateralAdded")
+            ).to.emit(lockerSigner1, "CollateralAdded").withArgs(
+                signer1Address,
+                NATIVE_TOKEN_ADDRESS,
+                10000,
+                minRequiredNativeTokenLockedAmount.add(10000),
+                anyValue
+            )
             
 
             let theLockerAfter = await lockers.lockersMapping(signer1Address)
@@ -2506,6 +3366,87 @@ describe("Lockers", async () => {
                 theLockerAfter[4].sub(theLockerBefore[4])
             ).to.equal(10000)
 
+        })
+
+        it("adding collateral to the locker (exchange token)", async function () {
+            let addingCollateral = 10000;
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+            await exchangeToken.connect(signer1).approve(lockers.address, minRequiredExchangeTokenLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                exchangeToken.address,
+                minRequiredTDTLockedAmount,
+                minRequiredExchangeTokenLockedAmount.sub(addingCollateral),
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: 0}
+            );
+
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
+
+            let theLockerBefore = await lockers.lockersMapping(signer1Address)
+
+            let oldBalanceToken = await exchangeToken.balanceOf(signer1Address)
+
+            await expect(
+                await lockerSigner1.addCollateral(
+                    signer1Address,
+                    addingCollateral,
+                    {value: 0}
+                )
+            ).to.emit(lockerSigner1, "CollateralAdded").withArgs(
+                signer1Address,
+                exchangeToken.address,
+                addingCollateral,
+                minRequiredExchangeTokenLockedAmount,
+                anyValue
+            )
+            
+
+            let theLockerAfter = await lockers.lockersMapping(signer1Address)
+
+            let newBalanceToken = await exchangeToken.balanceOf(signer1Address)
+
+            await expect(
+                theLockerAfter[4].sub(theLockerBefore[4])
+            ).to.equal(addingCollateral)
+
+            await expect(
+                oldBalanceToken - newBalanceToken
+            ).to.be.equal(addingCollateral)
+
+        })
+
+        it("revert since has non zero msg value (exchange token)", async function () {
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+            await exchangeToken.connect(signer1).approve(lockers.address, minRequiredExchangeTokenLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await expect (
+                lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                exchangeToken.address,
+                minRequiredTDTLockedAmount,
+                minRequiredExchangeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: minRequiredNativeTokenLockedAmount}
+            )).to.be.revertedWith("Lockers: wrong msg value")
         })
 
     });
@@ -2518,7 +3459,7 @@ describe("Lockers", async () => {
             let lockerSigner1 = await lockers.connect(signer1)
 
             expect(
-                await lockerSigner1.priceOfOneUnitOfCollateralInBTC()
+                await lockerSigner1.priceOfOneUnitOfCollateralInBTC(NATIVE_TOKEN_ADDRESS)
             ).to.equal(10000)
         })
     })
@@ -2552,6 +3493,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2559,7 +3501,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await lockers.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
 
             await lockers.addMinter(signer2Address);
 
@@ -2590,6 +3532,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2597,7 +3540,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await lockers.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
 
             await lockerSigner1.requestInactivation();
 
@@ -2638,6 +3581,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2645,7 +3589,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await lockers.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
 
             await lockerSigner1.requestInactivation();
 
@@ -2665,7 +3609,99 @@ describe("Lockers", async () => {
 
             await expect (
                 lockerSigner2.mint(LOCKER1_PUBKEY__HASH + "00", signer2Address, 25000000)
-            ).to.be.revertedWith("Lockers: address is zero")
+            ).to.be.revertedWith("ZeroAddress()")
+        })
+        
+    })
+
+    describe("#reliability factor", async () => {
+        beforeEach(async () => {
+            snapshotId = await takeSnapshot(signer1.provider);
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
+        });
+
+        afterEach(async () => {
+            await revertProvider(signer1.provider, snapshotId);
+        });
+
+        it("locker capacity changes by changing reliability factor", async function () {
+
+            await lockers.setCCBurnRouter(mockCCBurnRouter.address);
+            await mockCCBurnRouter.mock.unwrap.returns(8000);
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: minRequiredNativeTokenLockedAmount}
+            );
+
+            await lockers.addLocker(signer1Address, 10000);
+
+            let oldCapacity = await lockers.getLockerCapacity(LOCKER1_PUBKEY__HASH)
+
+            await lockers.setLockerReliabilityFactor(signer1Address, 5000)
+
+            let newCapicity = await lockers.getLockerCapacity(LOCKER1_PUBKEY__HASH)
+
+            await expect(
+                oldCapacity
+            ).to.be.equal(newCapicity.div(2))
+
+        })
+
+        it("can't mint usual amount when reliability > one hundred", async function () {
+            
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000);
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
+                minRequiredTDTLockedAmount,
+                minRequiredNativeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: minRequiredNativeTokenLockedAmount}
+            );
+
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
+
+            await lockers.addMinter(signer2Address);
+
+            let lockerSigner2 = lockers.connect(signer2)
+
+            let amount = (await lockers.getLockerCapacity(LOCKER1_PUBKEY__HASH));
+
+            await lockers.setLockerReliabilityFactor(signer1Address, 20000)
+
+            await expect (
+                lockerSigner2.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, amount)
+            ).to.be.revertedWith("Lockers: insufficient capacity")
+
+            lockerSigner2.mint(LOCKER1_PUBKEY__HASH, ONE_ADDRESS, amount.div(2))
         })
         
     })
@@ -2700,6 +3736,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2707,7 +3744,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await lockers.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
 
             // Forwards block.timestamp to inactivate locker
             let lastBlockTimestamp = await getTimestamp();
@@ -2717,7 +3754,13 @@ describe("Lockers", async () => {
                 lockerSigner1.removeCollateral(
                     (minRequiredNativeTokenLockedAmount.div(2)).add(1)
                 )
-            ).to.be.revertedWith("Lockers: still active")
+            ).to.be.revertedWith("Lockers: more than max removable collateral")
+
+            await expect(
+                lockerSigner1.removeCollateral(
+                    (minRequiredNativeTokenLockedAmount.div(2))
+                )
+            ).to.be.revertedWith("LockerActive()")
 
         })
 
@@ -2737,6 +3780,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount,
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2744,7 +3788,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount}
             );
 
-            await lockers.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
 
             // inactivate the locker
             await lockerSigner1.requestInactivation();
@@ -2759,42 +3803,6 @@ describe("Lockers", async () => {
                 )
             ).to.be.revertedWith("Lockers: more than max removable collateral")
 
-        })
-
-        it("reverts because it becomes below the min required collateral", async function () {
-
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
-
-            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
-
-            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
-
-            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
-
-            let lockerSigner1 = lockers.connect(signer1)
-
-            await lockerSigner1.requestToBecomeLocker(
-                // LOCKER1,
-                LOCKER1_PUBKEY__HASH,
-                minRequiredTDTLockedAmount,
-                minRequiredNativeTokenLockedAmount,
-                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
-                LOCKER_RESCUE_SCRIPT_P2PKH,
-                {value: minRequiredNativeTokenLockedAmount}
-            );
-
-            await lockers.addLocker(signer1Address);
-
-            // inactivate the locker
-            await lockerSigner1.requestInactivation();
-            
-            // Forwards block.timestamp to inactivate locker
-            let lastBlockTimestamp = await getTimestamp();
-            await advanceBlockWithTime(deployer.provider, lastBlockTimestamp + INACTIVATION_DELAY);
-
-            await expect(
-                lockerSigner1.removeCollateral(minRequiredNativeTokenLockedAmount.div(2))
-            ).to.be.revertedWith("Lockers: less than min collateral")
         })
 
         it("remove collateral successfully", async function () {
@@ -2812,6 +3820,7 @@ describe("Lockers", async () => {
             await lockerSigner1.requestToBecomeLocker(
                 // LOCKER1,
                 LOCKER1_PUBKEY__HASH,
+                NATIVE_TOKEN_ADDRESS,
                 minRequiredTDTLockedAmount,
                 minRequiredNativeTokenLockedAmount.mul(2),
                 LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
@@ -2819,7 +3828,7 @@ describe("Lockers", async () => {
                 {value: minRequiredNativeTokenLockedAmount.mul(2)}
             );
 
-            await lockers.addLocker(signer1Address);
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
 
             let theLockerBalanceBefore = await teleBTC.provider.getBalance(signer1Address);
 
@@ -2832,16 +3841,78 @@ describe("Lockers", async () => {
 
             await expect(
                 await lockerSigner1.removeCollateral(
-                    minRequiredNativeTokenLockedAmount.div(2)
+                    minRequiredNativeTokenLockedAmount.div(4)
                 )
-            ).to.emit(lockerSigner1, "CollateralRemoved")
+            ).to.emit(lockerSigner1, "CollateralRemoved").withArgs(
+                signer1Address,
+                NATIVE_TOKEN_ADDRESS,
+                minRequiredNativeTokenLockedAmount.div(4),
+                minRequiredNativeTokenLockedAmount.div(4).mul(7),
+                anyValue
+            )
 
             
             let theLockerBalanceAfter = await teleBTC.provider.getBalance(signer1Address)
 
             expect(
                 theLockerBalanceAfter.sub(theLockerBalanceBefore)
-            ).to.be.closeTo(minRequiredNativeTokenLockedAmount.div(2), BigNumber.from(10).pow(15).mul(1))
+            ).to.be.closeTo(minRequiredNativeTokenLockedAmount.div(4), BigNumber.from(10).pow(15).mul(1))
+
+        })
+
+        it("remove collateral successfully (exchange token)", async function () {
+
+            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
+
+            await teleportDAOToken.transfer(signer1Address, minRequiredTDTLockedAmount)
+
+            let teleportDAOTokenSigner1 = teleportDAOToken.connect(signer1)
+
+            await teleportDAOTokenSigner1.approve(lockers.address, minRequiredTDTLockedAmount)
+            await exchangeToken.connect(signer1).approve(lockers.address, minRequiredExchangeTokenLockedAmount)
+
+            let lockerSigner1 = lockers.connect(signer1)
+
+            await lockerSigner1.requestToBecomeLocker(
+                // LOCKER1,
+                LOCKER1_PUBKEY__HASH,
+                exchangeToken.address,
+                minRequiredTDTLockedAmount,
+                minRequiredExchangeTokenLockedAmount,
+                LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
+                LOCKER_RESCUE_SCRIPT_P2PKH,
+                {value: 0}
+            );
+
+            await lockers.addLocker(signer1Address, ONE_HOUNDRED_PERCENT);
+
+            let theLockerBalanceBefore = await exchangeToken.balanceOf(signer1Address)
+
+            // inactivate the locker
+            await lockerSigner1.requestInactivation();
+            
+            // Forwards block.timestamp to inactivate locker
+            let lastBlockTimestamp = await getTimestamp();
+            await advanceBlockWithTime(deployer.provider, lastBlockTimestamp + INACTIVATION_DELAY);
+
+            await expect(
+                await lockerSigner1.removeCollateral(
+                    minRequiredExchangeTokenLockedAmount.div(4)
+                )
+            ).to.emit(lockerSigner1, "CollateralRemoved").withArgs(
+                signer1Address,
+                exchangeToken.address,
+                minRequiredExchangeTokenLockedAmount.div(4),
+                minRequiredExchangeTokenLockedAmount.mul(3).div(4),
+                anyValue
+            )
+
+            
+            let theLockerBalanceAfter = await exchangeToken.balanceOf(signer1Address)
+
+            await expect(
+                theLockerBalanceAfter.sub(theLockerBalanceBefore)
+            ).to.be.equal(minRequiredExchangeTokenLockedAmount.div(4))
 
         })
 

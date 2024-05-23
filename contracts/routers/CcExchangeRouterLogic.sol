@@ -654,6 +654,7 @@ contract CcExchangeRouterLogic is
             bytes memory _lockerLockingScript
         ) = abi.decode(_message, (bytes32, uint256, uint256, address[], bytes));
 
+        ccExchangeRequests[_txId].outputAmount = _outputAmount;
         ccExchangeRequest memory exchangeReq = ccExchangeRequests[_txId];
         extendedCcExchangeRequest memory extendedReq = extendedCcExchangeRequests[_txId];
 

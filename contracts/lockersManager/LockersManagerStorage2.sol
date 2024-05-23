@@ -6,5 +6,7 @@ import "./interfaces/ILockersManager.sol";
 abstract contract LockersManagerStorage2 is ILockersManager {
     mapping (address => uint) public collateralDecimal;
     mapping (address => address) public lockerCollateralToken;
+
+    // locker with smaller reliability factor is more reliable
     mapping (address => uint) public lockerReliabilityFactor;
 }

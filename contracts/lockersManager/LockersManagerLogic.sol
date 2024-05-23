@@ -412,11 +412,13 @@ contract LockersManagerLogic is
         totalNumberOfCandidates = totalNumberOfCandidates - 1;
 
         // Sends back TDT and TNT collateral
-        IERC20(TeleportDAOToken).safeTransfer(
-            _msgSender(),
-            lockerRequest.TDTLockedAmount
-        );
-
+        if (libParams.teleportDAOToken != address(0)) {
+            IERC20(TeleportDAOToken).safeTransfer(
+                _msgSender(),
+                lockerRequest.TDTLockedAmount
+            );
+        }
+        
         if (lockerCollateralToken[_msgSender()] == NATIVE_TOKEN) {
             Address.sendValue(
                 payable(_msgSender()),
@@ -573,20 +575,23 @@ contract LockersManagerLogic is
         totalNumberOfLockers = totalNumberOfLockers - 1;
 
         // Sends back TDT and TNT collateral
-        IERC20(TeleportDAOToken).safeTransfer(
-            _msgSender(),
-            _removingLocker.TDTLockedAmount
-        );
+        if (libParams.teleportDAOToken != address(0)) {
+            IERC20(TeleportDAOToken).safeTransfer(
+                _msgSender(),
+                _removingLocker.TDTLockedAmount
+            );
+        }
 
+        //TODO test adding reservedNativeTokenForSlash
         if (lockerCollateralToken[_msgSender()] == NATIVE_TOKEN) {
             Address.sendValue(
                 payable(_msgSender()),
-                _removingLocker.nativeTokenLockedAmount
+                _removingLocker.nativeTokenLockedAmount + _removingLocker.reservedNativeTokenForSlash
             );
         } else {
             IERC20(lockerCollateralToken[_msgSender()]).transfer(
                 _msgSender(),
-                _removingLocker.nativeTokenLockedAmount
+                _removingLocker.nativeTokenLockedAmount + _removingLocker.reservedNativeTokenForSlash
             );
         }
 
@@ -783,7 +788,6 @@ contract LockersManagerLogic is
                 _collateralAmount
             );
         }
-        
 
         emit LockerLiquidated(
             _lockerTargetAddress,
@@ -870,6 +874,14 @@ contract LockersManagerLogic is
             _addingNativeTokenAmount,
             lockerCollateralToken[_lockerTargetAddress]
         );
+
+        if (lockerCollateralToken[_lockerTargetAddress] != NATIVE_TOKEN) {
+            IERC20(lockerCollateralToken[_lockerTargetAddress]).safeTransferFrom(
+                _msgSender(),
+                address(this),
+                _addingNativeTokenAmount
+            );
+        }
 
         emit CollateralAdded(
             _lockerTargetAddress,
@@ -1030,6 +1042,7 @@ contract LockersManagerLogic is
         ];
 
         // Transfers teleBTC from user
+
         if (!
             ITeleBTC(teleBTC).transferFrom(
                 _msgSender(),
@@ -1093,6 +1106,21 @@ contract LockersManagerLogic is
         }
     }
 
+    function getLockersHealthFactor (
+        address _lockerTargetAddress
+    )   public
+        view
+        override
+        returns (uint256) {
+        return LockersManagerLib.calculateHealthFactor(
+            lockersMapping[_lockerTargetAddress],
+            libConstants,
+            libParams,
+            priceOfOneUnitOfCollateralInBTC(lockerCollateralToken[_lockerTargetAddress]),
+            collateralDecimal[lockerCollateralToken[_lockerTargetAddress]],
+            lockerReliabilityFactor[_lockerTargetAddress]
+        );
+    }
     /**
      * @dev         Returns the price of one native token (1*10^18) in teleBTC
      * @return uint The price of one unit of collateral token (native token in teleBTC)
@@ -1100,7 +1128,7 @@ contract LockersManagerLogic is
     function priceOfOneUnitOfCollateralInBTC(
         address collateralToken
     )
-        external
+        public
         view
         override
         returns (uint256)
