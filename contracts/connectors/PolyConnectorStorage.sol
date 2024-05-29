@@ -24,4 +24,8 @@ abstract contract PolyConnectorStorage is IPolyConnector {
         public
         override failedReqs;
     // ^ Mapping from [user][chainId][token] to amount
+    mapping(address => mapping(uint256 => mapping(uint256 => mapping(address => uint256))))
+        public
+        override newFailedReqs;
+    // ^ Mapping from [user][chainId][reqId][token] to amount
 }
