@@ -10,6 +10,7 @@ import "hardhat/console.sol";
 library LockersManagerLib {
     error NotCCBurn();
     error ZeroValue();
+    error ZeroAddress();
 
     function requestToBecomeLocker(
         mapping(address => ILockersManager.locker) storage lockersMapping,
@@ -112,7 +113,7 @@ library LockersManagerLib {
                 theLocker,
                 libConstants,
                 libParams,
-                priceOfCollateral,
+                _collateralToken,
                 _collateralDecimal,
                 _reliabilityFactor
             ) < libConstants.HealthFactor,
@@ -300,10 +301,15 @@ library LockersManagerLib {
         ILockersManager.locker storage theLocker,
         ILockersManager.lockersLibConstants memory libConstants,
         ILockersManager.lockersLibParam memory libParams,
-        uint256 _priceOfOneUnitOfCollateral,
+        address _collateralToken,
         uint256 _collateralDecimal,
         uint256 _reliabilityFactor
     ) public view returns (uint256) {
+        uint256 _priceOfOneUnitOfCollateral = priceOfOneUnitOfCollateralInBTC(
+            _collateralToken,
+            _collateralDecimal,
+            libParams
+        );
         return
             (_priceOfOneUnitOfCollateral *
                 theLocker.nativeTokenLockedAmount *
@@ -416,22 +422,26 @@ library LockersManagerLib {
     /// @dev                                Net minted amount is total minted minus total burnt for the locker
     /// @return theLockerCapacity           The net minted of the locker
     function getLockerCapacity(
+        ILockersManager.locker storage theLocker,
         ILockersManager.lockersLibConstants memory libConstants,
         ILockersManager.lockersLibParam memory libParams,
+        address _lockerTargetAddress,
         address _collateralToken,
         uint256 _collateralDecimal,
-        uint256 _nativeTokenLockedAmount,
         uint256 _lockerReliabilityFactor,
-        uint256 netMinted,
         uint256 amount
-    ) public view returns (uint256 theLockerCapacity) {
+    ) public returns (uint256 theLockerCapacity) {
+
+        if (_lockerTargetAddress == address(0))
+            revert ZeroAddress();
+
         uint256 _lockerCollateralInTeleBTC = 
             priceOfOneUnitOfCollateralInBTC(_collateralToken, _collateralDecimal, libParams) 
-             * _nativeTokenLockedAmount  * libConstants.OneHundredPercent * libConstants.OneHundredPercent / 
+             * theLocker.nativeTokenLockedAmount  * libConstants.OneHundredPercent * libConstants.OneHundredPercent / 
              (libParams.collateralRatio * _lockerReliabilityFactor * (10**_collateralDecimal));
         
-        if (_lockerCollateralInTeleBTC > netMinted) {
-            theLockerCapacity = _lockerCollateralInTeleBTC - netMinted;
+        if (_lockerCollateralInTeleBTC > theLocker.netMinted) {
+            theLockerCapacity = _lockerCollateralInTeleBTC - theLocker.netMinted;
         } else {
             theLockerCapacity = 0;
         }
@@ -439,6 +449,10 @@ library LockersManagerLib {
         // console.log(theLockerCapacity, amount);
 
         require(theLockerCapacity >= amount, "Lockers: insufficient capacity");
+
+        theLocker.netMinted =
+            theLocker.netMinted +
+            amount;
     }
     
 }

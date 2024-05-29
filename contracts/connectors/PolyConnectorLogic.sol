@@ -188,7 +188,7 @@ contract PolyConnectorLogic is
         );
 
         address lockerTargetAddress = ILockersManager(lockersProxy)
-            .getLockerTargetAddress(lockerLockingScript);
+            .lockerTargetAddress(lockerLockingScript);
 
         emit NewSwapAndUnwrap(
             _chainId,
@@ -256,11 +256,11 @@ contract PolyConnectorLogic is
                 arguments.user,
                 arguments.scripts.userScript,
                 arguments.scripts.scriptType,
-                ILockersManager(lockersProxy).getLockerTargetAddress(
+                ILockersManager(lockersProxy).lockerTargetAddress(
                     arguments.scripts.lockerLockingScript
                 ),
                 BurnRouterStorage(burnRouterProxy).burnRequestCounter(
-                    ILockersManager(lockersProxy).getLockerTargetAddress(
+                    ILockersManager(lockersProxy).lockerTargetAddress(
                         arguments.scripts.lockerLockingScript
                     )
                 ) - 1,

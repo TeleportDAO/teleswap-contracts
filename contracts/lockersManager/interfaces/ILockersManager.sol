@@ -272,7 +272,7 @@ interface ILockersManager {
 
     function totalNumberOfLockers() external view returns (uint256);
 
-    function getLockerTargetAddress(
+    function lockerTargetAddress(
         bytes calldata _lockerLockingScript
     ) external view returns (address);
 
@@ -280,11 +280,11 @@ interface ILockersManager {
         bytes calldata _lockerLockingScript
     ) external view returns (bool);
 
-    function getNumberOfLockers() external view returns (uint256);
+    // function getNumberOfLockers() external view returns (uint256);
 
-    function getLockerLockingScript(
-        address _lockerTargetAddress
-    ) external view returns (bytes memory);
+    // function getLockerLockingScript(
+    //     address _lockerTargetAddress
+    // ) external view returns (bytes memory);
 
     function isLockerActive(
         address _lockerTargetAddress
@@ -292,11 +292,7 @@ interface ILockersManager {
 
     function getLockersHealthFactor (address _lockerTargetAddress) external view returns (uint256);
     
-    function priceOfOneUnitOfCollateralInBTC(address _token) external view returns (uint);
-
-    function getLockerCapacity(
-        address _lockerTargetAddress
-    ) external view returns (uint256);
+    // function priceOfOneUnitOfCollateralInBTC(address _token) external view returns (uint);
 
     function minters(address) external view returns (bool);
 
@@ -408,6 +404,6 @@ interface ILockersManager {
 
     function getLockerCapacity(
         bytes calldata _lockerLockingScript
-    ) external view returns (uint256 theLockerCapacity);
+    ) external returns (uint256 theLockerCapacity);
 
 }

@@ -321,7 +321,7 @@ contract CcTransferRouterLogic is
         emit NewWrap(
             txId,
             _lockerLockingScript,
-            ILockersManager(lockers).getLockerTargetAddress(
+            ILockersManager(lockers).lockerTargetAddress(
                 _lockerLockingScript
             ),
             ccTransferRequests[txId].recipientAddress,
