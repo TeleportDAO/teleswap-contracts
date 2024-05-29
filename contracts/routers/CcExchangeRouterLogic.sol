@@ -819,7 +819,7 @@ contract CcExchangeRouterLogic is
                             .remainedInputAmount,
                         swapArguments._ccExchangeRequest.outputAmount,
                         swapArguments._path,
-                        swapArguments._ccExchangeRequest.recipientAddress,
+                        swapArguments.destinationChainId == chainId? swapArguments._ccExchangeRequest.recipientAddress: address(this),
                         block.timestamp,
                         true
                     );
@@ -833,7 +833,7 @@ contract CcExchangeRouterLogic is
                                 .remainedInputAmount,
                             swapArguments._ccExchangeRequest.outputAmount,
                             swapArguments._ccExchangeRequest.path,
-                            swapArguments._ccExchangeRequest.recipientAddress,
+                            swapArguments.destinationChainId == chainId? swapArguments._ccExchangeRequest.recipientAddress: address(this),
                             block.timestamp,
                             true
                         );
