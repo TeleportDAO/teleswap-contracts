@@ -28,9 +28,12 @@ contract LockersManagerLogic is
     error NotLocker();
     error TransferFailed();
     error LockerActive();
+    error LockerNotActive();
     error InvalidValue();
     error AlreadyHasRole();
     error NotRequested();
+    error BurnFailed();
+    error InsufficientFunds();
 
     using LockersManagerLib for *;
     using SafeERC20 for IERC20;
@@ -562,10 +565,8 @@ contract LockersManagerLogic is
         );
         ITeleBTC(teleBTC).burn(_removingLocker.netMinted);
 
-        require(
-            _removingLocker.slashingTeleBTCAmount == 0,
-            "Lockers: 0 slashing TBTC"
-        );
+        if(_removingLocker.slashingTeleBTCAmount != 0)
+            revert InvalidValue();
 
         // Remove locker from lockersMapping
 
@@ -1008,9 +1009,10 @@ contract LockersManagerLogic is
             _lockerLockingScript
         ];
             
-        require(isLockerActive(_lockerTargetAddress), "Lockers: not active");
+        if (!isLockerActive(_lockerTargetAddress))
+            revert LockerNotActive();
 
-        LockersManagerLib.getLockerCapacity(
+        LockersManagerLib.mintHelper(
             lockersMapping[_lockerTargetAddress],
             libConstants,
             libParams,
@@ -1045,7 +1047,7 @@ contract LockersManagerLogic is
         bytes calldata _lockerLockingScript
     )
         external
-        
+        view
         override
         returns (uint256 theLockerCapacity)
     {
@@ -1060,8 +1062,7 @@ contract LockersManagerLogic is
             _lockerTargetAddress,
             lockerCollateralToken[_lockerTargetAddress],
             collateralDecimal[lockerCollateralToken[_lockerTargetAddress]],
-            lockerReliabilityFactor[_lockerTargetAddress],
-            0
+            lockerReliabilityFactor[_lockerTargetAddress]
         );
     }
 
@@ -1099,14 +1100,16 @@ contract LockersManagerLogic is
         uint256 remainedAmount = _amount - lockerFee;
         uint256 netMinted = lockersMapping[_lockerTargetAddress].netMinted;
 
-        require(netMinted >= remainedAmount, "Lockers: insufficient funds");
+        if (netMinted < remainedAmount)
+            revert InsufficientFunds();
 
         lockersMapping[_lockerTargetAddress].netMinted =
             netMinted -
             remainedAmount;
 
         // Burns teleBTC and sends rest of it to locker
-        require(ITeleBTC(teleBTC).burn(remainedAmount), "Lockers: burn failed");
+        if (!ITeleBTC(teleBTC).burn(remainedAmount))
+            revert BurnFailed();
         
         if (!ITeleBTC(teleBTC).transfer(_lockerTargetAddress, lockerFee))
             revert TransferFailed();

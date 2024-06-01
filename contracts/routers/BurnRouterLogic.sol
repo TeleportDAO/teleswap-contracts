@@ -8,6 +8,7 @@ import "../libraries/BurnRouterLib.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./BurnRouterStorageV2.sol";
+import "hardhat/console.sol";
 
 contract BurnRouterLogic is
     BurnRouterStorage,
@@ -351,7 +352,7 @@ contract BurnRouterLogic is
         address _lockerTargetAddress = ILockersManager(lockers)
             .lockerTargetAddress(_lockerLockingScript);
 
-        // It's more safe to only allow the Locker to call this function
+        // It's more safe to only allow the Locker to call this function //TODO?
         require(
             _msgSender() == _lockerTargetAddress ||
                 _msgSender() == bitcoinFeeOracle,

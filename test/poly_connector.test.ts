@@ -284,7 +284,7 @@ describe("PolyConnector", async () => {
     }
 
     async function setLockersGetLockerTargetAddress(): Promise<void> {
-        await mockLockers.mock.getLockerTargetAddress.returns(
+        await mockLockers.mock.lockerTargetAddress.returns(
             LOCKER_TARGET_ADDRESS
         );
     }

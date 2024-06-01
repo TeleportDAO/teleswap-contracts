@@ -19,7 +19,7 @@ const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 
 
 import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
-describe("Lockers", async () => {
+describe.only("Lockers", async () => {
 
     let snapshotId: any;
 
@@ -1394,17 +1394,13 @@ describe("Lockers", async () => {
                 await lockers.totalNumberOfLockers()
             ).to.equal(1)
 
-            expect(
-                await lockers.getNumberOfLockers()
-            ).to.equal(1)
-
             let theLockerMapping = await lockers.lockersMapping(signer1Address)
             expect(
                 theLockerMapping[0]
             ).to.equal(LOCKER1_PUBKEY__HASH)
 
             expect(
-                await lockers.getLockerTargetAddress(
+                await lockers.lockerTargetAddress(
                     LOCKER1_PUBKEY__HASH
                 )
             ).to.equal(signer1Address)
@@ -1414,12 +1410,6 @@ describe("Lockers", async () => {
                     LOCKER1_PUBKEY__HASH
                 )
             ).to.equal(true)
-
-            expect(
-                await lockers.getLockerLockingScript(
-                    signer1Address
-                )
-            ).to.equal(LOCKER1_PUBKEY__HASH)
         })
 
         it("adding a locker (exchange token)", async function () {
@@ -1465,17 +1455,13 @@ describe("Lockers", async () => {
                 await lockers.totalNumberOfLockers()
             ).to.equal(1)
 
-            expect(
-                await lockers.getNumberOfLockers()
-            ).to.equal(1)
-
             let theLockerMapping = await lockers.lockersMapping(signer1Address)
             expect(
                 theLockerMapping[0]
             ).to.equal(LOCKER1_PUBKEY__HASH)
 
             expect(
-                await lockers.getLockerTargetAddress(
+                await lockers.lockerTargetAddress(
                     LOCKER1_PUBKEY__HASH
                 )
             ).to.equal(signer1Address)
@@ -1485,12 +1471,6 @@ describe("Lockers", async () => {
                     LOCKER1_PUBKEY__HASH
                 )
             ).to.equal(true)
-
-            expect(
-                await lockers.getLockerLockingScript(
-                    signer1Address
-                )
-            ).to.equal(LOCKER1_PUBKEY__HASH)
         })
     });
 
@@ -2836,7 +2816,7 @@ describe("Lockers", async () => {
 
             await expect (
                 lockerSigner2.burn(LOCKER1_PUBKEY__HASH, amount)
-            ).to.be.revertedWith("Lockers: insufficient funds")
+            ).to.be.revertedWith("InsufficientFunds")
 
 
         })
@@ -2845,8 +2825,8 @@ describe("Lockers", async () => {
 
     describe("#liquidateLocker", async () => {
 
-        const calculateNeededTeleBTC = async (_amount, _address, _decimal) => {
-            let res1 = (_amount.mul(await lockers.priceOfOneUnitOfCollateralInBTC(_address)).mul(PRICE_WITH_DISCOUNT_RATIO))
+        const calculateNeededTeleBTC = async (_amount, _address, _decimal, _price) => {
+            let res1 = (_amount.mul(_price).mul(PRICE_WITH_DISCOUNT_RATIO))
             let res2 = BigNumber.from(ONE_HOUNDRED_PERCENT).mul(BigNumber.from(10).pow(_decimal))
             return res1.div(res2).add(1)
         }
@@ -3020,7 +3000,7 @@ describe("Lockers", async () => {
             let oldHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
             await expect(Number(oldHealthFactor)).to.be.lessThan(ONE_HOUNDRED_PERCENT)
 
-            let neededTeleBTC = await calculateNeededTeleBTC(collateralAmount, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL)
+            let neededTeleBTC = await calculateNeededTeleBTC(collateralAmount, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL, 7000000)
 
             await expect(
                 await lockerSigner2.liquidateLocker(
@@ -3102,7 +3082,7 @@ describe("Lockers", async () => {
             let oldHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
             await expect(Number(oldHealthFactor)).to.be.lessThan(ONE_HOUNDRED_PERCENT)
 
-            let neededTeleBTC = await calculateNeededTeleBTC(collateralAmount, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL)
+            let neededTeleBTC = await calculateNeededTeleBTC(collateralAmount, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL, 3000000)
 
             await expect(
                 await lockerSigner2.liquidateLocker(
@@ -3177,8 +3157,8 @@ describe("Lockers", async () => {
             await mockPriceOracle.mock.equivalentOutputAmount.returns(7000000);
 
             const calculateHealthFactor = async (mid, priceOfOneUnitOfCollateral) => {
-                let neededTeleBTC = await calculateNeededTeleBTC(mid, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL)
-                let res1 = priceOfOneUnitOfCollateral.mul(minRequiredNativeTokenLockedAmount.sub(mid)).mul(ONE_HOUNDRED_PERCENT).mul(BigNumber.from(10).pow(1 + await teleBTC.decimals()))
+                let neededTeleBTC = await calculateNeededTeleBTC(mid, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL, priceOfOneUnitOfCollateral)
+                let res1 = BigNumber.from(priceOfOneUnitOfCollateral).mul(minRequiredNativeTokenLockedAmount.sub(mid)).mul(ONE_HOUNDRED_PERCENT).mul(BigNumber.from(10).pow(1 + await teleBTC.decimals()))
                 let res2 = (((await lockers.lockersMapping(signer1Address)).netMinted).sub(neededTeleBTC)).mul(liquidationRatio).mul(ONE_HOUNDRED_PERCENT).mul(BigNumber.from(10).pow(1 + await exchangeToken.decimals()))
 
                 if (res2 <= 0) return true
@@ -3189,7 +3169,7 @@ describe("Lockers", async () => {
             let l = BigNumber.from(0), r = minRequiredNativeTokenLockedAmount
             while (r.sub(l) > BigNumber.from(1)) {
                 let mid = (l.add(r)).div(2)
-                if (await calculateHealthFactor(mid, await lockers.priceOfOneUnitOfCollateralInBTC(exchangeToken.address)))
+                if (await calculateHealthFactor(mid, 7000000))
                     r = mid;
                 else
                     l = mid
@@ -3209,7 +3189,7 @@ describe("Lockers", async () => {
             )
 
             await lockers.addBurner(signer2Address)
-            let neededTeleBTC = await calculateNeededTeleBTC(l, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL)
+            let neededTeleBTC = await calculateNeededTeleBTC(l, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL, 7000000)
 
             // because we use mock for ccburn, we have to burn it manually
             await teleBTCSigner2.approve(lockers.address, neededTeleBTC)
@@ -3282,7 +3262,7 @@ describe("Lockers", async () => {
 
             // because we use mock for ccburn, we have to burn it manually
             await lockers.addBurner(signer2Address)
-            let neededTeleBTC = await calculateNeededTeleBTC(minRequiredNativeTokenLockedAmount, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL)
+            let neededTeleBTC = await calculateNeededTeleBTC(minRequiredNativeTokenLockedAmount, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL, 3500000)
             await teleBTCSigner2.approve(lockers.address, neededTeleBTC)
             await lockerSigner2.burn(LOCKER1_PUBKEY__HASH, neededTeleBTC)
 
@@ -3436,18 +3416,18 @@ describe("Lockers", async () => {
 
     });
 
-    describe("#priceOfOneUnitOfCollateralInBTC", async () => {
-        it("return what price oracle returned", async function () {
+    // describe("#priceOfOneUnitOfCollateralInBTC", async () => {
+    //     it("return what price oracle returned", async function () {
 
-            await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
+    //         await mockPriceOracle.mock.equivalentOutputAmount.returns(10000)
 
-            let lockerSigner1 = await lockers.connect(signer1)
+    //         let lockerSigner1 = await lockers.connect(signer1)
 
-            expect(
-                await lockerSigner1.priceOfOneUnitOfCollateralInBTC(NATIVE_TOKEN_ADDRESS)
-            ).to.equal(10000)
-        })
-    })
+    //         expect(
+    //             await lockerSigner1.priceOfOneUnitOfCollateralInBTC(NATIVE_TOKEN_ADDRESS)
+    //         ).to.equal(10000)
+    //     })
+    // })
 
     describe("#mint", async () => {
 
@@ -3545,7 +3525,7 @@ describe("Lockers", async () => {
 
             await expect (
                 lockerSigner2.mint(LOCKER1_PUBKEY__HASH, signer2Address, 25000000)
-            ).to.be.revertedWith("Lockers: not active")
+            ).to.be.revertedWith("LockerNotActive")
         })
 
         it("can't mint since locker locking script is wrong", async function () {

@@ -422,15 +422,14 @@ library LockersManagerLib {
     /// @dev                                Net minted amount is total minted minus total burnt for the locker
     /// @return theLockerCapacity           The net minted of the locker
     function getLockerCapacity(
-        ILockersManager.locker storage theLocker,
+        ILockersManager.locker memory theLocker,
         ILockersManager.lockersLibConstants memory libConstants,
         ILockersManager.lockersLibParam memory libParams,
         address _lockerTargetAddress,
         address _collateralToken,
         uint256 _collateralDecimal,
-        uint256 _lockerReliabilityFactor,
-        uint256 amount
-    ) public returns (uint256 theLockerCapacity) {
+        uint256 _lockerReliabilityFactor
+    ) public view returns (uint256 theLockerCapacity) {
 
         if (_lockerTargetAddress == address(0))
             revert ZeroAddress();
@@ -446,7 +445,29 @@ library LockersManagerLib {
             theLockerCapacity = 0;
         }
 
-        // console.log(theLockerCapacity, amount);
+    }
+
+    /// @notice                             Mint Helper function
+    /// @dev                                Net minted amount is total minted minus total burnt for the locker
+    function mintHelper(
+        ILockersManager.locker storage theLocker,
+        ILockersManager.lockersLibConstants memory libConstants,
+        ILockersManager.lockersLibParam memory libParams,
+        address _lockerTargetAddress,
+        address _collateralToken,
+        uint256 _collateralDecimal,
+        uint256 _lockerReliabilityFactor,
+        uint256 amount
+    ) public {
+        uint theLockerCapacity = getLockerCapacity(
+            theLocker,
+            libConstants,
+            libParams,
+            _lockerTargetAddress,
+            _collateralToken,
+            _collateralDecimal,
+            _lockerReliabilityFactor
+        );
 
         require(theLockerCapacity >= amount, "Lockers: insufficient capacity");
 

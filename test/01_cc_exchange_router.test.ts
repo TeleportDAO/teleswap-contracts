@@ -54,7 +54,7 @@ import Web3 from "web3";
 const abiUtils = new Web3().eth.abi;
 const web3 = new Web3();
 
-describe.only("CcExchangeRouter", async () => {
+describe("CcExchangeRouter", async () => {
     let snapshotId: any;
 
     // Constants
@@ -253,9 +253,7 @@ describe.only("CcExchangeRouter", async () => {
 
         await mockLockers.mock.burn.returns(10);
         await mockLockers.mock.isLocker.returns(true);
-        // await mockLockers.mock.getLockerTargetAddress.returns(
-        //     LOCKER_TARGET_ADDRESS
-        // );
+        await mockLockers.mock.lockerTargetAddress.returns(LOCKER_TARGET_ADDRESS);
         await mockBitcoinRelay.mock.lastSubmittedHeight.returns(100);
 
         // Deploys ccExchangeRouter contract
@@ -1639,7 +1637,7 @@ describe.only("CcExchangeRouter", async () => {
         })
     });
 
-    describe.only("#Across", async () => {
+    describe("#Across", async () => {
         let oldReserveTeleBTC: BigNumber;
         let oldReserveTT: BigNumber;
         let oldDeployerBalanceTeleBTC: BigNumber;
@@ -1906,7 +1904,7 @@ describe.only("CcExchangeRouter", async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
-        it.only("send token to other chain using across", async function () {
+        it("send token to other chain using across", async function () {
             // Replaces dummy address in vout with exchange token address
             let vout =
                 CC_EXCHANGE_REQUESTS.normalCCExchangeToOtherChain_fixedInput
@@ -2010,7 +2008,8 @@ describe.only("CcExchangeRouter", async () => {
                 expectedOutputAmount.toNumber() - bridgeFee.toNumber()
             );
 
-            console.log(await exchangeToken.allowance(ccExchangeRouter.address, mockAcross.address), expectedOutputAmount.toNumber())
+            await expect(await exchangeToken.allowance(ccExchangeRouter.address, mockAcross.address)).to.be.equal(expectedOutputAmount.toNumber())
+            await expect(await exchangeToken.balanceOf(ccExchangeRouter.address)).to.be.equal(expectedOutputAmount.toNumber())
         });
 
         it("send token to other chain failed because chain is not supported", async function () {
