@@ -64,7 +64,7 @@ const config: HardhatUserConfig = {
 			accounts: [process.env.PRIVATE_KEY ?? ""]
 		},
 		polygon: {
-			url: "https://rpc-mainnet.maticvigil.com/",
+			url: "https://1rpc.io/matic",
 			chainId: 137,
 			accounts: [process.env.PRIVATE_KEY ?? ""]
 		},
