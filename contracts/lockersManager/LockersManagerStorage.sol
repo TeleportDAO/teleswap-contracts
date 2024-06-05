@@ -32,7 +32,7 @@ abstract contract LockersManagerStorage is ILockersManager {
     mapping(address => locker) public lockersMapping; // locker's target address -> locker structure
     mapping(address => uint256) public lockerInactivationTimestamp;
     mapping(address => bool) public lockerLeavingAcceptance;
-    mapping(bytes => address) public override lockerTargetAddress; // locker's locking script -> locker's target address
+    mapping(bytes => address) public override getLockerTargetAddress; // locker's locking script -> locker's target address
     mapping(address => bool) public override minters;
     mapping(address => bool) public override burners;
 

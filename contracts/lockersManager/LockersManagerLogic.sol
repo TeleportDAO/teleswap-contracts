@@ -13,7 +13,6 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-//TODO tartib
 contract LockersManagerLogic is
     LockersManagerStorage,
     OwnableUpgradeable,
@@ -181,7 +180,7 @@ contract LockersManagerLogic is
         bytes calldata _lockerLockingScript
     ) external view override returns (bool) {
         return
-            lockersMapping[lockerTargetAddress[_lockerLockingScript]].isLocker;
+            lockersMapping[getLockerTargetAddress[_lockerLockingScript]].isLocker;
     }
 
     // /// @notice Return total number of Lockers
@@ -352,7 +351,7 @@ contract LockersManagerLogic is
             becomeLockerArguments(  
                 libConstants,
                 libParams,
-                lockerTargetAddress[_candidateLockingScript],
+                getLockerTargetAddress[_candidateLockingScript],
                 _collateralToken,
                 collateralDecimal[_collateralToken],
                 _lockedTSTAmount,
@@ -466,7 +465,7 @@ contract LockersManagerLogic is
         totalNumberOfCandidates = totalNumberOfCandidates - 1;
         totalNumberOfLockers = totalNumberOfLockers + 1;
 
-        lockerTargetAddress[
+        getLockerTargetAddress[
             lockersMapping[_lockerTargetAddress].lockerLockingScript
         ] = _lockerTargetAddress;
 
@@ -570,7 +569,7 @@ contract LockersManagerLogic is
 
         // Remove locker from lockersMapping
 
-        delete lockerTargetAddress[
+        delete getLockerTargetAddress[
             lockersMapping[_msgSender()].lockerLockingScript
         ];
         delete lockersMapping[_msgSender()];
@@ -1005,7 +1004,7 @@ contract LockersManagerLogic is
         onlyMinter
         returns (uint256)
     {
-        address _lockerTargetAddress = lockerTargetAddress[
+        address _lockerTargetAddress = getLockerTargetAddress[
             _lockerLockingScript
         ];
             
@@ -1051,7 +1050,7 @@ contract LockersManagerLogic is
         override
         returns (uint256 theLockerCapacity)
     {
-        address _lockerTargetAddress = lockerTargetAddress[
+        address _lockerTargetAddress = getLockerTargetAddress[
             _lockerLockingScript
         ];
 
@@ -1082,7 +1081,7 @@ contract LockersManagerLogic is
         onlyBurner
         returns (uint256)
     {
-        address _lockerTargetAddress = lockerTargetAddress[
+        address _lockerTargetAddress = getLockerTargetAddress[
             _lockerLockingScript
         ];
 

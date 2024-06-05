@@ -19,7 +19,7 @@ const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 
 
 import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
-describe.only("Lockers", async () => {
+describe("Lockers", async () => {
 
     let snapshotId: any;
 
@@ -1400,7 +1400,7 @@ describe.only("Lockers", async () => {
             ).to.equal(LOCKER1_PUBKEY__HASH)
 
             expect(
-                await lockers.lockerTargetAddress(
+                await lockers.getLockerTargetAddress(
                     LOCKER1_PUBKEY__HASH
                 )
             ).to.equal(signer1Address)
@@ -1461,7 +1461,7 @@ describe.only("Lockers", async () => {
             ).to.equal(LOCKER1_PUBKEY__HASH)
 
             expect(
-                await lockers.lockerTargetAddress(
+                await lockers.getLockerTargetAddress(
                     LOCKER1_PUBKEY__HASH
                 )
             ).to.equal(signer1Address)

@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <=0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../oracle/interfaces/IPriceOracle.sol";
-import "../erc20/interfaces/ITeleBTC.sol";
 import "../lockersManager/interfaces/ILockersManager.sol";
 import "hardhat/console.sol";
 
@@ -175,7 +173,7 @@ library LockersManagerLib {
         uint256 equivalentNativeToken = IPriceOracle(libParams.priceOracle)
             .equivalentOutputAmount(
                 _amount, // Total amount of TeleBTC that is slashed
-                ITeleBTC(libParams.teleBTC).decimals(), // Decimal of teleBTC
+                8, // Decimal of teleBTC
                 _collateralDecimal, // Decimal of locked collateral
                 libParams.teleBTC, // Input token
                 _collateralToken // Output token
@@ -237,7 +235,7 @@ library LockersManagerLib {
         equivalentNativeToken = IPriceOracle(libParams.priceOracle)
             .equivalentOutputAmount(
                 _rewardAmount + _amount, // Total amount of TeleBTC that is slashed
-                ITeleBTC(libParams.teleBTC).decimals(), // Decimal of teleBTC
+                8, // Decimal of teleBTC
                 _collateralDecimal, // Decimal of locked collateral
                 libParams.teleBTC, // Input token
                 _collateralToken // Output token
@@ -265,11 +263,10 @@ library LockersManagerLib {
         uint256 _collateralDecimal,
         uint256 _reliabilityFactor
     ) public view returns (uint256) {
-        //TODO check by Mahdi
         // maxBuyable <= (upperHealthFactor*netMinted*liquidationRatio/10000 - nativeTokenLockedAmount*nativeTokenPrice)/(upperHealthFactor*liquidationRatio*discountedPrice - nativeTokenPrice)
         //  => maxBuyable <= (upperHealthFactor*netMinted*liquidationRatio * 10^18  - nativeTokenLockedAmount*nativeTokenPrice * 10^8)/(upperHealthFactor*liquidationRatio*discountedPrice - nativeTokenPrice * 10^8)
 
-        uint256 teleBTCDecimal = ERC20(libParams.teleBTC).decimals();
+        uint256 teleBTCDecimal = 8;
 
         uint256 antecedent = ((
                 libConstants.UpperHealthFactor *
@@ -376,7 +373,6 @@ library LockersManagerLib {
         uint256 _priceOfOneUnitOfCollateral = priceOfOneUnitOfCollateralInBTC(_collateralToken, _collateralDecimal, libParams);
 
         // Capacity of locker = (locker's collateral value in TeleBTC) / (collateral ratio) - (minted TeleBTC)
-        //TODO use get locker capacity
         uint256 lockerCapacity = (theLocker.nativeTokenLockedAmount *
             _priceOfOneUnitOfCollateral *
             libConstants.OneHundredPercent *
@@ -412,7 +408,7 @@ library LockersManagerLib {
             IPriceOracle(libParams.priceOracle).equivalentOutputAmount(
                 (10**_collateralDecimal), // 1 unit of collateral
                 _collateralDecimal,
-                ITeleBTC(libParams.teleBTC).decimals(),
+                8,
                 _collateralToken,
                 libParams.teleBTC
             );

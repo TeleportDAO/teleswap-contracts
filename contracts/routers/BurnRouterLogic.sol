@@ -350,9 +350,9 @@ contract BurnRouterLogic is
     ) external payable override nonReentrant returns (bool) {
         // Get the Locker target address
         address _lockerTargetAddress = ILockersManager(lockers)
-            .lockerTargetAddress(_lockerLockingScript);
+            .getLockerTargetAddress(_lockerLockingScript);
 
-        // It's more safe to only allow the Locker to call this function //TODO?
+        // It's more safe to only allow the Locker to call this function
         require(
             _msgSender() == _lockerTargetAddress ||
                 _msgSender() == bitcoinFeeOracle,
@@ -427,7 +427,7 @@ contract BurnRouterLogic is
 
         // Get the target address of the locker from its locking script
         address _lockerTargetAddress = ILockersManager(lockers)
-            .lockerTargetAddress(_lockerLockingScript);
+            .getLockerTargetAddress(_lockerLockingScript);
 
         // Goes through provided indexes of burn requests to see if locker should be slashed
         for (uint256 i = 0; i < _indices.length; i++) {
@@ -576,7 +576,7 @@ contract BurnRouterLogic is
         );
 
         address _lockerTargetAddress = ILockersManager(lockers)
-            .lockerTargetAddress(_lockerLockingScript);
+            .getLockerTargetAddress(_lockerLockingScript);
 
         _saveBurnRequest(
             _amount,
@@ -682,7 +682,7 @@ contract BurnRouterLogic is
 
         // Gets the target address of the locker from its Bitcoin address
         address _lockerTargetAddress = ILockersManager(lockers)
-            .lockerTargetAddress(_lockerLockingScript);
+            .getLockerTargetAddress(_lockerLockingScript);
 
         ILockersManager(lockers).slashThiefLocker(
             _lockerTargetAddress,

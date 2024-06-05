@@ -100,15 +100,16 @@ contract PolyConnectorLogic is
 
         (
             uint256 _chainId,
+            uint256 _uniqueCounter,
             address _token,
-            uint256 _amount,
             int64 _relayerFeePercentage
-        ) = abi.decode(_message, (uint256, address, uint256, int64));
+        ) = abi.decode(_message, (uint256, uint256, address, int64));
 
-        require(
-            _amount > 0 && failedReqs[user][_chainId][_token] >= _amount,
-            "PolygonConnectorLogic: low balance"
-        );
+        uint256 _amount = newFailedReqs[user][_chainId][_uniqueCounter][_token];
+        // Update witholded amount
+        delete newFailedReqs[user][_chainId][_uniqueCounter][_token];
+
+        require(_amount > 0, "PolygonConnectorLogic: already withdrawn");
 
         // Send token back to the user
         _sendTokenUsingAcross(
@@ -119,8 +120,14 @@ contract PolyConnectorLogic is
             _relayerFeePercentage
         );
 
-        // Update witholded amount
-        failedReqs[user][_chainId][_token] -= _amount;
+        emit WithdrawnFundsToSourceChain(
+            _uniqueCounter,
+            _chainId,
+            _token,
+            _amount,
+            _relayerFeePercentage,
+            user
+        );
     }
 
     /// @notice Retry to swap and unwrap tokens
@@ -140,35 +147,34 @@ contract PolyConnectorLogic is
 
         (
             uint256 _chainId,
+            uint256 _uniqueCounter,
             address _token,
-            uint256 _amount,
             address exchangeConnector,
             uint256 outputAmount,
             bytes memory userScript,
             ScriptTypes scriptType,
             bytes memory lockerLockingScript,
-            address[] memory path
+            address[] memory path,
+            uint256 thirdPartyId
         ) = abi.decode(
                 _message,
                 (
                     uint256,
-                    address,
                     uint256,
+                    address,
                     address,
                     uint256,
                     bytes,
                     ScriptTypes,
                     bytes,
-                    address[]
+                    address[],
+                    uint256
                 )
             );
 
-        require(
-            _amount > 0 && failedReqs[user][_chainId][_token] >= _amount,
-            "PolygonConnectorLogic: low balance"
-        );
-
-        failedReqs[user][_chainId][_token] -= _amount;
+        uint256 _amount = newFailedReqs[user][_chainId][_uniqueCounter][_token];
+        delete newFailedReqs[user][_chainId][_uniqueCounter][_token];
+        require(_amount > 0, "PolygonConnectorLogic: already retried");
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = _amount;
@@ -184,13 +190,14 @@ contract PolyConnectorLogic is
             userScript,
             scriptType,
             lockerLockingScript,
-            0
+            thirdPartyId
         );
 
         address lockerTargetAddress = ILockersManager(lockersProxy)
-            .lockerTargetAddress(lockerLockingScript);
+            .getLockerTargetAddress(lockerLockingScript);
 
-        emit NewSwapAndUnwrap(
+        emit RetriedSwapAndUnwrap(
+            _uniqueCounter,
             _chainId,
             exchangeConnector,
             _token,
@@ -202,7 +209,8 @@ contract PolyConnectorLogic is
             BurnRouterStorage(burnRouterProxy).burnRequestCounter(
                 lockerTargetAddress
             ) - 1,
-            path
+            path,
+            thirdPartyId
         );
     }
 
@@ -225,9 +233,7 @@ contract PolyConnectorLogic is
         bytes memory _message,
         address _tokenSent
     ) internal {
-        exchangeForBtcArguments memory arguments = _decodeReq(
-            _message
-        );
+        exchangeForBtcArguments memory arguments = _decodeReq(_message);
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = _amount;
@@ -248,7 +254,11 @@ contract PolyConnectorLogic is
                 arguments.thirdParty
             )
         {
+            address lockerTargetAddress = ILockersManager(lockersProxy)
+                .getLockerTargetAddress(arguments.scripts.lockerLockingScript);
+
             emit NewSwapAndUnwrap(
+                arguments.uniqueCounter,
                 arguments.chainId,
                 arguments.exchangeConnector,
                 _tokenSent,
@@ -256,25 +266,24 @@ contract PolyConnectorLogic is
                 arguments.user,
                 arguments.scripts.userScript,
                 arguments.scripts.scriptType,
-                ILockersManager(lockersProxy).lockerTargetAddress(
-                    arguments.scripts.lockerLockingScript
-                ),
+                lockerTargetAddress,
                 BurnRouterStorage(burnRouterProxy).burnRequestCounter(
-                    ILockersManager(lockersProxy).lockerTargetAddress(
-                        arguments.scripts.lockerLockingScript
-                    )
+                    lockerTargetAddress
                 ) - 1,
-                arguments.path
+                arguments.path,
+                arguments.thirdParty
             );
         } catch {
             // Remove spending allowance
             IERC20(arguments.path[0]).approve(burnRouterProxy, 0);
 
             // Save token amount so user can withdraw it in future
-            failedReqs[arguments.user][arguments.chainId][
-                _tokenSent
-            ] += _amount;
+            newFailedReqs[arguments.user][arguments.chainId][
+                arguments.uniqueCounter
+            ][_tokenSent] = _amount;
+
             emit FailedSwapAndUnwrap(
+                arguments.uniqueCounter,
                 arguments.chainId,
                 arguments.exchangeConnector,
                 _tokenSent,
@@ -282,23 +291,19 @@ contract PolyConnectorLogic is
                 arguments.user,
                 arguments.scripts.userScript,
                 arguments.scripts.scriptType,
-                arguments.path
+                arguments.path,
+                arguments.thirdParty
             );
         }
     }
 
     function _decodeReq(
         bytes memory _message
-    )
-        private
-        pure
-        returns (exchangeForBtcArguments memory arguments)
-    {
+    ) private pure returns (exchangeForBtcArguments memory arguments) {
         (
             ,
-            ,
-            // purpose,
-            // uniqueCounter
+            // purpose
+            arguments.uniqueCounter,
             arguments.chainId,
             arguments.user,
             arguments.exchangeConnector,
@@ -306,7 +311,6 @@ contract PolyConnectorLogic is
             arguments.isInputFixed,
             arguments.path,
             arguments.scripts
-
         ) = abi.decode(
             _message,
             (

@@ -253,7 +253,7 @@ describe("CcExchangeRouter", async () => {
 
         await mockLockers.mock.burn.returns(10);
         await mockLockers.mock.isLocker.returns(true);
-        await mockLockers.mock.lockerTargetAddress.returns(LOCKER_TARGET_ADDRESS);
+        await mockLockers.mock.getLockerTargetAddress.returns(LOCKER_TARGET_ADDRESS);
         await mockBitcoinRelay.mock.lastSubmittedHeight.returns(100);
 
         // Deploys ccExchangeRouter contract

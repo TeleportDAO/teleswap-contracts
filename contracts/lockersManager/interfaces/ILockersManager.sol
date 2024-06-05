@@ -272,7 +272,7 @@ interface ILockersManager {
 
     function totalNumberOfLockers() external view returns (uint256);
 
-    function lockerTargetAddress(
+    function getLockerTargetAddress(
         bytes calldata _lockerLockingScript
     ) external view returns (address);
 

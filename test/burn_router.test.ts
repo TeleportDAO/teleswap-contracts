@@ -267,7 +267,7 @@ describe("BurnRouter", async () => {
     }
 
     async function setLockersGetLockerTargetAddress(): Promise<void> {
-        await mockLockers.mock.lockerTargetAddress
+        await mockLockers.mock.getLockerTargetAddress
             .returns(LOCKER_TARGET_ADDRESS);
     }
 

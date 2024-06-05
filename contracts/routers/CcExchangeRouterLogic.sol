@@ -858,7 +858,7 @@ contract CcExchangeRouterLogic is
             ];
 
             emit NewWrapAndSwap(
-                ILockersManager(lockers).lockerTargetAddress(
+                ILockersManager(lockers).getLockerTargetAddress(
                     swapArguments._lockerLockingScript
                 ),
                 swapArguments._ccExchangeRequest.recipientAddress,
@@ -882,7 +882,7 @@ contract CcExchangeRouterLogic is
                 0
             ];
             emit FailedWrapAndSwap(
-                ILockersManager(lockers).lockerTargetAddress(
+                ILockersManager(lockers).getLockerTargetAddress(
                     swapArguments._lockerLockingScript
                 ),
                 swapArguments._ccExchangeRequest.recipientAddress,
