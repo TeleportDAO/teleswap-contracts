@@ -2,16 +2,16 @@
 pragma solidity >=0.8.0 <=0.8.4;
 
 import "./interfaces/IExchangeConnector.sol";
-import "../uniswap/v2-periphery/interfaces/IUniswapV2Router02.sol";
-import "../uniswap/v2-core/interfaces/IUniswapV2Pair.sol";
-import "../uniswap/v2-core/interfaces/IUniswapV2Factory.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/IPeripheryImmutableState.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";
 
 contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
-
 
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "UniswapV3Connector: zero address");
@@ -23,16 +23,19 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
     address public override liquidityPoolFactory;
     address public override wrappedNativeToken;
     address public middleToken;
+    address public quoterAddress;
+    mapping(address => string) public tokenName;
+    mapping(address => mapping(address => uint24)) public feeTier;
 
     /// @notice                          This contract is used for interacting with UniswapV2 contract
     /// @param _name                     Name of the underlying DEX
     /// @param _exchangeRouter           Address of the DEX router contract
-    constructor(string memory _name, address _exchangeRouter) {
+    constructor(string memory _name, address _exchangeRouter, address _quoterAddress, address _middleToken, address _factoryAddress) {
         name = _name;
         exchangeRouter = _exchangeRouter;
-        //TODO
-        liquidityPoolFactory = IUniswapV2Router02(exchangeRouter).factory();
-        wrappedNativeToken = IUniswapV2Router02(exchangeRouter).WETH();
+        liquidityPoolFactory = IPeripheryImmutableState(exchangeRouter).factory();
+        wrappedNativeToken = IPeripheryImmutableState(exchangeRouter).WETH9();
+        quoterAddress = _quoterAddress;
         middleToken = wrappedNativeToken;
     }
 
@@ -43,20 +46,20 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
     /// @param _exchangeRouter              Address of the new exchange router contract
     function setExchangeRouter(address _exchangeRouter) external nonZeroAddress(_exchangeRouter) override onlyOwner {
         exchangeRouter = _exchangeRouter;
-        liquidityPoolFactory = IUniswapV2Router02(exchangeRouter).factory();
-        wrappedNativeToken = IUniswapV2Router02(exchangeRouter).WETH();
+        liquidityPoolFactory = IPeripheryImmutableState(exchangeRouter).factory();
+        wrappedNativeToken = IPeripheryImmutableState(exchangeRouter).WETH9();
     }
 
     /// @notice            Setter for liquidity pool factory
     /// @dev               Gets address from exchange router
     function setLiquidityPoolFactory() external override onlyOwner {
-        liquidityPoolFactory = IUniswapV2Router02(exchangeRouter).factory();
+        liquidityPoolFactory = IPeripheryImmutableState(exchangeRouter).factory();
     }
 
     /// @notice            Setter for wrapped native token
     /// @dev               Gets address from exchange router
     function setWrappedNativeToken() external override onlyOwner {
-        wrappedNativeToken = IUniswapV2Router02(exchangeRouter).WETH();
+        wrappedNativeToken = IPeripheryImmutableState(exchangeRouter).WETH9();
     }
 
     /// @notice            Setter for middle token
@@ -64,27 +67,33 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         middleToken = _middleToken;
     }
 
-    function setTokenName(address _token, string name) external onlyOwner {
+    function setTokenName(address _token, string memory name) external onlyOwner {
         tokenName[_token] = name;
     }
 
-    function setFeeTier(address _firstToken, address _secondToken, uint _feeTier) external onlyOwner {
+    function setFeeTier(address _firstToken, address _secondToken, uint24 _feeTier) external onlyOwner {
         feeTier[_firstToken][_secondToken] = _feeTier;
     }
 
-    function convertedPath (address[] _path, bool forSwap) external external onlyOwner return (Bytes) {
-        bytes memory packedData = abi.encodePacked(forSwap? tokenName[_path[0]] : _path[0]);
+    function convertedPath (address[] memory _path, bool forSwap) public onlyOwner returns (bytes memory packedData) {
+        if (forSwap) 
+            packedData = abi.encodePacked(tokenName[_path[0]]);
+        else 
+            packedData = abi.encodePacked(_path[0]);
+
         for (uint i = 1; i < _path.length; i++) {
             address firstToken = _path[i - 1];
             address secondToken = _path[i];
-            uint feeTier = feeTier[firstToken][secondToken]
-            packedData = abi.encodePacked(packedData, feeTier, forSwap? tokenName[secondToken]: secondToken);
+            uint _feeTier = feeTier[firstToken][secondToken];
+            if (forSwap) 
+                packedData = abi.encodePacked(packedData, _feeTier, tokenName[secondToken]);
+            else 
+                packedData = abi.encodePacked(packedData, _feeTier, secondToken);
         }
-        return packedData;
     }
 
-    function buildInputSwap (address[] _path, address _recipient, uint _deadline, uint _amountIn, uint _amountOutMin) return (ISwapRouter.ExactInputParams ) {
-        return ISwapRouter(exchangeRouter).ExactInputParams({
+    function _buildInputSwap ( uint _amountIn, uint _amountOutMin, address[] memory _path, address _recipient, uint _deadline) private returns (ISwapRouter.ExactInputParams memory) {
+        return ISwapRouter.ExactInputParams({
             path: convertedPath(_path, true),
             recipient: _recipient,
             deadline: _deadline,
@@ -93,8 +102,8 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         });
     }
 
-    function buildOutputSwap (address[] _path, address _recipient, uint _deadline, uint _amountInMaximum, uint _amountOut) return (ISwapRouter.ExactInputParams ) {
-        return ISwapRouter(exchangeRouter).ExactOutputParams({
+    function _buildOutputSwap (uint _amountInMaximum, uint _amountOut, address[] memory _path, address _recipient, uint _deadline) private returns (ISwapRouter.ExactOutputParams memory) {
+        return ISwapRouter.ExactOutputParams({
             path: convertedPath(_path, true),
             recipient: _recipient,
             deadline: _deadline,
@@ -103,12 +112,20 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         });
     }
 
-    function getExactInput (address[] _path, uint256 amountIn) returns (uint256 amountOut) {
-        return (amountOut, , ,) = IQuoter(quoterAddress).quoteExactInput(convertedPath(_path, false), amountIn);
+    function getExactInput (address[] memory _path, uint256 amountIn) public returns (bool, uint256) {
+        if (!isPathValid(_path)) {
+            return (false, 0);
+        }
+        (uint amountOut, , ,) = IQuoterV2(quoterAddress).quoteExactInput(convertedPath(_path, false), amountIn);
+        return (true, amountOut);
     }
 
-    function getExactOutput (address[] _path, uint256 amountOut) returns (uint256 amountIn) {
-        return (amountIn, , ,) IQuoter(quoterAddress).quoteExactOutput(convertedPath(_path, false), amountOut);
+    function getExactOutput (address[] memory _path, uint256 amountOut) public returns (bool, uint256) {
+        if (!isPathValid(_path)) {
+            return (false, 0);
+        }
+        (uint amountIn, , ,) = IQuoterV2(quoterAddress).quoteExactOutput(convertedPath(_path, false), amountOut);
+         return (true, amountIn);
     }
 
 
@@ -123,38 +140,14 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         address _inputToken,
         address _outputToken
     ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (bool, uint) {
-
-        // Checks that the liquidity pool exists
-        address liquidityPool = IUniswapV2Factory(liquidityPoolFactory).getPair(_inputToken, _outputToken);
-
-        if (
-            liquidityPool == address(0)
-        ) {
-            if (
-                IUniswapV2Factory(liquidityPoolFactory).getPair(_inputToken, wrappedNativeToken) == address(0) ||
-                IUniswapV2Factory(liquidityPoolFactory).getPair(wrappedNativeToken, _outputToken) == address(0)
-            ) {
-                return (false, 0);
-            } 
-
-            address[] memory path = new address[](3);
-            path[0] = _inputToken;
-            path[1] = wrappedNativeToken;
-            path[2] = _outputToken;
-            uint[] memory result = IUniswapV2Router02(exchangeRouter).getAmountsIn(_outputAmount, path);
-
-            return (true, result[0]);
-
-        } else {
-
-            address[] memory path = new address[](2);
-            path[0] = _inputToken;
-            path[1] = _outputToken;
-            uint[] memory result = IUniswapV2Router02(exchangeRouter).getAmountsIn(_outputAmount, path);
-
-            return (true, result[0]);
-        }
-        
+        // address[] memory path = new address[](2);
+        // path[0] = _inputToken;
+        // path[1] = _outputToken;
+        // return getExactOutput(
+        //     path,
+        //     _outputAmount
+        // );
+        return (true, 0);
     }
 
     /// @notice                     Returns amount of output token that user receives 
@@ -167,35 +160,14 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         address _inputToken,
         address _outputToken
     ) external view nonZeroAddress(_inputToken) nonZeroAddress(_outputToken) override returns (bool, uint) {
-        // Checks that the liquidity pool exists
-        address liquidityPool = IUniswapV2Factory(liquidityPoolFactory).getPair(_inputToken, _outputToken);
-
-        if (
-            liquidityPool == address(0)
-        ) {
-            if (
-                IUniswapV2Factory(liquidityPoolFactory).getPair(_inputToken, wrappedNativeToken) == address(0) ||
-                IUniswapV2Factory(liquidityPoolFactory).getPair(wrappedNativeToken, _outputToken) == address(0)
-            ) {
-                return (false, 0);
-            }
-
-            address[] memory path = new address[](3);
-            path[0] = _inputToken;
-            path[1] = wrappedNativeToken;
-            path[2] = _outputToken;
-            uint[] memory result = IUniswapV2Router02(exchangeRouter).getAmountsOut(_inputAmount, path);
-            return (true, result[2]);
-            
-        } else {
-
-            address[] memory path = new address[](2);
-            path[0] = _inputToken;
-            path[1] = _outputToken;
-            uint[] memory result = IUniswapV2Router02(exchangeRouter).getAmountsOut(_inputAmount, path);
-
-            return (true, result[1]);
-        }
+        // address[] memory path = new address[](2);
+        // path[0] = _inputToken;
+        // path[1] = _outputToken;
+        // return getExactInput(
+        //     path,
+        //     _inputAmount
+        // );
+        return (true, 0);
     }
 
     /// @notice                     Exchanges input token for output token through exchange router
@@ -216,7 +188,7 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         address _to,
         uint256 _deadline,
         bool _isFixedToken
-    ) external nonReentrant nonZeroAddress(_to) override returns (bool _result, uint[] memory _amounts) {
+    ) external nonReentrant nonZeroAddress(_to) override returns (bool _result, uint[] memory) {
         uint neededInputAmount;
         (_result, neededInputAmount) = _checkExchangeConditions(
             _inputAmount,
@@ -226,6 +198,7 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
             _isFixedToken
         );
         
+        uint _amount;
         if (_result) {
             // Gets tokens from user
             IERC20(_path[0]).transferFrom(_msgSender(), address(this), neededInputAmount);
@@ -233,30 +206,32 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
             IERC20(_path[0]).approve(exchangeRouter, neededInputAmount);
 
             if (_isFixedToken == false) {
-                _amounts = ISwapRouter(exchangeRouter).exactInput(
-                    buildInputSwap(
+                _amount = ISwapRouter(exchangeRouter).exactInput(
+                    _buildInputSwap(
+                        _inputAmount, 
+                        _outputAmount,
                         _path, 
                         _to, 
-                        _deadline, 
-                        _inputAmount, 
-                        _outputAmount
+                        _deadline
                     )
                 );
             }
 
             if (_isFixedToken == true) {
-                _amounts = ISwapRouter(exchangeRouter).exactOutput(
-                    buildOutputSwap(
+                _amount = ISwapRouter(exchangeRouter).exactOutput(
+                    _buildOutputSwap(
+                        _inputAmount, 
+                        _outputAmount,
                         _path, 
                         _to, 
-                        _deadline, 
-                        _inputAmount, 
-                        _outputAmount
+                        _deadline
                     )
                 );
             }
 
-            emit Swap(_path, _amounts, _to);
+            uint[] memory amounts = new uint[](1);
+            amounts[0] = _amount;
+            emit Swap(_path, amounts, _to);
         }
     }
 
@@ -272,7 +247,7 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
 
         for (uint i = 0; i < _path.length - 1; i++) {
             liquidityPool =
-                IFactory(liquidityPoolFactory).getPool(_path[i], _path[i + 1], feeTier[_path[i]][_path[i + 1]]);
+                IUniswapV3Factory(liquidityPoolFactory).getPool(_path[i], _path[i + 1], feeTier[_path[i]][_path[i + 1]]);
             if (liquidityPool == address(0)) {
                 return false;
             }
@@ -296,20 +271,15 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         address[] memory _path,
         uint256 _deadline,
         bool _isFixedToken
-    ) private view returns (bool, uint) {
+    ) private returns (bool, uint) {
 
         // Checks deadline has not passed
         if (_deadline < block.timestamp) {
             return (false, 0);
         }
 
-        // Checks that the liquidity pool exists
-        if (!isPathValid(_path)) {
-            return (false, 0);
-        }
-
         // Finds maximum output amount
-        uint outputResult = getExactInput(
+        (bool success, uint outputResult) = getExactInput(
             _path,
             _inputAmount
         );
@@ -319,19 +289,16 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
             return (false, 0);
         } else {
             if (_isFixedToken == true) {
-                return (true, _inputAmount);
+                return (success, _inputAmount);
             } else {
-                uint inputResult = getExactOutput(
+                return getExactOutput(
                     _path,
                     _outputAmount
                 );
-                return (true, inputResult);
             }
         }
     }
 
-    //TODO add liquidity, remove liquidity
-    //TODO collect fee
     //TODO reentrancy guard
 
 }
