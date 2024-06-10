@@ -64,10 +64,11 @@ const config: HardhatUserConfig = {
 			accounts: [process.env.PRIVATE_KEY ?? ""]
 		},
 		polygon: {
-			url: "https://rpc-mainnet.maticvigil.com/",
+			// url: "https://rpc-mainnet.maticvigil.com/",
+			url: "https://rpc-mainnet.matic.quiknode.pro",
 			chainId: 137,
 			accounts: [process.env.PRIVATE_KEY ?? ""]
-		},
+		   },
 		mumbai: {
 			url: "https://polygon-mumbai.g.alchemy.com/v2/249SGZUqU12h4C4rAtPnb39FsJ09XMA9",
 			chainId: 80001,

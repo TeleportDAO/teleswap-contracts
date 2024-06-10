@@ -30,7 +30,7 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
     /// @notice                          This contract is used for interacting with UniswapV2 contract
     /// @param _name                     Name of the underlying DEX
     /// @param _exchangeRouter           Address of the DEX router contract
-    constructor(string memory _name, address _exchangeRouter, address _quoterAddress, address _middleToken, address _factoryAddress) {
+    constructor(string memory _name, address _exchangeRouter, address _quoterAddress, address _middleToken) {
         name = _name;
         exchangeRouter = _exchangeRouter;
         liquidityPoolFactory = IPeripheryImmutableState(exchangeRouter).factory();
@@ -56,6 +56,11 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         liquidityPoolFactory = IPeripheryImmutableState(exchangeRouter).factory();
     }
 
+    /// @notice            Setter for quoter
+    function setQuoter(address _quoterAddress) external onlyOwner {
+        quoterAddress = _quoterAddress;
+    }
+
     /// @notice            Setter for wrapped native token
     /// @dev               Gets address from exchange router
     function setWrappedNativeToken() external override onlyOwner {
@@ -67,8 +72,8 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         middleToken = _middleToken;
     }
 
-    function setTokenName(address _token, string memory name) external onlyOwner {
-        tokenName[_token] = name;
+    function setTokenName(address _token, string memory _name) external onlyOwner {
+        tokenName[_token] = _name;
     }
 
     function setFeeTier(address _firstToken, address _secondToken, uint24 _feeTier) external onlyOwner {
