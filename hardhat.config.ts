@@ -65,7 +65,8 @@ const config: HardhatUserConfig = {
 		},
 		polygon: {
 			// url: "https://rpc-mainnet.maticvigil.com/",
-			url: "https://rpc-mainnet.matic.quiknode.pro",
+			// url: "https://rpc-mainnet.matic.quiknode.pro",
+			url: "https://polygon-pokt.nodies.app",
 			chainId: 137,
 			accounts: [process.env.PRIVATE_KEY ?? ""]
 		   },

@@ -30,11 +30,11 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
     /// @notice                          This contract is used for interacting with UniswapV2 contract
     /// @param _name                     Name of the underlying DEX
     /// @param _exchangeRouter           Address of the DEX router contract
-    constructor(string memory _name, address _exchangeRouter, address _quoterAddress, address _middleToken) {
+    constructor(string memory _name, address _exchangeRouter, address _quoterAddress) {
         name = _name;
         exchangeRouter = _exchangeRouter;
-        // liquidityPoolFactory = IPeripheryImmutableState(exchangeRouter).factory();
-        // wrappedNativeToken = IPeripheryImmutableState(exchangeRouter).WETH9();
+        liquidityPoolFactory = IPeripheryImmutableState(exchangeRouter).factory();
+        wrappedNativeToken = IPeripheryImmutableState(exchangeRouter).WETH9();
         quoterAddress = _quoterAddress;
         middleToken = wrappedNativeToken;
     }
