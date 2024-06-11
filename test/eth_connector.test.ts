@@ -321,11 +321,11 @@ describe("EthConnector", async () => {
         });
 
         it("can't set addresses to zero address", async () => {
-            // await expect(EthConnector.setMinAmount(ZERO_ADDRESS, requestAmount)).to.be.revertedWith("ZeroAddress()");
-            await expect(EthConnector.setAcross(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
-            // await expect(EthConnector.setPolygonConnectorProxy(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
-            // await expect(EthConnector.setPolygonTeleBTC(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
-            await expect(EthConnector.setWrappedNativeToken(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress()");
+            // await expect(EthConnector.setMinAmount(ZERO_ADDRESS, requestAmount)).to.be.revertedWith("ZeroAddress");
+            await expect(EthConnector.setAcross(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress");
+            // await expect(EthConnector.setPolygonConnectorProxy(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress");
+            // await expect(EthConnector.setPolygonTeleBTC(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress");
+            await expect(EthConnector.setWrappedNativeToken(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress");
         });
     });
 

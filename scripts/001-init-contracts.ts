@@ -33,7 +33,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const polyConnectorLogic = await deployments.get("PolyConnectorLogic");
     const polyConnectorProxy = await deployments.get("PolyConnectorProxy");
 
-    const minTDTLockedAmount = 0;
+    const minTSTLockedAmount = 0;
     const startingBlockHeight = config.get("starting_block_height");
     const protocolPercentageFee = config.get(
         "cc_transfer.protocol_percentage_fee"
@@ -88,7 +88,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             teleBTC.address,
             priceOracle.address,
             burnRouterProxy.address,
-            minTDTLockedAmount,
+            minTSTLockedAmount,
             minNativeLockedAmount,
             collateralRatio,
             liquidationRatio,
@@ -107,7 +107,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             teleBTC.address,
             priceOracle.address,
             burnRouterProxy.address,
-            minTDTLockedAmount,
+            minTSTLockedAmount,
             minNativeLockedAmount,
             collateralRatio,
             liquidationRatio,

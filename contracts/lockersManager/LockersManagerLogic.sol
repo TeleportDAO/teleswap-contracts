@@ -41,7 +41,7 @@ contract LockersManagerLogic is
         address _teleBTC,
         address _priceOracle,
         address _ccBurnRouter,
-        uint256 _minRequiredTDTLockedAmount,
+        uint256 _minRequiredTSTLockedAmount,
         uint256 _collateralRatio,
         uint256 _liquidationRatio,
         uint256 _lockerPercentageFee,
@@ -54,7 +54,7 @@ contract LockersManagerLogic is
         setTeleBTC(_teleBTC);
         setCCBurnRouter(_ccBurnRouter);
         setPriceOracle(_priceOracle);
-        setMinRequiredTDTLockedAmount(_minRequiredTDTLockedAmount);
+        setMinRequiredTSTLockedAmount(_minRequiredTSTLockedAmount);
         setCollateralRatio(_collateralRatio);
         setLiquidationRatio(_liquidationRatio);
         setLockerPercentageFee(_lockerPercentageFee);
@@ -243,15 +243,15 @@ contract LockersManagerLogic is
     }
 
     /// @notice Update the required TST bond to become Locker
-    function setMinRequiredTDTLockedAmount(
-        uint256 _minRequiredTDTLockedAmount
+    function setMinRequiredTSTLockedAmount(
+        uint256 _minRequiredTSTLockedAmount
     ) public override onlyOwner {
-        emit NewMinRequiredTDTLockedAmount(
-            minRequiredTDTLockedAmount,
-            _minRequiredTDTLockedAmount
+        emit NewMinRequiredTSTLockedAmount(
+            minRequiredTSTLockedAmount,
+            _minRequiredTSTLockedAmount
         );
-        minRequiredTDTLockedAmount = _minRequiredTDTLockedAmount;
-        libParams.minRequiredTDTLockedAmount = minRequiredTDTLockedAmount;
+        minRequiredTSTLockedAmount = _minRequiredTSTLockedAmount;
+        libParams.minRequiredTSTLockedAmount = minRequiredTSTLockedAmount;
     }
 
     /// @notice Update the price oracle
@@ -408,11 +408,11 @@ contract LockersManagerLogic is
 
         totalNumberOfCandidates = totalNumberOfCandidates - 1;
 
-        // Sends back TDT and TNT collateral
+        // Sends back TST and TNT collateral
         if (libParams.teleportDAOToken != address(0)) {
             IERC20(TeleportDAOToken).safeTransfer(
                 _msgSender(),
-                lockerRequest.TDTLockedAmount
+                lockerRequest.TSTLockedAmount
             );
         }
         
@@ -431,7 +431,7 @@ contract LockersManagerLogic is
         emit RevokeAddLockerRequest(
             _msgSender(),
             lockerRequest.lockerLockingScript,
-            lockerRequest.TDTLockedAmount,
+            lockerRequest.TSTLockedAmount,
             lockerCollateralToken[_msgSender()],
             lockerRequest.nativeTokenLockedAmount
         );
@@ -474,7 +474,7 @@ contract LockersManagerLogic is
         emit LockerAdded(
             _lockerTargetAddress,
             lockersMapping[_lockerTargetAddress].lockerLockingScript,
-            lockersMapping[_lockerTargetAddress].TDTLockedAmount,
+            lockersMapping[_lockerTargetAddress].TSTLockedAmount,
             lockerCollateralToken[_lockerTargetAddress],
             lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
             _lockerReliabilityFactor,
@@ -511,7 +511,7 @@ contract LockersManagerLogic is
             _msgSender(),
             lockerInactivationTimestamp[_msgSender()],
             lockersMapping[_msgSender()].lockerLockingScript,
-            lockersMapping[_msgSender()].TDTLockedAmount,
+            lockersMapping[_msgSender()].TSTLockedAmount,
             lockerCollateralToken[_msgSender()],
             lockersMapping[_msgSender()].nativeTokenLockedAmount,
             lockersMapping[_msgSender()].netMinted
@@ -533,7 +533,7 @@ contract LockersManagerLogic is
         emit ActivateLocker(
             _msgSender(),
             lockersMapping[_msgSender()].lockerLockingScript,
-            lockersMapping[_msgSender()].TDTLockedAmount,
+            lockersMapping[_msgSender()].TSTLockedAmount,
             lockerCollateralToken[_msgSender()],
             lockersMapping[_msgSender()].nativeTokenLockedAmount,
             lockersMapping[_msgSender()].netMinted
@@ -575,11 +575,11 @@ contract LockersManagerLogic is
         delete lockersMapping[_msgSender()];
         totalNumberOfLockers = totalNumberOfLockers - 1;
 
-        // Sends back TDT and TNT collateral
+        // Sends back TST and TNT collateral
         if (libParams.teleportDAOToken != address(0)) {
             IERC20(TeleportDAOToken).safeTransfer(
                 _msgSender(),
-                _removingLocker.TDTLockedAmount
+                _removingLocker.TSTLockedAmount
             );
         }
 
@@ -598,7 +598,7 @@ contract LockersManagerLogic is
         emit LockerRemoved(
             _msgSender(),
             _removingLocker.lockerLockingScript,
-            _removingLocker.TDTLockedAmount,
+            _removingLocker.TSTLockedAmount,
             lockerCollateralToken[_msgSender()],
             _removingLocker.nativeTokenLockedAmount
         );
@@ -635,10 +635,10 @@ contract LockersManagerLogic is
     //     delete lockersMapping[_lockerTargetAddress];
     //     totalNumberOfLockers = totalNumberOfLockers - 1;
 
-    //     // Sends back TDT and TNT collateral
+    //     // Sends back TST and TNT collateral
     //     IERC20(TeleportDAOToken).safeTransfer(
     //         _lockerTargetAddress,
-    //         _removingLocker.TDTLockedAmount
+    //         _removingLocker.TSTLockedAmount
     //     );
     //     Address.sendValue(
     //         payable(_lockerTargetAddress),
@@ -648,7 +648,7 @@ contract LockersManagerLogic is
     //     emit LockerRemoved(
     //         _lockerTargetAddress,
     //         _removingLocker.lockerLockingScript,
-    //         _removingLocker.TDTLockedAmount,
+    //         _removingLocker.TSTLockedAmount,
     //         lockerCollateralToken[_lockerTargetAddress],
     //         _removingLocker.nativeTokenLockedAmount
     //     );

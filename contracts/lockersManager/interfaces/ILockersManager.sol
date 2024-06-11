@@ -9,7 +9,7 @@ interface ILockersManager {
     /// @param lockerLockingScript          Locker redeem script
     /// @param lockerRescueType             Locker script type in case of getting BTCs back
     /// @param lockerRescueScript           Locker script in case of getting BTCs back
-    /// @param TDTLockedAmount              Bond amount of locker in TDT
+    /// @param TSTLockedAmount              Bond amount of locker in TST
     /// @param nativeTokenLockedAmount      Bond amount of locker in native token of the target chain
     /// @param netMinted                    Total minted - total burnt
     /// @param slashingTeleBTCAmount        Total amount of teleBTC a locker must be slashed
@@ -22,7 +22,7 @@ interface ILockersManager {
         bytes lockerLockingScript;
         ScriptTypes lockerRescueType;
         bytes lockerRescueScript;
-        uint256 TDTLockedAmount;
+        uint256 TSTLockedAmount;
         uint256 nativeTokenLockedAmount;
         uint256 netMinted;
         uint256 slashingTeleBTCAmount;
@@ -47,7 +47,7 @@ interface ILockersManager {
         address ccBurnRouter;
         address exchangeConnector;
         address priceOracle;
-        uint256 minRequiredTDTLockedAmount;
+        uint256 minRequiredTSTLockedAmount;
         uint256 minRequiredTNTLockedAmount;
         uint256 lockerPercentageFee;
         uint256 collateralRatio;
@@ -62,7 +62,7 @@ interface ILockersManager {
         address theLockerTargetAddress;
         address collateralToken;
         uint256 collateralDecimal;
-        uint256 _lockedTDTAmount;
+        uint256 _lockedTSTAmount;
         uint256 _lockedNativeTokenAmount;
         bytes _candidateLockingScript;
         ScriptTypes _lockerRescueType;
@@ -74,7 +74,7 @@ interface ILockersManager {
     event RequestAddLocker(
         address indexed lockerTargetAddress,
         bytes lockerLockingScript,
-        uint TDTLockedAmount,
+        uint TSTLockedAmount,
         address indexed collateralToken,
         uint nativeTokenLockedAmount
     );
@@ -82,7 +82,7 @@ interface ILockersManager {
     event RevokeAddLockerRequest(
         address indexed lockerTargetAddress,
         bytes lockerLockingScript,
-        uint TDTLockedAmount,
+        uint TSTLockedAmount,
         address indexed collateralToken,
         uint nativeTokenLockedAmount
     );
@@ -91,7 +91,7 @@ interface ILockersManager {
         address indexed lockerTargetAddress,
         uint256 indexed inactivationTimestamp,
         bytes lockerLockingScript,
-        uint TDTLockedAmount,
+        uint TSTLockedAmount,
         address collateralToken,
         uint nativeTokenLockedAmount,
         uint netMinted
@@ -100,7 +100,7 @@ interface ILockersManager {
     event ActivateLocker(
         address indexed lockerTargetAddress,
         bytes lockerLockingScript,
-        uint TDTLockedAmount,
+        uint TSTLockedAmount,
         address collateralToken,
         uint nativeTokenLockedAmount,
         uint netMinted
@@ -109,7 +109,7 @@ interface ILockersManager {
     event LockerAdded(
         address indexed lockerTargetAddress,
         bytes lockerLockingScript,
-        uint TDTLockedAmount,
+        uint TSTLockedAmount,
         address indexed collateralToken,
         uint nativeTokenLockedAmount,
         uint addingTime,
@@ -119,7 +119,7 @@ interface ILockersManager {
     event LockerRemoved(
         address indexed lockerTargetAddress,
         bytes lockerLockingScript,
-        uint TDTUnlockedAmount,
+        uint TSTUnlockedAmount,
         address indexed collateralToken,
         uint nativeTokenUnlockedAmount
     );
@@ -216,9 +216,9 @@ interface ILockersManager {
         uint256 newPriceWithDiscountRatio
     );
 
-    event NewMinRequiredTDTLockedAmount(
-        uint256 oldMinRequiredTDTLockedAmount,
-        uint256 newMinRequiredTDTLockedAmount
+    event NewMinRequiredTSTLockedAmount(
+        uint256 oldMinRequiredTSTLockedAmount,
+        uint256 newMinRequiredTSTLockedAmount
     );
 
     event NewMinRequiredTNTLockedAmount(
@@ -256,7 +256,7 @@ interface ILockersManager {
 
     function priceOracle() external view returns (address);
 
-    function minRequiredTDTLockedAmount() external view returns (uint256);
+    function minRequiredTSTLockedAmount() external view returns (uint256);
 
     function minRequiredTNTLockedAmount() external view returns (uint256);
 
@@ -333,8 +333,8 @@ interface ILockersManager {
         uint256 _priceWithDiscountRatio
     ) external;
 
-    function setMinRequiredTDTLockedAmount(
-        uint256 _minRequiredTDTLockedAmount
+    function setMinRequiredTSTLockedAmount(
+        uint256 _minRequiredTSTLockedAmount
     ) external;
 
     function setPriceOracle(address _priceOracle) external;

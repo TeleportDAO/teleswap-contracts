@@ -20,7 +20,7 @@ abstract contract LockersManagerStorage is ILockersManager {
     address public override exchangeConnector;
     address public override priceOracle;
 
-    uint256 public override minRequiredTDTLockedAmount;
+    uint256 public override minRequiredTSTLockedAmount;
     uint256 public override minRequiredTNTLockedAmount;
     uint256 public override lockerPercentageFee;
     uint256 public override collateralRatio;

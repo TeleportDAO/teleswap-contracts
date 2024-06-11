@@ -362,7 +362,7 @@ describe("CcExchangeRouter", async () => {
 
         const teleportDAOToken = await erc20Factory.deploy(
             "TeleportDAOToken",
-            "TDT",
+            "TST",
             telePortTokenInitialSupply
         );
 
@@ -503,7 +503,7 @@ describe("CcExchangeRouter", async () => {
                 recipientAddress
             );
 
-            // Records new teleBTC and TDT balances of teleporter
+            // Records new teleBTC and TST balances of teleporter
             let newDeployerBalanceTeleBTC = await teleBTC.balanceOf(deployerAddress);
             let newDeployerBalanceTT = await _exchangeToken.balanceOf(deployerAddress);
 
@@ -567,7 +567,7 @@ describe("CcExchangeRouter", async () => {
             // Records new supply of teleBTC
             let newTotalSupplyTeleBTC = await teleBTC.totalSupply();
 
-            // Records new teleBTC and TDT balances of user
+            // Records new teleBTC and TST balances of user
             let newUserBalanceTeleBTC = await teleBTC.balanceOf(
                 recipientAddress
             );
@@ -575,7 +575,7 @@ describe("CcExchangeRouter", async () => {
                 recipientAddress
             );
 
-            // Records new teleBTC and TDT balances of teleporter
+            // Records new teleBTC and TST balances of teleporter
             let newDeployerBalanceTeleBTC = await teleBTC.balanceOf(deployerAddress);
             let newDeployerBalanceTT = await exchangeToken.balanceOf(deployerAddress);
 
@@ -616,7 +616,7 @@ describe("CcExchangeRouter", async () => {
             // Takes snapshot before adding liquidity
             snapshotId = await takeSnapshot(deployer.provider);
 
-            // Adds liquidity to teleBTC-TDT liquidity pool
+            // Adds liquidity to teleBTC-TST liquidity pool
             await teleBTC.addMinter(deployerAddress)
             await teleBTC.mint(deployerAddress, 10000000);
             await teleBTC.approve(uniswapV2Router02.address, 10000);
@@ -658,7 +658,7 @@ describe("CcExchangeRouter", async () => {
             // Records total supply of teleBTC
             oldTotalSupplyTeleBTC = await teleBTC.totalSupply();
 
-            // Loads teleBTC-TDT liquidity pool
+            // Loads teleBTC-TST liquidity pool
             uniswapV2Pair = await uniswapV2Pair__factory.attach(liquidityPoolAddress);
             // Records current reserves of teleBTC and TT
             if (await uniswapV2Pair.token0() == teleBTC.address) {
@@ -1683,7 +1683,7 @@ describe("CcExchangeRouter", async () => {
                 recipientAddress
             );
 
-            // Records new teleBTC and TDT balances of teleporter
+            // Records new teleBTC and TST balances of teleporter
             let newDeployerBalanceTeleBTC = await teleBTC.balanceOf(
                 deployerAddress
             );
@@ -1750,7 +1750,7 @@ describe("CcExchangeRouter", async () => {
             // Records new supply of teleBTC
             let newTotalSupplyTeleBTC = await teleBTC.totalSupply();
 
-            // Records new teleBTC and TDT balances of user
+            // Records new teleBTC and TST balances of user
             let newUserBalanceTeleBTC = await teleBTC.balanceOf(
                 recipientAddress
             );
@@ -1758,7 +1758,7 @@ describe("CcExchangeRouter", async () => {
                 recipientAddress
             );
 
-            // Records new teleBTC and TDT balances of teleporter
+            // Records new teleBTC and TST balances of teleporter
             let newDeployerBalanceTeleBTC = await teleBTC.balanceOf(
                 deployerAddress
             );
@@ -1821,7 +1821,7 @@ describe("CcExchangeRouter", async () => {
 
         beforeEach(async () => {
             snapshotId = await takeSnapshot(signer1.provider);
-            // Adds liquidity to teleBTC-TDT liquidity pool
+            // Adds liquidity to teleBTC-TST liquidity pool
             await teleBTC.addMinter(deployerAddress);
             await teleBTC.mint(deployerAddress, 10000000);
             await teleBTC.approve(uniswapV2Router02.address, 10000);
@@ -1863,7 +1863,7 @@ describe("CcExchangeRouter", async () => {
             // Records total supply of teleBTC
             oldTotalSupplyTeleBTC = await teleBTC.totalSupply();
 
-            // Loads teleBTC-TDT liquidity pool
+            // Loads teleBTC-TST liquidity pool
             uniswapV2Pair = await uniswapV2Pair__factory.attach(
                 liquidityPoolAddress
             );
@@ -2644,7 +2644,7 @@ describe("CcExchangeRouter", async () => {
                 recipientAddress
             );
 
-            // Records new teleBTC and TDT balances of teleporter
+            // Records new teleBTC and TST balances of teleporter
             let newDeployerBalanceTeleBTC = await teleBTC.balanceOf(deployerAddress);
             let newDeployerBalanceTT = await _exchangeToken.balanceOf(deployerAddress);
 
@@ -2708,7 +2708,7 @@ describe("CcExchangeRouter", async () => {
             // Records new supply of teleBTC
             let newTotalSupplyTeleBTC = await teleBTC.totalSupply();
 
-            // Records new teleBTC and TDT balances of user
+            // Records new teleBTC and TST balances of user
             let newUserBalanceTeleBTC = await teleBTC.balanceOf(
                 recipientAddress
             );
@@ -2716,7 +2716,7 @@ describe("CcExchangeRouter", async () => {
                 recipientAddress
             );
 
-            // Records new teleBTC and TDT balances of teleporter
+            // Records new teleBTC and TST balances of teleporter
             let newDeployerBalanceTeleBTC = await teleBTC.balanceOf(deployerAddress);
             let newDeployerBalanceTT = await exchangeToken.balanceOf(deployerAddress);
 
@@ -2757,7 +2757,7 @@ describe("CcExchangeRouter", async () => {
             // Takes snapshot before adding liquidity
             snapshotId = await takeSnapshot(deployer.provider);
 
-            // Adds liquidity to teleBTC-TDT liquidity pool
+            // Adds liquidity to teleBTC-TST liquidity pool
             await teleBTC.addMinter(deployerAddress)
             await teleBTC.mint(deployerAddress, 10000000);
             await teleBTC.approve(uniswapV2Router02.address, 10000);
@@ -2799,7 +2799,7 @@ describe("CcExchangeRouter", async () => {
             // Records total supply of teleBTC
             oldTotalSupplyTeleBTC = await teleBTC.totalSupply();
 
-            // Loads teleBTC-TDT liquidity pool
+            // Loads teleBTC-TST liquidity pool
             uniswapV2Pair = await uniswapV2Pair__factory.attach(liquidityPoolAddress);
             // Records current reserves of teleBTC and TT
             if (await uniswapV2Pair.token0() == teleBTC.address) {

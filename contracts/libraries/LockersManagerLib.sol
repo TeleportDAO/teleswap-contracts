@@ -24,8 +24,8 @@ library LockersManagerLib {
         require(!lockersMapping[msg.sender].isLocker, "Lockers: is locker");
 
         require(
-            args._lockedTDTAmount >= args.libParams.minRequiredTDTLockedAmount,
-            "Lockers: low TDT"
+            args._lockedTSTAmount >= args.libParams.minRequiredTSTLockedAmount,
+            "Lockers: low TST"
         );
 
         if (args.collateralToken != args.libConstants.NativeToken) {
@@ -41,7 +41,7 @@ library LockersManagerLib {
 
         ILockersManager.locker memory locker_;
         locker_.lockerLockingScript = args._candidateLockingScript;
-        locker_.TDTLockedAmount = args._lockedTDTAmount;
+        locker_.TSTLockedAmount = args._lockedTSTAmount;
         locker_.nativeTokenLockedAmount = args._lockedNativeTokenAmount;
         locker_.isCandidate = true;
         locker_.lockerRescueType = args._lockerRescueType;
