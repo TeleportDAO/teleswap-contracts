@@ -10,10 +10,10 @@ interface ILockersManager {
     /// @param lockerRescueType             Locker script type in case of getting BTCs back
     /// @param lockerRescueScript           Locker script in case of getting BTCs back
     /// @param TSTLockedAmount              Bond amount of locker in TST
-    /// @param nativeTokenLockedAmount      Bond amount of locker in native token of the target chain
+    /// @param collateralTokenLockedAmount      Bond amount of locker in collateral token of the target chain
     /// @param netMinted                    Total minted - total burnt
     /// @param slashingTeleBTCAmount        Total amount of teleBTC a locker must be slashed
-    /// @param reservedNativeTokenForSlash  Total native token reserved to support slashing teleBTC
+    /// @param reservedCollateralTokenForSlash  Total collateral token reserved to support slashing teleBTC
     /// @param isLocker                     Indicates that is already a locker or not
     /// @param isCandidate                  Indicates that is a candidate or not
     /// @param isScriptHash                 Shows if it's script hash
@@ -23,10 +23,10 @@ interface ILockersManager {
         ScriptTypes lockerRescueType;
         bytes lockerRescueScript;
         uint256 TSTLockedAmount;
-        uint256 nativeTokenLockedAmount;
+        uint256 collateralTokenLockedAmount;
         uint256 netMinted;
         uint256 slashingTeleBTCAmount;
-        uint256 reservedNativeTokenForSlash;
+        uint256 reservedCollateralTokenForSlash;
         bool isLocker;
         bool isCandidate;
         bool isScriptHash;
@@ -63,7 +63,7 @@ interface ILockersManager {
         address collateralToken;
         uint256 collateralDecimal;
         uint256 _lockedTSTAmount;
-        uint256 _lockedNativeTokenAmount;
+        uint256 _lockedCollateralTokenAmount;
         bytes _candidateLockingScript;
         ScriptTypes _lockerRescueType;
         bytes _lockerRescueScript;
@@ -76,7 +76,7 @@ interface ILockersManager {
         bytes lockerLockingScript,
         uint TSTLockedAmount,
         address indexed collateralToken,
-        uint nativeTokenLockedAmount
+        uint collateralTokenLockedAmount
     );
 
     event RevokeAddLockerRequest(
@@ -84,7 +84,7 @@ interface ILockersManager {
         bytes lockerLockingScript,
         uint TSTLockedAmount,
         address indexed collateralToken,
-        uint nativeTokenLockedAmount
+        uint collateralTokenLockedAmount
     );
 
     event RequestInactivateLocker(
@@ -93,7 +93,7 @@ interface ILockersManager {
         bytes lockerLockingScript,
         uint TSTLockedAmount,
         address collateralToken,
-        uint nativeTokenLockedAmount,
+        uint collateralTokenLockedAmount,
         uint netMinted
     );
 
@@ -102,7 +102,7 @@ interface ILockersManager {
         bytes lockerLockingScript,
         uint TSTLockedAmount,
         address collateralToken,
-        uint nativeTokenLockedAmount,
+        uint collateralTokenLockedAmount,
         uint netMinted
     );
 
@@ -111,7 +111,7 @@ interface ILockersManager {
         bytes lockerLockingScript,
         uint TSTLockedAmount,
         address indexed collateralToken,
-        uint nativeTokenLockedAmount,
+        uint collateralTokenLockedAmount,
         uint addingTime,
         uint reliabilityFactor
     );
@@ -121,7 +121,7 @@ interface ILockersManager {
         bytes lockerLockingScript,
         uint TSTUnlockedAmount,
         address indexed collateralToken,
-        uint nativeTokenUnlockedAmount
+        uint collateralTokenUnlockedAmount
     );
 
     event LockerSlashed(
@@ -356,18 +356,18 @@ interface ILockersManager {
 
     function addCollateral(
         address _lockerTargetAddress,
-        uint256 _addingNativeTokenAmount
+        uint256 _addingCollateralTokenAmount
     ) external payable returns (bool);
 
     function removeCollateral(
-        uint256 _removingNativeTokenAmount
+        uint256 _removingCollateralTokenAmount
     ) external payable returns (bool);
 
     function requestToBecomeLocker(
         bytes calldata _lockerLockingScript,
         address _collateralToken,
         uint _lockedTSTAmount,
-        uint _lockedNativeTokenAmount,
+        uint _lockedCollateralTokenAmount,
         ScriptTypes _lockerRescueType,
         bytes calldata _lockerRescueScript
     ) external payable returns (bool);

@@ -255,7 +255,7 @@ contract LockersManagerLogic is
     }
 
     /// @notice Update the price oracle
-    /// @dev This oracle is used to get the price of native token in BTC
+    /// @dev This oracle is used to get the price of token in BTC
     function setPriceOracle(
         address _priceOracle
     ) public override nonZeroAddress(_priceOracle) onlyOwner {
@@ -334,7 +334,7 @@ contract LockersManagerLogic is
     /// @dev This request may be approved by the owner
     /// @param _candidateLockingScript Locking script of the Locker. Users can use this script to lock BTC.
     /// @param _lockedTSTAmount TST bond amount
-    /// @param _lockedNativeTokenAmount TNT (target native token) bond amount
+    /// @param _lockedCollateralTokenAmount target collateral token bond amount
     /// @param _lockerRescueType Type of Locker's rescue script (e.g. P2SH)
     /// @param _lockerRescueScript Rescue script of Locker. In the case of liqudation, BTC is sent to this script.
     /// @return True if candidate added successfully
@@ -342,7 +342,7 @@ contract LockersManagerLogic is
         bytes calldata _candidateLockingScript,
         address _collateralToken,
         uint256 _lockedTSTAmount,
-        uint256 _lockedNativeTokenAmount,
+        uint256 _lockedCollateralTokenAmount,
         ScriptTypes _lockerRescueType,
         bytes calldata _lockerRescueScript
     ) external payable override nonZeroAddress(_collateralToken) nonReentrant returns (bool) {
@@ -355,7 +355,7 @@ contract LockersManagerLogic is
                 _collateralToken,
                 collateralDecimal[_collateralToken],
                 _lockedTSTAmount,
-                _lockedNativeTokenAmount,
+                _lockedCollateralTokenAmount,
                 _candidateLockingScript,
                 _lockerRescueType,
                 _lockerRescueScript
@@ -368,7 +368,7 @@ contract LockersManagerLogic is
             IERC20(_collateralToken).safeTransferFrom(
                 _msgSender(),
                 address(this),
-                _lockedNativeTokenAmount
+                _lockedCollateralTokenAmount
             );
         }
 
@@ -387,7 +387,7 @@ contract LockersManagerLogic is
             _candidateLockingScript,
             _lockedTSTAmount,
             _collateralToken,
-            _lockedNativeTokenAmount
+            _lockedCollateralTokenAmount
         );
 
         return true;
@@ -419,12 +419,12 @@ contract LockersManagerLogic is
         if (lockerCollateralToken[_msgSender()] == NATIVE_TOKEN) {
             Address.sendValue(
                 payable(_msgSender()),
-                lockerRequest.nativeTokenLockedAmount
+                lockerRequest.collateralTokenLockedAmount
             );
         } else {
             IERC20(lockerCollateralToken[_msgSender()]).transfer(
                 _msgSender(),
-                lockerRequest.nativeTokenLockedAmount
+                lockerRequest.collateralTokenLockedAmount
             );
         }
 
@@ -433,7 +433,7 @@ contract LockersManagerLogic is
             lockerRequest.lockerLockingScript,
             lockerRequest.TSTLockedAmount,
             lockerCollateralToken[_msgSender()],
-            lockerRequest.nativeTokenLockedAmount
+            lockerRequest.collateralTokenLockedAmount
         );
 
         delete lockerCollateralToken[_msgSender()];
@@ -476,7 +476,7 @@ contract LockersManagerLogic is
             lockersMapping[_lockerTargetAddress].lockerLockingScript,
             lockersMapping[_lockerTargetAddress].TSTLockedAmount,
             lockerCollateralToken[_lockerTargetAddress],
-            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
+            lockersMapping[_lockerTargetAddress].collateralTokenLockedAmount,
             _lockerReliabilityFactor,
             block.timestamp
         );
@@ -513,7 +513,7 @@ contract LockersManagerLogic is
             lockersMapping[_msgSender()].lockerLockingScript,
             lockersMapping[_msgSender()].TSTLockedAmount,
             lockerCollateralToken[_msgSender()],
-            lockersMapping[_msgSender()].nativeTokenLockedAmount,
+            lockersMapping[_msgSender()].collateralTokenLockedAmount,
             lockersMapping[_msgSender()].netMinted
         );
 
@@ -535,7 +535,7 @@ contract LockersManagerLogic is
             lockersMapping[_msgSender()].lockerLockingScript,
             lockersMapping[_msgSender()].TSTLockedAmount,
             lockerCollateralToken[_msgSender()],
-            lockersMapping[_msgSender()].nativeTokenLockedAmount,
+            lockersMapping[_msgSender()].collateralTokenLockedAmount,
             lockersMapping[_msgSender()].netMinted
         );
 
@@ -586,12 +586,12 @@ contract LockersManagerLogic is
         if (lockerCollateralToken[_msgSender()] == NATIVE_TOKEN) {
             Address.sendValue(
                 payable(_msgSender()),
-                _removingLocker.nativeTokenLockedAmount + _removingLocker.reservedNativeTokenForSlash
+                _removingLocker.collateralTokenLockedAmount + _removingLocker.reservedCollateralTokenForSlash
             );
         } else {
             IERC20(lockerCollateralToken[_msgSender()]).transfer(
                 _msgSender(),
-                _removingLocker.nativeTokenLockedAmount + _removingLocker.reservedNativeTokenForSlash
+                _removingLocker.collateralTokenLockedAmount + _removingLocker.reservedCollateralTokenForSlash
             );
         }
 
@@ -600,7 +600,7 @@ contract LockersManagerLogic is
             _removingLocker.lockerLockingScript,
             _removingLocker.TSTLockedAmount,
             lockerCollateralToken[_msgSender()],
-            _removingLocker.nativeTokenLockedAmount
+            _removingLocker.collateralTokenLockedAmount
         );
         return true;
     }
@@ -642,7 +642,7 @@ contract LockersManagerLogic is
     //     );
     //     Address.sendValue(
     //         payable(_lockerTargetAddress),
-    //         _removingLocker.nativeTokenLockedAmount
+    //         _removingLocker.collateralTokenLockedAmount
     //     );
 
     //     emit LockerRemoved(
@@ -650,7 +650,7 @@ contract LockersManagerLogic is
     //         _removingLocker.lockerLockingScript,
     //         _removingLocker.TSTLockedAmount,
     //         lockerCollateralToken[_lockerTargetAddress],
-    //         _removingLocker.nativeTokenLockedAmount
+    //         _removingLocker.collateralTokenLockedAmount
     //     );
     //     return true;
     // }
@@ -671,7 +671,7 @@ contract LockersManagerLogic is
         uint256 _amount,
         address _recipient
     ) external override nonReentrant whenNotPaused returns (bool) {
-        (uint256 equivalentNativeToken, uint256 rewardAmountInNativeToken) = LockersManagerLib.slashIdleLocker(
+        (uint256 equivalentCollateralToken, uint256 rewardAmountInCollateralToken) = LockersManagerLib.slashIdleLocker(
             lockersMapping[_lockerTargetAddress],
             lockerCollateralToken[_lockerTargetAddress],
             collateralDecimal[lockerCollateralToken[_lockerTargetAddress]],
@@ -683,31 +683,31 @@ contract LockersManagerLogic is
         if (lockerCollateralToken[_lockerTargetAddress] == NATIVE_TOKEN) {
             Address.sendValue(
                 payable(_recipient),
-                equivalentNativeToken - rewardAmountInNativeToken
+                equivalentCollateralToken - rewardAmountInCollateralToken
             );
             Address.sendValue(
                 payable(_slasher),
-                rewardAmountInNativeToken
+                rewardAmountInCollateralToken
             );
         } else {
             IERC20(lockerCollateralToken[_lockerTargetAddress]).transfer(
                 _recipient,
-                equivalentNativeToken - rewardAmountInNativeToken
+                equivalentCollateralToken - rewardAmountInCollateralToken
             );
             IERC20(lockerCollateralToken[_lockerTargetAddress]).transfer(
                 _slasher,
-                rewardAmountInNativeToken
+                rewardAmountInCollateralToken
             );
         }
 
         emit LockerSlashed(
             _lockerTargetAddress,
             lockerCollateralToken[_lockerTargetAddress],
-            rewardAmountInNativeToken,
+            rewardAmountInCollateralToken,
             _slasher,
             _amount,
             _recipient,
-            equivalentNativeToken,
+            equivalentCollateralToken,
             block.timestamp,
             true
         );
@@ -732,8 +732,8 @@ contract LockersManagerLogic is
     ) external override nonReentrant whenNotPaused returns (bool) {
         address collateralToken = lockerCollateralToken[_lockerTargetAddress];
         (
-            uint256 rewardInNativeToken,
-            uint256 neededNativeTokenForSlash
+            uint256 rewardInCollateralToken,
+            uint256 neededCollateralTokenForSlash
         ) = LockersManagerLib.slashThiefLocker(
                 lockersMapping[_lockerTargetAddress],
                 lockerReliabilityFactor[_lockerTargetAddress],
@@ -748,23 +748,23 @@ contract LockersManagerLogic is
         if (lockerCollateralToken[_lockerTargetAddress] == NATIVE_TOKEN) {
             Address.sendValue(
                 payable(_slasher),
-                rewardInNativeToken
+                rewardInCollateralToken
             );
         } else {
             IERC20(lockerCollateralToken[_lockerTargetAddress]).transfer(
                 _slasher,
-                rewardInNativeToken
+                rewardInCollateralToken
             );
         }
 
         emit LockerSlashed(
             _lockerTargetAddress,
             lockerCollateralToken[_lockerTargetAddress],
-            rewardInNativeToken,
+            rewardInCollateralToken,
             _slasher,
             _amount,
             address(this),
-            neededNativeTokenForSlash + rewardInNativeToken,
+            neededCollateralTokenForSlash + rewardInCollateralToken,
             block.timestamp,
             false
         );
@@ -804,8 +804,8 @@ contract LockersManagerLogic is
         ];
 
         // Updates TNT bond of locker
-        lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount =
-            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount -
+        lockersMapping[_lockerTargetAddress].collateralTokenLockedAmount =
+            lockersMapping[_lockerTargetAddress].collateralTokenLockedAmount -
             _collateralAmount;
 
         // transfer teleBTC from user
@@ -907,19 +907,19 @@ contract LockersManagerLogic is
     }
 
     /// @notice                                 Increases TNT collateral of the locker
-    /// @notice                                 Not neccessary to fill _addingNativeTokenAmount if collateral token is native token
+    /// @notice                                 Not neccessary to fill _addingCollateralTokenAmount if collateral token is native token
     /// @param _lockerTargetAddress             Locker's target chain address
-    /// @param _addingNativeTokenAmount         Amount of added collateral
+    /// @param _addingCollateralTokenAmount         Amount of added collateral
     /// @return                                 True if collateral is added successfully
     function addCollateral(
         address _lockerTargetAddress,
-        uint256 _addingNativeTokenAmount 
+        uint256 _addingCollateralTokenAmount 
     ) external payable override nonReentrant returns (bool) {
 
         LockersManagerLib.addCollateralHelper(
             libConstants,
             lockersMapping[_lockerTargetAddress],
-            _addingNativeTokenAmount,
+            _addingCollateralTokenAmount,
             lockerCollateralToken[_lockerTargetAddress]
         );
 
@@ -927,15 +927,15 @@ contract LockersManagerLogic is
             IERC20(lockerCollateralToken[_lockerTargetAddress]).safeTransferFrom(
                 _msgSender(),
                 address(this),
-                _addingNativeTokenAmount
+                _addingCollateralTokenAmount
             );
         }
 
         emit CollateralAdded(
             _lockerTargetAddress,
             lockerCollateralToken[_msgSender()],
-            _addingNativeTokenAmount,
-            lockersMapping[_lockerTargetAddress].nativeTokenLockedAmount,
+            _addingCollateralTokenAmount,
+            lockersMapping[_lockerTargetAddress].collateralTokenLockedAmount,
             block.timestamp
         );
 
@@ -943,13 +943,13 @@ contract LockersManagerLogic is
     }
 
     /// @notice                                 Decreases TNT collateral of the locker
-    /// @param _removingNativeTokenAmount       Amount of removed collateral
+    /// @param _removingCollateralTokenAmount       Amount of removed collateral
     /// @return                                 True if collateral is removed successfully
-    function removeCollateral(uint256 _removingNativeTokenAmount)
+    function removeCollateral(uint256 _removingCollateralTokenAmount)
         external
         payable
         override
-        nonZeroValue(_removingNativeTokenAmount)
+        nonZeroValue(_removingCollateralTokenAmount)
         nonReentrant
         returns (bool)
     {
@@ -960,25 +960,25 @@ contract LockersManagerLogic is
             lockerReliabilityFactor[_msgSender()],
             lockerCollateralToken[_msgSender()],
             collateralDecimal[lockerCollateralToken[_msgSender()]],
-            _removingNativeTokenAmount
+            _removingCollateralTokenAmount
         );
 
         if (isLockerActive(_msgSender())) revert LockerActive();
 
         if (lockerCollateralToken[_msgSender()] == NATIVE_TOKEN) {
-            Address.sendValue(payable(_msgSender()), _removingNativeTokenAmount);
+            Address.sendValue(payable(_msgSender()), _removingCollateralTokenAmount);
         } else {
             IERC20(lockerCollateralToken[_msgSender()]).safeTransfer(
                 _msgSender(),
-                _removingNativeTokenAmount
+                _removingCollateralTokenAmount
             );
         }
 
         emit CollateralRemoved(
             _msgSender(),
             lockerCollateralToken[_msgSender()],
-            _removingNativeTokenAmount,
-            lockersMapping[_msgSender()].nativeTokenLockedAmount,
+            _removingCollateralTokenAmount,
+            lockersMapping[_msgSender()].collateralTokenLockedAmount,
             block.timestamp
         );
 
