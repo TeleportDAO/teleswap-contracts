@@ -18,7 +18,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             from: deployer,
             log: true,
             skipIfAlreadyDeployed: true,
-            args: ["univ3", "0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000"]
+            args: ["univ3", "0xc7BdBecE57a8021a9a2137eeA1474BF978832D69", "0xc7BdBecE57a8021a9a2137eeA1474BF978832D69", "0xc7BdBecE57a8021a9a2137eeA1474BF978832D69"]
         });
 
         if (

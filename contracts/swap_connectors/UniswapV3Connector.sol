@@ -33,8 +33,8 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
     constructor(string memory _name, address _exchangeRouter, address _quoterAddress, address _middleToken) {
         name = _name;
         exchangeRouter = _exchangeRouter;
-        liquidityPoolFactory = IPeripheryImmutableState(exchangeRouter).factory();
-        wrappedNativeToken = IPeripheryImmutableState(exchangeRouter).WETH9();
+        // liquidityPoolFactory = IPeripheryImmutableState(exchangeRouter).factory();
+        // wrappedNativeToken = IPeripheryImmutableState(exchangeRouter).WETH9();
         quoterAddress = _quoterAddress;
         middleToken = wrappedNativeToken;
     }
