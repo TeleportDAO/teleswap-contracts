@@ -40,6 +40,9 @@ describe("CcTransferRouter", async () => {
     const PRICE_WITH_DISCOUNT_RATIO = 9500; // Means %95
     const STARTING_BLOCK_NUMBER = 1;
     const TREASURY = "0x0000000000000000000000000000000000000002";
+    const NATIVE_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000001"
+    const NATIVE_TOKEN_DECIMAL = 18;
+    const ONE_HOUNDRED_PERCENT = 10000;
 
     let THIRD_PARTY_PERCENTAGE_FEE = 10 // means 0.1%
     let THIRD_PARTY_ADDRESS = "0x0000000000000000000000000000000000000200"
@@ -222,7 +225,6 @@ describe("CcTransferRouter", async () => {
             mockPriceOracle.address,
             ONE_ADDRESS,
             0,
-            minRequiredTNTLockedAmount,
             collateralRatio,
             liquidationRatio,
             LOCKER_PERCENTAGE_FEE,
@@ -243,7 +245,7 @@ describe("CcTransferRouter", async () => {
 
         const teleportDAOToken = await erc20Factory.deploy(
             "TelePortDAOToken",
-            "TDT",
+            "TST",
             teleportTokenInitialSupply
         );
 
@@ -256,21 +258,20 @@ describe("CcTransferRouter", async () => {
     }
 
     async function addLockerToLockers(): Promise<void> {
+        let lockerlocker = lockers.connect(locker);
 
-        let lockerLocker = lockers.connect(locker)
-
-        await lockerLocker.requestToBecomeLocker(
-            // LOCKER1, // Public key of locker
-            LOCKER1_LOCKING_SCRIPT, // Public key hash of locker
+        await lockers.addCollateralToken(NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL)
+        await lockerlocker.requestToBecomeLocker(
+            LOCKER1_LOCKING_SCRIPT,
+            NATIVE_TOKEN_ADDRESS,
             0,
             minRequiredTNTLockedAmount,
             LOCKER_RESCUE_SCRIPT_P2PKH_TYPE,
             LOCKER_RESCUE_SCRIPT_P2PKH,
-            {value: minRequiredTNTLockedAmount}
-        )
+            { value: minRequiredTNTLockedAmount }
+        );
 
-        // Deployer (owner of lockers) adds locker to lockers
-        await lockers.addLocker(lockerAddress)
+        await lockers.addLocker(lockerAddress, ONE_HOUNDRED_PERCENT);
     }
 
     async function checkFees(
@@ -1074,23 +1075,23 @@ describe("CcTransferRouter", async () => {
         it("Reverts since given address is zero", async function () {
             await expect(
                 ccTransferRouter.setRelay(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
 
             await expect(
                 ccTransferRouter.setLockers(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
 
             await expect(
                 ccTransferRouter.setInstantRouter(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
 
             await expect(
                 ccTransferRouter.setTeleBTC(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
 
             await expect(
                 ccTransferRouter.setTreasury(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
         })
 
         

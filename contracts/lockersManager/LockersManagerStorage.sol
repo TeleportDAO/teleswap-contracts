@@ -14,13 +14,13 @@ abstract contract LockersManagerStorage is ILockersManager {
     address public constant NATIVE_TOKEN = address(1);
 
     // Public variables
-    address public override TeleportDAOToken;
+    address public override TeleportSystemToken;
     address public override teleBTC;
     address public override ccBurnRouter;
     address public override exchangeConnector;
     address public override priceOracle;
 
-    uint256 public override minRequiredTDTLockedAmount;
+    uint256 public override minRequiredTSTLockedAmount;
     uint256 public override minRequiredTNTLockedAmount;
     uint256 public override lockerPercentageFee;
     uint256 public override collateralRatio;
@@ -32,7 +32,7 @@ abstract contract LockersManagerStorage is ILockersManager {
     mapping(address => locker) public lockersMapping; // locker's target address -> locker structure
     mapping(address => uint256) public lockerInactivationTimestamp;
     mapping(address => bool) public lockerLeavingAcceptance;
-    mapping(bytes => address) public lockerTargetAddress; // locker's locking script -> locker's target address
+    mapping(bytes => address) public override getLockerTargetAddress; // locker's locking script -> locker's target address
     mapping(address => bool) public override minters;
     mapping(address => bool) public override burners;
 

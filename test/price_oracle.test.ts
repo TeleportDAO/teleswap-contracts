@@ -206,6 +206,7 @@ describe("PriceOracle", async () => {
             await revertProvider(signer1.provider, snapshotId);
         });
 
+        //works when run with only
         it("Removes an exchange router", async function () {
             await priceOracle.addExchangeConnector(deployerAddress, mockExchangeConnector.address);
             await priceOracle.addExchangeConnector(TWO_ADDRESS, mockExchangeConnector.address);
@@ -523,7 +524,7 @@ describe("PriceOracle", async () => {
                     erc20.address, 
                     _erc20.address
                 )
-            ).to.revertedWith("PriceOracle: zero price for input");
+            ).to.revertedWith("PriceOracle: zero price for input token");
 
             await mockFunctionsPriceProxy(roundID, price0, startedAt, timeStamp, answeredInRound, decimals0);
             await _mockFunctionsPriceProxy(roundID, 0, startedAt, timeStamp, answeredInRound, decimals1);
@@ -705,7 +706,7 @@ describe("PriceOracle", async () => {
                     erc20.address,
                     _erc20.address
                 )
-            ).to.be.revertedWith("");
+            ).to.be.revertedWith("PriceOracle: oracle not exist or up to date");
             // hardhat doesn't work properly but it works on testnet
             // https://mumbai.polygonscan.com/address/0x4b50faE17C1541D8299238300Ba760f7De27e9cc
         })
@@ -725,7 +726,7 @@ describe("PriceOracle", async () => {
                     erc20.address,
                     _erc20.address
                 )
-            ).to.be.revertedWith("");
+            ).to.be.revertedWith("PriceOracle: oracle not exist or up to date");
             // hardhat doesn't work properly but it works on testnet
             // https://mumbai.polygonscan.com/address/0x4b50faE17C1541D8299238300Ba760f7De27e9cc
         })
