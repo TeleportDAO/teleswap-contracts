@@ -16,7 +16,7 @@ abstract contract LockersManagerStorage is ILockersManager {
     // Public variables
     address public override TeleportSystemToken;
     address public override teleBTC;
-    address public override ccBurnRouter;
+    address public override burnRouter;
     address public override exchangeConnector;
     address public override priceOracle;
 

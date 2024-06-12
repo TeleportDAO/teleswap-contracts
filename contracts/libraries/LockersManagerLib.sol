@@ -6,7 +6,7 @@ import "../lockersManager/interfaces/ILockersManager.sol";
 import "hardhat/console.sol";
 
 library LockersManagerLib {
-    error NotCCBurn();
+    error NotBurnRouter();
     error ZeroValue();
     error ZeroAddress();
 
@@ -162,8 +162,8 @@ library LockersManagerLib {
         external
         returns (uint256 rewardInCollateralToken, uint256 neededCollateralTokenForSlash)
     {
-        if (msg.sender != libParams.ccBurnRouter)
-            revert NotCCBurn();
+        if (msg.sender != libParams.burnRouter)
+            revert NotBurnRouter();
 
         require(
             theLocker.isLocker,
@@ -224,8 +224,8 @@ library LockersManagerLib {
         uint256 _rewardAmount,
         uint256 _amount
     ) external returns (uint256 equivalentCollateralToken, uint256 rewardAmountInCollateralToken) {
-        if (msg.sender != libParams.ccBurnRouter)
-            revert NotCCBurn();
+        if (msg.sender != libParams.burnRouter)
+            revert NotBurnRouter();
 
         require(
             theLocker.isLocker,

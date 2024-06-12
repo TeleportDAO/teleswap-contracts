@@ -40,7 +40,7 @@ contract LockersManagerLogic is
     function initialize(
         address _teleBTC,
         address _priceOracle,
-        address _ccBurnRouter,
+        address _burnRouter,
         uint256 _minRequiredTSTLockedAmount,
         uint256 _collateralRatio,
         uint256 _liquidationRatio,
@@ -52,7 +52,7 @@ contract LockersManagerLogic is
         PausableUpgradeable.__Pausable_init();
 
         setTeleBTC(_teleBTC);
-        setCCBurnRouter(_ccBurnRouter);
+        setBurnRouter(_burnRouter);
         setPriceOracle(_priceOracle);
         setMinRequiredTSTLockedAmount(_minRequiredTSTLockedAmount);
         setCollateralRatio(_collateralRatio);
@@ -94,63 +94,45 @@ contract LockersManagerLogic is
 
     /// @notice Whitelist new collateral token with decimal
     /// @dev Set decimal to 0 to remove token from whitelist
-    function addCollateralToken (address _token, uint _decimal) external
-        override
-        nonZeroAddress(_token)
-        onlyOwner 
-    {
+    function addCollateralToken(
+        address _token,
+        uint _decimal
+    ) external override nonZeroAddress(_token) onlyOwner {
         collateralDecimal[_token] = _decimal;
         emit NewCollateralToken(_token, _decimal);
     }
 
     /// @notice Give an account access to mint
-    function addMinter(address _account)
-        external
-        override
-        nonZeroAddress(_account)
-        onlyOwner
-    {
-        if (minters[_account])
-            revert AlreadyHasRole();
-            
+    function addMinter(
+        address _account
+    ) external override nonZeroAddress(_account) onlyOwner {
+        if (minters[_account]) revert AlreadyHasRole();
+
         minters[_account] = true;
         emit MinterAdded(_account);
     }
 
     /// @notice Remove an account's access to mint
-    function removeMinter(address _account)
-        external
-        override
-        onlyOwner
-    {
-        if (!minters[_account])
-            revert NotMinter();
-            
+    function removeMinter(address _account) external override onlyOwner {
+        if (!minters[_account]) revert NotMinter();
+
         minters[_account] = false;
         emit MinterRemoved(_account);
     }
 
     /// @notice Give an account access to burn
-    function addBurner(address _account)
-        public
-        override
-        nonZeroAddress(_account)
-        onlyOwner
-    {
-        if (burners[_account])
-            revert AlreadyHasRole();
+    function addBurner(
+        address _account
+    ) public override nonZeroAddress(_account) onlyOwner {
+        if (burners[_account]) revert AlreadyHasRole();
 
         burners[_account] = true;
         emit BurnerAdded(_account);
     }
 
     /// @notice Remove an account's access to burn
-    function removeBurner(address _account)
-        public
-        override
-        onlyOwner
-    {
-        // if (!isBurner(_account)) 
+    function removeBurner(address _account) public override onlyOwner {
+        // if (!isBurner(_account))
         //     revert NotBurner();
         burners[_account] = false;
         emit BurnerRemoved(_account);
@@ -173,15 +155,12 @@ contract LockersManagerLogic is
         bytes calldata _lockerLockingScript
     ) external view override returns (bool) {
         return
-            lockersMapping[getLockerTargetAddress[_lockerLockingScript]].isLocker;
+            lockersMapping[getLockerTargetAddress[_lockerLockingScript]]
+                .isLocker;
     }
 
     /// @notice Update TST contract address
-    function setTST(address _TST)
-        public
-        override
-        onlyOwner
-    {
+    function setTST(address _TST) public override onlyOwner {
         emit NewTST(TeleportSystemToken, _TST);
         TeleportSystemToken = _TST;
         libParams.TeleportSystemToken = TeleportSystemToken;
@@ -189,11 +168,9 @@ contract LockersManagerLogic is
 
     /// @notice Update locker percentage fee
     /// @dev This fee is taken by Locker for every minting or burning
-    function setLockerPercentageFee(uint256 _lockerPercentageFee)
-        public
-        override
-        onlyOwner
-    {
+    function setLockerPercentageFee(
+        uint256 _lockerPercentageFee
+    ) public override onlyOwner {
         if (_lockerPercentageFee > MAX_LOCKER_FEE) revert InvalidValue();
         emit NewLockerPercentageFee(lockerPercentageFee, _lockerPercentageFee);
         lockerPercentageFee = _lockerPercentageFee;
@@ -202,12 +179,11 @@ contract LockersManagerLogic is
 
     /// @notice Update price with discount ratio
     /// @dev This ratio gives discount to users who participate in Locker liquidation
-    function setPriceWithDiscountRatio(uint256 _priceWithDiscountRatio)
-        public
-        override
-        onlyOwner
-    {
-        if (_priceWithDiscountRatio > ONE_HUNDRED_PERCENT) revert InvalidValue();
+    function setPriceWithDiscountRatio(
+        uint256 _priceWithDiscountRatio
+    ) public override onlyOwner {
+        if (_priceWithDiscountRatio > ONE_HUNDRED_PERCENT)
+            revert InvalidValue();
         emit NewPriceWithDiscountRatio(
             priceWithDiscountRatio,
             _priceWithDiscountRatio
@@ -240,14 +216,14 @@ contract LockersManagerLogic is
     }
 
     /// @notice Update burn router address
-    function setCCBurnRouter(
-        address _ccBurnRouter
-    ) public override nonZeroAddress(_ccBurnRouter) onlyOwner {
-        emit NewCCBurnRouter(ccBurnRouter, _ccBurnRouter);
-        removeBurner(ccBurnRouter);
-        ccBurnRouter = _ccBurnRouter;
-        libParams.ccBurnRouter = ccBurnRouter;
-        addBurner(ccBurnRouter);
+    function setBurnRouter(
+        address _burnRouter
+    ) public override nonZeroAddress(_burnRouter) onlyOwner {
+        emit NewBurnRouter(burnRouter, _burnRouter);
+        removeBurner(burnRouter);
+        burnRouter = _burnRouter;
+        libParams.burnRouter = burnRouter;
+        addBurner(burnRouter);
     }
 
     /// @notice Update wrapped BTC address
@@ -261,32 +237,32 @@ contract LockersManagerLogic is
 
     /// @notice Update locker reliability factor
     /// @dev This ratio is used as a helper to calculate the maximum mintable TeleBTC by a Locker
-    function setLockerReliabilityFactor(address lockerTargetAddress, uint reliabilityFactor)
-        public
-        override
-        nonZeroValue(reliabilityFactor)
-        onlyOwner
-    {
-        emit NewReliabilityFactor(lockerTargetAddress, lockerReliabilityFactor[lockerTargetAddress], reliabilityFactor);
+    function setLockerReliabilityFactor(
+        address lockerTargetAddress,
+        uint reliabilityFactor
+    ) public override nonZeroValue(reliabilityFactor) onlyOwner {
+        emit NewReliabilityFactor(
+            lockerTargetAddress,
+            lockerReliabilityFactor[lockerTargetAddress],
+            reliabilityFactor
+        );
         lockerReliabilityFactor[lockerTargetAddress] = reliabilityFactor;
     }
 
     /// @notice Update locker reliability factor
     /// @dev This ratio is used as a helper to calculate the maximum mintable TeleBTC by a Locker
-    function setLockerCollateralToken(address lockerTargetAddress, address collateralToken)
-        public
-        onlyOwner
-    {
+    function setLockerCollateralToken(
+        address lockerTargetAddress,
+        address collateralToken
+    ) public onlyOwner {
         lockerCollateralToken[lockerTargetAddress] = collateralToken;
     }
 
     /// @notice Update collateral ratio
     /// @dev This ratio is used to calculate the maximum mintable TeleBTC by a Locker
-    function setCollateralRatio(uint256 _collateralRatio)
-        public
-        override
-        onlyOwner
-    {
+    function setCollateralRatio(
+        uint256 _collateralRatio
+    ) public override onlyOwner {
         if (_collateralRatio <= liquidationRatio) revert InvalidValue();
         emit NewCollateralRatio(collateralRatio, _collateralRatio);
         collateralRatio = _collateralRatio;
@@ -294,11 +270,9 @@ contract LockersManagerLogic is
     }
 
     /// @notice Update liquidation ratio
-    function setLiquidationRatio(uint256 _liquidationRatio)
-        public
-        override
-        onlyOwner
-    {
+    function setLiquidationRatio(
+        uint256 _liquidationRatio
+    ) public override onlyOwner {
         if (collateralRatio <= _liquidationRatio) revert InvalidValue();
         emit NewLiquidationRatio(liquidationRatio, _liquidationRatio);
         liquidationRatio = _liquidationRatio;
@@ -320,10 +294,17 @@ contract LockersManagerLogic is
         uint256 _lockedCollateralTokenAmount,
         ScriptTypes _lockerRescueType,
         bytes calldata _lockerRescueScript
-    ) external payable override nonZeroAddress(_collateralToken) nonReentrant returns (bool) {
+    )
+        external
+        payable
+        override
+        nonZeroAddress(_collateralToken)
+        nonReentrant
+        returns (bool)
+    {
         LockersManagerLib.requestToBecomeLocker(
             lockersMapping,
-            becomeLockerArguments(  
+            becomeLockerArguments(
                 libConstants,
                 libParams,
                 getLockerTargetAddress[_candidateLockingScript],
@@ -338,7 +319,7 @@ contract LockersManagerLogic is
         );
 
         lockerCollateralToken[_msgSender()] = _collateralToken;
-        
+
         if (_collateralToken != NATIVE_TOKEN) {
             IERC20(_collateralToken).safeTransferFrom(
                 _msgSender(),
@@ -372,8 +353,7 @@ contract LockersManagerLogic is
     /// @dev Send back TST and collateral to the candidate
     /// @return True if the candidate is removed successfully
     function revokeRequest() external override nonReentrant returns (bool) {
-        if (!lockersMapping[_msgSender()].isCandidate)
-            revert NotRequested();
+        if (!lockersMapping[_msgSender()].isCandidate) revert NotRequested();
 
         // Loads locker's information
         locker memory lockerRequest = lockersMapping[_msgSender()];
@@ -390,7 +370,7 @@ contract LockersManagerLogic is
                 lockerRequest.TSTLockedAmount
             );
         }
-        
+
         if (lockerCollateralToken[_msgSender()] == NATIVE_TOKEN) {
             Address.sendValue(
                 payable(_msgSender()),
@@ -420,7 +400,10 @@ contract LockersManagerLogic is
     /// @dev Only owner can call this. The isCandidate is also set to false.
     /// @param _lockerTargetAddress Locker's target chain address
     /// @return True if the candidate is added successfully
-    function addLocker(address _lockerTargetAddress, uint256 _lockerReliabilityFactor)
+    function addLocker(
+        address _lockerTargetAddress,
+        uint256 _lockerReliabilityFactor
+    )
         external
         override
         nonZeroAddress(_lockerTargetAddress)
@@ -429,7 +412,7 @@ contract LockersManagerLogic is
         onlyOwner
         returns (bool)
     {
-        if(!lockersMapping[_lockerTargetAddress].isCandidate)
+        if (!lockersMapping[_lockerTargetAddress].isCandidate)
             revert NotRequested();
 
         // Updates locker's status
@@ -444,7 +427,9 @@ contract LockersManagerLogic is
             lockersMapping[_lockerTargetAddress].lockerLockingScript
         ] = _lockerTargetAddress;
 
-        lockerReliabilityFactor[_lockerTargetAddress] = _lockerReliabilityFactor;
+        lockerReliabilityFactor[
+            _lockerTargetAddress
+        ] = _lockerReliabilityFactor;
 
         emit LockerAdded(
             _lockerTargetAddress,
@@ -470,8 +455,7 @@ contract LockersManagerLogic is
         nonReentrant
         returns (bool)
     {
-        if (!lockersMapping[_msgSender()].isLocker)
-            revert NotLocker();
+        if (!lockersMapping[_msgSender()].isLocker) revert NotLocker();
 
         require(
             lockerInactivationTimestamp[_msgSender()] == 0,
@@ -500,8 +484,7 @@ contract LockersManagerLogic is
     ///      Note: lockerInactivationTimestamp = 0 means that the Locker is active
     /// @return True if activated successfully
     function requestActivation() external override nonReentrant returns (bool) {
-        if (!lockersMapping[_msgSender()].isLocker)
-            revert NotLocker();
+        if (!lockersMapping[_msgSender()].isLocker) revert NotLocker();
 
         lockerInactivationTimestamp[_msgSender()] = 0;
 
@@ -526,8 +509,7 @@ contract LockersManagerLogic is
     function selfRemoveLocker() external override nonReentrant returns (bool) {
         locker memory _removingLocker = lockersMapping[_msgSender()];
 
-        if (!_removingLocker.isLocker)
-            revert NotLocker();
+        if (!_removingLocker.isLocker) revert NotLocker();
 
         if (isLockerActive(_msgSender())) revert LockerActive();
 
@@ -539,8 +521,7 @@ contract LockersManagerLogic is
         );
         ITeleBTC(teleBTC).burn(_removingLocker.netMinted);
 
-        if(_removingLocker.slashingTeleBTCAmount != 0)
-            revert InvalidValue();
+        if (_removingLocker.slashingTeleBTCAmount != 0) revert InvalidValue();
 
         // Remove locker from lockersMapping
 
@@ -561,12 +542,14 @@ contract LockersManagerLogic is
         if (lockerCollateralToken[_msgSender()] == NATIVE_TOKEN) {
             Address.sendValue(
                 payable(_msgSender()),
-                _removingLocker.collateralTokenLockedAmount + _removingLocker.reservedCollateralTokenForSlash
+                _removingLocker.collateralTokenLockedAmount +
+                    _removingLocker.reservedCollateralTokenForSlash
             );
         } else {
             IERC20(lockerCollateralToken[_msgSender()]).transfer(
                 _msgSender(),
-                _removingLocker.collateralTokenLockedAmount + _removingLocker.reservedCollateralTokenForSlash
+                _removingLocker.collateralTokenLockedAmount +
+                    _removingLocker.reservedCollateralTokenForSlash
             );
         }
 
@@ -646,24 +629,24 @@ contract LockersManagerLogic is
         uint256 _amount,
         address _recipient
     ) external override nonReentrant whenNotPaused returns (bool) {
-        (uint256 equivalentCollateralToken, uint256 rewardAmountInCollateralToken) = LockersManagerLib.slashIdleLocker(
-            lockersMapping[_lockerTargetAddress],
-            lockerCollateralToken[_lockerTargetAddress],
-            collateralDecimal[lockerCollateralToken[_lockerTargetAddress]],
-            libParams,
-            _rewardAmount,
-            _amount
-        );
+        (
+            uint256 equivalentCollateralToken,
+            uint256 rewardAmountInCollateralToken
+        ) = LockersManagerLib.slashIdleLocker(
+                lockersMapping[_lockerTargetAddress],
+                lockerCollateralToken[_lockerTargetAddress],
+                collateralDecimal[lockerCollateralToken[_lockerTargetAddress]],
+                libParams,
+                _rewardAmount,
+                _amount
+            );
 
         if (lockerCollateralToken[_lockerTargetAddress] == NATIVE_TOKEN) {
             Address.sendValue(
                 payable(_recipient),
                 equivalentCollateralToken - rewardAmountInCollateralToken
             );
-            Address.sendValue(
-                payable(_slasher),
-                rewardAmountInCollateralToken
-            );
+            Address.sendValue(payable(_slasher), rewardAmountInCollateralToken);
         } else {
             IERC20(lockerCollateralToken[_lockerTargetAddress]).transfer(
                 _recipient,
@@ -721,10 +704,7 @@ contract LockersManagerLogic is
             );
 
         if (lockerCollateralToken[_lockerTargetAddress] == NATIVE_TOKEN) {
-            Address.sendValue(
-                payable(_slasher),
-                rewardInCollateralToken
-            );
+            Address.sendValue(payable(_slasher), rewardInCollateralToken);
         } else {
             IERC20(lockerCollateralToken[_lockerTargetAddress]).transfer(
                 _slasher,
@@ -791,8 +771,8 @@ contract LockersManagerLogic is
         );
 
         // Burns TeleBTC for locker rescue script
-        IERC20(teleBTC).approve(ccBurnRouter, neededTeleBTC);
-        IBurnRouter(ccBurnRouter).unwrap(
+        IERC20(teleBTC).approve(burnRouter, neededTeleBTC);
+        IBurnRouter(burnRouter).unwrap(
             neededTeleBTC,
             theLiquidatingLocker.lockerRescueScript,
             theLiquidatingLocker.lockerRescueType,
@@ -801,10 +781,7 @@ contract LockersManagerLogic is
         );
 
         if (lockerCollateralToken[_lockerTargetAddress] == NATIVE_TOKEN) {
-            Address.sendValue(
-                payable(_msgSender()),
-                _collateralAmount
-            );
+            Address.sendValue(payable(_msgSender()), _collateralAmount);
         } else {
             IERC20(lockerCollateralToken[_lockerTargetAddress]).transfer(
                 _msgSender(),
@@ -849,8 +826,8 @@ contract LockersManagerLogic is
         );
 
         // Burns user's TeleBTC
-        if (!
-            ITeleBTC(teleBTC).transferFrom(
+        if (
+            !ITeleBTC(teleBTC).transferFrom(
                 _msgSender(),
                 address(this),
                 neededTeleBTC
@@ -858,9 +835,9 @@ contract LockersManagerLogic is
         ) revert TransferFailed();
 
         ITeleBTC(teleBTC).burn(neededTeleBTC);
-        
+
         // Sends bought collateral to user
-         if (lockerCollateralToken[_lockerTargetAddress] == NATIVE_TOKEN) {
+        if (lockerCollateralToken[_lockerTargetAddress] == NATIVE_TOKEN) {
             Address.sendValue(payable(_msgSender()), _collateralAmount);
         } else {
             IERC20(lockerCollateralToken[_lockerTargetAddress]).transfer(
@@ -888,9 +865,8 @@ contract LockersManagerLogic is
     /// @return True if collateral is added successfully
     function addCollateral(
         address _lockerTargetAddress,
-        uint256 _addingCollateralTokenAmount 
+        uint256 _addingCollateralTokenAmount
     ) external payable override nonReentrant returns (bool) {
-
         LockersManagerLib.addCollateralHelper(
             libConstants,
             lockersMapping[_lockerTargetAddress],
@@ -899,11 +875,12 @@ contract LockersManagerLogic is
         );
 
         if (lockerCollateralToken[_lockerTargetAddress] != NATIVE_TOKEN) {
-            IERC20(lockerCollateralToken[_lockerTargetAddress]).safeTransferFrom(
-                _msgSender(),
-                address(this),
-                _addingCollateralTokenAmount
-            );
+            IERC20(lockerCollateralToken[_lockerTargetAddress])
+                .safeTransferFrom(
+                    _msgSender(),
+                    address(this),
+                    _addingCollateralTokenAmount
+                );
         }
 
         emit CollateralAdded(
@@ -920,7 +897,9 @@ contract LockersManagerLogic is
     /// @notice Decreases collateral of the locker
     /// @param _removingCollateralTokenAmount Amount of removed collateral
     /// @return True if collateral is removed successfully
-    function removeCollateral(uint256 _removingCollateralTokenAmount)
+    function removeCollateral(
+        uint256 _removingCollateralTokenAmount
+    )
         external
         payable
         override
@@ -941,7 +920,10 @@ contract LockersManagerLogic is
         if (isLockerActive(_msgSender())) revert LockerActive();
 
         if (lockerCollateralToken[_msgSender()] == NATIVE_TOKEN) {
-            Address.sendValue(payable(_msgSender()), _removingCollateralTokenAmount);
+            Address.sendValue(
+                payable(_msgSender()),
+                _removingCollateralTokenAmount
+            );
         } else {
             IERC20(lockerCollateralToken[_msgSender()]).safeTransfer(
                 _msgSender(),
@@ -982,9 +964,8 @@ contract LockersManagerLogic is
         address _lockerTargetAddress = getLockerTargetAddress[
             _lockerLockingScript
         ];
-            
-        if (!isLockerActive(_lockerTargetAddress))
-            revert LockerNotActive();
+
+        if (!isLockerActive(_lockerTargetAddress)) revert LockerNotActive();
 
         LockersManagerLib.mintHelper(
             lockersMapping[_lockerTargetAddress],
@@ -1019,25 +1000,21 @@ contract LockersManagerLogic is
 
     function getLockerCapacity(
         bytes calldata _lockerLockingScript
-    )
-        external
-        view
-        override
-        returns (uint256 theLockerCapacity)
-    {
+    ) external view override returns (uint256 theLockerCapacity) {
         address _lockerTargetAddress = getLockerTargetAddress[
             _lockerLockingScript
         ];
 
-        return LockersManagerLib.getLockerCapacity(
-            lockersMapping[_lockerTargetAddress],
-            libConstants,
-            libParams,
-            _lockerTargetAddress,
-            lockerCollateralToken[_lockerTargetAddress],
-            collateralDecimal[lockerCollateralToken[_lockerTargetAddress]],
-            lockerReliabilityFactor[_lockerTargetAddress]
-        );
+        return
+            LockersManagerLib.getLockerCapacity(
+                lockersMapping[_lockerTargetAddress],
+                libConstants,
+                libParams,
+                _lockerTargetAddress,
+                lockerCollateralToken[_lockerTargetAddress],
+                collateralDecimal[lockerCollateralToken[_lockerTargetAddress]],
+                lockerReliabilityFactor[_lockerTargetAddress]
+            );
     }
 
     /// @notice Burn teleBTC of an account
@@ -1062,32 +1039,29 @@ contract LockersManagerLogic is
 
         // Transfers teleBTC from user
 
-        if (!
-            ITeleBTC(teleBTC).transferFrom(
+        if (
+            !ITeleBTC(teleBTC).transferFrom(
                 _msgSender(),
                 address(this),
                 _amount
             )
         ) revert TransferFailed();
-        
+
         uint256 lockerFee = (_amount * lockerPercentageFee) / MAX_LOCKER_FEE;
         uint256 remainedAmount = _amount - lockerFee;
         uint256 netMinted = lockersMapping[_lockerTargetAddress].netMinted;
 
-        if (netMinted < remainedAmount)
-            revert InsufficientFunds();
+        if (netMinted < remainedAmount) revert InsufficientFunds();
 
         lockersMapping[_lockerTargetAddress].netMinted =
             netMinted -
             remainedAmount;
 
         // Burns teleBTC and sends rest of it to locker
-        if (!ITeleBTC(teleBTC).burn(remainedAmount))
-            revert BurnFailed();
-        
+        if (!ITeleBTC(teleBTC).burn(remainedAmount)) revert BurnFailed();
+
         if (!ITeleBTC(teleBTC).transfer(_lockerTargetAddress, lockerFee))
             revert TransferFailed();
-
 
         emit BurnByLocker(
             _lockerTargetAddress,
@@ -1110,12 +1084,9 @@ contract LockersManagerLogic is
     ///      3. Removing locker
     /// @param _lockerTargetAddress Address of locker on the target chain
     /// @return True if the locker is active
-    function isLockerActive(address _lockerTargetAddress)
-        public
-        view
-        override
-        returns (bool)
-    {
+    function isLockerActive(
+        address _lockerTargetAddress
+    ) public view override returns (bool) {
         if (lockerInactivationTimestamp[_lockerTargetAddress] == 0) {
             return true;
         } else if (
@@ -1128,19 +1099,17 @@ contract LockersManagerLogic is
     }
 
     /// @notice Return the health factor of locker
-    function getLockersHealthFactor (
+    function getLockerHealthFactor(
         address _lockerTargetAddress
-    )   public
-        view
-        override
-        returns (uint256) {
-        return LockersManagerLib.calculateHealthFactor(
-            lockersMapping[_lockerTargetAddress],
-            libConstants,
-            libParams,
-            lockerCollateralToken[_lockerTargetAddress],
-            collateralDecimal[lockerCollateralToken[_lockerTargetAddress]],
-            lockerReliabilityFactor[_lockerTargetAddress]
-        );
+    ) public view override returns (uint256) {
+        return
+            LockersManagerLib.calculateHealthFactor(
+                lockersMapping[_lockerTargetAddress],
+                libConstants,
+                libParams,
+                lockerCollateralToken[_lockerTargetAddress],
+                collateralDecimal[lockerCollateralToken[_lockerTargetAddress]],
+                lockerReliabilityFactor[_lockerTargetAddress]
+            );
     }
 }

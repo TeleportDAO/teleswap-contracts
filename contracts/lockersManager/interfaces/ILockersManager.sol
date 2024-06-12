@@ -42,7 +42,7 @@ interface ILockersManager {
     struct lockersLibParam {
         address TeleportSystemToken;
         address teleBTC;
-        address ccBurnRouter;
+        address burnRouter;
         address exchangeConnector;
         address priceOracle;
         uint256 minRequiredTSTLockedAmount;
@@ -221,7 +221,7 @@ interface ILockersManager {
 
     event NewPriceOracle(address oldPriceOracle, address newPriceOracle);
 
-    event NewCCBurnRouter(address oldCCBurnRouter, address newCCBurnRouter);
+    event NewBurnRouter(address oldBurnRouter, address newBurnRouter);
 
     event NewTST(address oldTST, address newTST);
 
@@ -243,7 +243,7 @@ interface ILockersManager {
 
     function teleBTC() external view returns (address);
 
-    function ccBurnRouter() external view returns (address);
+    function burnRouter() external view returns (address);
 
     function exchangeConnector() external view returns (address);
 
@@ -277,7 +277,7 @@ interface ILockersManager {
         address _lockerTargetAddress
     ) external view returns (bool);
 
-    function getLockersHealthFactor(
+    function getLockerHealthFactor(
         address _lockerTargetAddress
     ) external view returns (uint256);
 
@@ -326,7 +326,7 @@ interface ILockersManager {
 
     function setPriceOracle(address _priceOracle) external;
 
-    function setCCBurnRouter(address _ccBurnRouter) external;
+    function setBurnRouter(address _burnRouter) external;
 
     function setTeleBTC(address _teleBTC) external;
 

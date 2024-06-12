@@ -76,7 +76,7 @@ describe("Lockers", async () => {
     // Mock contracts
     let mockExchangeConnector: MockContract;
     let mockPriceOracle: MockContract;
-    let mockCCBurnRouter: MockContract;
+    let mockBurnRouter: MockContract;
 
     let exchangeToken: ERC20;
 
@@ -109,12 +109,12 @@ describe("Lockers", async () => {
             priceOracleContract.abi
         );
 
-        const ccBurnRouterContract = await deployments.getArtifact(
+        const burnRouterContract = await deployments.getArtifact(
             "BurnRouterLogic"
         );
-        mockCCBurnRouter = await deployMockContract(
+        mockBurnRouter = await deployMockContract(
             deployer,
-            ccBurnRouterContract.abi
+            burnRouterContract.abi
         );
 
         // Deploys lockers contract
@@ -155,8 +155,8 @@ describe("Lockers", async () => {
 
         await lockers.setTST(teleportSystemToken.address)
 
-        // Sets ccBurnRouter address
-        // await lockers.setCCBurnRouter(ccBurnSimulatorAddress)
+        // Sets burnRouter address
+        // await lockers.setBurnRouter(ccBurnSimulatorAddress)
 
         await teleBTC.addMinter(deployerAddress)
 
@@ -773,39 +773,39 @@ describe("Lockers", async () => {
         })
     })
 
-    describe("#setCCBurnRouter",async () => {
+    describe("#setBurnRouter",async () => {
 
         it("cc burn router can't be zero address", async function () {
 
             await expect(
-                lockers.setCCBurnRouter(
+                lockers.setBurnRouter(
                     ZERO_ADDRESS
                 )
             ).to.be.revertedWith("ZeroAddress")
         })
 
-        it("non owners can't call setCCBurnRouter", async function () {
+        it("non owners can't call setBurnRouter", async function () {
             let lockerSigner1 = lockers.connect(signer1)
 
             await expect(
-                lockerSigner1.setCCBurnRouter(
+                lockerSigner1.setBurnRouter(
                     ONE_ADDRESS
                 )
             ).to.be.revertedWith("Ownable: caller is not the owner")
         })
 
-        it("only owner can call setCCBurnRouter", async function () {
+        it("only owner can call setBurnRouter", async function () {
 
             await expect(
-                await lockers.setCCBurnRouter(
+                await lockers.setBurnRouter(
                     ONE_ADDRESS
                 )
             ).to.emit(
-                lockers, "NewCCBurnRouter"
+                lockers, "NewBurnRouter"
             ).withArgs(ccBurnSimulatorAddress, ONE_ADDRESS);
 
             expect(
-                await lockers.ccBurnRouter()
+                await lockers.burnRouter()
             ).to.equal(ONE_ADDRESS)
         })
     })
@@ -958,7 +958,7 @@ describe("Lockers", async () => {
             ).to.be.revertedWith("ZeroAddress")
 
             await expect(
-                lockers.setCCBurnRouter(
+                lockers.setBurnRouter(
                     ZERO_ADDRESS
                 )
             ).to.be.revertedWith("ZeroAddress")
@@ -1826,7 +1826,7 @@ describe("Lockers", async () => {
                     btcAmountToSlash,
                     ccBurnSimulatorAddress
                 )
-            ).to.be.revertedWith("NotCCBurn")
+            ).to.be.revertedWith("NotBurnRouter")
         })
 
         it("slash locker reverts when the target address is not locker", async function () {
@@ -2039,7 +2039,7 @@ describe("Lockers", async () => {
                     deployerAddress,
                     btcAmountToSlash
                 )
-            ).to.be.revertedWith("NotCCBurn")
+            ).to.be.revertedWith("NotBurnRouter")
         })
 
         it("slash locker reverts when the target address is not locker", async function () {
@@ -2953,8 +2953,8 @@ describe("Lockers", async () => {
 
         it("successfully liquidate the locker", async function () {
 
-            await lockers.setCCBurnRouter(mockCCBurnRouter.address);
-            await mockCCBurnRouter.mock.unwrap.returns(8000);
+            await lockers.setBurnRouter(mockBurnRouter.address);
+            await mockBurnRouter.mock.unwrap.returns(8000);
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
 
@@ -2997,7 +2997,7 @@ describe("Lockers", async () => {
             let collateralAmount = BigNumber.from(10).pow(18).mul(2)
 
 
-            let oldHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
+            let oldHealthFactor = await lockers.getLockerHealthFactor(signer1Address)
             await expect(Number(oldHealthFactor)).to.be.lessThan(ONE_HOUNDRED_PERCENT)
 
             let neededTeleBTC = await calculateNeededTeleBTC(collateralAmount, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL, 7000000)
@@ -3028,15 +3028,15 @@ describe("Lockers", async () => {
             await teleBTCSigner2.approve(lockers.address, neededTeleBTC)
             await lockerSigner2.burn(LOCKER1_PUBKEY__HASH, neededTeleBTC)
 
-            let newHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
+            let newHealthFactor = await lockers.getLockerHealthFactor(signer1Address)
             await expect (Number(newHealthFactor)).to.be.greaterThan(Number(oldHealthFactor))
 
         });
 
         it("successfully liquidate the locker (exchange token)", async function () {
 
-            await lockers.setCCBurnRouter(mockCCBurnRouter.address);
-            await mockCCBurnRouter.mock.unwrap.returns(8000);
+            await lockers.setBurnRouter(mockBurnRouter.address);
+            await mockBurnRouter.mock.unwrap.returns(8000);
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
 
@@ -3079,7 +3079,7 @@ describe("Lockers", async () => {
             await mockPriceOracle.mock.equivalentOutputAmount.returns(3000000);
             let collateralAmount = BigNumber.from(10).pow(18).mul(2)
 
-            let oldHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
+            let oldHealthFactor = await lockers.getLockerHealthFactor(signer1Address)
             await expect(Number(oldHealthFactor)).to.be.lessThan(ONE_HOUNDRED_PERCENT)
 
             let neededTeleBTC = await calculateNeededTeleBTC(collateralAmount, NATIVE_TOKEN_ADDRESS, NATIVE_TOKEN_DECIMAL, 3000000)
@@ -3110,15 +3110,15 @@ describe("Lockers", async () => {
             await teleBTCSigner2.approve(lockers.address, neededTeleBTC)
             await lockerSigner2.burn(LOCKER1_PUBKEY__HASH, neededTeleBTC)
 
-            let newHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
+            let newHealthFactor = await lockers.getLockerHealthFactor(signer1Address)
             await expect (Number(newHealthFactor)).to.be.greaterThan(Number(oldHealthFactor))
 
         });
 
         it("only can liquidate locker till it reaches upper health factor", async function () {
                 
-            await lockers.setCCBurnRouter(mockCCBurnRouter.address);
-            await mockCCBurnRouter.mock.unwrap.returns(8000);
+            await lockers.setBurnRouter(mockBurnRouter.address);
+            await mockBurnRouter.mock.unwrap.returns(8000);
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
 
@@ -3195,15 +3195,15 @@ describe("Lockers", async () => {
             await teleBTCSigner2.approve(lockers.address, neededTeleBTC)
             await lockerSigner2.burn(LOCKER1_PUBKEY__HASH, neededTeleBTC)
 
-            let newHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
+            let newHealthFactor = await lockers.getLockerHealthFactor(signer1Address)
             await expect(UPPER_HEALTH_FACTOR - Number(newHealthFactor)).to.be.lessThan(50)
             
         });
 
         it("only can liquidate locker till it reaches upper health factor (reliability factor = 3/4)", async function () {
                 
-            await lockers.setCCBurnRouter(mockCCBurnRouter.address);
-            await mockCCBurnRouter.mock.unwrap.returns(8000);
+            await lockers.setBurnRouter(mockBurnRouter.address);
+            await mockBurnRouter.mock.unwrap.returns(8000);
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
 
@@ -3241,7 +3241,7 @@ describe("Lockers", async () => {
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(3500000);
 
-            let oldHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
+            let oldHealthFactor = await lockers.getLockerHealthFactor(signer1Address)
             await expect(Number(oldHealthFactor)).to.be.lessThan(ONE_HOUNDRED_PERCENT)
 
             await teleBTC.mint(signer2Address, 10000000)
@@ -3266,7 +3266,7 @@ describe("Lockers", async () => {
             await teleBTCSigner2.approve(lockers.address, neededTeleBTC)
             await lockerSigner2.burn(LOCKER1_PUBKEY__HASH, neededTeleBTC)
 
-            let newHealthFactor = await lockers.getLockersHealthFactor(signer1Address)
+            let newHealthFactor = await lockers.getLockerHealthFactor(signer1Address)
             await expect(Number(newHealthFactor)).to.be.equal(0)
             
         });
@@ -3442,8 +3442,8 @@ describe("Lockers", async () => {
 
         it("can't mint because receipt is zero address", async function () {
 
-            await lockers.setCCBurnRouter(mockCCBurnRouter.address);
-            await mockCCBurnRouter.mock.unwrap.returns(8000);
+            await lockers.setBurnRouter(mockBurnRouter.address);
+            await mockBurnRouter.mock.unwrap.returns(8000);
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
 
@@ -3481,8 +3481,8 @@ describe("Lockers", async () => {
 
         it("can't mint since locker is inactive", async function () {
 
-            await lockers.setCCBurnRouter(mockCCBurnRouter.address);
-            await mockCCBurnRouter.mock.unwrap.returns(8000);
+            await lockers.setBurnRouter(mockBurnRouter.address);
+            await mockBurnRouter.mock.unwrap.returns(8000);
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
 
@@ -3530,8 +3530,8 @@ describe("Lockers", async () => {
 
         it("can't mint since locker locking script is wrong", async function () {
 
-            await lockers.setCCBurnRouter(mockCCBurnRouter.address);
-            await mockCCBurnRouter.mock.unwrap.returns(8000);
+            await lockers.setBurnRouter(mockBurnRouter.address);
+            await mockBurnRouter.mock.unwrap.returns(8000);
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
 
@@ -3591,8 +3591,8 @@ describe("Lockers", async () => {
 
         it("locker capacity changes by changing reliability factor", async function () {
 
-            await lockers.setCCBurnRouter(mockCCBurnRouter.address);
-            await mockCCBurnRouter.mock.unwrap.returns(8000);
+            await lockers.setBurnRouter(mockBurnRouter.address);
+            await mockBurnRouter.mock.unwrap.returns(8000);
 
             await mockPriceOracle.mock.equivalentOutputAmount.returns(10000000);
 
