@@ -4,20 +4,18 @@ pragma solidity >=0.8.0 <=0.8.4;
 import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 
 interface ILockersManager {
-    /// @notice                             Structure for registering lockers
-    /// @dev
-    /// @param lockerLockingScript          Locker redeem script
-    /// @param lockerRescueType             Locker script type in case of getting BTCs back
-    /// @param lockerRescueScript           Locker script in case of getting BTCs back
-    /// @param TSTLockedAmount              Bond amount of locker in TST
-    /// @param collateralTokenLockedAmount      Bond amount of locker in collateral token of the target chain
-    /// @param netMinted                    Total minted - total burnt
-    /// @param slashingTeleBTCAmount        Total amount of teleBTC a locker must be slashed
-    /// @param reservedCollateralTokenForSlash  Total collateral token reserved to support slashing teleBTC
-    /// @param isLocker                     Indicates that is already a locker or not
-    /// @param isCandidate                  Indicates that is a candidate or not
-    /// @param isScriptHash                 Shows if it's script hash
-    ///                                     has enough collateral to accept more minting requests)
+    /// @notice Structure for registering lockers
+    /// @param lockerLockingScript Locker redeem script
+    /// @param lockerRescueType Locker script type in case of getting BTCs back
+    /// @param lockerRescueScript Locker script in case of getting BTCs back
+    /// @param TSTLockedAmount Amount of TST locked by Locker
+    /// @param collateralTokenLockedAmount Amount of collateral token locked by Locker
+    /// @param netMinted Total minted - total burnt
+    /// @param slashingTeleBTCAmount Total amount of teleBTC a locker must be slashed
+    /// @param reservedCollateralTokenForSlash Total collateral token reserved for slashing locker
+    /// @param isLocker True if it's a Locker
+    /// @param isCandidate True if it's a candidate
+    /// @param isScriptHash NOT USED
     struct locker {
         bytes lockerLockingScript;
         ScriptTypes lockerRescueType;
@@ -42,7 +40,7 @@ interface ILockersManager {
     }
 
     struct lockersLibParam {
-        address teleportDAOToken;
+        address TeleportSystemToken;
         address teleBTC;
         address ccBurnRouter;
         address exchangeConnector;
@@ -69,7 +67,7 @@ interface ILockersManager {
         bytes _lockerRescueScript;
     }
 
-     // Events
+    // Events
 
     event RequestAddLocker(
         address indexed lockerTargetAddress,
@@ -112,8 +110,8 @@ interface ILockersManager {
         uint TSTLockedAmount,
         address indexed collateralToken,
         uint collateralTokenLockedAmount,
-        uint addingTime,
-        uint reliabilityFactor
+        uint reliabilityFactor,
+        uint addingTime
     );
 
     event LockerRemoved(
@@ -185,14 +183,9 @@ interface ILockersManager {
         uint256 burningTime
     );
 
-    event NewCollateralToken(
-        address token,
-        uint decimal
-    );
+    event NewCollateralToken(address token, uint decimal);
 
-    event MinterAdded(
-        address indexed account
-    );
+    event MinterAdded(address indexed account);
 
     event MinterRemoved(address indexed account);
 
@@ -246,7 +239,7 @@ interface ILockersManager {
 
     // Read-only functions
 
-    function TeleportDAOToken() external view returns (address);
+    function TeleportSystemToken() external view returns (address);
 
     function teleBTC() external view returns (address);
 
@@ -280,19 +273,13 @@ interface ILockersManager {
         bytes calldata _lockerLockingScript
     ) external view returns (bool);
 
-    // function getNumberOfLockers() external view returns (uint256);
-
-    // function getLockerLockingScript(
-    //     address _lockerTargetAddress
-    // ) external view returns (bytes memory);
-
     function isLockerActive(
         address _lockerTargetAddress
     ) external view returns (bool);
 
-    function getLockersHealthFactor (address _lockerTargetAddress) external view returns (uint256);
-    
-    // function priceOfOneUnitOfCollateralInBTC(address _token) external view returns (uint);
+    function getLockersHealthFactor(
+        address _lockerTargetAddress
+    ) external view returns (uint256);
 
     function minters(address) external view returns (bool);
 
@@ -304,8 +291,8 @@ interface ILockersManager {
 
     function unPauseLocker() external;
 
-    function addCollateralToken (address _token, uint _decimal) external;
-    
+    function addCollateralToken(address _token, uint _decimal) external;
+
     function addMinter(address _account) external;
 
     function removeMinter(address _account) external;
@@ -343,7 +330,10 @@ interface ILockersManager {
 
     function setTeleBTC(address _teleBTC) external;
 
-    function setLockerReliabilityFactor(address _lockerTargetAddress, uint _reliabilityFactor) external;
+    function setLockerReliabilityFactor(
+        address _lockerTargetAddress,
+        uint _reliabilityFactor
+    ) external;
 
     function setCollateralRatio(uint _collateralRatio) external;
 
@@ -374,7 +364,10 @@ interface ILockersManager {
 
     function revokeRequest() external returns (bool);
 
-    function addLocker(address _lockerTargetAddress, uint256 _lockerReliabilityFactor) external returns (bool);
+    function addLocker(
+        address _lockerTargetAddress,
+        uint256 _lockerReliabilityFactor
+    ) external returns (bool);
 
     function requestInactivation() external returns (bool);
 
@@ -405,5 +398,4 @@ interface ILockersManager {
     function getLockerCapacity(
         bytes calldata _lockerLockingScript
     ) external returns (uint256 theLockerCapacity);
-
 }

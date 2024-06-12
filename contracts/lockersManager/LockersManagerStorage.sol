@@ -14,7 +14,7 @@ abstract contract LockersManagerStorage is ILockersManager {
     address public constant NATIVE_TOKEN = address(1);
 
     // Public variables
-    address public override TeleportDAOToken;
+    address public override TeleportSystemToken;
     address public override teleBTC;
     address public override ccBurnRouter;
     address public override exchangeConnector;

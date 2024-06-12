@@ -92,8 +92,8 @@ contract LockersManagerLogic is
 
     // *************** External functions ***************
 
-    // @notice Whitelist new collateral token with decimal
-    // @notice Set _decimal to 0 to remove token from whitelist
+    /// @notice Whitelist new collateral token with decimal
+    /// @dev Set decimal to 0 to remove token from whitelist
     function addCollateralToken (address _token, uint _decimal) external
         override
         nonZeroAddress(_token)
@@ -168,13 +168,6 @@ contract LockersManagerLogic is
         _unpause();
     }
 
-    // /// @notice Return EVM address of _lockerLockingScript Locker
-    // function getLockerTargetAddress(
-    //     bytes calldata _lockerLockingScript
-    // ) external view override returns (address) {
-    //     return lockerTargetAddress[_lockerLockingScript];
-    // }
-
     /// @notice Return true if _lockerLockingScript is Locker
     function isLocker(
         bytes calldata _lockerLockingScript
@@ -183,33 +176,15 @@ contract LockersManagerLogic is
             lockersMapping[getLockerTargetAddress[_lockerLockingScript]].isLocker;
     }
 
-    // /// @notice Return total number of Lockers
-    // function getNumberOfLockers() external view override returns (uint256) {
-    //     return totalNumberOfLockers;
-    // }
-
-    // /// @notice Return locking script of _lockerTargetAddress Locker
-    // function getLockerLockingScript(
-    //     address _lockerTargetAddress
-    // )
-    //     external
-    //     view
-    //     override
-    //     returns (bytes memory)
-    // {
-    //     return lockersMapping[_lockerTargetAddress].lockerLockingScript;
-    // }
-
     /// @notice Update TST contract address
-
     function setTST(address _TST)
         public
         override
         onlyOwner
     {
-        emit NewTST(TeleportDAOToken, _TST);
-        TeleportDAOToken = _TST;
-        libParams.teleportDAOToken = TeleportDAOToken;
+        emit NewTST(TeleportSystemToken, _TST);
+        TeleportSystemToken = _TST;
+        libParams.TeleportSystemToken = TeleportSystemToken;
     }
 
     /// @notice Update locker percentage fee
@@ -372,8 +347,8 @@ contract LockersManagerLogic is
             );
         }
 
-        if (libParams.teleportDAOToken != address(0)) {
-            IERC20(libParams.teleportDAOToken).safeTransferFrom(
+        if (libParams.TeleportSystemToken != address(0)) {
+            IERC20(libParams.TeleportSystemToken).safeTransferFrom(
                 _msgSender(),
                 address(this),
                 _lockedTSTAmount
@@ -394,7 +369,7 @@ contract LockersManagerLogic is
     }
 
     /// @notice Revoke request to become Locker
-    /// @dev Send back TST and TNT collateral to the candidate
+    /// @dev Send back TST and collateral to the candidate
     /// @return True if the candidate is removed successfully
     function revokeRequest() external override nonReentrant returns (bool) {
         if (!lockersMapping[_msgSender()].isCandidate)
@@ -408,9 +383,9 @@ contract LockersManagerLogic is
 
         totalNumberOfCandidates = totalNumberOfCandidates - 1;
 
-        // Sends back TST and TNT collateral
-        if (libParams.teleportDAOToken != address(0)) {
-            IERC20(TeleportDAOToken).safeTransfer(
+        // Sends back TST and collateral
+        if (libParams.TeleportSystemToken != address(0)) {
+            IERC20(TeleportSystemToken).safeTransfer(
                 _msgSender(),
                 lockerRequest.TSTLockedAmount
             );
@@ -542,7 +517,7 @@ contract LockersManagerLogic is
         return true;
     }
 
-    /// @notice Removes Locker from system and send back Locker TST and TNT collateral.
+    /// @notice Removes Locker from system and send back Locker TST and collateral.
     /// @dev Only Locker can call this. The conditions for successful remove is:
     ///      1. Locker has been inactivated
     ///      2. Locker sends net minted TeleBTC to the contract
@@ -575,9 +550,9 @@ contract LockersManagerLogic is
         delete lockersMapping[_msgSender()];
         totalNumberOfLockers = totalNumberOfLockers - 1;
 
-        // Sends back TST and TNT collateral
-        if (libParams.teleportDAOToken != address(0)) {
-            IERC20(TeleportDAOToken).safeTransfer(
+        // Sends back TST and collateral
+        if (libParams.TeleportSystemToken != address(0)) {
+            IERC20(TeleportSystemToken).safeTransfer(
                 _msgSender(),
                 _removingLocker.TSTLockedAmount
             );
@@ -635,8 +610,8 @@ contract LockersManagerLogic is
     //     delete lockersMapping[_lockerTargetAddress];
     //     totalNumberOfLockers = totalNumberOfLockers - 1;
 
-    //     // Sends back TST and TNT collateral
-    //     IERC20(TeleportDAOToken).safeTransfer(
+    //     // Sends back TST and collateral
+    //     IERC20(TeleportSystemToken).safeTransfer(
     //         _lockerTargetAddress,
     //         _removingLocker.TSTLockedAmount
     //     );
@@ -776,7 +751,7 @@ contract LockersManagerLogic is
     /// @dev Anyone can liquidate Locker with health factor under
     ///      100% by providing a sufficient amount of TeleBTC.
     /// @param _lockerTargetAddress Locker's target chain address
-    /// @param _collateralAmount Amount of TNT collateral that someone wants to buy with discount
+    /// @param _collateralAmount Amount of collateral that someone wants to buy with discount
     /// @return True if liquidation was successful
     function liquidateLocker(
         address _lockerTargetAddress,
@@ -803,7 +778,7 @@ contract LockersManagerLogic is
             _lockerTargetAddress
         ];
 
-        // Updates TNT bond of locker
+        // Update locked collateral of locker
         lockersMapping[_lockerTargetAddress].collateralTokenLockedAmount =
             lockersMapping[_lockerTargetAddress].collateralTokenLockedAmount -
             _collateralAmount;
@@ -849,14 +824,14 @@ contract LockersManagerLogic is
         return true;
     }
 
-    /// @notice                           Sells lockers slashed collateral
-    /// @dev                              Users buy the slashed collateral using TeleBTC with discount
-    ///                                   The paid TeleBTC will be burnt to keep the system safe
-    ///                                   If all the needed TeleBTC is collected and burnt,
-    ///                                   the rest of slashed collateral is sent back to locker
-    /// @param _lockerTargetAddress       Locker's target chain address
-    /// @param _collateralAmount          Amount of collateral (TNT) that someone intends to buy with discount
-    /// @return                           True if buying was successful
+    /// @notice Sell slashed collateral of a Locker
+    /// @dev Users buy the slashed collateral using TeleBTC with discount
+    ///      The paid TeleBTC will be burnt to keep the system safe
+    ///      If all the needed TeleBTC is collected and burnt,
+    ///      the rest of slashed collateral is sent back to locker
+    /// @param _lockerTargetAddress Locker's target chain address
+    /// @param _collateralAmount Amount of collateral that someone intends to buy with discount
+    /// @return True if buying was successful
     function buySlashedCollateralOfLocker(
         address _lockerTargetAddress,
         uint256 _collateralAmount
@@ -906,11 +881,11 @@ contract LockersManagerLogic is
         return true;
     }
 
-    /// @notice                                 Increases TNT collateral of the locker
-    /// @notice                                 Not neccessary to fill _addingCollateralTokenAmount if collateral token is native token
-    /// @param _lockerTargetAddress             Locker's target chain address
-    /// @param _addingCollateralTokenAmount         Amount of added collateral
-    /// @return                                 True if collateral is added successfully
+    /// @notice Increase collateral of the locker
+    /// @notice No need to pass _addingCollateralTokenAmount if collateral token is native token
+    /// @param _lockerTargetAddress Locker's target chain address
+    /// @param _addingCollateralTokenAmount Amount of added collateral
+    /// @return True if collateral is added successfully
     function addCollateral(
         address _lockerTargetAddress,
         uint256 _addingCollateralTokenAmount 
@@ -942,9 +917,9 @@ contract LockersManagerLogic is
         return true;
     }
 
-    /// @notice                                 Decreases TNT collateral of the locker
-    /// @param _removingCollateralTokenAmount       Amount of removed collateral
-    /// @return                                 True if collateral is removed successfully
+    /// @notice Decreases collateral of the locker
+    /// @param _removingCollateralTokenAmount Amount of removed collateral
+    /// @return True if collateral is removed successfully
     function removeCollateral(uint256 _removingCollateralTokenAmount)
         external
         payable
@@ -985,12 +960,12 @@ contract LockersManagerLogic is
         return true;
     }
 
-    /// @notice                       Mint teleBTC for an account
-    /// @dev                          Mint teleBTC for an account and the locker fee as well
-    /// @param _lockerLockingScript   Locking script of a locker
-    /// @param _receiver              Address of the receiver of the minted teleBTCs
-    /// @param _amount                Amount of the teleBTC which is minted, including the locker's fee
-    /// @return uint                  The amount of teleBTC minted for the receiver
+    /// @notice Mint teleBTC for an account
+    /// @dev Mint teleBTC for an account and the locker fee as well
+    /// @param _lockerLockingScript Locking script of a locker
+    /// @param _receiver Address of the receiver of the minted teleBTCs
+    /// @param _amount Amount of the teleBTC which is minted, including the locker's fee
+    /// @return uint The amount of teleBTC minted for the receiver
     function mint(
         bytes calldata _lockerLockingScript,
         address _receiver,
@@ -1065,11 +1040,11 @@ contract LockersManagerLogic is
         );
     }
 
-    /// @notice                       Burn teleBTC of an account
-    /// @dev                          Burn teleBTC and also get the locker's fee
-    /// @param _lockerLockingScript   Locking script of a locker
-    /// @param _amount                Amount of the teleBTC which is minted, including the locker's fee
-    /// @return uint                  The amount of teleBTC burnt
+    /// @notice Burn teleBTC of an account
+    /// @dev Burn teleBTC and also get the locker's fee
+    /// @param _lockerLockingScript Locking script of a locker
+    /// @param _amount Amount of the teleBTC which is minted, including the locker's fee
+    /// @return uint The amount of burnt teleBTC
     function burn(
         bytes calldata _lockerLockingScript,
         uint256 _amount
@@ -1128,13 +1103,13 @@ contract LockersManagerLogic is
 
     function renounceOwnership() public virtual override onlyOwner {}
 
-    /// @notice                             Returns the Locker status
-    /// @dev                                We check a locker status in below cases:
-    ///                                     1. Minting TeleBTC
-    ///                                     2. Removing locker's collateral
-    ///                                     3. Removing locker
-    /// @param _lockerTargetAddress         Address of locker on the target chain
-    /// @return                             True if the locker is active
+    /// @notice Return the Locker status
+    /// @dev We check a locker status in below cases:
+    ///      1. Minting TeleBTC
+    ///      2. Removing locker's collateral
+    ///      3. Removing locker
+    /// @param _lockerTargetAddress Address of locker on the target chain
+    /// @return True if the locker is active
     function isLockerActive(address _lockerTargetAddress)
         public
         view
@@ -1152,10 +1127,7 @@ contract LockersManagerLogic is
         }
     }
 
-    /**
-     * @dev         returns the health factor of locker
-     * @return uint health factor
-     */
+    /// @notice Return the health factor of locker
     function getLockersHealthFactor (
         address _lockerTargetAddress
     )   public
@@ -1171,23 +1143,4 @@ contract LockersManagerLogic is
             lockerReliabilityFactor[_lockerTargetAddress]
         );
     }
-    // /**
-    //  * @dev         Returns the price of one native token (1*10^18) in teleBTC
-    //  * @return uint The price of one unit of collateral token (native token in teleBTC)
-    //  */
-    // function priceOfOneUnitOfCollateralInBTC(
-    //     address collateralToken
-    // )
-    //     public
-    //     view
-    //     override
-    //     returns (uint256)
-    // {
-    //     return
-    //         LockersManagerLib.priceOfOneUnitOfCollateralInBTC(
-    //             collateralToken,
-    //             collateralDecimal[collateralToken],
-    //             libParams
-    //         );
-    // }
 }
