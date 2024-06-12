@@ -42,9 +42,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const appId = config.get("cc_transfer.app_id");
     const treasuryAddress = config.get("treasury");
     const bitcoinRelay = config.get("bitcoin_relay");
-    const minCollateralLockedAmount = config.get(
-        "lockers_contract.minimum_collateral_locked_amount"
-    );
     const collateralRatio = config.get("lockers_contract.collateral_ratio");
     const liquidationRatio = config.get("lockers_contract.liquidation_ratio");
     const lockerPercentageFee = config.get(
@@ -89,7 +86,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             priceOracle.address,
             burnRouterProxy.address,
             minTSTLockedAmount,
-            minCollateralLockedAmount,
             collateralRatio,
             liquidationRatio,
             lockerPercentageFee,
@@ -108,7 +104,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             priceOracle.address,
             burnRouterProxy.address,
             minTSTLockedAmount,
-            minCollateralLockedAmount,
             collateralRatio,
             liquidationRatio,
             lockerPercentageFee,

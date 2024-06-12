@@ -33,7 +33,6 @@
 		"transfer_deadLine": 720
 	},
 	"lockers_contract": {
-		"minimum_native_locked_amount": "10000000000000000000",
 		"collateral_ratio": 1000,
 		"liquidation_ratio": 500,
 		"locker_percentage_fee": 15,
