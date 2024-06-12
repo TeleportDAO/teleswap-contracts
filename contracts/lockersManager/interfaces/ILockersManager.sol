@@ -396,6 +396,6 @@ interface ILockersManager {
     ) external returns (bool);
 
     function getLockerCapacity(
-        bytes calldata _lockerLockingScript
+        address _lockerTargetAddress
     ) external returns (uint256 theLockerCapacity);
 }

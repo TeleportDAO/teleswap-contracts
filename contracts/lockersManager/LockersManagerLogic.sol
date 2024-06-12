@@ -999,12 +999,8 @@ contract LockersManagerLogic is
     }
 
     function getLockerCapacity(
-        bytes calldata _lockerLockingScript
+        address _lockerTargetAddress
     ) external view override returns (uint256 theLockerCapacity) {
-        address _lockerTargetAddress = getLockerTargetAddress[
-            _lockerLockingScript
-        ];
-
         return
             LockersManagerLib.getLockerCapacity(
                 lockersMapping[_lockerTargetAddress],
