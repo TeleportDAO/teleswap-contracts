@@ -4,7 +4,7 @@ pragma solidity >=0.8.0 <=0.8.4;
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./EthConnectorStorage.sol";
 import "./interfaces/IEthConnector.sol";
@@ -17,6 +17,7 @@ contract EthConnectorLogic is
     EthConnectorStorage
 {
     error ZeroAddress();
+    using SafeERC20 for IERC20;
 
     modifier nonZeroAddress(address _address) {
         if (_address == address(0)) revert ZeroAddress();
@@ -78,7 +79,7 @@ contract EthConnectorLogic is
         uint256 _amount
     ) external override onlyOwner {
         if (_token == ETH_ADDR) _to.call{value: _amount}("");
-        else IERC20(_token).transfer(_to, _amount);
+        else IERC20(_token).safeTransfer(_to, _amount);
     }
 
     /// @notice Request exchanging token for BTC
@@ -141,8 +142,8 @@ contract EthConnectorLogic is
             require(msg.value == 0, "EthManagerLogic: wrong value");
 
             // Transfer tokens from user to contract
-            IERC20(_token).transferFrom(_msgSender(), address(this), _amount);
-            IERC20(_token).approve(across, _amount);
+            IERC20(_token).safeTransferFrom(_msgSender(), address(this), _amount);
+            IERC20(_token).safeApprove(across, _amount);
         }
 
         // Call across for transferring token and msg
