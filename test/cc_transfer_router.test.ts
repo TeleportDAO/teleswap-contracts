@@ -68,7 +68,7 @@ describe("CcTransferRouter", async () => {
 
     // Contracts
     let ccTransferRouter: Contract;
-    let teleBTC: TeleBTC;
+    let teleBTC: TeleBTCLogic;
     let teleportDAOToken: ERC20;
     let lockersLib: LockersManagerLib;
     let lockers: Contract;

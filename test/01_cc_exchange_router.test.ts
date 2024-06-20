@@ -216,7 +216,7 @@ describe("CcExchangeRouter", async () => {
         const erc20Factory = new Erc20__factory(deployer);
         exchangeToken = await erc20Factory.deploy("TestToken", "TT", 100000);
 
-        await exchangeToken.transfer(signer1.getAddress(), 10000);
+        await exchangeToken.transfer(await signer1.getAddress(), 10000);
 
         // Deploys an ERC20 token
         anotherExchangeToken = await erc20Factory.deploy(
