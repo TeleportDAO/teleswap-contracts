@@ -102,7 +102,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const chainId = config.get("chain_id");
 
     const [, destinationChain] =
-        await ccExchangeRouterProxyInstance.extractChainId(chainId);
+        await ccExchangeRouterProxyInstance.chainIdMapping(chainId);
 
     if (destinationChain != chainId) {
         const tx = await ccExchangeRouterProxyInstance.setChainIdMapping(

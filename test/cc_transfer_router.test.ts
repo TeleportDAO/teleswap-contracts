@@ -245,7 +245,7 @@ describe("CcTransferRouter", async () => {
 
         const teleportDAOToken = await erc20Factory.deploy(
             "TelePortDAOToken",
-            "TDT",
+            "TST",
             teleportTokenInitialSupply
         );
 
@@ -1075,23 +1075,23 @@ describe("CcTransferRouter", async () => {
         it("Reverts since given address is zero", async function () {
             await expect(
                 ccTransferRouter.setRelay(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
 
             await expect(
                 ccTransferRouter.setLockers(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
 
             await expect(
                 ccTransferRouter.setInstantRouter(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
 
             await expect(
                 ccTransferRouter.setTeleBTC(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
 
             await expect(
                 ccTransferRouter.setTreasury(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
         })
 
         

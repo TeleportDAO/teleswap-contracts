@@ -267,7 +267,7 @@ describe("BurnRouter", async () => {
     }
 
     async function setLockersGetLockerTargetAddress(): Promise<void> {
-        await mockLockers.mock.lockerTargetAddress
+        await mockLockers.mock.getLockerTargetAddress
             .returns(LOCKER_TARGET_ADDRESS);
     }
 
@@ -932,7 +932,7 @@ describe("BurnRouter", async () => {
                     [0],
                     [0, 1]
                 )
-            ).to.revertedWith("BurnRouterLogic: wrong index")
+            ).to.revertedWith("BurnRouterLogic: wrong indexes")
         })
 
         it("Reverts since paid fee is not enough", async function () {
@@ -1636,19 +1636,19 @@ describe("BurnRouter", async () => {
         it("Reverts since given address is zero", async function () {
             await expect(
                 burnRouter.setRelay(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
 
             await expect(
                 burnRouter.setLockers(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
 
             await expect(
                 burnRouter.setTeleBTC(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
 
             await expect(
                 burnRouter.setTreasury(ZERO_ADDRESS)
-            ).to.revertedWith("ZeroAddress()");
+            ).to.revertedWith("ZeroAddress");
         })
 
         it("Reverts since given address is zero", async function () {

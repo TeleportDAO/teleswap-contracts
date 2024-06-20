@@ -64,9 +64,7 @@ const config: HardhatUserConfig = {
 			accounts: [process.env.PRIVATE_KEY ?? ""]
 		},
 		polygon: {
-			// url: "https://rpc-mainnet.maticvigil.com/",
-			// url: "https://rpc-mainnet.matic.quiknode.pro",
-			url: "https://polygon-pokt.nodies.app",
+			url: "https://1rpc.io/matic",
 			chainId: 137,
 			accounts: [process.env.PRIVATE_KEY ?? ""]
 		   },
@@ -114,12 +112,12 @@ const config: HardhatUserConfig = {
   	},
   	etherscan: {
 		apiKey: {
-			// ethereum: process.env.ETHERSCAN_API_KEY??"",
+			ethereum: process.env.ETHERSCAN_API_KEY??"",
     		polygon: process.env.ETHERSCAN_API_KEY??"",
 			bsc: process.env.ETHERSCAN_API_KEY??"",
-			// arbitrum: process.env.ETHERSCAN_API_KEY??"",
-			// optimism: process.env.ETHERSCAN_API_KEY??"",
-			// amoy: process.env.ETHERSCAN_API_KEY??"",
+			arbitrum: process.env.ETHERSCAN_API_KEY??"",
+			optimism: process.env.ETHERSCAN_API_KEY??"",
+			amoy: process.env.ETHERSCAN_API_KEY??"",
 			sepolia: process.env.ETHERSCAN_API_KEY??""
   		},
 		customChains: [

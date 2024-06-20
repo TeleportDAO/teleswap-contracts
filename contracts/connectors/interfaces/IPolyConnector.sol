@@ -13,6 +13,7 @@ interface IPolyConnector {
     }
 
     struct exchangeForBtcArguments {
+        uint256 uniqueCounter;
         uint256 chainId;
         address user;
         address exchangeConnector;
@@ -25,7 +26,15 @@ interface IPolyConnector {
 
     // Events
 
+    event MsgReceived(
+        string functionName,
+        uint256 uniqueCounter,
+        uint256 chainId,
+        bytes data
+    );
+
     event NewSwapAndUnwrap(
+        uint256 uniqueCounter,
         uint256 chainId,
         address exchangeConnector,
         address inputToken,
@@ -35,10 +44,12 @@ interface IPolyConnector {
         ScriptTypes scriptType,
         address lockerTargetAddress,
         uint256 requestIdOfLocker,
-        address[] path
+        address[] path,
+        uint256 thirdPartyId
     );
 
     event FailedSwapAndUnwrap(
+        uint256 uniqueCounter,
         uint256 chainId,
         address exchangeConnector,
         address inputToken,
@@ -46,14 +57,32 @@ interface IPolyConnector {
         address indexed userTargetAddress,
         bytes userScript,
         ScriptTypes scriptType,
-        address[] path
+        address[] path,
+        uint256 thirdPartyId
     );
 
-    event MsgReceived(
-        string functionName,
+    event RetriedSwapAndUnwrap(
         uint256 uniqueCounter,
         uint256 chainId,
-        bytes data
+        address exchangeConnector,
+        address inputToken,
+        uint256 inputAmount,
+        address indexed userTargetAddress,
+        bytes userScript,
+        ScriptTypes scriptType,
+        address lockerTargetAddress,
+        uint256 requestIdOfLocker,
+        address[] path,
+        uint256 thirdPartyId
+    );
+
+    event WithdrawnFundsToSourceChain(
+        uint256 uniqueCounter,
+        uint256 chainId,
+        address token,
+        uint256 amount,
+        int64 relayerFeePercentage,
+        address user
     );
 
     event AcrossUpdated(address oldAcross, address newAcross);
@@ -73,6 +102,13 @@ interface IPolyConnector {
     function across() external view returns (address);
 
     function failedReqs(address, uint256, address) external returns (uint256);
+
+    function newFailedReqs(
+        address,
+        uint256,
+        uint256,
+        address
+    ) external returns (uint256);
 
     // State-changing functions
 

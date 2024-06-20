@@ -5,7 +5,7 @@ import "./interfaces/ICcTransferRouter.sol";
 
 abstract contract CcTransferRouterStorageV2 {
 
-    // third party
+    // Third party
     mapping(uint => uint) public thirdPartyFee;
     mapping(uint => address) public thirdPartyAddress;
 
