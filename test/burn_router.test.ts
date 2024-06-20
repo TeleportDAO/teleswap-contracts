@@ -40,10 +40,10 @@ describe("BurnRouter", async () => {
     let proxyAdminAddress: Address;
 
     // Contracts
-    let teleBTC: TeleBTC;
+    let teleBTC: TeleBTCLogic;
     let inputToken: ERC20;
     let inputTokenSigner1: ERC20;
-    let TeleBTCSigner1: TeleBTC;
+    let TeleBTCSigner1: TeleBTCLogic;
     let burnRouterLib: BurnRouterLib;
     let burnRouter: Contract;
     let burnRouterSigner1: Contract;

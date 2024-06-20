@@ -7,6 +7,7 @@ import {
 } from "@ethereum-waffle/mock-contract";
 import { Address } from "hardhat-deploy/types";
 import { Contract } from "@ethersproject/contracts";
+import { TeleBTCLogic } from "../src/types/TeleBTCLogic";
 import { TeleBTCLogic__factory } from "../src/types/factories/TeleBTCLogic__factory";
 import { TeleBTCProxy__factory } from "../src/types/factories/TeleBTCProxy__factory";
 import { ERC20 } from "../src/types/ERC20";
@@ -41,9 +42,9 @@ describe("PolyConnector", async () => {
     let acrossAddress: Address;
 
     // Contracts
-    let teleBTC: TeleBTC;
+    let teleBTC: TeleBTCLogic;
     let inputToken: ERC20;
-    let TeleBTCSigner1: TeleBTC;
+    let TeleBTCSigner1: TeleBTCLogic;
     let PolyConnector: Contract;
     let PolyConnectorWithMockedAccross: Contract;
     let burnRouterLib: BurnRouterLib;

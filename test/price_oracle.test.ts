@@ -5,8 +5,6 @@ import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract
 
 import { PriceOracle } from "../src/types/PriceOracle";
 import { PriceOracle__factory } from "../src/types/factories/PriceOracle__factory";
-import { erc20 } from "../src/types/erc20";
-import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 

@@ -1,13 +1,12 @@
 import { expect } from "chai";
-import { deployments, ethers } from "hardhat";
-import { Signer, BigNumber } from "ethers";
+import { ethers } from "hardhat";
+import { Signer } from "ethers";
 import { Address } from "hardhat-deploy/types";
 import { TeleBTCLogic } from "../src/types/TeleBTCLogic";
 import { TeleBTCLogic__factory } from "../src/types/factories/TeleBTCLogic__factory";
 import { TeleBTCProxy } from "../src/types/TeleBTCProxy";
 import { TeleBTCProxy__factory } from "../src/types/factories/TeleBTCProxy__factory";
 import { network } from "hardhat"
-
 
 describe("TeleBTC", async () => {
 
@@ -28,7 +27,7 @@ describe("TeleBTC", async () => {
     let proxyAdminAddress: Address;
 
     // Contracts
-    let teleBTC: TeleBTC;
+    let teleBTC: TeleBTCLogic;
 
 
     before(async () => {

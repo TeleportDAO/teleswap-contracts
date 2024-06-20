@@ -7,28 +7,17 @@ import { Signer, BigNumber } from "ethers";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
 import { Address } from "hardhat-deploy/types";
 import { Contract } from "@ethersproject/contracts";
-
 import { TeleBTCLogic } from "../src/types/TeleBTCLogic";
 import { TeleBTCLogic__factory } from "../src/types/factories/TeleBTCLogic__factory";
-import { TeleBTCProxy } from "../src/types/TeleBTCProxy";
 import { TeleBTCProxy__factory } from "../src/types/factories/TeleBTCProxy__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { Erc20__factory } from "../src/types/factories/Erc20__factory";
-
 import { EthConnectorProxy__factory } from "../src/types/factories/EthConnectorProxy__factory";
 import { EthConnectorLogic__factory } from "../src/types/factories/EthConnectorLogic__factory";
 import { EthConnectorLogicLibraryAddresses } from "../src/types/factories/EthConnectorLogic__factory";
-
 import { AddressLib } from "../src/types/AddressLib"
 import { AddressLib__factory } from "../src/types/factories/AddressLib__factory"
-
 import { BurnRouterLib } from "../src/types/BurnRouterLib";
-import { BurnRouterLib__factory } from "../src/types/factories/BurnRouterLib__factory";
-
-import { BurnRouterProxy__factory } from "../src/types/factories/BurnRouterProxy__factory";
-import { BurnRouterLogic__factory } from "../src/types/factories/BurnRouterLogic__factory";
-import { BurnRouterLogicLibraryAddresses } from "../src/types/factories/BurnRouterLogic__factory";
-
 import { takeSnapshot, revertProvider } from "./block_utils";
 import { network } from "hardhat"
 
@@ -52,12 +41,12 @@ describe("EthConnector", async () => {
     let acrossAddress: Address;
 
     // Contracts
-    let teleBTC: TeleBTC;
+    let teleBTC: TeleBTCLogic;
     let inputToken: ERC20;
     let inputTokenSigner1: ERC20;
     let wrappedNativeToken: ERC20;
     let polygonToken: ERC20;
-    let TeleBTCSigner1: TeleBTC;
+    let TeleBTCSigner1: TeleBTCLogic;
     let EthConnector: Contract;
     let EthConnectorWithMockedAccross: Contract;
     let burnRouterLib: BurnRouterLib;
@@ -188,7 +177,7 @@ describe("EthConnector", async () => {
 
     const deployTeleBTC = async (
         _signer?: Signer
-    ): Promise<TeleBTC> => {
+    ): Promise<TeleBTCLogic> => {
         const teleBTCLogicFactory = new TeleBTCLogic__factory(deployer);
         const teleBTCLogic = await teleBTCLogicFactory.deploy();
 

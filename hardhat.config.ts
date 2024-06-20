@@ -67,7 +67,7 @@ const config: HardhatUserConfig = {
 			url: "https://1rpc.io/matic",
 			chainId: 137,
 			accounts: [process.env.PRIVATE_KEY ?? ""]
-		},
+		   },
 		mumbai: {
 			url: "https://polygon-mumbai.g.alchemy.com/v2/249SGZUqU12h4C4rAtPnb39FsJ09XMA9",
 			chainId: 80001,

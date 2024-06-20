@@ -12,13 +12,13 @@ import { LockersManagerLogicLibraryAddresses } from "../src/types/factories/Lock
 import { LockersManagerLib } from "../src/types/LockersManagerLib";
 import { LockersManagerLib__factory } from "../src/types/factories/LockersManagerLib__factory";
 import { TeleBTCLogic__factory } from "../src/types/factories/TeleBTCLogic__factory";
+import { TeleBTCLogic } from "../src/types/TeleBTCLogic";
 import { TeleBTCProxy__factory } from "../src/types/factories/TeleBTCProxy__factory";
 import { ERC20 } from "../src/types/ERC20";
 import { Erc20__factory } from "../src/types/factories/Erc20__factory";
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-
-
 import { advanceBlockWithTime, takeSnapshot, revertProvider } from "./block_utils";
+
 describe("Lockers", async () => {
 
     let snapshotId: any;
@@ -70,8 +70,8 @@ describe("Lockers", async () => {
     let lockers: Contract;
     let lockers2: Contract;
     let lockersAsAdmin: Contract;
-    let teleportSystemToken: ERC20;
-    let teleBTC: TeleBTC;
+    let teleportDAOToken: ERC20;
+    let teleBTC: TeleBTCLogic;
 
     // Mock contracts
     let mockExchangeConnector: MockContract;
@@ -2825,7 +2825,7 @@ describe("Lockers", async () => {
 
     describe("#liquidateLocker", async () => {
 
-        const calculateNeededTeleBTC = async (_amount, _address, _decimal, _price) => {
+        const calculateNeededTeleBTC = async (_amount, _address: string, _decimal, _price) => {
             let res1 = (_amount.mul(_price).mul(PRICE_WITH_DISCOUNT_RATIO))
             let res2 = BigNumber.from(ONE_HOUNDRED_PERCENT).mul(BigNumber.from(10).pow(_decimal))
             return res1.div(res2).add(1)
