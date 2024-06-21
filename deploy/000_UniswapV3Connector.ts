@@ -1,6 +1,7 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import verify from "../helper-functions";
+import config from "config";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts, network } = hre;
@@ -11,14 +12,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         network.name == "hardhat" ||
         network.name == "amoy" ||
         network.name == "polygon" ||
-        network.name == "bsc" ||
-        network.name == "bsc_testnet"
+        network.name == "bsc"
     ) {
+        const uniswapV3SwapRouter = config.get("uniswap_v3_swap_router");
+        const uniswapV3Quoter = config.get("uniswap_v3_quoter");
+
         const deployedContract = await deploy("UniswapV3Connector", {
             from: deployer,
             log: true,
             skipIfAlreadyDeployed: true,
-            args: ["univ3", "0xE592427A0AEce92De3Edee1F18E0157C05861564", "0x61fFE014bA17989E743c5F6cB21bF9697530B21e"]
+            args: ["UniswapV3", uniswapV3SwapRouter, uniswapV3Quoter]
         });
 
         if (
@@ -28,7 +31,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ) {
             await verify(
                 deployedContract.address,
-                [],
+                ["UniswapV3", uniswapV3SwapRouter, uniswapV3Quoter],
                 "contracts/swap_connectors/UniswapV3Connector.sol:UniswapV3Connector"
             );
         }
@@ -36,4 +39,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ["TeleBTCLogic"];
+func.tags = ["UniswapV3Connector"];

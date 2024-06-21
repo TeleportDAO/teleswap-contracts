@@ -130,15 +130,13 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
 
     /// @notice Deprecated for v3
     function getInputAmount(
-        uint _outputAmount,
-        address _inputToken,
-        address _outputToken
+        uint,
+        address,
+        address
     )
         external
         view
         override
-        nonZeroAddress(_inputToken)
-        nonZeroAddress(_outputToken)
         returns (bool, uint)
     {
         return (true, 0);
@@ -146,15 +144,13 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
 
     /// @notice Deprecated for v3
     function getOutputAmount(
-        uint _inputAmount,
-        address _inputToken,
-        address _outputToken
+        uint,
+        address,
+        address
     )
         external
         view
         override
-        nonZeroAddress(_inputToken)
-        nonZeroAddress(_outputToken)
         returns (bool, uint)
     {
         return (true, 0);
@@ -316,7 +312,7 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         }
 
         // Find maximum output amount
-        (bool result, uint outputResult) = getExactInput(_path, _inputAmount);
+        (, uint outputResult) = getExactInput(_path, _inputAmount);
 
         // Check that exchanging is possible or not
         if (_outputAmount > outputResult) {
