@@ -85,13 +85,13 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
 
     function convertedPath(
         address[] memory _path
-    ) public onlyOwner returns (bytes memory packedData) {
+    ) public view returns (bytes memory packedData) {
         packedData = abi.encodePacked(_path[0]);
 
         for (uint i = 1; i < _path.length; i++) {
             address firstToken = _path[i - 1];
             address secondToken = _path[i];
-            uint _feeTier = feeTier[firstToken][secondToken];
+            uint24 _feeTier = feeTier[firstToken][secondToken];
             packedData = abi.encodePacked(packedData, _feeTier, secondToken);
         }
     }
@@ -100,14 +100,14 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
     /// @dev Return (false, 0) if DEX cannot give the output amount
     function getExactOutput(
         address[] memory _path,
-        uint256 amountOut
+        uint256 _amountOut
     ) public returns (bool, uint256) {
         if (!isPathValid(_path)) {
             return (false, 0);
         }
         (uint amountIn, , , ) = IQuoterV2(quoterAddress).quoteExactOutput(
             convertedPath(_path),
-            amountOut
+            _amountOut
         );
         return (true, amountIn);
     }
@@ -116,14 +116,14 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
     /// @dev Return (false, 0) if DEX cannot swap the input amount
     function getExactInput(
         address[] memory _path,
-        uint256 amountIn
+        uint256 _amountIn
     ) public returns (bool, uint256) {
         if (!isPathValid(_path)) {
             return (false, 0);
         }
         (uint amountOut, , , ) = IQuoterV2(quoterAddress).quoteExactInput(
             convertedPath(_path),
-            amountIn
+            _amountIn
         );
         return (true, amountOut);
     }
@@ -133,12 +133,7 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         uint,
         address,
         address
-    )
-        external
-        view
-        override
-        returns (bool, uint)
-    {
+    ) external pure override returns (bool, uint) {
         return (true, 0);
     }
 
@@ -147,12 +142,7 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         uint,
         address,
         address
-    )
-        external
-        view
-        override
-        returns (bool, uint)
-    {
+    ) external pure override returns (bool, uint) {
         return (true, 0);
     }
 
@@ -192,6 +182,7 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
 
         uint _amount;
         if (_result) {
+            _amounts = new uint[](2);
             // Get tokens from user
             IERC20(_path[0]).safeTransferFrom(
                 _msgSender(),
@@ -267,7 +258,7 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         address[] memory _path,
         address _recipient,
         uint _deadline
-    ) private returns (ISwapRouter.ExactInputParams memory) {
+    ) private view returns (ISwapRouter.ExactInputParams memory) {
         return
             ISwapRouter.ExactInputParams({
                 path: convertedPath(_path),
@@ -284,7 +275,7 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         address[] memory _path,
         address _recipient,
         uint _deadline
-    ) private returns (ISwapRouter.ExactOutputParams memory) {
+    ) private view returns (ISwapRouter.ExactOutputParams memory) {
         return
             ISwapRouter.ExactOutputParams({
                 path: convertedPath(_path),
@@ -312,14 +303,14 @@ contract UniswapV3Connector is IExchangeConnector, Ownable, ReentrancyGuard {
         }
 
         // Find maximum output amount
-        (, uint outputResult) = getExactInput(_path, _inputAmount);
+        (bool success, uint outputResult) = getExactInput(_path, _inputAmount);
 
         // Check that exchanging is possible or not
         if (_outputAmount > outputResult) {
             return (false, 0);
         } else {
             if (_isFixedToken == true) {
-                return (true, _inputAmount);
+                return (success, _inputAmount);
             } else {
                 return getExactOutput(_path, _outputAmount);
             }
