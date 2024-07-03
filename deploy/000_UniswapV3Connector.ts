@@ -10,9 +10,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     if (
         network.name == "hardhat" ||
-        network.name == "amoy" ||
-        network.name == "polygon" ||
-        network.name == "bsc"
+        network.name == "bsquared"
     ) {
         const uniswapV3SwapRouter = config.get("uniswap_v3_swap_router");
         const uniswapV3Quoter = config.get("uniswap_v3_quoter");

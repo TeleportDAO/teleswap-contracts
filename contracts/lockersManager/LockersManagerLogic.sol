@@ -3,7 +3,6 @@ pragma solidity >=0.8.0 <=0.8.4;
 
 import "./LockersManagerStorage.sol";
 import "./LockersManagerStorage2.sol";
-import "../oracle/interfaces/IPriceOracle.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../routers/interfaces/IBurnRouter.sol";
 import "../libraries/LockersManagerLib.sol";
