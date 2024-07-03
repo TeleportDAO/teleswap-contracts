@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import verify from "../helper-functions";
 import config from "config";
+import verify from "../helper-functions";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts, network } = hre;
@@ -10,18 +10,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     if (
         network.name == "hardhat" ||
-        network.name == "amoy" ||
-        network.name == "polygon" ||
-        network.name == "bsc"
+        network.name == "bsquared"
     ) {
-        const proxyAdmin = config.get("proxy_admin");
-        const polyConnectorLogic = await deployments.get("PolyConnectorLogic");
+        const acceptableDelay = config.get("acceptable_delay");
+        const tntToken = config.get("wrapped_native_token");
 
-        const deployedContract = await deploy("PolyConnectorProxy", {
+        const deployedContract = await deploy("PriceOracleRedStone", {
             from: deployer,
             log: true,
             skipIfAlreadyDeployed: true,
-            args: [polyConnectorLogic.address, proxyAdmin, "0x"],
+            args: [acceptableDelay, tntToken],
         });
 
         if (
@@ -31,12 +29,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ) {
             await verify(
                 deployedContract.address,
-                [polyConnectorLogic.address, proxyAdmin, "0x"],
-                "contracts/connectors/PolyConnectorProxy.sol:PolyConnectorProxy"
+                [acceptableDelay, tntToken],
+                "contracts/oracle/PriceOracleRedStone.sol:PriceOracleRedStone"
             );
         }
     }
 };
 
 export default func;
-func.tags = ["PolyConnectorProxy"];
+func.tags = ["PriceOracleRedStone"];

@@ -12,7 +12,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         (network.name != "amoy" &&
             network.name != "polygon" &&
             network.name != "bsc" &&
-            network.name != "bsc_testnet")
+            network.name != "bsquared")
     ) {
         const deployedContract = await deploy("EthConnectorLogic", {
             from: deployer,

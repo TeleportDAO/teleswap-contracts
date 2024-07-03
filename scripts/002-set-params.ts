@@ -5,12 +5,17 @@ import config from "config";
 const logger = require("node-color-log");
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const { deployments } = hre;
+    const { deployments, network } = hre;
     const ZERO_ADD = "0x0000000000000000000000000000000000000000";
     const lockersManagerLib = await deployments.get("LockersManagerLib");
     const lockersManagerProxy = await deployments.get("LockersManagerProxy");
     const teleBTC = await deployments.get("TeleBTCProxy");
-    const priceOracle = await deployments.get("PriceOracle");
+    let priceOracle;
+    if (network.name == "bsquared") {
+        priceOracle = await deployments.get("PriceOracleRedStone");
+    } else {
+        priceOracle = await deployments.get("PriceOracle");
+    }    
     const ccTransferRouterProxy = await deployments.get(
         "CcTransferRouterProxy"
     );
@@ -19,7 +24,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const ccExchangeRouterProxy = await deployments.get(
         "CcExchangeRouterProxy"
     );
-    const exchangeConnector = await deployments.get("UniswapV2Connector");
+    let exchangeConnector;
+    if (network.name == "bsquared") {
+        exchangeConnector = await deployments.get("UniswapV3Connector");
+    } else {
+        exchangeConnector = await deployments.get("UniswapV2Connector");
+    }
+    // const exchangeConnector = await deployments.get("UniswapV2Connector");
     const ccExchangeRouterLib = await deployments.get("CcExchangeRouterLib");
 
     logger
@@ -106,7 +117,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     if (destinationChain != chainId) {
         const tx = await ccExchangeRouterProxyInstance.setChainIdMapping(
-            chainId,
             chainId,
             chainId
         );
@@ -224,10 +234,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         .log("-------------------------------------------------");
     logger.color("blue").bold().log("Set BurnRouterProxy in Lockers ...");
 
-    const burnRouterProxyAddress = await lockersInstance.ccBurnRouter();
+    const burnRouterProxyAddress = await lockersInstance.burnRouter();
 
     if (burnRouterProxyAddress != burnRouterProxy.address) {
-        const addCCBurnRouter = await lockersInstance.setCCBurnRouter(
+        const addCCBurnRouter = await lockersInstance.setBurnRouter(
             burnRouterProxy.address
         );
 
@@ -285,8 +295,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         .bold()
         .log("Set ExchangeRouter in ExchangeConnector ...");
 
-    const uniswapV2Router02 = config.get("uniswap_v2_router_02");
-    const uniswapV2Connector = await deployments.get("UniswapV2Connector");
+    let uniswapV2Router02;
+    let uniswapV2Connector;
+
+    if (network.name == "bsquared") {
+        uniswapV2Router02 = config.get("uniswap_v3_swap_router");
+        uniswapV2Connector = await deployments.get("UniswapV3Connector");
+    } else {
+        uniswapV2Router02 = config.get("uniswap_v2_router_02");
+        uniswapV2Connector = await deployments.get("UniswapV2Connector");
+    }
 
     const uniswapV2ConnectorFactory = await ethers.getContractFactory(
         "UniswapV2Connector"
@@ -313,37 +331,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     logger
         .color("blue")
         .log("-------------------------------------------------");
-    logger.color("blue").bold().log("Set ExchangeRouter in PriceOracle ...");
+    logger.color("blue").bold().log("Set PriceProxies in PriceOracle ...");
 
     const priceOracleFactory = await ethers.getContractFactory("PriceOracle");
     const priceOracleInstance = await priceOracleFactory.attach(
         priceOracle.address
     );
-
-    const exchangeConnectorAddress =
-        await priceOracleInstance.exchangeConnector(uniswapV2Router02);
-
-    if (exchangeConnectorAddress == ZERO_ADD) {
-        const addExchangeTx = await priceOracleInstance.addExchangeConnector(
-            uniswapV2Router02,
-            uniswapV2Connector.address
-        );
-        await addExchangeTx.wait(1);
-        console.log("Set ExchangeRouter in PriceOracle: ", addExchangeTx.hash);
-    } else {
-        console.log("ExchangeRouter is already set");
-    }
-
-    logger
-        .color("blue")
-        .log("-------------------------------------------------");
-    logger.color("blue").bold().log("Set PriceProxies in PriceOracle ...");
-
     let tx;
 
     // TARGET NATIVE TOKEN
     const wrappedMatic = config.get("wrapped_native_token");
-    const maticUSDOracle = config.get("chain_link_oracles.matic_usd");
+    const maticUSDOracle = config.get("chain_link_oracles.wrapped_native_token_usd");
     const checkMaticUSDTx = await priceOracleInstance.ChainlinkPriceProxy(
         wrappedMatic
     );

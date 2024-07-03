@@ -68,10 +68,10 @@ const config: HardhatUserConfig = {
 			chainId: 137,
 			accounts: [process.env.PRIVATE_KEY ?? ""]
 		   },
-		mumbai: {
-			url: "https://polygon-mumbai.g.alchemy.com/v2/249SGZUqU12h4C4rAtPnb39FsJ09XMA9",
-			chainId: 80001,
-			accounts: [process.env.PRIVATE_KEY ?? ""]
+		bsquared: {
+			url: "https://rpc.bsquared.network",
+			chainId: 223,
+			accounts: [process.env.PRIVATE_KEY ?? ""],
 		},
 		amoy: {
 			url: "https://rpc-amoy.polygon.technology",
@@ -81,11 +81,6 @@ const config: HardhatUserConfig = {
 		bsc: {
 			url: "https://bsc-dataseed.binance.org/",
 			chainId: 56,
-			accounts: [process.env.PRIVATE_KEY ?? ""]
-		},
-		bsc_testnet: {
-			url: "https://bsc-testnet.publicnode.com",
-			chainId: 97,
 			accounts: [process.env.PRIVATE_KEY ?? ""]
 		},
 		hardhat: {
@@ -117,6 +112,7 @@ const config: HardhatUserConfig = {
 			bsc: process.env.ETHERSCAN_API_KEY??"",
 			arbitrum: process.env.ETHERSCAN_API_KEY??"",
 			optimism: process.env.ETHERSCAN_API_KEY??"",
+			bsquared: process.env.ETHERSCAN_API_KEY??"",
 			amoy: process.env.ETHERSCAN_API_KEY??"",
 			sepolia: process.env.ETHERSCAN_API_KEY??""
   		},
@@ -159,6 +155,14 @@ const config: HardhatUserConfig = {
 				urls: {
 					apiURL: "https://api-optimistic.etherscan.io/api",
 					browserURL: "https://optimism.etherscan.io/"
+				}
+			},
+			{
+				network: "bsquared",
+				chainId: 223,
+				urls: {
+					apiURL: "https://explorer.bsquared.network/api",
+					browserURL: "https://explorer.bsquared.network"
 				}
 			},
 			{

@@ -12,8 +12,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         network.name == "hardhat" ||
         network.name == "amoy" ||
         network.name == "polygon" ||
-        network.name == "bsc" ||
-        network.name == "bsc_testnet"
+        network.name == "bsc"
     ) {
         const connectorName = "QuickswapV2";
         const uniswapV2Router02 = config.get("uniswap_v2_router_02");

@@ -13,7 +13,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         network.name == "amoy" ||
         network.name == "polygon" ||
         network.name == "bsc" ||
-        network.name == "bsc_testnet"
+        network.name == "bsquared"
     ) {
         const burnRouterLib = await deploy("BurnRouterLib", {
             from: deployer,

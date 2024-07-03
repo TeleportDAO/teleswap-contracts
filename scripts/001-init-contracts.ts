@@ -1,18 +1,23 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import config from "config";
 const logger = require("node-color-log");
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const { deployments } = hre;
+    const { deployments, network } = hre;
     const ZERO_ADD = "0x0000000000000000000000000000000000000000";
-
     const lockersManagerLib = await deployments.get("LockersManagerLib");
     const lockersManagerLogic = await deployments.get("LockersManagerLogic");
     const teleBTC = await deployments.get("TeleBTCProxy");
     const teleBTCLogic = await deployments.get("TeleBTCLogic");
-    const priceOracle = await deployments.get("PriceOracle");
+    let priceOracle;
+    if (network.name == "bsquared") {
+        priceOracle = await deployments.get("PriceOracleRedStone");
+    } else {
+        priceOracle = await deployments.get("PriceOracle");
+    }
+    // const priceOracle = await deployments.get("PriceOracle");
     const ccTransferRouterLogic = await deployments.get(
         "CcTransferRouterLogic"
     );
@@ -30,8 +35,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         "CcExchangeRouterProxy"
     );
     const ccExchangeRouterLib = await deployments.get("CcExchangeRouterLib");
-    const polyConnectorLogic = await deployments.get("PolyConnectorLogic");
-    const polyConnectorProxy = await deployments.get("PolyConnectorProxy");
 
     const minTSTLockedAmount = 0;
     const startingBlockHeight = config.get("starting_block_height");
@@ -56,8 +59,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const bitcoinFee = config.get("cc_burn.bitcoin_fee");
     const transferDeadLine = config.get("cc_burn.transfer_deadLine");
     const chainID = config.get("chain_id");
-    const across = config.get("across");
     const wrappedNativeToken = config.get("wrapped_native_token");
+
+    let across;
+    if(network.name == "polygon") {
+        across = config.get("across");
+    } else {
+        across = ZERO_ADD;
+    }
 
     logger
         .color("blue")
@@ -330,46 +339,52 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         console.log("TeleBTCLogic is already initialized");
     }
 
-    logger
-        .color("blue")
-        .log("-------------------------------------------------");
-    logger.color("blue").bold().log("Initialize PolyConnector ...");
-    const polyConnectorLogicFactory = await ethers.getContractFactory(
-        "PolyConnectorLogic"
-    );
-    const polyConnectorProxyInstance =
-        await polyConnectorLogicFactory.attach(
-            polyConnectorLogic.address
-        );
-    const polyConnectorLogicInstance =
-        await polyConnectorLogicFactory.attach(
-            polyConnectorProxy.address
-        );
+    if(network.name == "polygon") {
+        const polyConnectorLogic = await deployments.get("PolyConnectorLogic");
+        const polyConnectorProxy = await deployments.get("PolyConnectorProxy");
+        const across = config.get("across");
 
-    let _across = await polyConnectorProxyInstance.across();
-    if (_across == ZERO_ADD) {
-        const initializeTx = await polyConnectorProxyInstance.initialize(
-            lockersManagerProxy.address,
-            burnRouterProxy.address,
-            across
+        logger
+            .color("blue")
+            .log("-------------------------------------------------");
+        logger.color("blue").bold().log("Initialize PolyConnector ...");
+        const polyConnectorLogicFactory = await ethers.getContractFactory(
+            "PolyConnectorLogic"
         );
-        await initializeTx.wait(1);
-        console.log("Initialized PolyConnectorProxy: ", initializeTx.hash);
-    } else {
-        console.log("PolyConnectorProxy is already initialized");
-    }
+        const polyConnectorProxyInstance =
+            await polyConnectorLogicFactory.attach(
+                polyConnectorLogic.address
+            );
+        const polyConnectorLogicInstance =
+            await polyConnectorLogicFactory.attach(
+                polyConnectorProxy.address
+            );
 
-    let _acrossLogic = await polyConnectorLogicInstance.across();
-    if (_acrossLogic == ZERO_ADD) {
-        const initializeTx = await polyConnectorLogicInstance.initialize(
-            lockersManagerProxy.address,
-            burnRouterProxy.address,
-            across
-        );
-        await initializeTx.wait(1);
-        console.log("Initialized PolyConnectorLogic: ", initializeTx.hash);
-    } else {
-        console.log("PolyConnectorLogic is already initialized");
+        let _across = await polyConnectorProxyInstance.across();
+        if (_across == ZERO_ADD) {
+            const initializeTx = await polyConnectorProxyInstance.initialize(
+                lockersManagerProxy.address,
+                burnRouterProxy.address,
+                across
+            );
+            await initializeTx.wait(1);
+            console.log("Initialized PolyConnectorProxy: ", initializeTx.hash);
+        } else {
+            console.log("PolyConnectorProxy is already initialized");
+        }
+
+        let _acrossLogic = await polyConnectorLogicInstance.across();
+        if (_acrossLogic == ZERO_ADD) {
+            const initializeTx = await polyConnectorLogicInstance.initialize(
+                lockersManagerProxy.address,
+                burnRouterProxy.address,
+                across
+            );
+            await initializeTx.wait(1);
+            console.log("Initialized PolyConnectorLogic: ", initializeTx.hash);
+        } else {
+            console.log("PolyConnectorLogic is already initialized");
+        }
     }
 };
 

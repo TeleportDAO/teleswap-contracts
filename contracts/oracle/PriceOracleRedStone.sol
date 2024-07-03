@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <=0.8.4;
 
-import "./interfaces/IPriceOracle.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
@@ -9,7 +8,7 @@ interface IRedStone {
     function priceOf(address _token) external view returns (uint256);
 }
 
-abstract contract PriceOracle is IPriceOracle, Ownable {
+contract PriceOracleRedStone is Ownable {
     using SafeCast for uint;
 
     modifier nonZeroAddress(address _address) {
@@ -18,12 +17,13 @@ abstract contract PriceOracle is IPriceOracle, Ownable {
     }
 
     // Public variables
-    mapping(address => address) public override ChainlinkPriceProxy;
+    mapping(address => address) public ChainlinkPriceProxy;
     // ^^ [tokenAddress] => [priceProxyAddress]
-    uint public override acceptableDelay;
+    uint public acceptableDelay;
     address public constant NATIVE_TOKEN = address(1);
     // ^^ ONE_ADDRESS is used for getting price of blockchain native token
-    address public override oracleNativeToken;
+    address public oracleNativeToken;
+    address public teleBTC;
 
     /// @notice This contract is used to get relative price of two assets from RedStone
     /// @param _acceptableDelay Maximum acceptable delay for data given from RedStone
@@ -44,24 +44,27 @@ abstract contract PriceOracle is IPriceOracle, Ownable {
     function setPriceProxy(
         address _token,
         address _priceProxyAddress
-    ) external override nonZeroAddress(_token) onlyOwner {
+    ) external nonZeroAddress(_token) onlyOwner {
         ChainlinkPriceProxy[_token] = _priceProxyAddress;
-        emit SetPriceProxy(_token, _priceProxyAddress);
+        // emit SetPriceProxy(_token, _priceProxyAddress);
     }
 
     /// @notice Set acceptable delay for oracle responses
     /// @param _acceptableDelay Maximum acceptable delay (in seconds)
-    function setAcceptableDelay(
-        uint _acceptableDelay
-    ) external override onlyOwner {
+    function setAcceptableDelay(uint _acceptableDelay) external onlyOwner {
         _setAcceptableDelay(_acceptableDelay);
     }
 
     /// @notice Set wrapped native token address
     function setOracleNativeToken(
         address _oracleNativeToken
-    ) external override onlyOwner {
+    ) external onlyOwner {
         _setOracleNativeToken(_oracleNativeToken);
+    }
+
+    /// @notice Set TeleBTC address
+    function setTeleBTC(address _teleBTC) external onlyOwner {
+        _setTeleBTC(_teleBTC);
     }
 
     /// @notice Find amount of output token that is equal to the input amount of the input token
@@ -77,7 +80,7 @@ abstract contract PriceOracle is IPriceOracle, Ownable {
         uint _outputDecimals,
         address _inputToken,
         address _outputToken
-    ) external view override returns (uint _outputAmount) {
+    ) external view returns (uint _outputAmount) {
         bool result;
         (
             result,
@@ -98,7 +101,7 @@ abstract contract PriceOracle is IPriceOracle, Ownable {
 
     /// @notice Internal setter for acceptable delay for oracle responses
     function _setAcceptableDelay(uint _acceptableDelay) private {
-        emit NewAcceptableDelay(acceptableDelay, _acceptableDelay);
+        // emit NewAcceptableDelay(acceptableDelay, _acceptableDelay);
         require(_acceptableDelay > 0, "PriceOracle: zero amount");
         acceptableDelay = _acceptableDelay;
     }
@@ -107,8 +110,13 @@ abstract contract PriceOracle is IPriceOracle, Ownable {
     function _setOracleNativeToken(
         address _oracleNativeToken
     ) private nonZeroAddress(_oracleNativeToken) {
-        emit NewOracleNativeToken(oracleNativeToken, _oracleNativeToken);
+        // emit NewOracleNativeToken(oracleNativeToken, _oracleNativeToken);
         oracleNativeToken = _oracleNativeToken;
+    }
+
+    /// @notice Internal setter for TeleBTC address
+    function _setTeleBTC(address _teleBTC) private nonZeroAddress(_teleBTC) {
+        teleBTC = _teleBTC;
     }
 
     /// @return _result True if getting amount was successful
@@ -131,7 +139,9 @@ abstract contract PriceOracle is IPriceOracle, Ownable {
             ChainlinkPriceProxy[_outputToken] != address(0)
         ) {
             if (
-                _inputToken == NATIVE_TOKEN || _inputToken == oracleNativeToken
+                _inputToken == NATIVE_TOKEN ||
+                _inputToken == oracleNativeToken ||
+                _inputToken == teleBTC
             ) {
                 // Address 0 is the price of Bitcoin
                 price0 = IRedStone(ChainlinkPriceProxy[_inputToken]).priceOf(
@@ -147,7 +157,8 @@ abstract contract PriceOracle is IPriceOracle, Ownable {
 
             if (
                 _outputToken == NATIVE_TOKEN ||
-                _outputToken == oracleNativeToken
+                _outputToken == oracleNativeToken ||
+                _outputToken == teleBTC
             ) {
                 price1 = IRedStone(ChainlinkPriceProxy[_outputToken]).priceOf(
                     address(0)

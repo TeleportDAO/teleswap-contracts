@@ -13,7 +13,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         network.name == "amoy" ||
         network.name == "polygon" ||
         network.name == "bsc" ||
-        network.name == "bsc_testnet"
+        network.name == "bsquared"
     ) {
         const proxyAdmin = config.get("proxy_admin");
         const teleBTCLogic = await deployments.get("TeleBTCLogic");

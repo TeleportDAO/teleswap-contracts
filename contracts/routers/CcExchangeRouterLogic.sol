@@ -1116,7 +1116,7 @@ contract CcExchangeRouterLogic is
     }
 
     /// @notice Internal setter for across
-    function _setAcross(address _across) private nonZeroAddress(_across) {
+    function _setAcross(address _across) private {
         emit AcrossUpdated(across, _across);
         across = _across;
     }
