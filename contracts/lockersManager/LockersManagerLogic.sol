@@ -499,79 +499,20 @@ contract LockersManagerLogic is
         return true;
     }
 
-    /// @notice Removes Locker from system and send back Locker TST and collateral.
-    /// @dev Only Locker can call this. The conditions for successful remove is:
-    ///      1. Locker has been inactivated
-    ///      2. Locker sends net minted TeleBTC to the contract
-    ///      3. Locker is not being slashed
-    /// @return True if locker is removed successfully
-    function selfRemoveLocker() external override nonReentrant returns (bool) {
-        locker memory _removingLocker = lockersMapping[_msgSender()];
+    // /// @notice Removes Locker from system and send back Locker TST and collateral.
+    // /// @dev Only Locker can call this. The conditions for successful remove is:
+    // ///      1. Locker has been inactivated
+    // ///      2. Locker sends net minted TeleBTC to the contract
+    // ///      3. Locker is not being slashed
+    // /// @return True if locker is removed successfully
+    // function selfRemoveLocker() external override nonReentrant returns (bool) {
+    //     locker memory _removingLocker = lockersMapping[_msgSender()];
 
-        if (!_removingLocker.isLocker) revert NotLocker();
+    //     if (!_removingLocker.isLocker) revert NotLocker();
 
-        if (isLockerActive(_msgSender())) revert LockerActive();
+    //     if (isLockerActive(_msgSender())) revert LockerActive();
 
-        // Locker needs to make its netMinted 0 before leaving the system
-        ITeleBTC(teleBTC).transferFrom(
-            _msgSender(),
-            address(this),
-            _removingLocker.netMinted
-        );
-        ITeleBTC(teleBTC).burn(_removingLocker.netMinted);
-
-        if (_removingLocker.slashingTeleBTCAmount != 0) revert InvalidValue();
-
-        // Remove locker from lockersMapping
-
-        delete getLockerTargetAddress[
-            lockersMapping[_msgSender()].lockerLockingScript
-        ];
-        delete lockersMapping[_msgSender()];
-        totalNumberOfLockers = totalNumberOfLockers - 1;
-
-        // Sends back TST and collateral
-        if (libParams.TeleportSystemToken != address(0)) {
-            IERC20(TeleportSystemToken).safeTransfer(
-                _msgSender(),
-                _removingLocker.TSTLockedAmount
-            );
-        }
-
-        if (lockerCollateralToken[_msgSender()] == NATIVE_TOKEN) {
-            Address.sendValue(
-                payable(_msgSender()),
-                _removingLocker.collateralTokenLockedAmount +
-                    _removingLocker.reservedCollateralTokenForSlash
-            );
-        } else {
-            IERC20(lockerCollateralToken[_msgSender()]).transfer(
-                _msgSender(),
-                _removingLocker.collateralTokenLockedAmount +
-                    _removingLocker.reservedCollateralTokenForSlash
-            );
-        }
-
-        emit LockerRemoved(
-            _msgSender(),
-            _removingLocker.lockerLockingScript,
-            _removingLocker.TSTLockedAmount,
-            lockerCollateralToken[_msgSender()],
-            _removingLocker.collateralTokenLockedAmount
-        );
-        return true;
-    }
-
-    // function removeLockerByOwner(address _lockerTargetAddress)
-    //     external
-    //     onlyOwner
-    //     nonReentrant
-    //     returns (bool)
-    // {
-    //     locker memory _removingLocker = lockersMapping[_lockerTargetAddress];
-
-    //     require(_removingLocker.isLocker, "Lockers: no locker");
-
+    //     // Locker needs to make its netMinted 0 before leaving the system
     //     ITeleBTC(teleBTC).transferFrom(
     //         _msgSender(),
     //         address(this),
@@ -579,38 +520,103 @@ contract LockersManagerLogic is
     //     );
     //     ITeleBTC(teleBTC).burn(_removingLocker.netMinted);
 
-    //     require(
-    //         _removingLocker.slashingTeleBTCAmount == 0,
-    //         "Lockers: 0 slashing TBTC"
-    //     );
+    //     if (_removingLocker.slashingTeleBTCAmount != 0) revert InvalidValue();
 
     //     // Remove locker from lockersMapping
 
-    //     delete lockerTargetAddress[
-    //         lockersMapping[_lockerTargetAddress].lockerLockingScript
+    //     delete getLockerTargetAddress[
+    //         lockersMapping[_msgSender()].lockerLockingScript
     //     ];
-    //     delete lockersMapping[_lockerTargetAddress];
+    //     delete lockersMapping[_msgSender()];
     //     totalNumberOfLockers = totalNumberOfLockers - 1;
 
     //     // Sends back TST and collateral
-    //     IERC20(TeleportSystemToken).safeTransfer(
-    //         _lockerTargetAddress,
-    //         _removingLocker.TSTLockedAmount
-    //     );
-    //     Address.sendValue(
-    //         payable(_lockerTargetAddress),
-    //         _removingLocker.collateralTokenLockedAmount
-    //     );
+    //     if (libParams.TeleportSystemToken != address(0)) {
+    //         IERC20(TeleportSystemToken).safeTransfer(
+    //             _msgSender(),
+    //             _removingLocker.TSTLockedAmount
+    //         );
+    //     }
+
+    //     if (lockerCollateralToken[_msgSender()] == NATIVE_TOKEN) {
+    //         Address.sendValue(
+    //             payable(_msgSender()),
+    //             _removingLocker.collateralTokenLockedAmount +
+    //                 _removingLocker.reservedCollateralTokenForSlash
+    //         );
+    //     } else {
+    //         IERC20(lockerCollateralToken[_msgSender()]).transfer(
+    //             _msgSender(),
+    //             _removingLocker.collateralTokenLockedAmount +
+    //                 _removingLocker.reservedCollateralTokenForSlash
+    //         );
+    //     }
 
     //     emit LockerRemoved(
-    //         _lockerTargetAddress,
+    //         _msgSender(),
     //         _removingLocker.lockerLockingScript,
     //         _removingLocker.TSTLockedAmount,
-    //         lockerCollateralToken[_lockerTargetAddress],
+    //         lockerCollateralToken[_msgSender()],
     //         _removingLocker.collateralTokenLockedAmount
     //     );
     //     return true;
     // }
+
+    function selfRemoveLocker() external override nonReentrant returns (bool) {}
+
+    /// @notice Remove Locker from system and send back Locker TST and collateral.
+    /// @dev Owner need to pay net minted TeleBTC to the contract
+    function removeLockerByOwner(address _lockerTargetAddress)
+        external
+        onlyOwner
+        nonReentrant
+        returns (bool)
+    {
+        locker memory _removingLocker = lockersMapping[_lockerTargetAddress];
+
+        require(_removingLocker.isLocker, "Lockers: no locker");
+
+        if(_removingLocker.netMinted > 0) {
+            ITeleBTC(teleBTC).transferFrom(
+                _msgSender(),
+                address(this),
+                _removingLocker.netMinted
+            );
+            ITeleBTC(teleBTC).burn(_removingLocker.netMinted);
+        }
+
+        require(
+            _removingLocker.slashingTeleBTCAmount == 0,
+            "Lockers: 0 slashing TBTC"
+        );
+
+        // Remove locker from lockersMapping
+
+        delete getLockerTargetAddress[
+            lockersMapping[_lockerTargetAddress].lockerLockingScript
+        ];
+        delete lockersMapping[_lockerTargetAddress];
+        totalNumberOfLockers = totalNumberOfLockers - 1;
+
+        // Sends back TST and collateral
+        IERC20(TeleportSystemToken).safeTransfer(
+            _lockerTargetAddress,
+            _removingLocker.TSTLockedAmount
+        );
+        Address.sendValue(
+            payable(_lockerTargetAddress),
+            _removingLocker.collateralTokenLockedAmount
+        );
+
+        emit LockerRemoved(
+            _lockerTargetAddress,
+            _removingLocker.lockerLockingScript,
+            _removingLocker.TSTLockedAmount,
+            lockerCollateralToken[_lockerTargetAddress],
+            _removingLocker.collateralTokenLockedAmount
+        );
+        return true;
+    }
 
     /// @notice Slash Locker for unprocessed unwrap request
     /// @dev Only burn router can call this. Locker is slashed since he doesn't provide burn proof
