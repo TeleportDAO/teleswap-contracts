@@ -566,17 +566,14 @@ contract LockersManagerLogic is
 
     /// @notice Remove Locker from system and send back Locker TST and collateral.
     /// @dev Owner need to pay net minted TeleBTC to the contract
-    function removeLockerByOwner(address _lockerTargetAddress)
-        external
-        onlyOwner
-        nonReentrant
-        returns (bool)
-    {
+    function removeLockerByOwner(
+        address _lockerTargetAddress
+    ) external onlyOwner nonReentrant returns (bool) {
         locker memory _removingLocker = lockersMapping[_lockerTargetAddress];
 
         require(_removingLocker.isLocker, "Lockers: no locker");
 
-        if(_removingLocker.netMinted > 0) {
+        if (_removingLocker.netMinted > 0) {
             ITeleBTC(teleBTC).transferFrom(
                 _msgSender(),
                 address(this),
@@ -1111,6 +1108,18 @@ contract LockersManagerLogic is
                 lockerCollateralToken[_lockerTargetAddress],
                 collateralDecimal[lockerCollateralToken[_lockerTargetAddress]],
                 lockerReliabilityFactor[_lockerTargetAddress]
+            );
+    }
+
+    function priceOfOneUnitOfCollateralInBTC(
+        address _collateralToken,
+        uint _collateralDecimal
+    ) external view returns (uint256) {
+        return
+            LockersManagerLib.priceOfOneUnitOfCollateralInBTC(
+                _collateralToken,
+                _collateralDecimal,
+                libParams
             );
     }
 }
