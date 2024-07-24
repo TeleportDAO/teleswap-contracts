@@ -24,6 +24,7 @@ contract PriceOracleRedStone is Ownable {
     // ^^ ONE_ADDRESS is used for getting price of blockchain native token
     address public oracleNativeToken;
     address public teleBTC;
+    address constant WBTC = 0x03C7054BCB39f7b2e5B2c7AcB37583e32D70Cfa3;
 
     /// @notice This contract is used to get relative price of two assets from RedStone
     /// @param _acceptableDelay Maximum acceptable delay for data given from RedStone
@@ -139,13 +140,16 @@ contract PriceOracleRedStone is Ownable {
             ChainlinkPriceProxy[_outputToken] != address(0)
         ) {
             if (
-                _inputToken == NATIVE_TOKEN ||
-                _inputToken == oracleNativeToken ||
-                _inputToken == teleBTC
+                _inputToken == NATIVE_TOKEN || _inputToken == oracleNativeToken
             ) {
                 // Address 0 is the price of Bitcoin
                 price0 = IRedStone(ChainlinkPriceProxy[_inputToken]).priceOf(
                     address(0)
+                );
+            } else if (_inputToken == teleBTC) {
+                // Use WBTC price for TeleBTC
+                price0 = IRedStone(ChainlinkPriceProxy[_inputToken]).priceOf(
+                    WBTC
                 );
             } else {
                 price0 = IRedStone(ChainlinkPriceProxy[_inputToken]).priceOf(
@@ -157,11 +161,15 @@ contract PriceOracleRedStone is Ownable {
 
             if (
                 _outputToken == NATIVE_TOKEN ||
-                _outputToken == oracleNativeToken ||
-                _outputToken == teleBTC
+                _outputToken == oracleNativeToken
             ) {
                 price1 = IRedStone(ChainlinkPriceProxy[_outputToken]).priceOf(
                     address(0)
+                );
+            } else if (_outputToken == teleBTC) {
+                // Use WBTC price for TeleBTC
+                price1 = IRedStone(ChainlinkPriceProxy[_outputToken]).priceOf(
+                    WBTC
                 );
             } else {
                 price1 = IRedStone(ChainlinkPriceProxy[_outputToken]).priceOf(

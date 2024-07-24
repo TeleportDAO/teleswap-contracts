@@ -12,7 +12,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const teleBTC = await deployments.get("TeleBTCProxy");
     const teleBTCLogic = await deployments.get("TeleBTCLogic");
     let priceOracle;
-    if (network.name == "bsquared") {
+    if (network.name == "bsquared" || network.name == "bob") {
         priceOracle = await deployments.get("PriceOracleRedStone");
     } else {
         priceOracle = await deployments.get("PriceOracle");

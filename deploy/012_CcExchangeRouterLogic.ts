@@ -13,7 +13,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         network.name == "amoy" ||
         network.name == "polygon" ||
         network.name == "bsc" ||
-        network.name == "bsquared"
+        network.name == "bsquared" ||
+        network.name == "bob"
     ) {
         const ccExchangeRouterLib = await deploy("CcExchangeRouterLib", {
             from: deployer,

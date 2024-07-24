@@ -1,35 +1,25 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import verify from "../helper-functions";
-
-require("dotenv").config({ path: "../config/temp.env" });
+import config from "config";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts, network } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
+
     if (
         network.name == "hardhat" ||
-        network.name == "amoy" ||
-        network.name == "polygon" ||
-        network.name == "bsc" ||
-        network.name == "bsquared" || 
         network.name == "bob"
     ) {
-        const burnRouterLib = await deploy("BurnRouterLib", {
-            from: deployer,
-            log: true,
-            skipIfAlreadyDeployed: true,
-        });
+        const uniswapV3SwapRouter = config.get("uniswap_v3_swap_router");
+        const uniswapV3Quoter = config.get("uniswap_v3_quoter");
 
-        const deployedContract = await deploy("BurnRouterLogic", {
+        const deployedContract = await deploy("iZiSwapConnector", {
             from: deployer,
             log: true,
             skipIfAlreadyDeployed: true,
-            args: [],
-            libraries: {
-                BurnRouterLib: burnRouterLib.address,
-            },
+            args: ["UniswapV3", uniswapV3SwapRouter, uniswapV3Quoter]
         });
 
         if (
@@ -39,12 +29,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ) {
             await verify(
                 deployedContract.address,
-                [],
-                "contracts/routers/BurnRouterLogic.sol:BurnRouterLogic"
+                ["UniswapV3", uniswapV3SwapRouter, uniswapV3Quoter],
+                "contracts/swap_connectors/iZiSwapConnector.sol:iZiSwapConnector"
             );
         }
     }
 };
 
 export default func;
-func.tags = ["BurnRouterLogic"];
+func.tags = ["iZiSwapConnector"];

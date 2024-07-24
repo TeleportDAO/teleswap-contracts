@@ -10,7 +10,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     if (
         network.name == "hardhat" ||
-        network.name == "bsquared"
+        network.name == "bsquared" ||
+        network.name == "bob"
     ) {
         const acceptableDelay = config.get("acceptable_delay");
         const tntToken = config.get("wrapped_native_token");

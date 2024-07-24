@@ -47,6 +47,7 @@
 	"dependencies": {
 		"@across-protocol/contracts-v2": "^2.4.6",
 		"@chainlink/contracts": "^0.4.2",
+		"@izumifinance/iziswap_periphery": "^1.0.1",
 		"@openzeppelin/contracts": "4.3.3",
 		"@openzeppelin/contracts-upgradeable": "^4.7.3",
 		"@remix-project/remixd": "^0.6.33",

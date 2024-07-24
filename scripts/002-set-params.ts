@@ -11,7 +11,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const lockersManagerProxy = await deployments.get("LockersManagerProxy");
     const teleBTC = await deployments.get("TeleBTCProxy");
     let priceOracle;
-    if (network.name == "bsquared") {
+    if (network.name == "bsquared" || network.name == "bob") {
         priceOracle = await deployments.get("PriceOracleRedStone");
     } else {
         priceOracle = await deployments.get("PriceOracle");
@@ -25,7 +25,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         "CcExchangeRouterProxy"
     );
     let exchangeConnector;
-    if (network.name == "bsquared") {
+    if (network.name == "bob") {
+        exchangeConnector = await deployments.get("iZiSwapConnector");
+    } else if (network.name == "bsquared") {
         exchangeConnector = await deployments.get("UniswapV3Connector");
     } else {
         exchangeConnector = await deployments.get("UniswapV2Connector");
@@ -298,7 +300,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     let uniswapV2Router02;
     let uniswapV2Connector;
 
-    if (network.name == "bsquared") {
+    if (network.name == "bob") {
+        uniswapV2Router02 = config.get("uniswap_v3_swap_router");
+        uniswapV2Connector = await deployments.get("iZiSwapConnector");
+    } else if (network.name == "bsquared") {
         uniswapV2Router02 = config.get("uniswap_v3_swap_router");
         uniswapV2Connector = await deployments.get("UniswapV3Connector");
     } else {
