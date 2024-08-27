@@ -61,9 +61,8 @@
 	"scripts": {
 		"build": "rimraf artifacts cache src/types && hardhat compile && tsc",
 		"test": "hardhat test",
-		"deploy": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json",
-		"config": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json --deploy-scripts scripts",
-		"config-connector": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json --deploy-scripts scripts/connector",
+		"deploy": "NODE_ENV=$NETWORK hardhat deploy --tags $TAG --network $NETWORK --export export/abi/$NETWORK.json",
+		"config": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json --deploy-scripts scripts/$TAG",
 		"lint": "commitlint --from=HEAD",
 		"prepare": "husky install"
 	}

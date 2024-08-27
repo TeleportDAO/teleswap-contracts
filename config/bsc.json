@@ -14,6 +14,10 @@
 	"chain_id": 56,
 	"treasury": "0x24004f4f6d2e75b039d528e82b100355d8b1d4fb",
 	"across": "0x0000000000000000000000000000000000000000",
+    "locker": "0x8Fc53b97ebe52AdCB30b2e0ec1813C7C92814FCC",
+    "lockerLockingScript": "0xa91440059ea01abcf5ead734dec719932b75f487691687",
+    "lockerScriptType": "3",
+    "teleporter": "0x5e994261eC94Ca332bCdee6720CcEad75b9Ec4a6",
 	"chain_link_oracles": {
 		"native_token_usd": "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE",
 		"btc_usd": "0x264990fbd0A4796A3E3d8E37C4d5F87a3aCa5Ebf",
