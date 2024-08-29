@@ -12,14 +12,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const runeRouterLogic = await deployments.get("RuneRouterLogic");
     const runeRouterLib = await deployments.get("RuneRouterLib");
 
-    const startingBlockNumber = config.get("starting_block_number");
-    const protocolPercentageFee = config.get("protocol_percentage_fee");
+    const startingBlockNumber = config.get("starting_block_height");
+    const protocolPercentageFee = config.get("rune.protocol_percentage_fee");
     const chainId = config.get("chain_id");
     const treasury = config.get("treasury");
-    const locker = config.get("locker");
-    const lockerLockingScript = config.get("lockerLockingScript");
-    const lockerScriptType = config.get("lockerScriptType");
-    const teleporter = config.get("teleporter");
+    const locker = config.get("rune.locker");
+    const lockerLockingScript = config.get("rune.lockerLockingScript");
+    const lockerScriptType = config.get("rune.lockerScriptType");
+    const teleporter = config.get("rune.teleporter");
     const relay = config.get("bitcoin_relay");
 
     logger.color('blue').log("-------------------------------------------------")

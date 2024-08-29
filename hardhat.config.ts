@@ -67,7 +67,12 @@ const config: HardhatUserConfig = {
 			url: "https://1rpc.io/matic",
 			chainId: 137,
 			accounts: [process.env.PRIVATE_KEY ?? ""]
-		   },
+		},
+		base: {
+			url: "https://base.llamarpc.com",
+			chainId: 8453,
+			accounts: [process.env.PRIVATE_KEY ?? ""]
+		},
 		bsquared: {
 			url: "https://rpc.bsquared.network",
 			chainId: 223,
@@ -114,6 +119,7 @@ const config: HardhatUserConfig = {
 		apiKey: {
 			ethereum: process.env.ETHERSCAN_API_KEY??"",
     		polygon: process.env.ETHERSCAN_API_KEY??"",
+			base: process.env.ETHERSCAN_API_KEY??"",
 			bsc: process.env.ETHERSCAN_API_KEY??"",
 			arbitrum: process.env.ETHERSCAN_API_KEY??"",
 			optimism: process.env.ETHERSCAN_API_KEY??"",
@@ -137,6 +143,14 @@ const config: HardhatUserConfig = {
 				urls: {
 					apiURL: "https://api.polygonscan.com/api",
 					browserURL: "https://polygonscan.com/"
+				}
+			},
+			{
+				network: "base",
+				chainId: 8453,
+				urls: {
+					apiURL: "https://api.basescan.org/api",
+					browserURL: "https://basescan.org/"
 				}
 			},
 			{
