@@ -29,7 +29,7 @@ interface IRuneRouter {
         uint appId;
         address sender;
         bytes userScript;
-		ScriptTypes scriptType;
+        ScriptTypes scriptType;
     }
 
     struct thirdParty {
@@ -48,62 +48,42 @@ interface IRuneRouter {
     /// @notice Emits when appId for an exchange connector is set
     /// @param appId Assigned application id to exchange
     /// @param exchangeConnector Address of exchange connector contract
-    event SetExchangeConnector(
-        uint appId,
-        address exchangeConnector
-    );
+    event SetExchangeConnector(uint appId, address exchangeConnector);
 
     /// @notice Emit when relay address updated
-    event NewRelay(
-        address oldRelay, 
-        address newRelay
-    );
+    event NewRelay(address oldRelay, address newRelay);
 
     /// @notice Emit when locker address updated
-    event NewLocker(
-        address oldLocker, 
-        address newLocker
-    );
+    event NewLocker(address oldLocker, address newLocker);
 
     /// @notice Emit when teleporter address updated
-    event NewTeleporter(
-        address oldTeleporter, 
-        address newTeleporter
-    );
+    event NewTeleporter(address oldTeleporter, address newTeleporter);
 
     /// @notice Emit when protocol fee updated
     event NewProtocolPercentageFee(
-        uint oldProtocolPercentageFee, 
+        uint oldProtocolPercentageFee,
         uint newProtocolPercentageFee
     );
 
     /// @notice Emit when treasury address updated
-    event NewTreasury(
-        address oldTreasury, 
-        address newTreasury
-    );
+    event NewTreasury(address oldTreasury, address newTreasury);
 
     /// @notice Emit when new Rune added
     event NewRune(
-        string name, 
+        string name,
         string symbol,
+        string runeId,
         uint decimal,
-        uint tokenId, 
-        address wRuneProxy, 
+        uint internalId,
+        address wRuneProxy,
         address wRuneLogic
     );
 
     /// @notice Emit when Rune removed
-    event RuneRemoved(
-        uint tokenId, 
-        address wRuneProxy
-    );
+    event RuneRemoved(uint tokenId, address wRuneProxy);
 
     /// @notice Emit when unwrap fee updated
-    event UnwrapFeeUpdated(
-        uint oldFee, 
-        uint newFee
-    );
+    event UnwrapFeeUpdated(uint oldFee, uint newFee);
 
     /// @notice Emit when third party fee updated
     event ThirdPartyInfoUpdated(
@@ -153,7 +133,7 @@ interface IRuneRouter {
         address user,
         uint remainingAmount,
         bytes userScript,
-		ScriptTypes scriptType,
+        ScriptTypes scriptType,
         uint reqIdx
     );
 
@@ -161,7 +141,7 @@ interface IRuneRouter {
     event NewRuneUnwrap(
         address user,
         bytes userScript,
-		ScriptTypes scriptType,
+        ScriptTypes scriptType,
         address inputToken,
         uint inputAmount,
         uint remainingAmount,
@@ -175,7 +155,7 @@ interface IRuneRouter {
     event NewRuneSwapAndUnwrap(
         address user,
         bytes userScript,
-		ScriptTypes scriptType,
+        ScriptTypes scriptType,
         uint inputAmount,
         address inputToken,
         uint outputAmount,
@@ -188,15 +168,17 @@ interface IRuneRouter {
     );
 
     // Read-only functions
-    
+
     function isWrapRequestProcessed(bytes32 _txId) external view returns (bool);
 
-    function isUnwrapRequestProcessed(uint _reqIdx) external view returns (bool);
-    
+    function isUnwrapRequestProcessed(
+        uint _reqIdx
+    ) external view returns (bool);
+
     function startingBlockNumber() external view returns (uint);
 
     function protocolPercentageFee() external view returns (uint);
-    
+
     function chainId() external view returns (uint);
 
     function relay() external view returns (address);
@@ -223,11 +205,14 @@ interface IRuneRouter {
 
     function setTeleporter(address _teleporter) external;
 
-    function setExchangeConnector(uint _appId, address _exchangeConnector) external;
+    function setExchangeConnector(
+        uint _appId,
+        address _exchangeConnector
+    ) external;
 
-	function setTreasury(address _treasury) external;
+    function setTreasury(address _treasury) external;
 
-	function setProtocolPercentageFee(uint _protocolPercentageFee) external;
+    function setProtocolPercentageFee(uint _protocolPercentageFee) external;
 
     function setChainId(uint _chainId) external;
 
@@ -236,9 +221,7 @@ interface IRuneRouter {
         ScriptTypes _lockerScriptType
     ) external;
 
-    function setUnwrapFee(
-        uint _newFee
-    ) external;
+    function setUnwrapFee(uint _newFee) external;
 
     function setThirdParty(
         uint _thirdPartyId,
@@ -249,13 +232,12 @@ interface IRuneRouter {
     function addRune(
         string memory _name,
         string memory _symbol,
+        string memory _runeId,
         uint8 _decimal,
         uint _tokenId
     ) external;
 
-    function removeRune(
-        uint _tokenId
-    ) external;
+    function removeRune(uint _tokenId) external;
 
     function wrapRune(
         bytes4 _version,
@@ -267,7 +249,6 @@ interface IRuneRouter {
         uint _index,
         address[] memory _path
     ) external payable;
-
 
     function unwrapProofRune(
         bytes4 _version,
@@ -290,5 +271,4 @@ interface IRuneRouter {
         uint _inputAmount,
         address[] memory _path
     ) external payable;
-
 }

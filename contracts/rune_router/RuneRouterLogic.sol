@@ -171,16 +171,18 @@ contract RuneRouterLogic is
 
     /// @notice Deploy wrapped Rune token contract
     /// @dev We assign tokenId to a supported Rune
-    /// @param _tokenId Same as RUNE Id
+    /// @param _runeId Real rune id
+    /// @param _internalId Internal id
     function addRune(
         string memory _name,
         string memory _symbol,
+        string memory _runeId,
         uint8 _decimal,
-        uint _tokenId
+        uint _internalId
     ) external override onlyOwner {
         // Cannot assign to a used tokenId
         require(
-            supportedRunes[_tokenId] == address(0),
+            supportedRunes[_internalId] == address(0),
             "RuneRouterLogic: used id"
         );
 
@@ -188,7 +190,7 @@ contract RuneRouterLogic is
         address wRuneLogic = RuneRouterLib.addRuneHelper();
 
         bytes memory nullData;
-        WRuneProxy _wRuneProxy = new WRuneProxy(wRuneLogic, owner(), nullData); 
+        WRuneProxy _wRuneProxy = new WRuneProxy(wRuneLogic, owner(), nullData);
         // ^^ We set current owner as the proxy admin
 
         address wRuneProxy = address(_wRuneProxy);
@@ -200,28 +202,29 @@ contract RuneRouterLogic is
         WRuneLogic(wRuneProxy).addMinter(address(this));
         WRuneLogic(wRuneProxy).addBurner(address(this));
 
-        supportedRunes[_tokenId] = wRuneProxy;
-        runeTokenIds[_name] = _tokenId;
+        supportedRunes[_internalId] = wRuneProxy;
+        internalIds[wRuneProxy] = _internalId;
+        runeIds[wRuneProxy] = _runeId;
 
         emit NewRune(
             _name,
             _symbol,
+            _runeId,
             _decimal,
-            _tokenId,
+            _internalId,
             wRuneProxy,
             wRuneLogic
         );
     }
 
     /// @notice Remove support of a wrapped RUNE token
-    function removeRune(uint _tokenId) external override onlyOwner {
-        require(
-            supportedRunes[_tokenId] != address(0),
-            "RuneRouterLogic: no token"
-        );
-        emit RuneRemoved(_tokenId, supportedRunes[_tokenId]);
-        runeTokenIds[WRuneLogic(supportedRunes[_tokenId]).name()] = 0;
-        supportedRunes[_tokenId] = address(0);
+    function removeRune(uint _internalId) external override onlyOwner {
+        address wrappedRune = supportedRunes[_internalId];
+        require(wrappedRune != address(0), "RuneRouterLogic: no token");
+        emit RuneRemoved(_internalId, wrappedRune);
+        delete runeIds[wrappedRune];
+        delete internalIds[wrappedRune];
+        delete supportedRunes[_internalId];
     }
 
     /// @notice Setter for unwrap fee
@@ -379,7 +382,7 @@ contract RuneRouterLogic is
     /// @param _scriptType User script type
     function unwrapRune(
         uint _thirdPartyId,
-        uint _tokenId,
+        uint _internalId,
         uint _amount,
         bytes memory _userScript,
         ScriptTypes _scriptType,
@@ -387,7 +390,7 @@ contract RuneRouterLogic is
         uint _inputAmount,
         address[] memory _path
     ) external payable override nonReentrant {
-        address token = supportedRunes[_tokenId];
+        address token = supportedRunes[_internalId];
         require(token != address(0), "RuneRouterLogic: not supported");
         require(msg.value == unwrapFee, "RuneRouterLogic: wrong fee");
 

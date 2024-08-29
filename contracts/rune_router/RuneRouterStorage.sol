@@ -4,7 +4,6 @@ pragma solidity >=0.8.0 <0.8.4;
 import "./interfaces/IRuneRouter.sol";
 
 abstract contract RuneRouterStorage is IRuneRouter {
-
     // Constants
     uint constant MAX_PROTOCOL_FEE = 10000;
 
@@ -18,9 +17,10 @@ abstract contract RuneRouterStorage is IRuneRouter {
     address public override treasury;
     address public override locker;
     mapping(uint => address) public supportedRunes; // Mapping from tokenId to tokenAddress
-    mapping(string => uint) public runeTokenIds; // Mapping from name to tokenId
+    mapping(address => string) public runeIds; // Mapping from wrapped rune address to runeId
+    mapping(address => uint) public internalIds; // Mapping wrapped rune address to internalId
     mapping(bytes32 => runeWrapRequest) public runeWrapRequests;
-    mapping(uint => address) public override exchangeConnector; 
+    mapping(uint => address) public override exchangeConnector;
     // ^ Mapping from app id to exchange connector address
     runeUnwrapRequest[] public runeUnwrapRequests;
     bytes public override lockerLockingScript;
