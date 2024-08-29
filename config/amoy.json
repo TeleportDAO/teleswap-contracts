@@ -12,10 +12,6 @@
 	"chain_id": 137,
 	"treasury": "0x4234c3aBeA751301579448594D3EA2398452a982",
 	"across": "0xC70e09dE70B69f0914c53D5777226DC3192673cd",
-    "locker": "0x8Fc53b97ebe52AdCB30b2e0ec1813C7C92814FCC",
-    "lockerLockingScript": "0xa91440059ea01abcf5ead734dec719932b75f487691687",
-    "lockerScriptType": "3",
-    "teleporter": "0x5e994261eC94Ca332bCdee6720CcEad75b9Ec4a6",
 	"chain_link_oracles": {
 		"wrapped_native_token_usd": "0x001382149eBa3441043c1c66972b4772963f5D43",
 		"btc_usd": "0xe7656e23fE8077D438aEfbec2fAbDf2D8e070C4f",
@@ -35,6 +31,13 @@
 		"slasher_percentage_reward": 500,
 		"bitcoin_fee": 1000,
 		"transfer_deadLine": 720
+	},
+	"rune": {
+		"protocol_percentage_fee": 5,
+		"locker": "0x8Fc53b97ebe52AdCB30b2e0ec1813C7C92814FCC",
+		"lockerLockingScript": "0xa91440059ea01abcf5ead734dec719932b75f487691687",
+		"lockerScriptType": "3",
+		"teleporter": "0x5e994261eC94Ca332bCdee6720CcEad75b9Ec4a6"
 	},
 	"lockers_contract": {
 		"collateral_ratio": 10,

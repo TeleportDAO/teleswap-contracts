@@ -9,10 +9,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     if (
         network.name == "hardhat" ||
-        network.name == "amoy" ||
-        network.name == "polygon"
+        (network.name != "amoy" && network.name != "polygon")
     ) {
-        const deployedContract = await deploy("PolyConnectorLogic", {
+        const deployedContract = await deploy("EthConnectorLogic", {
             from: deployer,
             log: true,
             skipIfAlreadyDeployed: true,
@@ -27,7 +26,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             await verify(
                 deployedContract.address,
                 [],
-                "contracts/connectors/PolyConnectorLogic.sol:PolyConnectorLogic"
+                "contracts/btc_connectors/EthConnectorLogic.sol:EthConnectorLogic"
             );
         }
     }

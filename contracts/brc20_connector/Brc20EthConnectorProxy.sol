@@ -3,8 +3,8 @@ pragma solidity >=0.8.0 <=0.8.4;
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-contract WBRC20Proxy is TransparentUpgradeableProxy {
-
+contract Brc20EthConnectorProxy is TransparentUpgradeableProxy {
+    
     constructor(
         address _logic,
         address admin_,
