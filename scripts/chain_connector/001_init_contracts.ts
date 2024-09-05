@@ -19,6 +19,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             "LockersManagerProxy"
         );
         const burnRouterProxy = await deployments.get("BurnRouterProxy");
+        const runeRouterProxy = await deployments.get("RuneRouterProxy");
         const polyConnectorLogic = await deployments.get("PolyConnectorLogic");
         const polyConnectorProxy = await deployments.get("PolyConnectorProxy");
         const across = config.get("across");
@@ -40,7 +41,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             const initializeTx = await polyConnectorProxyInstance.initialize(
                 lockersManagerProxy.address,
                 burnRouterProxy.address,
-                across
+                across,
+                runeRouterProxy.address
             );
             await initializeTx.wait(1);
             console.log("Initialized PolyConnectorProxy: ", initializeTx.hash);
@@ -53,7 +55,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             const initializeTx = await polyConnectorLogicInstance.initialize(
                 lockersManagerProxy.address,
                 burnRouterProxy.address,
-                across
+                across,
+                runeRouterProxy.address
             );
             await initializeTx.wait(1);
             console.log("Initialized PolyConnectorLogic: ", initializeTx.hash);

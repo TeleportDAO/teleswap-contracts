@@ -1,6 +1,7 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import verify from "../../helper-functions";
+import config from "config";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts, network } = hre;
@@ -9,13 +10,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     if (
         network.name == "hardhat" ||
-        (network.name != "amoy" && network.name != "polygon")
+        network.name == "amoy" ||
+        network.name == "polygon"
     ) {
-        const deployedContract = await deploy("EthConnectorLogic", {
+        const proxyAdmin = config.get("proxy_admin");
+        const polyConnectorLogic = await deployments.get("PolyConnectorLogic");
+
+        const deployedContract = await deploy("PolyConnectorProxy", {
             from: deployer,
             log: true,
             skipIfAlreadyDeployed: true,
-            args: [],
+            args: [polyConnectorLogic.address, proxyAdmin, "0x"],
         });
 
         if (
@@ -25,12 +30,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ) {
             await verify(
                 deployedContract.address,
-                [],
-                "contracts/btc_connectors/EthConnectorLogic.sol:EthConnectorLogic"
+                [polyConnectorLogic.address, proxyAdmin, "0x"],
+                "contracts/chain_connectors/PolyConnectorProxy.sol:PolyConnectorProxy"
             );
         }
     }
 };
 
 export default func;
-func.tags = ["btc_connector"];
+func.tags = ["chain_connector"];
