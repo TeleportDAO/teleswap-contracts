@@ -2,7 +2,7 @@
 	"proxy_admin": "0x4565aE5c90E52c058410fC7f05711fFed9b6e62a",
 	"bitcoin_network": "mainnet",
 	"bitcoin_relay": "0x7DeB66341b1d499D7e699589d0cf665De4132EA3",
-	"starting_block_height": "818599",
+	"starting_block_height": "860629",
 	"uniswap_v2_router_02": "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff",
 	"uniswap_v2_factory": "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32",
 	"wrapped_native_token": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
@@ -39,5 +39,12 @@
 		"liquidation_ratio": 500,
 		"locker_percentage_fee": 15,
 		"price_with_discount_ratio": 9000
+	},
+	"rune": {
+		"protocol_percentage_fee": 5,
+		"locker": "0x8Fc53b97ebe52AdCB30b2e0ec1813C7C92814FCC",
+		"lockerLockingScript": "0xa91440059ea01abcf5ead734dec719932b75f487691687",
+		"lockerScriptType": "3",
+		"teleporter": "0x5e994261eC94Ca332bCdee6720CcEad75b9Ec4a6"
 	}
 }
