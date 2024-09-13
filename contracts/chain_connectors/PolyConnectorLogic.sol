@@ -345,7 +345,7 @@ contract PolyConnectorLogic is
             );
         } catch {
             // Remove spending allowance
-            IERC20(arguments.path[0]).approve(burnRouterProxy, 0);
+            IERC20(_tokenSent).approve(burnRouterProxy, 0);
 
             // Save token amount so user can withdraw it in future
             newFailedReqs[arguments.user][arguments.chainId][
@@ -409,7 +409,7 @@ contract PolyConnectorLogic is
             );
         } catch {
             // Remove spending allowance
-            IERC20(arguments.path[0]).approve(runeRouterProxy, 0);
+            IERC20(_tokenSent).approve(runeRouterProxy, 0);
 
             // Save token amount so user can withdraw it in future
             newFailedReqs[arguments.user][arguments.chainId][
@@ -480,21 +480,17 @@ contract PolyConnectorLogic is
     function _decodeReqRune(
         bytes memory _message
     ) private pure returns (exchangeForRuneArguments memory arguments) {
-        (   
-            // purpose,
-            ,
+        (
+            , // purpose,
             arguments.uniqueCounter,
             arguments.chainId,
             arguments.user,
             arguments.appId,
             arguments.outputAmount,
             arguments.internalId, 
-            // arguments.path,
-            // arguments.userScript,
+            , // arguments.path,
+            , // arguments.userScript,
             // arguments.thirdPartyId
-            ,
-            ,
-
         ) = abi.decode(
             _message,
             (
