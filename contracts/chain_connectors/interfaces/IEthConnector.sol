@@ -6,6 +6,11 @@ import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 interface IEthConnector {
     // Structs
 
+    struct UserScript {
+        bytes userScript;
+        ScriptTypes scriptType;
+    }
+
     struct UserAndLockerScript {
         bytes userScript;
         ScriptTypes scriptType;
@@ -15,6 +20,13 @@ interface IEthConnector {
     // Events
 
     event MsgSent(
+        uint256 uniqueCounter,
+        bytes data,
+        address sourceChainInputToken,
+        uint256 amount
+    );
+
+    event MsgSentRune(
         uint256 uniqueCounter,
         bytes data,
         address sourceChainInputToken,
@@ -52,6 +64,17 @@ interface IEthConnector {
         bool _isInputFixed,
         address[] calldata _path,
         UserAndLockerScript calldata _scripts,
+        int64 _relayerFeePercentage,
+        uint256 _thirdParty
+    ) external payable;
+
+    function swapAndUnwrapRune(
+        address _token,
+        uint256 _appId,      
+        uint256[] calldata _amounts,
+        uint256 _tokenId,
+        address[] calldata _path,
+        UserScript calldata _userScript,
         int64 _relayerFeePercentage,
         uint256 _thirdParty
     ) external payable;

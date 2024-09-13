@@ -195,6 +195,10 @@ interface IRuneRouter {
 
     function lockerScriptType() external view returns (ScriptTypes);
 
+    function unwrapFee() external view returns (uint);
+
+    function totalRuneUnwrapRequests() external view returns (uint);
+
     // State-changing functions
 
     function setStartingBlockNumber(uint _startingBlockNumber) external;
@@ -211,6 +215,8 @@ interface IRuneRouter {
     ) external;
 
     function setTreasury(address _treasury) external;
+
+    function setWrappedNativeToken(address _wrappedNativeToken) external;
 
     function setProtocolPercentageFee(uint _protocolPercentageFee) external;
 

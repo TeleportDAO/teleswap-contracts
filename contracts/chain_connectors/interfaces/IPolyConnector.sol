@@ -6,6 +6,11 @@ import "@teleportdao/btc-evm-bridge/contracts/types/ScriptTypesEnum.sol";
 interface IPolyConnector {
     // Structs
 
+    struct UserScript {
+        bytes userScript;
+        ScriptTypes scriptType;
+    }
+
     struct UserAndLockerScript {
         bytes userScript;
         ScriptTypes scriptType;
@@ -22,6 +27,18 @@ interface IPolyConnector {
         address[] path;
         UserAndLockerScript scripts;
         uint256 thirdParty;
+    }
+
+    struct exchangeForRuneArguments {
+        uint256 uniqueCounter;
+        uint256 chainId;
+        address user;
+        uint256 thirdPartyId;
+        uint256 internalId;
+        uint256 appId;
+        uint256 outputAmount;
+        address[] path;
+        UserScript userScript;
     }
 
     // Events
@@ -85,6 +102,47 @@ interface IPolyConnector {
         address user
     );
 
+    event NewSwapAndUnwrapRune(
+        uint256 chainId,
+        address indexed userTargetAddress,
+        uint256 thirdPartyId,
+        uint256 internalId,
+        uint256 appId,
+        uint256 amount,
+        uint256 inputAmount,
+        address[] path,
+        bytes userScript,
+        ScriptTypes scriptType,
+        uint256 requestIdOfLocker
+    );
+
+    event FailedSwapAndUnwrapRune(
+        uint256 chainId,
+        address indexed userTargetAddress,
+        uint256 thirdPartyId,
+        uint256 internalId,
+        uint256 appId,
+        uint256 amount,
+        uint256 inputAmount,
+        address[] path,
+        bytes userScript,
+        ScriptTypes scriptType
+    );
+
+    event RetriedSwapAndUnwrapRune(
+        uint256 chainId,
+        address indexed userTargetAddress,
+        uint256 thirdPartyId,
+        uint256 internalId,
+        uint256 appId,
+        uint256 amount,
+        uint256 inputAmount,
+        address[] path,
+        bytes userScript,
+        ScriptTypes scriptType,
+        uint256 requestIdOfLocker
+    );
+
     event AcrossUpdated(address oldAcross, address newAcross);
 
     event EthConnectorUpdated(address oldEthConnector, address newEthConnector);
@@ -103,6 +161,8 @@ interface IPolyConnector {
 
     function failedReqs(address, uint256, address) external returns (uint256);
 
+    function runeRouterProxy() external view returns (address);
+
     function newFailedReqs(
         address,
         uint256,
@@ -116,6 +176,8 @@ interface IPolyConnector {
 
     function setBurnRouterProxy(address _burnRouterProxy) external;
 
+    function setRuneRouterProxy(address _runeRouterProxy) external;
+
     function setLockersProxy(address _lockersProxy) external;
 
     function withdrawFundsToSourceChain(
@@ -126,6 +188,13 @@ interface IPolyConnector {
     ) external;
 
     function retrySwapAndUnwrap(
+        bytes memory _message,
+        uint8 _v,
+        bytes32 _r,
+        bytes32 _s
+    ) external;
+
+    function retrySwapAndUnwrapRune(
         bytes memory _message,
         uint8 _v,
         bytes32 _r,

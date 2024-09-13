@@ -13,6 +13,7 @@ import "../routers/BurnRouterStorage.sol";
 import "../lockersManager/interfaces/ILockersManager.sol";
 import "./PolyConnectorStorage.sol";
 import "./interfaces/IPolyConnector.sol";
+import "../rune_router/interfaces/IRuneRouter.sol";
 
 contract PolyConnectorLogic is
     IPolyConnector,
@@ -32,7 +33,8 @@ contract PolyConnectorLogic is
     function initialize(
         address _lockersProxy,
         address _burnRouterProxy,
-        address _across
+        address _across,
+        address _runeRouterProxy
     ) public initializer {
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
@@ -41,6 +43,7 @@ contract PolyConnectorLogic is
         lockersProxy = _lockersProxy;
         burnRouterProxy = _burnRouterProxy;
         across = _across;
+        runeRouterProxy = _runeRouterProxy;
     }
 
     /// @notice Setter for LockersProxy
@@ -55,6 +58,13 @@ contract PolyConnectorLogic is
         address _burnRouterProxy
     ) external override onlyOwner nonZeroAddress(_burnRouterProxy) {
         burnRouterProxy = _burnRouterProxy;
+    }
+
+    /// @notice Setter for runeRouterProxy
+    function setRuneRouterProxy(
+        address _runeRouterProxy
+    ) external override onlyOwner nonZeroAddress(_runeRouterProxy) {
+        runeRouterProxy = _runeRouterProxy;
     }
 
     /// @notice Setter for AcrossV3
@@ -81,6 +91,10 @@ contract PolyConnectorLogic is
 
         if (_isEqualString(purpose, "swapAndUnwrap")) {
             _swapAndUnwrap(_amount, _message, _tokenSent);
+        }
+
+        if (_isEqualString(purpose, "swapAndUnwrapRune")) {
+            _swapAndUnwrapRune(_amount, _message, _tokenSent);
         }
     }
 
@@ -214,6 +228,62 @@ contract PolyConnectorLogic is
         );
     }
 
+    /// @notice Retry to swap and unwrap tokens
+    /// @dev User signs a message for retrying its request
+    /// @param _message The signed message
+    /// @param _v Signature v
+    /// @param _r Signature r
+    /// @param _s Signature s
+    function retrySwapAndUnwrapRune(
+        bytes memory _message,
+        uint8 _v,
+        bytes32 _r,
+        bytes32 _s
+    ) external override nonReentrant {
+        // Find user address after verifying the signature
+        address user = _verifySig(_message, _r, _s, _v);
+
+        exchangeForRuneArguments memory arguments = _decodeReqRune(_message);
+
+        uint256 _amount = newFailedReqs[user][arguments.chainId][
+            arguments.uniqueCounter
+        ][arguments.path[0]];
+        delete newFailedReqs[user][arguments.chainId][arguments.uniqueCounter][
+            arguments.path[0]
+        ];
+        require(_amount > 0, "PolygonConnectorLogic: already retried");
+
+        IERC20(arguments.path[0]).approve(runeRouterProxy, _amount);
+
+        // Get unwrap fee from contract
+        uint unwrapFee = IRuneRouter(runeRouterProxy).unwrapFee();
+
+        IRuneRouter(runeRouterProxy).unwrapRune{value: unwrapFee}(
+            arguments.thirdPartyId,
+            arguments.internalId,
+            arguments.outputAmount,
+            arguments.userScript.userScript,
+            arguments.userScript.scriptType,
+            arguments.appId,
+            _amount,
+            arguments.path
+        );
+
+        emit RetriedSwapAndUnwrapRune(
+            arguments.chainId,
+            arguments.user,
+            arguments.thirdPartyId,
+            arguments.internalId,
+            arguments.appId,
+            arguments.outputAmount,
+            _amount,
+            arguments.path,
+            arguments.userScript.userScript,
+            arguments.userScript.scriptType,
+            IRuneRouter(runeRouterProxy).totalRuneUnwrapRequests() - 1
+        );
+    }
+
     /// @notice Withdraws tokens in the emergency case
     /// @dev Only owner can call this
     function emergencyWithdraw(
@@ -275,7 +345,7 @@ contract PolyConnectorLogic is
             );
         } catch {
             // Remove spending allowance
-            IERC20(arguments.path[0]).approve(burnRouterProxy, 0);
+            IERC20(_tokenSent).approve(burnRouterProxy, 0);
 
             // Save token amount so user can withdraw it in future
             newFailedReqs[arguments.user][arguments.chainId][
@@ -293,6 +363,70 @@ contract PolyConnectorLogic is
                 arguments.scripts.scriptType,
                 arguments.path,
                 arguments.thirdParty
+            );
+        }
+    }
+
+    /// @notice Helper for exchanging token for RUNE
+    function _swapAndUnwrapRune(
+        uint256 _amount,
+        bytes memory _message,
+        address _tokenSent
+    ) internal {
+        exchangeForRuneArguments memory arguments = _decodeReqRune(_message);
+
+        IERC20(_tokenSent).approve(runeRouterProxy, _amount);
+
+        // Get unwrap fee from contract
+        // We assume that contract owner has funded the contract with enough native token
+        // Owner get this fee from users in the source chain connector contract
+        uint unwrapFee = IRuneRouter(runeRouterProxy).unwrapFee();
+
+        try
+            IRuneRouter(runeRouterProxy).unwrapRune{value: unwrapFee}(
+                arguments.thirdPartyId,
+                arguments.internalId,
+                arguments.outputAmount,
+                arguments.userScript.userScript,
+                arguments.userScript.scriptType,
+                arguments.appId,
+                _amount,
+                arguments.path
+            )
+        {
+            emit NewSwapAndUnwrapRune(
+                arguments.chainId,
+                arguments.user,
+                arguments.thirdPartyId,
+                arguments.internalId,
+                arguments.appId,
+                arguments.outputAmount,
+                _amount,
+                arguments.path,
+                arguments.userScript.userScript,
+                arguments.userScript.scriptType,
+                IRuneRouter(runeRouterProxy).totalRuneUnwrapRequests() - 1
+            );
+        } catch {
+            // Remove spending allowance
+            IERC20(_tokenSent).approve(runeRouterProxy, 0);
+
+            // Save token amount so user can withdraw it in future
+            newFailedReqs[arguments.user][arguments.chainId][
+                arguments.uniqueCounter
+            ][_tokenSent] = _amount;
+
+            emit FailedSwapAndUnwrapRune(
+                arguments.chainId,
+                arguments.user,
+                arguments.thirdPartyId,
+                arguments.internalId,
+                arguments.appId,
+                arguments.outputAmount,
+                _amount,
+                arguments.path,
+                arguments.userScript.userScript,
+                arguments.userScript.scriptType
             );
         }
     }
@@ -338,6 +472,66 @@ contract PolyConnectorLogic is
                 bool,
                 address[],
                 UserAndLockerScript,
+                uint256
+            )
+        );
+    }
+
+    function _decodeReqRune(
+        bytes memory _message
+    ) private pure returns (exchangeForRuneArguments memory arguments) {
+        (
+            , // purpose,
+            arguments.uniqueCounter,
+            arguments.chainId,
+            arguments.user,
+            arguments.appId,
+            arguments.outputAmount,
+            arguments.internalId, 
+            , // arguments.path,
+            , // arguments.userScript,
+            // arguments.thirdPartyId
+        ) = abi.decode(
+            _message,
+            (
+                string,
+                uint256,
+                uint256,
+                address,
+                uint256,
+                uint256,
+                uint256,
+                address[],
+                UserScript,
+                uint256
+            )
+        );
+
+        // to handle stack too deep
+
+        (
+            ,
+            ,
+            ,
+            ,
+            ,
+            ,
+            ,
+            arguments.path,
+            arguments.userScript,
+            arguments.thirdPartyId
+        ) = abi.decode(
+            _message,
+            (
+                string,
+                uint256,
+                uint256,
+                address,
+                uint256,
+                uint256,
+                uint256,
+                address[],
+                UserScript,
                 uint256
             )
         );

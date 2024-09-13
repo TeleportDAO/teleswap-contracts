@@ -4,6 +4,7 @@ pragma solidity >=0.8.0 <=0.8.4;
 import "./RuneRouterStorage.sol";
 import "./RuneRouterLib.sol";
 import "../erc20/interfaces/IRune.sol";
+import "../erc20/interfaces/IWETH.sol";
 import "../swap_connectors/interfaces/IExchangeConnector.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -33,7 +34,8 @@ contract RuneRouterLogic is
         bytes memory _lockerLockingScript,
         ScriptTypes _lockerScriptType,
         address _teleporter,
-        address _treasury
+        address _treasury,
+        address _wrappedNativeToken
     ) public initializer {
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
@@ -46,6 +48,7 @@ contract RuneRouterLogic is
         setLockerLockingScript(_lockerLockingScript, _lockerScriptType);
         setTeleporter(_teleporter);
         setTreasury(_treasury);
+        setWrappedNativeToken(_wrappedNativeToken);
     }
 
     receive() external payable {}
@@ -65,6 +68,10 @@ contract RuneRouterLogic is
         uint _reqIdx
     ) external view override returns (bool) {
         return runeUnwrapRequests[_reqIdx].isProcessed ? true : false;
+    }
+
+    function totalRuneUnwrapRequests() external view override returns (uint) {
+        return runeUnwrapRequests.length;
     }
 
     /// @notice Setter for locker locking script
@@ -167,6 +174,13 @@ contract RuneRouterLogic is
     /// @notice Setter for chainId
     function setChainId(uint _chainId) public override onlyOwner {
         chainId = _chainId;
+    }
+
+    /// @notice Setter for wrapped native token
+    function setWrappedNativeToken(
+        address _wrappedNativeToken
+    ) public override nonZeroAddress(_wrappedNativeToken) onlyOwner {
+        wrappedNativeToken = _wrappedNativeToken;
     }
 
     /// @notice Deploy wrapped Rune token contract
@@ -392,16 +406,38 @@ contract RuneRouterLogic is
     ) external payable override nonReentrant {
         address token = supportedRunes[_internalId];
         require(token != address(0), "RuneRouterLogic: not supported");
-        require(msg.value == unwrapFee, "RuneRouterLogic: wrong fee");
+
+        if (msg.value > unwrapFee) {
+            // Input token is native token
+            require(
+                msg.value == _inputAmount + unwrapFee,
+                "RuneRouterLogic: wrong value"
+            );
+
+            require(
+                wrappedNativeToken == _path[0],
+                "RuneRouterLogic: invalid path"
+            );
+
+            // Mint wrapped native token
+            IWETH(wrappedNativeToken).deposit{value: _inputAmount}();
+        } else {
+            // Input token != native token
+            require(msg.value == unwrapFee, "RuneRouterLogic: wrong fee");
+        }
 
         if (_path.length != 0) {
             // This is a swap and unwrap request
-            // Transfer user's tokens to contract
-            IRune(_path[0]).transferFrom(
-                msg.sender,
-                address(this),
-                _inputAmount
-            );
+
+            if (msg.value == unwrapFee) {
+                // Transfer user's tokens to contract
+                // Input token is not native token
+                IRune(_path[0]).transferFrom(
+                    _msgSender(),
+                    address(this),
+                    _inputAmount
+                );
+            }
 
             (bool result, uint[] memory amounts) = _swap(
                 _appId,
