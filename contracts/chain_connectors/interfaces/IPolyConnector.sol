@@ -34,7 +34,7 @@ interface IPolyConnector {
         uint256 chainId;
         address user;
         uint256 thirdPartyId;
-        uint256 tokenId;
+        uint256 internalId;
         uint256 appId;
         uint256 outputAmount;
         address[] path;
@@ -106,21 +106,21 @@ interface IPolyConnector {
         uint256 chainId,
         address indexed userTargetAddress,
         uint256 thirdPartyId,
-        uint256 tokenId,
+        uint256 internalId,
         uint256 appId,
         uint256 amount,
         uint256 inputAmount,
         address[] path,
         bytes userScript,
-        ScriptTypes scriptType
-        // uint256 requestIdOfLocker,
+        ScriptTypes scriptType,
+        uint256 requestIdOfLocker
     );
 
     event FailedSwapAndUnwrapRune(
         uint256 chainId,
         address indexed userTargetAddress,
         uint256 thirdPartyId,
-        uint256 tokenId,
+        uint256 internalId,
         uint256 appId,
         uint256 amount,
         uint256 inputAmount,
@@ -133,14 +133,14 @@ interface IPolyConnector {
         uint256 chainId,
         address indexed userTargetAddress,
         uint256 thirdPartyId,
-        uint256 tokenId,
+        uint256 internalId,
         uint256 appId,
         uint256 amount,
         uint256 inputAmount,
         address[] path,
         bytes userScript,
-        ScriptTypes scriptType
-        // uint256 requestIdOfLocker,
+        ScriptTypes scriptType,
+        uint256 requestIdOfLocker
     );
 
     event AcrossUpdated(address oldAcross, address newAcross);

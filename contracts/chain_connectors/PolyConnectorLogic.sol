@@ -255,9 +255,12 @@ contract PolyConnectorLogic is
 
         IERC20(arguments.path[0]).approve(runeRouterProxy, _amount);
 
-        IRuneRouter(runeRouterProxy).unwrapRune(
+        // Get unwrap fee from contract
+        uint unwrapFee = IRuneRouter(runeRouterProxy).unwrapFee();
+
+        IRuneRouter(runeRouterProxy).unwrapRune{value: unwrapFee}(
             arguments.thirdPartyId,
-            arguments.tokenId,
+            arguments.internalId,
             arguments.outputAmount,
             arguments.userScript.userScript,
             arguments.userScript.scriptType,
@@ -270,13 +273,14 @@ contract PolyConnectorLogic is
             arguments.chainId,
             arguments.user,
             arguments.thirdPartyId,
-            arguments.tokenId,
+            arguments.internalId,
             arguments.appId,
             arguments.outputAmount,
             _amount,
             arguments.path,
             arguments.userScript.userScript,
-            arguments.userScript.scriptType
+            arguments.userScript.scriptType,
+            IRuneRouter(runeRouterProxy).totalRuneUnwrapRequests() - 1
         );
     }
 
@@ -373,10 +377,15 @@ contract PolyConnectorLogic is
 
         IERC20(_tokenSent).approve(runeRouterProxy, _amount);
 
+        // Get unwrap fee from contract
+        // We assume that contract owner has funded the contract with enough native token
+        // Owner get this fee from users in the source chain connector contract
+        uint unwrapFee = IRuneRouter(runeRouterProxy).unwrapFee();
+
         try
-            IRuneRouter(runeRouterProxy).unwrapRune(
+            IRuneRouter(runeRouterProxy).unwrapRune{value: unwrapFee}(
                 arguments.thirdPartyId,
-                arguments.tokenId,
+                arguments.internalId,
                 arguments.outputAmount,
                 arguments.userScript.userScript,
                 arguments.userScript.scriptType,
@@ -389,13 +398,14 @@ contract PolyConnectorLogic is
                 arguments.chainId,
                 arguments.user,
                 arguments.thirdPartyId,
-                arguments.tokenId,
+                arguments.internalId,
                 arguments.appId,
                 arguments.outputAmount,
                 _amount,
                 arguments.path,
                 arguments.userScript.userScript,
-                arguments.userScript.scriptType
+                arguments.userScript.scriptType,
+                IRuneRouter(runeRouterProxy).totalRuneUnwrapRequests() - 1
             );
         } catch {
             // Remove spending allowance
@@ -410,7 +420,7 @@ contract PolyConnectorLogic is
                 arguments.chainId,
                 arguments.user,
                 arguments.thirdPartyId,
-                arguments.tokenId,
+                arguments.internalId,
                 arguments.appId,
                 arguments.outputAmount,
                 _amount,
@@ -470,16 +480,17 @@ contract PolyConnectorLogic is
     function _decodeReqRune(
         bytes memory _message
     ) private pure returns (exchangeForRuneArguments memory arguments) {
-        (
+        (   
+            // purpose,
             ,
-            // purpose
             arguments.uniqueCounter,
             arguments.chainId,
             arguments.user,
             arguments.appId,
             arguments.outputAmount,
-            arguments.tokenId, // arguments.path,
-            // arguments.userScript
+            arguments.internalId, 
+            // arguments.path,
+            // arguments.userScript,
             // arguments.thirdPartyId
             ,
             ,

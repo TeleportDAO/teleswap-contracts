@@ -100,7 +100,11 @@ contract EthConnectorLogic is
         int64 _relayerFeePercentage,
         uint256 _thirdParty
     ) external payable override nonReentrant {
-        _checkRequest(_amounts, _path);
+        if (_token == ETH_ADDR) {
+            require(msg.value == _amounts[0], "EthConnectorLogic: wrong value");
+        } else {
+            require(msg.value == 0, "EthConnectorLogic: wrong fee");
+        }
 
         // Send msg to Polygon
         bytes memory message = abi.encode(
@@ -133,14 +137,22 @@ contract EthConnectorLogic is
     /// @param _token Address of input token (on the current chain)
     function swapAndUnwrapRune(
         address _token,
-        uint256 _appId,      
+        uint256 _appId,
         uint256[] calldata _amounts, // [inputTokenAmount, runeAmount]
-        uint256 _tokenId,
+        uint256 _internalId,
         address[] calldata _path,
         UserScript calldata _userScript,
         int64 _relayerFeePercentage,
         uint256 _thirdParty
     ) external payable override nonReentrant {
+        if (_token == ETH_ADDR) {
+            require(
+                msg.value == _amounts[0] + unwrapFee,
+                "EthConnectorLogic: wrong value"
+            );
+        } else {
+            require(msg.value == unwrapFee, "EthConnectorLogic: wrong fee");
+        }
 
         // Send msg to Polygon
         bytes memory message = abi.encode(
@@ -150,7 +162,7 @@ contract EthConnectorLogic is
             _msgSender(),
             _appId,
             _amounts[1],
-            _tokenId,
+            _internalId,
             _path,
             _userScript,
             _thirdParty
@@ -162,11 +174,43 @@ contract EthConnectorLogic is
 
         _sendMsgUsingAcross(
             _token,
-             _amounts[0],
+            _amounts[0],
             message,
             _relayerFeePercentage
         );
     }
+
+    // /// @notice Request exchanging token for RUNE
+    // /// @dev To find runeAmount, _relayerFeePercentage should be reduced from the inputTokenAmount
+    // /// @param _token Address of input token (on the current chain)
+    // function generalSwapAndUnwrap(
+    //     string calldata _swapType,
+    //     address _token,
+    //     uint _amount,
+    //     bytes calldata _message,
+    //     int64 _relayerFeePercentage
+    // ) external payable nonReentrant {
+
+    //     // Send msg to Polygon
+    //     bytes memory finalMessage = abi.encode(
+    //         _swapType,
+    //         uniqueCounter,
+    //         currChainId,
+    //         _msgSender(),
+    //         _message
+    //     );
+
+    //     // emit GeneralMsgSent(_token, _amount, finalMessage);
+
+    //     uniqueCounter++;
+
+    //     _sendMsgUsingAcross(
+    //         _token,
+    //         _amount,
+    //         finalMessage,
+    //         _relayerFeePercentage
+    //     );
+    // }
 
     /// @notice Send tokens and message using Across bridge
     function _sendMsgUsingAcross(
@@ -176,13 +220,14 @@ contract EthConnectorLogic is
         int64 _relayerFeePercentage
     ) internal {
         if (_token == ETH_ADDR) {
-            require(msg.value == _amount, "EthConnectorLogic: wrong value");
             _token = wrappedNativeToken;
         } else {
-            require(msg.value == 0, "EthConnectorLogic: wrong value");
-
             // Transfer tokens from user to contract
-            IERC20(_token).safeTransferFrom(_msgSender(), address(this), _amount);
+            IERC20(_token).safeTransferFrom(
+                _msgSender(),
+                address(this),
+                _amount
+            );
             IERC20(_token).safeApprove(across, _amount);
         }
 
@@ -202,21 +247,6 @@ contract EthConnectorLogic is
             ),
             msg.value
         );
-    }
-
-    /// @notice Check validity of request
-    /// @dev Token should be acceptable, input amount should be >= min,
-    ///      last token of path should be teleBTC, and amounts array length should be 2
-    function _checkRequest(
-        uint256[] calldata _amounts,
-        address[] calldata _path
-    ) internal view {
-        require(
-            _path[_path.length - 1] == targetChainTeleBTC,
-            "EthConnectorLogic: invalid path"
-        );
-
-        require(_amounts.length == 2, "EthConnectorLogic: wrong amounts");
     }
 
     function _setAcross(address _across) private nonZeroAddress(_across) {
