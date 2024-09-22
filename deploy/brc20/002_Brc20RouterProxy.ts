@@ -1,8 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 import verify from "../../helper-functions";
-import * as dotenv from "dotenv";
-dotenv.config();
+import config from "config";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts, network } = hre;

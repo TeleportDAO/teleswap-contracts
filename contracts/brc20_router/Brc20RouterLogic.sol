@@ -471,7 +471,7 @@ contract Brc20RouterLogic is OwnableUpgradeable,
     ) external payable nonReentrant override {
         require(_msgSender() == locker, "Logic: not locker");
 
-        Brc20RouterLib.checkTx(
+        bytes32 txId = Brc20RouterLib.checkTx(
             startingBlockNumber,
             relay,
             _version,
@@ -494,7 +494,8 @@ contract Brc20RouterLogic is OwnableUpgradeable,
                 brc20UnwrapRequests[_reqIndexes[i]].burntAmount,
                 brc20UnwrapRequests[_reqIndexes[i]].userScript,
                 brc20UnwrapRequests[_reqIndexes[i]].scriptType,
-                _reqIndexes[i]
+                _reqIndexes[i],
+                txId
             );
         }
     }

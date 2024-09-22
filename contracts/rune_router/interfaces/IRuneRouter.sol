@@ -134,7 +134,8 @@ interface IRuneRouter {
         uint remainingAmount,
         bytes userScript,
         ScriptTypes scriptType,
-        uint reqIdx
+        uint reqIdx,
+        bytes32 txId
     );
 
     /// @notice Emit when a new rune unwrap request is created

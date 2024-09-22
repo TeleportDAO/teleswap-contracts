@@ -513,7 +513,7 @@ contract RuneRouterLogic is
     ) external payable override nonReentrant {
         require(_msgSender() == locker, "RuneRouterLogic: not locker");
 
-        RuneRouterLib.checkTx(
+        bytes32 txId = RuneRouterLib.checkTx(
             startingBlockNumber,
             relay,
             _version,
@@ -536,7 +536,8 @@ contract RuneRouterLogic is
                 runeUnwrapRequests[_reqIndexes[i]].burntAmount,
                 runeUnwrapRequests[_reqIndexes[i]].userScript,
                 runeUnwrapRequests[_reqIndexes[i]].scriptType,
-                _reqIndexes[i]
+                _reqIndexes[i],
+                txId
             );
         }
     }

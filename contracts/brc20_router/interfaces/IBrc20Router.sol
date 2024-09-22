@@ -115,7 +115,8 @@ interface IBrc20Router {
         uint remainingAmount,
         bytes userScript,
 		ScriptTypes scriptType,
-        uint reqIdx
+        uint reqIdx,
+        bytes32 txId
     );
 
     /// @notice Emits when appId for an exchange connector is set
@@ -184,96 +185,6 @@ interface IBrc20Router {
         uint oldFee,
         address newAddress,
         uint newFee
-    );
-
-    // Rune
-
-    /// @notice Emit when new Rune added
-    event NewRune(
-        string name, 
-        uint decimal,
-        uint tokenId, 
-        address wRuneProxy, 
-        address wRuneLogic
-    );
-
-    /// @notice Emit when Rune removed
-    event RuneRemoved(
-        uint tokenId, 
-        address wRuneProxy
-    );
-
-    /// @notice Emit when a rune wrap request is processed
-    event NewRuneWrap(
-        address user,
-        uint remainingAmount,
-        address inputToken,
-        fees fee,
-        address thirdPartyAddress,
-        bytes32 txId
-    );
-
-    /// @notice Emit when a wrap&swap request is processed
-    event NewRuneWrapAndSwap(
-        address user,
-        uint remainingAmount,
-        address inputToken,
-        uint outputAmount,
-        address outputToken,
-        fees fee,
-        address thirdPartyAddress,
-        bytes32 txId
-    );
-
-    /// @notice Emit when a wrap&swap request is processed but swap failed
-    event FailedRuneWrapAndSwap(
-        address user,
-        uint remainingAmount,
-        address inputToken,
-        uint outputAmount,
-        address outputToken,
-        fees fee,
-        address thirdPartyAddress,
-        bytes32 txId
-    );
-
-    /// @notice Emit when a unwrap request is processed
-    event UnwrapRuneProcessed(
-        address user,
-        uint remainingAmount,
-        bytes userScript,
-		ScriptTypes scriptType,
-        uint reqIdx
-    );
-
-    /// @notice Emit when a new rune unwrap request is created
-    event NewRuneUnwrap(
-        address user,
-        bytes userScript,
-		ScriptTypes scriptType,
-        address inputToken,
-        uint inputAmount,
-        uint remainingAmount,
-        fees fee,
-        uint unwrapFee,
-        address thirdPartyAddress,
-        uint reqIdx
-    );
-
-    /// @notice Emit when a new rune unwrap&swap request is created
-    event NewRuneUnwrapAndSwap(
-        address user,
-        bytes userScript,
-		ScriptTypes scriptType,
-        uint inputAmount,
-        address inputToken,
-        uint outputAmount,
-        uint remainingAmount,
-        address outputToken,
-        fees fee,
-        uint unwrapFee,
-        address thirdPartyAddress,
-        uint reqIdx
     );
 
     // Read-only functions
@@ -377,49 +288,4 @@ interface IBrc20Router {
         uint _index,
         uint[] memory _reqIndexes
     ) external payable;
-
-    // function addRune(
-    //     string memory _name,
-    //     uint8 _decimal,
-    //     uint _tokenId
-    // ) external;
-
-    // function removeRune(
-    //     uint _tokenId
-    // ) external;
-
-    // function wrapRune(
-    //     bytes4 _version,
-    //     bytes memory _vin,
-    //     bytes calldata _vout,
-    //     bytes4 _locktime,
-    //     uint256 _blockNumber,
-    //     bytes calldata _intermediateNodes,
-    //     uint _index,
-    //     address[] memory _path
-    // ) external payable;
-
-
-    // function unwrapProofRune(
-    //     bytes4 _version,
-    //     bytes memory _vin,
-    //     bytes memory _vout,
-    //     bytes4 _locktime,
-    //     uint256 _blockNumber,
-    //     bytes memory _intermediateNodes,
-    //     uint _index,
-    //     uint[] memory _reqIndexes
-    // ) external payable;
-
-    // function unwrapRune(
-    //     uint _thirdPartyId,
-    //     uint _tokenId,
-    //     uint _amount,
-    //     bytes memory _userScript,
-    //     ScriptTypes _scriptType,
-    //     uint _appId,
-    //     uint _inputAmount,
-    //     address[] memory _path
-    // ) external payable;
-
 }
