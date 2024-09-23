@@ -246,6 +246,10 @@ interface IBrc20Router {
         uint _thirdPartyFee
     ) external;
 
+    function setWrappedNativeToken(
+        address _wrappedNativeToken
+    ) external;
+
     function addBrc20(
         string memory _name,
         uint8 _decimal,

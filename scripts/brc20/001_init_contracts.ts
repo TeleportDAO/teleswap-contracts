@@ -21,6 +21,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const lockerScriptType = config.get("lockerScriptType");
     const teleporter = config.get("teleporter");
     const relay = config.get("bitcoin_relay");
+    const wrappedNativeToken = config.get("wrapped_native_token");
 
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Initialize Brc20RouterLogic ...")
@@ -51,7 +52,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             lockerLockingScript,
             lockerScriptType,
             teleporter,
-            treasury
+            treasury,
+            wrappedNativeToken
         )
         await initializeTx.wait(1)
         console.log("Initialized Brc20RouterProxy: ", initializeTx.hash)
@@ -70,7 +72,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             lockerLockingScript,
             lockerScriptType,
             teleporter,
-            treasury
+            treasury,
+            wrappedNativeToken
         )
         await initializeTx.wait(1)
         console.log("Initialized brc20RouterLogic: ", initializeTx.hash)

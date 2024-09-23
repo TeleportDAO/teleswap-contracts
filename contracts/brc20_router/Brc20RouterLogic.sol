@@ -33,7 +33,8 @@ contract Brc20RouterLogic is OwnableUpgradeable,
         bytes memory _lockerLockingScript,
         ScriptTypes _lockerScriptType,
         address _teleporter,
-        address _treasury
+        address _treasury,
+        address _wrappedNativeToken
     ) public initializer {
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
@@ -46,6 +47,7 @@ contract Brc20RouterLogic is OwnableUpgradeable,
         setLockerLockingScript(_lockerLockingScript, _lockerScriptType);
         setTeleporter(_teleporter);
         setTreasury(_treasury);
+        setWrappedNativeToken(_wrappedNativeToken);
     }
 
     receive() external payable {}
@@ -154,6 +156,13 @@ contract Brc20RouterLogic is OwnableUpgradeable,
     /// @notice Setter for chainId
     function setChainId(uint _chainId) public override onlyOwner {
         chainId = _chainId;    
+    }
+
+    /// @notice Setter for wrapped native token
+    function setWrappedNativeToken(
+        address _wrappedNativeToken
+    ) public override nonZeroAddress(_wrappedNativeToken) onlyOwner {
+        wrappedNativeToken = _wrappedNativeToken;
     }
 
     /// @notice Deploy wrapped BRC20 token contract

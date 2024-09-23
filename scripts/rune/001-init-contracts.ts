@@ -21,6 +21,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const lockerScriptType = config.get("rune.lockerScriptType");
     const teleporter = config.get("rune.teleporter");
     const relay = config.get("bitcoin_relay");
+    const wrappedNativeToken = config.get("wrapped_native_token");
 
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Initialize RuneRouterLogic ...")
@@ -51,7 +52,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             lockerLockingScript,
             lockerScriptType,
             teleporter,
-            treasury
+            treasury,
+            wrappedNativeToken
         )
         await initializeTx.wait(1)
         console.log("Initialized RuneRouterProxy: ", initializeTx.hash)
@@ -70,7 +72,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             lockerLockingScript,
             lockerScriptType,
             teleporter,
-            treasury
+            treasury,
+            wrappedNativeToken
         )
         await initializeTx.wait(1)
         console.log("Initialized RuneRouterLogic: ", initializeTx.hash)
