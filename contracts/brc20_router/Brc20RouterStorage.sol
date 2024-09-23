@@ -31,4 +31,5 @@ abstract contract Brc20RouterStorage is IBrc20Router {
     // New variables
     mapping(uint => thirdParty) public thirdParties; // Mapping from thirdPartyId to thirdParty (address, fee)
     uint public unwrapFee; // This fee (which is in native token) covers cost of sending BRC-20 tokens to the user
+    address public wrappedNativeToken;
 }
