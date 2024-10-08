@@ -3,7 +3,7 @@ pragma solidity >=0.8.0 <=0.8.4;
 
 import "../erc20/interfaces/IWETH.sol";
 import "../lockersManager/interfaces/ILockersManager.sol";
-import "../swap_connectors/interfaces/IExchangeConnector.sol";
+import "../dex_connectors/interfaces/IDexConnector.sol";
 import "../libraries/BurnRouterLib.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -652,7 +652,7 @@ contract BurnRouterLogic is
 
         // Give approval to exchange connector
         IWETH(_path[0]).approve(_exchangeConnector, _amounts[0]);
-        (bool result, uint256[] memory amounts) = IExchangeConnector(
+        (bool result, uint256[] memory amounts) = IDexConnector(
             _exchangeConnector
         ).swap(
                 _amounts[0],

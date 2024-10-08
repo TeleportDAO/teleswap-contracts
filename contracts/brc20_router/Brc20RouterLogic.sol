@@ -5,13 +5,15 @@ import "./Brc20RouterStorage.sol";
 import "./Brc20RouterLib.sol";
 import "../erc20/interfaces/IWBRC20.sol";
 import "../erc20/interfaces/IWETH.sol";
-import "../swap_connectors/interfaces/IExchangeConnector.sol";
+import "../dex_connectors/interfaces/IDexConnector.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-contract Brc20RouterLogic is OwnableUpgradeable,
-    ReentrancyGuardUpgradeable, Brc20RouterStorage {
-
+contract Brc20RouterLogic is
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    Brc20RouterStorage
+{
     modifier nonZeroAddress(address _address) {
         require(_address != address(0), "Brc20RouterLogic: zero address");
         _;
@@ -81,52 +83,67 @@ contract Brc20RouterLogic is OwnableUpgradeable,
     }
 
     /// @notice Setter for starting block number
-    function setStartingBlockNumber(uint _startingBlockNumber) public override onlyOwner {
+    function setStartingBlockNumber(
+        uint _startingBlockNumber
+    ) public override onlyOwner {
         require(
             _startingBlockNumber > startingBlockNumber,
             "Brc20RouterLogic: low number"
         );
-        startingBlockNumber = _startingBlockNumber;    
+        startingBlockNumber = _startingBlockNumber;
     }
 
     /// @notice Setter for protocol percentage fee
-    function setProtocolPercentageFee(uint _protocolPercentageFee) public override onlyOwner {
+    function setProtocolPercentageFee(
+        uint _protocolPercentageFee
+    ) public override onlyOwner {
         require(
             MAX_PROTOCOL_FEE >= _protocolPercentageFee,
             "Brc20RouterLogic: out of range"
         );
-        emit NewProtocolPercentageFee(protocolPercentageFee, _protocolPercentageFee);
+        emit NewProtocolPercentageFee(
+            protocolPercentageFee,
+            _protocolPercentageFee
+        );
         protocolPercentageFee = _protocolPercentageFee;
     }
 
     /// @notice Setter for Bitcoin relay
-    function setRelay(address _relay) public override nonZeroAddress(_relay) onlyOwner {
+    function setRelay(
+        address _relay
+    ) public override nonZeroAddress(_relay) onlyOwner {
         emit NewRelay(relay, _relay);
-        relay = _relay;    
+        relay = _relay;
     }
 
     /// @notice Setter for locker
-    function setLocker(address _locker) public override nonZeroAddress(_locker) onlyOwner {
+    function setLocker(
+        address _locker
+    ) public override nonZeroAddress(_locker) onlyOwner {
         emit NewLocker(locker, _locker);
-        locker = _locker;   
+        locker = _locker;
     }
 
     /// @notice Setter for teleporter
-    function setTeleporter(address _teleporter) public override nonZeroAddress(_teleporter) onlyOwner {
+    function setTeleporter(
+        address _teleporter
+    ) public override nonZeroAddress(_teleporter) onlyOwner {
         emit NewTeleporter(teleporter, _teleporter);
-        teleporter = _teleporter;   
+        teleporter = _teleporter;
     }
 
     /// @notice Setter for treasury
-    function setTreasury(address _treasury) public override nonZeroAddress(_treasury) onlyOwner {
+    function setTreasury(
+        address _treasury
+    ) public override nonZeroAddress(_treasury) onlyOwner {
         emit NewTreasury(treasury, _treasury);
-        treasury = _treasury;    
+        treasury = _treasury;
     }
 
     /// @notice Set exchange connector for appId
     /// @dev If address(0) is set for an appId, that appId is inactive
     function setExchangeConnector(
-        uint _appId, 
+        uint _appId,
         address _exchangeConnector
     ) external override onlyOwner {
         emit SetExchangeConnector(_appId, _exchangeConnector);
@@ -155,7 +172,7 @@ contract Brc20RouterLogic is OwnableUpgradeable,
 
     /// @notice Setter for chainId
     function setChainId(uint _chainId) public override onlyOwner {
-        chainId = _chainId;    
+        chainId = _chainId;
     }
 
     /// @notice Setter for wrapped native token
@@ -171,11 +188,10 @@ contract Brc20RouterLogic is OwnableUpgradeable,
         string memory _name,
         uint8 _decimal,
         uint _tokenId
-    ) external onlyOwner override {
-
+    ) external override onlyOwner {
         // Cannot assign BRC20 to a used tokenId
         require(
-            supportedBrc20s[_tokenId] == address(0), 
+            supportedBrc20s[_tokenId] == address(0),
             "Brc20RouterLogic: used id"
         );
 
@@ -184,17 +200,15 @@ contract Brc20RouterLogic is OwnableUpgradeable,
 
         bytes memory nullData;
         WBRC20Proxy _wbrc20Proxy = new WBRC20Proxy(
-            wbrc20Logic, owner(), nullData
+            wbrc20Logic,
+            owner(),
+            nullData
         ); // We set current owner as the proxy admin
 
         address wbrc20Proxy = address(_wbrc20Proxy);
 
         // Initialize proxy (logic owner is this contract)
-        WBRC20Logic(wbrc20Proxy).initialize(
-            _name, 
-            _name, 
-            _decimal
-        ); // We use the same name & symbol
+        WBRC20Logic(wbrc20Proxy).initialize(_name, _name, _decimal); // We use the same name & symbol
 
         // Add this contract as minter and burner
         WBRC20Logic(wbrc20Proxy).addMinter(address(this));
@@ -203,40 +217,24 @@ contract Brc20RouterLogic is OwnableUpgradeable,
         supportedBrc20s[_tokenId] = wbrc20Proxy;
         tokenIds[_name] = _tokenId;
 
-        emit NewBrc20(
-            _name, 
-            _decimal,
-            _tokenId, 
-            wbrc20Proxy, 
-            wbrc20Logic
-        );
+        emit NewBrc20(_name, _decimal, _tokenId, wbrc20Proxy, wbrc20Logic);
     }
 
     /// @notice Remove support of a wrapped BRC20 token
-    function removeBrc20(
-        uint _tokenId
-    ) external onlyOwner override {
+    function removeBrc20(uint _tokenId) external override onlyOwner {
         require(
-            supportedBrc20s[_tokenId] != address(0), 
+            supportedBrc20s[_tokenId] != address(0),
             "Brc20RouterLogic: no token"
         );
-        emit Brc20Removed(
-            _tokenId, 
-            supportedBrc20s[_tokenId]
-        );
+        emit Brc20Removed(_tokenId, supportedBrc20s[_tokenId]);
         tokenIds[WBRC20Logic(supportedBrc20s[_tokenId]).name()] = 0;
         supportedBrc20s[_tokenId] = address(0);
     }
 
     /// @notice Setter for unwrap fee
     /// @dev This fee is taken for unwrap requests to cover the Bitcoin network fee
-    function setUnwrapFee(
-        uint _newFee
-    ) external onlyOwner override {
-        emit UnwrapFeeUpdated(
-            unwrapFee,
-            _newFee
-        );
+    function setUnwrapFee(uint _newFee) external override onlyOwner {
+        emit UnwrapFeeUpdated(unwrapFee, _newFee);
         unwrapFee = _newFee;
     }
 
@@ -244,7 +242,7 @@ contract Brc20RouterLogic is OwnableUpgradeable,
     /// @dev Locker submits wrap requests to this function for:
     ///      1) Checking tx inclusion
     ///      2) Extracting wrap request info from the OP_RETURN output
-    ///      3) Exchanging wrapped BRC20 (if request is wrap & exchange) using the path 
+    ///      3) Exchanging wrapped BRC20 (if request is wrap & exchange) using the path
     ///         provided by the locker
     /// @param _version of Bitcoin tx
     /// @param _vin Tx inputs
@@ -262,9 +260,9 @@ contract Brc20RouterLogic is OwnableUpgradeable,
         bytes calldata _intermediateNodes,
         uint _index,
         address[] memory _path
-    ) external payable nonReentrant override {
+    ) external payable override nonReentrant {
         require(_msgSender() == teleporter, "Brc20RouterLogic: not teleporter");
-        
+
         // Find txId and check its inclusion
         bytes32 txId = Brc20RouterLib.checkTx(
             startingBlockNumber,
@@ -285,31 +283,28 @@ contract Brc20RouterLogic is OwnableUpgradeable,
             address _thirdPartyAddress,
             address wrappedBrc20
         ) = Brc20RouterLib.wrapHelper(
-            chainId,
-            _vout, 
-            txId,
-            brc20WrapRequests,
-            supportedBrc20s,
-            thirdParties,
-            protocolPercentageFee, 
-            lockerPercentageFee
-        );
+                chainId,
+                _vout,
+                txId,
+                brc20WrapRequests,
+                supportedBrc20s,
+                thirdParties,
+                protocolPercentageFee,
+                lockerPercentageFee
+            );
 
         // Mint wrapped tokens
         IWBRC20(wrappedBrc20).mint(
             address(this),
-            fee.protocolFee + fee.lockerFee + fee.thirdPartyFee + remainingAmount
+            fee.protocolFee +
+                fee.lockerFee +
+                fee.thirdPartyFee +
+                remainingAmount
         );
 
         // Send protocol, locker and third party fee
-        IWBRC20(wrappedBrc20).transfer(
-            treasury,
-            fee.protocolFee
-        );
-        IWBRC20(wrappedBrc20).transfer(
-            locker,
-            fee.lockerFee
-        );
+        IWBRC20(wrappedBrc20).transfer(treasury, fee.protocolFee);
+        IWBRC20(wrappedBrc20).transfer(locker, fee.lockerFee);
 
         if (_thirdPartyAddress != address(0)) {
             IWBRC20(wrappedBrc20).transfer(
@@ -320,10 +315,11 @@ contract Brc20RouterLogic is OwnableUpgradeable,
 
         brc20WrapRequest memory request = brc20WrapRequests[txId];
 
-        if (request.appId == 0) { // This is a wrap request
+        if (request.appId == 0) {
+            // This is a wrap request
             // Transfer wrapped tokens to user
             IWBRC20(wrappedBrc20).transfer(
-                request.recipientAddress, 
+                request.recipientAddress,
                 remainingAmount
             );
 
@@ -335,13 +331,14 @@ contract Brc20RouterLogic is OwnableUpgradeable,
                 _thirdPartyAddress,
                 txId
             );
-        } else { // This is wrap & exchange request
+        } else {
+            // This is wrap & exchange request
             // Check exchange path provided by locker
             require(
                 _path[0] == request.inputToken &&
-                _path[_path.length - 1] == request.outputToken,
-                "BurnRouterLogic: wrong path" 
-            );   
+                    _path[_path.length - 1] == request.outputToken,
+                "BurnRouterLogic: wrong path"
+            );
 
             (bool result, uint[] memory amounts) = _swap(
                 request.appId,
@@ -376,15 +373,15 @@ contract Brc20RouterLogic is OwnableUpgradeable,
 
                 // Transfer wrapped tokens to user
                 IWBRC20(wrappedBrc20).transfer(
-                    request.recipientAddress, 
+                    request.recipientAddress,
                     remainingAmount
-                ); 
+                );
             }
         }
     }
 
     /// @notice Process user unwrap request
-    /// @dev For unwrap requests (not swap & unwrap), pass _appId, 
+    /// @dev For unwrap requests (not swap & unwrap), pass _appId,
     ///      _inputAmount and _path ZERO
     /// @param _amount of WBRC20 that user wants to burn
     /// @param _userScript User script hash
@@ -398,7 +395,7 @@ contract Brc20RouterLogic is OwnableUpgradeable,
         uint _appId,
         uint _inputAmount,
         address[] memory _path
-    ) external nonReentrant payable override {
+    ) external payable override nonReentrant {
         address token = supportedBrc20s[_tokenId];
         require(token != address(0), "Brc20RouterLogic: not supported");
 
@@ -421,10 +418,18 @@ contract Brc20RouterLogic is OwnableUpgradeable,
             require(msg.value == unwrapFee, "Brc20RouterLogic: wrong fee");
         }
 
-        if (_path.length != 0) { // This is a swap and unwrap request
-            // Transfer user's tokens to contract
-            IWBRC20(_path[0]).transferFrom(msg.sender, address(this), _inputAmount);
-            
+        if (_path.length != 0) {
+            // This is a swap and unwrap request
+            if (msg.value == unwrapFee) {
+                // Transfer user's tokens to contract
+                // Input token is not native token
+                IWBRC20(_path[0]).transferFrom(
+                    msg.sender,
+                    address(this),
+                    _inputAmount
+                );
+            }
+
             (bool result, uint[] memory amounts) = _swap(
                 _appId,
                 address(this),
@@ -434,10 +439,15 @@ contract Brc20RouterLogic is OwnableUpgradeable,
             );
             require(result, "Brc20RouterLogic: swap failed");
             _amount = amounts[amounts.length - 1]; // WBRC20 amount that would be burnt
-        } else { // This is a unwrap request
+        } else {
+            // This is a unwrap request
             // Transfer user's tokens to contract
             require(
-                IWBRC20(token).transferFrom(_msgSender(), address(this), _amount),
+                IWBRC20(token).transferFrom(
+                    _msgSender(),
+                    address(this),
+                    _amount
+                ),
                 "Brc20RouterLogic: transfer failed"
             );
         }
@@ -447,12 +457,12 @@ contract Brc20RouterLogic is OwnableUpgradeable,
             address thirdPartyAddress,
             uint remainingAmount
         ) = _unwrapBrc20(
-            _thirdPartyId,
-            token,
-            _amount, 
-            _userScript, 
-            _scriptType
-        );
+                _thirdPartyId,
+                token,
+                _amount,
+                _userScript,
+                _scriptType
+            );
 
         if (_path.length == 0) {
             emit NewUnwrap(
@@ -483,7 +493,6 @@ contract Brc20RouterLogic is OwnableUpgradeable,
                 brc20UnwrapRequests.length - 1
             );
         }
-
     }
 
     /// @notice Check proof of unwraping
@@ -496,7 +505,7 @@ contract Brc20RouterLogic is OwnableUpgradeable,
         bytes memory _intermediateNodes,
         uint _index,
         uint[] memory _reqIndexes
-    ) external payable nonReentrant override {
+    ) external payable override nonReentrant {
         require(_msgSender() == locker, "Brc20RouterLogic: not locker");
 
         bytes32 txId = Brc20RouterLib.checkTx(
@@ -513,7 +522,7 @@ contract Brc20RouterLogic is OwnableUpgradeable,
 
         for (uint i = 0; i < _reqIndexes.length; i++) {
             require(
-                !brc20UnwrapRequests[_reqIndexes[i]].isProcessed, 
+                !brc20UnwrapRequests[_reqIndexes[i]].isProcessed,
                 "Brc20RouterLogic: already processed"
             );
             brc20UnwrapRequests[_reqIndexes[i]].isProcessed = true;
@@ -538,17 +547,14 @@ contract Brc20RouterLogic is OwnableUpgradeable,
     ) private returns (bool _result, uint[] memory _amounts) {
         address _exchangeConnector = exchangeConnector[_appId];
         require(
-            _exchangeConnector != address(0), 
+            _exchangeConnector != address(0),
             "BurnRouterLogic: invalid appId"
         );
 
-        IWBRC20(_path[0]).approve(
-            _exchangeConnector,
-            _inputAmount
-        );
+        IWBRC20(_path[0]).approve(_exchangeConnector, _inputAmount);
 
-        if (IExchangeConnector(_exchangeConnector).isPathValid(_path)) {
-            (_result, _amounts) = IExchangeConnector(_exchangeConnector).swap(
+        if (IDexConnector(_exchangeConnector).isPathValid(_path)) {
+            (_result, _amounts) = IDexConnector(_exchangeConnector).swap(
                 _inputAmount,
                 _outputAmount,
                 _path,
@@ -568,23 +574,27 @@ contract Brc20RouterLogic is OwnableUpgradeable,
         uint _amount,
         bytes memory _userScript,
         ScriptTypes _scriptType
-    ) private returns (
-        fees memory _fee,
-        address _thirdPartyAddress,
-        uint _remainingAmount
-    ) {
+    )
+        private
+        returns (
+            fees memory _fee,
+            address _thirdPartyAddress,
+            uint _remainingAmount
+        )
+    {
         // Save unwrap request and get fee and burnt amounts
-        (_fee, _thirdPartyAddress, _remainingAmount) = Brc20RouterLib.unwrapHelper(
-            _msgSender(),
-            protocolPercentageFee, 
-            lockerPercentageFee,
-            brc20UnwrapRequests,
-            thirdParties,
-            _thirdPartyId,
-            _amount,
-            _userScript, 
-            _scriptType
-        );
+        (_fee, _thirdPartyAddress, _remainingAmount) = Brc20RouterLib
+            .unwrapHelper(
+                _msgSender(),
+                protocolPercentageFee,
+                lockerPercentageFee,
+                brc20UnwrapRequests,
+                thirdParties,
+                _thirdPartyId,
+                _amount,
+                _userScript,
+                _scriptType
+            );
 
         unwrapCounter++;
 
@@ -594,7 +604,7 @@ contract Brc20RouterLogic is OwnableUpgradeable,
 
         IWBRC20(_token).transfer(locker, _fee.lockerFee);
         Address.sendValue(payable(locker), unwrapFee);
-        
+
         if (_thirdPartyAddress != address(0)) {
             IWBRC20(_token).transfer(_thirdPartyAddress, _fee.thirdPartyFee);
         }

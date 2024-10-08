@@ -5,7 +5,7 @@ import "./RuneRouterStorage.sol";
 import "./RuneRouterLib.sol";
 import "../erc20/interfaces/IRune.sol";
 import "../erc20/interfaces/IWETH.sol";
-import "../swap_connectors/interfaces/IExchangeConnector.sol";
+import "../dex_connectors/interfaces/IDexConnector.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
@@ -603,8 +603,8 @@ contract RuneRouterLogic is
 
         IRune(_path[0]).approve(_exchangeConnector, _inputAmount);
 
-        if (IExchangeConnector(_exchangeConnector).isPathValid(_path)) {
-            (_result, _amounts) = IExchangeConnector(_exchangeConnector).swap(
+        if (IDexConnector(_exchangeConnector).isPathValid(_path)) {
+            (_result, _amounts) = IDexConnector(_exchangeConnector).swap(
                 _inputAmount,
                 _outputAmount,
                 _path,

@@ -19,7 +19,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             from: deployer,
             log: true,
             skipIfAlreadyDeployed: true,
-            args: ["UniswapV3", uniswapV3SwapRouter, uniswapV3Quoter]
+            args: []
         });
 
         if (
@@ -29,12 +29,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         ) {
             await verify(
                 deployedContract.address,
-                ["UniswapV3", uniswapV3SwapRouter, uniswapV3Quoter],
-                "contracts/swap_connectors/iZiSwapConnector.sol:iZiSwapConnector"
+                [],
+                "contracts/dex_connectors/iZiSwapConnector.sol:iZiSwapConnector"
             );
         }
     }
 };
 
 export default func;
-func.tags = ["swap_connector"];
+func.tags = ["dex_connector"];
