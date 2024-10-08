@@ -4,7 +4,7 @@ pragma solidity >=0.8.0 <=0.8.4;
 import "./CcExchangeRouterStorage.sol";
 import "./CcExchangeRouterStorageV2.sol";
 import "./interfaces/IBurnRouter.sol";
-import "../swap_connectors/interfaces/IExchangeConnector.sol";
+import "../dex_connectors/interfaces/IDexConnector.sol";
 import "../erc20/interfaces/ITeleBTC.sol";
 import "../lockersManager/interfaces/ILockersManager.sol";
 import "../libraries/CcExchangeRouterLib.sol";
@@ -801,7 +801,7 @@ contract CcExchangeRouterLogic is
             );
 
             if (
-                IExchangeConnector(swapArguments._exchangeConnector)
+                IDexConnector(swapArguments._exchangeConnector)
                     .isPathValid(swapArguments._path)
             ) {
                 require(
@@ -812,7 +812,7 @@ contract CcExchangeRouterLogic is
                         ],
                     "CcExchangeRouter: invalid path"
                 );
-                (result, amounts) = IExchangeConnector(
+                (result, amounts) = IDexConnector(
                     swapArguments._exchangeConnector
                 ).swap(
                         swapArguments
@@ -826,7 +826,7 @@ contract CcExchangeRouterLogic is
                     );
 
                 if (!result) {
-                    (result, amounts) = IExchangeConnector(
+                    (result, amounts) = IDexConnector(
                         swapArguments._exchangeConnector
                     ).swap(
                             swapArguments

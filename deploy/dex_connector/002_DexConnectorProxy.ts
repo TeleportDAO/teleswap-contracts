@@ -1,21 +1,27 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import config from "config";
 import verify from "../../helper-functions";
+import config from "config";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments, getNamedAccounts, network } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const connectorName = "QuickswapV2";
-    const uniswapV2Router02 = config.get("uniswap_v2_router_02");
+    let dexConnectorLogic;
+    const proxyAdmin = config.get("proxy_admin");
 
-    const deployedContract = await deploy("UniswapV2Connector", {
+    if (network.name == "bob") {
+        dexConnectorLogic = await deployments.get("iZiSwapConnector");
+    } else {
+        dexConnectorLogic = await deployments.get("UniswapV3Connector");
+    }
+
+    const deployedContract = await deploy("DexConnectorProxy", {
         from: deployer,
         log: true,
         skipIfAlreadyDeployed: true,
-        args: [connectorName, uniswapV2Router02],
+        args: [dexConnectorLogic.address, proxyAdmin, "0x"],
     });
 
     if (
@@ -25,11 +31,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ) {
         await verify(
             deployedContract.address,
-            [connectorName, uniswapV2Router02],
-            "contracts/swap_connectors/UniswapV2Connector.sol:UniswapV2Connector"
+            [dexConnectorLogic.address, proxyAdmin, "0x"],
+            "contracts/dex_connectors/DexConnectorProxy.sol:DexConnectorProxy"
         );
     }
 };
 
 export default func;
-func.tags = ["swap_connector"];
+func.tags = ["dex_connector"];

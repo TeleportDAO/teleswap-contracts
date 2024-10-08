@@ -1292,6 +1292,13 @@
   resolved "https://registry.npmjs.org/@humanwhocodes/object-schema/-/object-schema-1.2.1.tgz"
   integrity sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==
 
+"@izumifinance/iziswap_core@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.npmjs.org/@izumifinance/iziswap_core/-/iziswap_core-1.0.1.tgz"
+  integrity sha512-YXWjYEjD7qPChQ1dv/imUy4xbpqvvGVdKDEtW8KlLK2759KA40uQmtI61hXDGvbLLcfs6Bu13J0aiDYljb+4JQ==
+  dependencies:
+    "@openzeppelin/contracts" "^4.3.2"
+
 "@izumifinance/iziswap_periphery@^1.0.1":
   version "1.0.1"
   resolved "https://registry.npmjs.org/@izumifinance/iziswap_periphery/-/iziswap_periphery-1.0.1.tgz"
@@ -8818,6 +8825,13 @@ it-to-stream@^1.0.0:
     p-defer "^3.0.0"
     p-fifo "^1.0.0"
     readable-stream "^3.6.0"
+
+iziswap_core@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.npmjs.org/iziswap_core/-/iziswap_core-1.0.0.tgz"
+  integrity sha512-m4wvdxuFK3T5U2N6jEbZmLKPhS4y4WhNuGWgDqrbO+h7NAPJwqJspMH6uXNKPjPeZx2SSZv9o4F+ZAobjB02iw==
+  dependencies:
+    "@openzeppelin/contracts" "^4.3.2"
 
 js-cookie@^2.2.1:
   version "2.2.1"
