@@ -65,6 +65,12 @@ interface IRuneRouter {
         uint newProtocolPercentageFee
     );
 
+    /// @notice Emit when protocol fee updated
+    event NewLockerPercentageFee(
+        uint oldLockerPercentageFee,
+        uint newLockerPercentageFee
+    );
+
     /// @notice Emit when treasury address updated
     event NewTreasury(address oldTreasury, address newTreasury);
 
@@ -220,6 +226,8 @@ interface IRuneRouter {
     function setWrappedNativeToken(address _wrappedNativeToken) external;
 
     function setProtocolPercentageFee(uint _protocolPercentageFee) external;
+
+    function setLockerPercentageFee(uint _lockerPercentageFee) external;
 
     function setChainId(uint _chainId) external;
 

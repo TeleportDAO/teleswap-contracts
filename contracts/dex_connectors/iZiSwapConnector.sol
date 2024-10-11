@@ -151,13 +151,15 @@ contract iZiSwapConnector is
 
     /// @notice Return the swap rate between two tokens
     /// @dev Decimal determines the precision of the swap rate
-    function getSwapRate(
-        address[] memory _path,
-        uint256 _decimal
-    ) external view returns (uint _swapRate) {
+    function getSqrtPriceX96(
+        address[] memory _path
+    )
+        external
+        view
+        returns (uint[] memory _sqrtPriceX96, address[] memory _firstToken)
+    {
         address liquidityPool;
         uint sqrtPriceX96;
-        _swapRate = 10 ** _decimal;
 
         for (uint i = 0; i < _path.length - 1; i++) {
             liquidityPool = IiZiSwapFactory(liquidityPoolFactory).pool(
@@ -169,27 +171,13 @@ contract iZiSwapConnector is
             (sqrtPriceX96, , , , , , , ) = LiquidityPool
                 .iZiSwapPool(liquidityPool)
                 .state();
+            _sqrtPriceX96[i] = sqrtPriceX96;
 
             if (LiquidityPool.iZiSwapPool(liquidityPool).tokenX() == _path[i]) {
-                _swapRate =
-                    (_swapRate * sqrtPriceX96 * sqrtPriceX96) /
-                    2 ** 96 /
-                    2 ** 96;
+                _firstToken[i] = _path[i];
             } else {
-                _swapRate =
-                    (_swapRate * 2 ** 96 * 2 ** 96) /
-                    sqrtPriceX96 /
-                    sqrtPriceX96;
+                _firstToken[i] = _path[i + 1];
             }
-        }
-
-        uint firstDecimal = IERC20Metadata(_path[0]).decimals();
-        uint LastDecimal = IERC20Metadata(_path[_path.length - 1]).decimals();
-
-        if (firstDecimal > LastDecimal) {
-            _swapRate = _swapRate * 10 ** (firstDecimal - LastDecimal);
-        } else {
-            _swapRate = _swapRate / 10 ** (LastDecimal - firstDecimal);
         }
     }
 

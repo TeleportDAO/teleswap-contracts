@@ -28,6 +28,7 @@ contract RuneRouterLogic is
     function initialize(
         uint _startingBlockNumber,
         uint _protocolPercentageFee,
+        uint _lockerPercentageFee,
         uint _chainId,
         address _relay,
         address _locker,
@@ -43,6 +44,7 @@ contract RuneRouterLogic is
         chainId = _chainId;
         setStartingBlockNumber(_startingBlockNumber);
         setProtocolPercentageFee(_protocolPercentageFee);
+        setLockerPercentageFee(_lockerPercentageFee);
         setRelay(_relay);
         setLocker(_locker);
         setLockerLockingScript(_lockerLockingScript, _lockerScriptType);
@@ -107,6 +109,18 @@ contract RuneRouterLogic is
             _protocolPercentageFee
         );
         protocolPercentageFee = _protocolPercentageFee;
+    }
+
+    /// @notice Setter for locker percentage fee
+    function setLockerPercentageFee(
+        uint _lockerPercentageFee
+    ) public override onlyOwner {
+        require(
+            MAX_PROTOCOL_FEE >= _lockerPercentageFee,
+            "RuneRouterLogic: out of range"
+        );
+        emit NewLockerPercentageFee(lockerPercentageFee, _lockerPercentageFee);
+        lockerPercentageFee = _lockerPercentageFee;
     }
 
     /// @notice Setter for Bitcoin relay

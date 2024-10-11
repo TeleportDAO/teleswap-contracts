@@ -148,15 +148,16 @@ contract UniswapV3Connector is
         return (true, 0);
     }
 
-    /// @notice Return the swap rate between two tokens
-    /// @dev Decimal determines the precision of the swap rate
-    function getSwapRate(
-        address[] memory _path,
-        uint256 _decimal
-    ) external view returns (uint _swapRate) {
+    /// @notice Return the square root price of given token pairs
+    function getSqrtPriceX96(
+        address[] memory _path
+    )
+        external
+        view
+        returns (uint[] memory _sqrtPriceX96, address[] memory _firstToken)
+    {
         address liquidityPool;
         uint sqrtPriceX96;
-        _swapRate = 10 ** _decimal;
 
         for (uint i = 0; i < _path.length - 1; i++) {
             liquidityPool = IUniswapV3Factory(liquidityPoolFactory).getPool(
@@ -166,27 +167,12 @@ contract UniswapV3Connector is
             );
             (sqrtPriceX96, , , , , , ) = IUniswapV3PoolState(liquidityPool)
                 .slot0();
-
+            _sqrtPriceX96[i] = sqrtPriceX96;
             if (IUniswapV3PoolImmutables(liquidityPool).token0() == _path[i]) {
-                _swapRate =
-                    (_swapRate * sqrtPriceX96 * sqrtPriceX96) /
-                    2 ** 96 /
-                    2 ** 96;
+                _firstToken[i] = _path[i];
             } else {
-                _swapRate =
-                    (_swapRate * 2 ** 96 * 2 ** 96) /
-                    sqrtPriceX96 /
-                    sqrtPriceX96;
+                _firstToken[i] = _path[i + 1];
             }
-        }
-
-        uint firstDecimal = IERC20Metadata(_path[0]).decimals();
-        uint LastDecimal = IERC20Metadata(_path[_path.length - 1]).decimals();
-
-        if (firstDecimal > LastDecimal) {
-            _swapRate = _swapRate * 10 ** (firstDecimal - LastDecimal);
-        } else {
-            _swapRate = _swapRate / 10 ** (LastDecimal - firstDecimal);
         }
     }
 
