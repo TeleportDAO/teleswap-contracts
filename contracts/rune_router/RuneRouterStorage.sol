@@ -29,4 +29,5 @@ abstract contract RuneRouterStorage is IRuneRouter {
     mapping(uint => thirdParty) public thirdParties; // Mapping from thirdPartyId to thirdParty (address, fee)
     uint public override unwrapFee; // This fee (which is in native token) covers cost of sending RUNE tokens to the user
     address public wrappedNativeToken;
+    address public rewardDistributor;
 }

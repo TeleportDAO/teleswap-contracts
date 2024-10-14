@@ -329,7 +329,23 @@ contract RuneRouterLogic is
         // Send protocol, locker and third party fee
         IRune(wrappedRune).transfer(treasury, fee.protocolFee);
 
-        IRune(wrappedRune).transfer(locker, fee.lockerFee);
+        if (fee.lockerFee > 0) {
+            if (rewardDistributor == address(0)) {
+                // Send reward directly to locker
+                IRune(wrappedRune).transfer(locker, fee.lockerFee);
+            } else {
+                // Call reward distributor to distribute reward
+                IRune(wrappedRune).approve(rewardDistributor, fee.lockerFee);
+                Address.functionCall(
+                    rewardDistributor,
+                    abi.encodeWithSignature(
+                        "depositReward(address,uint256)",
+                        locker,
+                        fee.lockerFee
+                    )
+                );
+            }
+        }
 
         if (_thirdPartyAddress != address(0)) {
             IRune(wrappedRune).transfer(_thirdPartyAddress, fee.thirdPartyFee);

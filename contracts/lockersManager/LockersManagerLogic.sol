@@ -983,7 +983,22 @@ contract LockersManagerLogic is
         // Mints locker fee
         uint256 lockerFee = (_amount * lockerPercentageFee) / MAX_LOCKER_FEE;
         if (lockerFee > 0) {
-            ITeleBTC(teleBTC).mint(_lockerTargetAddress, lockerFee);
+            ITeleBTC(teleBTC).mint(address(this), lockerFee);
+            if (rewardDistributor == address(0)) {
+                // Send reward directly to locker
+                ITeleBTC(teleBTC).transfer(_lockerTargetAddress, lockerFee);
+            } else {
+                // Call reward distributor to distribute reward
+                ITeleBTC(teleBTC).approve(rewardDistributor, lockerFee);
+                Address.functionCall(
+                    rewardDistributor,
+                    abi.encodeWithSignature(
+                        "depositReward(address,uint256)",
+                        _lockerTargetAddress,
+                        lockerFee
+                    )
+                );
+            }
         }
 
         // Mints tokens for receiver

@@ -9,4 +9,6 @@ abstract contract LockersManagerStorage2 is ILockersManager {
 
     // A Locker with smaller reliability factor is more reliable
     mapping(address => uint) public lockerReliabilityFactor;
+
+    address public rewardDistributor;
 }
